@@ -1,0 +1,30 @@
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+{% load i18n %}
+<!DOCTYPE html> {# activates Strict mode in most browsers including IE8 #}
+<head>
+  <title>Google Crisis Map</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="maximum-scale=1.0,initial-scale=1.0,user-scalable=no">
+  <link rel="stylesheet" href="/crisismap/static/mapviewer.css">
+  <script type="text/javascript" src="{{maps_api_url}}"></script>
+  <script type="text/javascript" src="/crisismap/js/compiled/crisismap_main__{{ui_lang|urlencode}}.js"></script>
+  <script type="text/javascript">
+    var cm_config = {{cm_config_json|safe}};
+  </script>
+  <script type="text/javascript" src="/crisismap/static/main.js"></script>
+</head>
+<body class="cm-body" onload="main()">
+  <div id="cm-frame"></div>
+</body>

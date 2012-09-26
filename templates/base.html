@@ -1,0 +1,61 @@
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+{# Base template for app pages #}
+{% load i18n %}
+<!DOCTYPE html> {# activates Strict mode in most browsers including IE8 #}
+
+<head>
+  <title>Google Crisis Map</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta itemprop="image" content="/static/favicon.ico">
+  {# Links to stylesheets #}
+  {% block stylesheets %}
+    <link rel="stylesheet" href="/crisismap/static/mapviewer.css">
+    <link rel="stylesheet" href="/crisismap/static/admin.css">
+  {% endblock stylesheets %}
+</head>
+
+<body class="cm-body">
+  <div class="cm-header">
+    {# Header above page content #}
+    {% block header %}
+      <a href="/crisismap"><h1>Google Crisis Map</h1></a>
+    {% endblock header %}
+  </div>
+
+  <div class="cm-navbar">
+    {# Left sidebar #}
+    {% block navbar %}
+    <ul>
+      {# Navigation links #}
+      {% block navlinks %}
+        <li><a href="/crisismap/maps">Your list of maps</a></li>
+        {% if user_domain %}
+          <li><a href="/crisismap/a/{{user_domain}}">Published maps</a></li>
+        {% endif %}
+      {% endblock navlinks %}
+    </ul>
+    {% endblock navbar %}
+  </div>
+
+  {# Page content #}
+  <div class="cm-content">
+    {% block content %}
+    {% endblock content %}
+  </div>
+
+  {# Footer at the bottom of every page #}
+  {% block footer %}
+  {% endblock footer %}
+</body>

@@ -1,0 +1,42 @@
+{% extends "base.html" %} {# Django wants this first, even before comments #}
+
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+{% block content %}
+  <div class="cm-error-box">
+    {% if exception.user %}
+      {% if exception.object %}
+        You're signed in as {{exception.user}},
+        but you don't have {{exception.role}} access to that map.
+        (You could try asking the owner of the map for access,
+        or try <a href="{{login_url}}">signing in as a different user</a>.)
+      {% else %}
+        You're signed in as {{exception.user}},
+        but you don't have {{exception.role}} access.
+        (You could try asking a site administrator for access,
+        or try <a href="{{login_url}}">signing in as a different user</a>.)
+      {% endif %}
+    {% else %}
+      {% if exception.object %}
+        Please <a href="{{login_url}}">sign in</a>
+        to get {{exception.role}} access to that map.
+      {% else %}
+        Please <a href="{{login_url}}">sign in</a>
+        to get {{exception.role}} access.
+      {% endif %}
+    {% endif %}
+    <br>&nbsp;<br>
+    Return to the <a href="/crisismap">default map</a>.
+  </div>
+{% endblock content %}

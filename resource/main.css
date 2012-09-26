@@ -1,0 +1,1058 @@
+/* Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License. */
+
+html, body {
+  width:100%;
+  height:100%;
+  margin:0;
+  padding:0;
+}
+.cm-body, .cm-frame, .cm-frame input, .cm-frame button, .cm-popup, .cm-about {
+  font-size:13px;
+  font-family:arial,sans-serif;
+  color:#222;
+}
+.cm-embedded {
+  overflow:auto;
+}
+.cm-hidden {
+  /* cm-hidden is a utility class that overrides all other classes. */
+  display:none !important;
+}
+.cm-layout-rtl .cm-panel-inner,
+.cm-layout-rtl .cm-aboutText,
+.cm-layout-rtl .cm-mapbutton,
+.cm-layout-rtl .cm-footer {
+  direction: rtl;
+}
+/* Style for a single box container. */
+.cm-frame {
+  width:100%;
+  height:100%;
+  margin:0;
+  padding:0;
+  position:absolute;
+  overflow:hidden;
+}
+
+/* Headings */
+.cm-header h1, .cm-panel h1 {  /* map title */
+  font-size:18px;
+  font-weight:normal;
+  color:#dd4b39;
+  display:inline;
+}
+.cm-header h1 {  /* product heading */
+  font-size:16px;
+}
+.cm-header h2, .cm-panel h2, .cm-popup h2 {  /* dialog headings */
+  font-size:16px;
+  font-weight:normal;
+  color:#333;
+}
+.cm-panel h3, .cm-popup h3 {  /* item headings */
+  font-size:14px;
+  font-weight:normal;
+}
+
+/* Links */
+.cm-panel a, .cm-footer a, .cm-popup a {
+  text-decoration:none;
+}
+.cm-panel a:link, .cm-footer a:link, .cm-popup a:link {
+  color:#1155cc;
+}
+.cm-panel a:visited, .cm-footer a:visited, .cm-popup a:visited {
+  color:#6611cc;
+}
+.cm-panel a:hover, .cm-footer a:hover, .cm-popup a:hover {
+  text-decoration:underline;
+}
+
+/* Panel */
+.cm-panel a {
+  font-size:11px;
+}
+.cm-panel .cm-layer-description,
+.cm-panel .cm-warning,
+.cm-panel .cm-timestamp,
+.cm-preview.cm-layer-description {
+  font-size:11px;
+  color:#999;
+}
+
+.cm-panel .cm-layer-legend-box,
+.cm-preview.cm-layer-legend {
+  font-size:11px;
+  color:#222;
+}
+
+.cm-layer-legend-box > fieldset {
+  border:1px solid #e0e0e0;
+  margin:3px 0px 2px 0px;
+  width:95%;
+}
+
+.cm-layer-legend-box > fieldset > legend {
+  margin-left:0px;
+  padding:0px;
+}
+
+/* Layout changes for collapsed panel */
+.cm-panel-collapsed .cm-panel {
+  width:0;
+  display:none;
+}
+.cm-panel-float .cm-map-wrapper,
+.cm-panel-collapsed .cm-map-wrapper,
+.cm-panel-collapsed.cm-panel-left .cm-map-wrapper {
+  margin-left:0px !important;
+  margin-right:0px !important;
+}
+.cm-embedded.cm-panel-left .cm-map-wrapper {
+  margin-left:0px !important;
+  margin-right:0px !important;
+}
+
+/* Panel expand/collapse buttons */
+.cm-collapse, .cm-expand {
+  position:absolute;
+  top:0;
+  width:19px;
+  height:19px;
+  text-align:center;
+  background:#fff;
+  z-index:3;
+}
+.cm-collapse {
+  right:0;
+  border-left:1px solid #e0e0e0;
+  border-bottom:1px solid #e0e0e0;
+}
+.cm-embedded .cm-collapse, .cm-embedded .cm-expand {
+  visibility:hidden !important; /* don't show buttons in embedded mode */
+}
+.cm-expand {
+  right:0;
+  border-left:1px solid #999;
+  border-bottom:1px solid #999;
+  visibility:hidden; /* show expand button only when panel is collapsed */
+  border-top:1px solid #999;
+  top:30px; /* move down to avoid the Map|Satellite button on the right */
+}
+.cm-panel-collapsed .cm-expand {
+  visibility:visible;
+}
+.cm-collapse-icon, .cm-expand-icon {
+  margin:3px 2px 0 0;
+  width:6px;
+  height:12px;
+  opacity:0.7;
+}
+.cm-panel-left .cm-expand {
+  top:0;
+  left:0;
+  border-top:none;
+  border-left:none;
+  border-right:1px solid #999;
+}
+/* TODO(arb): do we need to register that we are using these sprites? */
+.cm-collapse-icon, .cm-panel-left .cm-expand-icon {
+  background:url('//maps.gstatic.com/mapfiles/hpimgs28.png') -155px -26px;
+}
+.cm-expand-icon, .cm-panel-left .cm-collapse-icon {
+  background:url('//maps.gstatic.com/mapfiles/hpimgs28.png') -132px -26px;
+}
+/* NOTE(arb): The lack of a space in the following is on purpose! */
+.cm-panel-collapsed.cm-panel-left .cm-searchbox {
+  margin-left:24px;  /* move over to avoid the expand button on the left */
+}
+
+/* Floating panel */
+.cm-panel-float .cm-panel {
+  position:absolute;
+  top:5px;
+  left:5px !important;
+  right:inherit !important;
+  height:auto !important;
+  max-height:98%;
+  overflow:auto;
+  z-index:1;
+  opacity:0.90;
+  box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+  -moz-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+  -webkit-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.cm-panel-float .cm-panel-inner {
+  position:static;  /* Let the panel height depend on its content. */
+}
+/* Make the expand button also float, and enlarge it to match the searchbox */
+.cm-panel-float .cm-expand, .cm-panel-float .cm-collapse {
+  padding:2px 2px 1px;
+}
+.cm-panel-float .cm-collapse {
+  padding-top:3px;
+}
+.cm-panel-float .cm-expand {
+  border:1px solid #999;
+  padding:2px 1px 1px 3px;
+  top:5px;
+  left:5px;
+  box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+  -moz-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+  -webkit-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.cm-panel-float.cm-panel-left .cm-searchbox {
+  margin-left:320px;  /* Move the searchbox over to avoid the panel... */
+}
+.cm-panel-float.cm-panel-collapsed.cm-panel-left .cm-searchbox {
+  margin-left:36px;  /* ...but not when the panel is collapsed... */
+}
+.cm-embedded .cm-searchbox {
+  margin-left:5px !important;  /* ...and not in embedded mode. */
+}
+
+/* Panel contents */
+.cm-panel-header {
+  padding:2px 0 8px 0;
+  margin-left:-19px;
+  position:relative;
+}
+
+/* Make the map title and description appear editable. */
+.cm-edit .cm-panel-header {
+  cursor:pointer;
+}
+.cm-map-title {
+  width:240px; /** space for vertical scrollbar */
+}
+.cm-embedded .cm-map-title {
+  display:inline;
+  display:inline-block;
+  width:450px !important;
+}
+.cm-panel .cm-draft-indicator {
+  padding:0 1px;
+  margin-right:0.5em;
+  border:1px solid #000;
+  font-weight:bold;
+  cursor:default;
+}
+.cm-map-description, .cm-preview.cm-map-description {
+  font-size:12px;
+  color:#222;
+  width:240px; /** space for vertical scrollbar */
+}
+.cm-embedded .cm-map-description {
+  width:450px !important;
+}
+.cm-panel .cm-panel-links {
+  margin:8px 0 8px -19px;
+}
+.cm-panel .cm-map-description {
+  padding-top:0px;
+  margin-left:-19px;
+}
+.cm-map-description a {
+  font-size:12px;
+}
+.cm-panel {
+  overflow:auto;
+  background:#fff;
+  border-left:1px solid #ccc;
+  float:right;
+  position:relative;
+  width:306px;
+  height:100%;
+}
+.cm-panel-left .cm-panel {
+  float:left;
+  border-left:none;
+  border-right:1px solid #ccc;
+}
+.cm-panel-inner {
+  overflow-x:visible;
+  overflow-y:auto;
+  padding:20px 20px 10px 34px;
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  right:0;  /** IE 7 needs left and right set. */
+}
+.cm-embedded .cm-panel-inner {
+  height:auto;
+  top:0;
+  bottom:0;
+  border:1px solid #ccc;
+}
+.cm-embedded.cm-touch .cm-panel-inner {
+  overflow:auto;
+  top:auto;
+  bottom:auto;
+}
+.cm-panel-layers {
+  /* TODO(kpy): We go +20px then -19px so many times it makes my head spin. */
+  margin-left:-19px;
+}
+.cm-layer-entry {
+  margin-top:10px;
+  position:relative;
+  left:20px;
+  margin-right:20px;
+  margin-bottom:20px;
+  margin-left:-1px;
+}
+.cm-layer-entry.cm-contains-promoted-sublayer > * > .cm-layer-entry {
+  display:none;
+}
+.cm-layer-entry.cm-contains-promoted-sublayer > * > .cm-layer-entry.cm-promoted-sublayer {
+  display: block;
+  margin-left:-20px;
+}
+.cm-layer-title {
+  font-size:14px;
+  line-height:16px;
+  padding-left:2px;
+  margin-left:-23px;
+}
+.cm-layer-date {
+  font-size:14px;
+  line-height:16px;
+  color: #888888;
+}
+.cm-embedded .cm-panel {
+  float:none;
+  position:absolute;
+  width:100%;
+  z-index:1;
+  max-width:500px;
+  opacity:0.90;
+  filter:alpha(opacity=90);
+  border:none;
+}
+.cm-panel-button,
+.cm-panel .cm-close-button,
+.cm-embedded .cm-panel {
+  display:none;
+}
+.cm-panel.cm-open,
+.cm-embedded .cm-panel-button,
+.cm-embedded .cm-panel .cm-close-button {
+  display:block;
+}
+.cm-panel input[type=checkbox] {
+  margin-left:-19px;
+  margin-bottom:-2px;
+}
+.cm-panel .cm-time-series-button {
+  vertical-align:middle;
+}
+
+/* Map */
+.cm-map-wrapper {
+  margin-right:252px;
+}
+.cm-panel-left .cm-map-wrapper {
+  margin-right:0px;
+  margin-left:252px;
+}
+.cm-embedded .cm-map-wrapper {
+  width:auto;
+  height:100%;
+  margin-right:0;
+}
+.cm-map {
+  height:100%;
+}
+
+/* Popups and dialogs */
+.cm-popup {
+  position:absolute;
+  border:1px solid #ccc;
+  padding:20px;
+  z-index:1;
+  background-color:white;
+  min-width:240px;
+  max-width:540px;
+  -webkit-box-shadow:0 4px 16px rgba(0,0,0,0.2);
+  -moz-box-shadow:0 4px 16px rgba(0,0,0,0.2);
+  -ms-box-shadow:0 4px 16px rgba(0,0,0,0.2);
+  box-shadow:0 4px 16px rgba(0,0,0,0.2);
+}
+.cm-popup :first-child {
+  margin-top:0;
+}
+.cm-popup :last-child {
+  margin-bottom:0;
+}
+.cm-close-button {
+  background:url('x.png') no-repeat center center;
+  position:absolute;
+  top:0;
+  right:0;
+  padding:16px;
+  opacity:0.7;
+  filter:alpha(opacity=70);
+  cursor:pointer;
+  height:21px;
+  width:21px;
+}
+.cm-layout-rtl .cm-close-button {
+  right:auto;
+  left:0;
+}
+
+/* Share popup */
+.cm-share label {
+  display:inline-block;
+  padding-bottom:4px;
+}
+.cm-layout-rtl .cm-share {
+  text-align:right;
+}
+.cm-share .cm-shorten {
+  margin:0.5em 0;
+}
+.cm-share .cm-shorten-checkbox {
+  margin-bottom:-1px;
+}
+.cm-share ul li {
+  margin-bottom:16px;
+}
+.cm-share li {
+  line-height:17px;
+}
+.cm-share ul {
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.cm-share input[type=text] {
+  width:100%;
+  height:29px;
+  line-height:27px;
+  padding-left:4px;
+  color:#333;
+  font-size:13px;
+  font-family:arial,sans-serif;
+  border:1px solid #d9d9d9;
+  border-top:1px solid silver;
+  display:inline-block;
+  vertical-align:top;
+  -webkit-box-sizing:border-box;
+  -moz-box-sizing:border-box;
+  box-sizing:border-box;
+}
+.cm-social a {
+  margin-right:10px;
+}
+.cm-social img, .cm-social iframe {
+  vertical-align:middle;
+}
+/* we need this selector to be more specific than .cm-social a rule above */
+a.cm-gplus-share-button {
+  height:32px;
+  width:32px;
+  margin-right:25px;
+}
+.cm-gplus-img {
+  background:url('https://ssl.gstatic.com/images/icons/gplus-32.png') no-repeat center center;
+  vertical-align:middle;
+  height:32px;
+  width:32px;
+  display:inline-block;
+}
+.cm-facebook-like-button {
+   border:none;
+   overflow:hidden;
+   width:90px;
+   height:20px;
+}
+.cm-twitter-share-button {
+  width:60px;
+  height:20px;
+  margin-right:25px;
+  border:none;
+  overflow:hidden;
+}
+.cm-twitter-img {
+  background:url('tweetbutton.png') no-repeat;
+  display:inline-block;
+}
+div.cm-social {
+  text-align:left;
+  width:280px;
+  height:32px;
+}
+
+/* "Enter an address" autocomplete box */
+.cm-mapbutton input {
+  font-family:Arial,sans-serif;
+  font-size:14px;
+  border:0;
+  width:250px;
+}
+
+/* Language selector */
+.cm-langSpan {
+  padding:0 0 5px 5px;
+}
+.cm-flagSpan {
+  margin-right:3px;
+}
+span.cm-g-flag {
+  vertical-align:middle;
+  zoom:.70;
+  -moz-transform:scale(.70);
+}
+
+/* Footer */
+.cm-footer {
+  text-align:center;
+  padding:9px;
+  background-color:white;
+  border-top:1px solid #ccc;
+  color:#555;
+  font-size:13px;
+}
+.cm-embedded .cm-footer {
+  text-align:left;
+}
+
+/* Standard Google checkbox styles */
+input[type=checkbox] {
+  -webkit-appearance:none;
+  width:13px;
+  height:13px;
+  border:1px solid #DCDCDC;
+  margin:0 3px -1px 0;
+  border-radius:1px;
+  -webkit-box-sizing:border-box;
+  -moz-box-sizing:border-box;
+/**  box-sizing:border-box; */
+  cursor:pointer;
+  position:relative;
+  overflow:visible;
+}
+input[type=checkbox]:active {
+  border-color:#C6C6C6;
+  background:#ebebeb;
+}
+input[type=checkbox]:hover {
+  border-color:#C6C6C6;
+  -webkit-box-shadow:inset 0px 1px 1px rgba(0,0,0,0.1);
+  -moz-box-shadow:inset 0px 1px 1px rgba(0,0,0,0.1);
+  box-shadow:inset 0px 1px 1px rgba(0,0,0,0.1);
+}
+input[type=checkbox]:checked::after {
+  content:url('check_no_box.png');
+  display:block;
+  position:absolute;
+  top:-6px;
+  left:-5px;
+}
+
+/* Folder checkboxes */
+.cm-checkbox-container {
+  width:20px;
+  display:inline-block;
+  vertical-align:top;
+}
+.cm-checkbox-folder-decoration {
+  display:inline-block;
+  background:url('folder_border.png') no-repeat;
+  width:20px;
+  height:13px;
+  margin-left:-18px;
+}
+
+/* About popup */
+#cm-aboutText {
+ display:none;
+}
+
+/* Menu for time series layers */
+.cm-calendar-button {
+  width:21px;
+  height:15px;
+  display:inline-block;
+  background:url('calendar.png') no-repeat left;
+  float:right;
+  padding-right:5px;
+  cursor:pointer;
+}
+.cm-calendar-button.open {
+  width:auto
+}
+.cm-sublayer-picker {
+  background:#fff;
+  border:1px solid #c6c6c6;
+  padding:0 0 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  -webkit-box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  -moz-box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position:relative;
+  top:11px;
+  display:none;
+  z-index:1;
+  width:auto;
+  margin-right: 5%;
+  float: right;
+}
+.cm-sublayer-picker ul {
+  list-style:none;
+  padding:0;
+  margin:0;
+  width:auto;
+}
+.cm-sublayer-picker li {
+  font-weight:normal;
+  display:block;
+  float: none;
+  padding:5px 25px;
+  color:#333;
+  white-space:nowrap;
+}
+.cm-sublayer-picker li.selected {
+  background:url('check_no_box.png') no-repeat left center;
+}
+.cm-sublayer-picker li:hover, #sublayer-picker li.selected {
+  color:#222;
+}
+.cm-sublayer-picker li:hover {
+  background-color:#f1f1f1;
+}
+
+/* Dropdown menu of available maps (cm.MapPicker) */
+.cm-map-picker {
+  padding:0;
+  margin:0;
+  list-style:none;
+  min-width:40px;  /* override min-width:240px on cm-popup */
+}
+.cm-map-picker li a, .cm-map-picker li a:visited, .cm-map-picker li a:link {
+  display:block;
+  padding:6px 16px 6px 28px;
+  color:#333;
+  white-space:nowrap;
+  text-decoration:none;
+}
+.cm-map-picker li.cm-selected {
+  background:url('check_no_box.png') no-repeat left center;
+}
+.cm-map-picker li:hover {
+  background-color:#f1f1f1;
+}
+.cm-map-picker-button {
+  width:11px;
+  height:11px;
+  border:1px solid #c6c6c6;
+  border-radius:1px;
+  display:inline-block;
+  background:url('//maps.gstatic.com/mapfiles/hpimgs28.png') -123px 4px;
+  position:absolute;
+  top:6px;
+  right:0;
+  opacity:0.5;
+}
+.cm-map-picker-button:hover {
+  opacity:1;
+}
+.cm-embedded .cm-map-picker-button {
+  right:auto;
+}
+
+/* Login */
+.cm-panel div.cm-login {
+  z-index:1;
+  position:absolute;
+  top:3px;
+  right:6px;
+  font-size:12px;
+}
+.cm-panel div.cm-login a {
+  font-size:12px;
+}
+.cm-panel div.cm-login .user {
+  font-weight:bold;
+}
+
+/* Opacity slider */
+.cm-layer-entry .goog-slider-horizontal {
+  position:relative;
+  margin:6px -1px;
+  background:#ddd;
+  border-radius:3px;
+  width:100%;
+  height:7px;
+  outline:none;
+}
+.cm-layer-entry .goog-slider-thumb {
+  position:absolute;
+  top:-5px;
+  background:#fff;
+  width:17px;
+  height:17px;
+  border-radius:50%;
+}
+.cm-slider-circle {
+  position:relative;
+  top:1px;
+  left:1px;
+  background:#fff;
+  width:13px;
+  border:1px solid #aaa;
+  height:13px;
+  border-radius:50%;
+}
+.cm-layer-entry .cm-slider-circle:hover {
+  border:1px solid #666;
+}
+.cm-slider-dot {
+  position:relative;
+  top:3px;
+  left:3px;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#000;
+}
+
+/* Toolbar */
+.cm-toolbar {
+  position:absolute;
+  top:4px;
+  left:8px;
+  font-size:11px;
+}
+.cm-toolbar a.cm-disabled,
+.cm-toolbar a.cm-disabled:hover {
+  color:#888;
+  text-decoration: none;
+  cursor:default;
+}
+.cm-toolbar a.cm-error {
+  color:#c00;
+}
+
+/* Inspector dialog */
+.cm-inspector table.cm-editors {
+  width:100%;
+}
+.cm-inspector table.cm-editors tr {
+  vertical-align:baseline;
+}
+.cm-inspector table.cm-editors th, .cm-inspector table.cm-editors td,
+.cm-share-emailer th, .cm-share-emailer td {
+  padding-top:8px;
+}
+.cm-inspector table.cm-editors th, .cm-share-emailer th {
+  text-align:left;
+  padding-right:8px;
+  font-weight:normal;
+  color:#666;
+  white-space:nowrap;
+  width:1%;
+}
+
+/* ShareEmailer dialog */
+.cm-share-emailer {
+    width:400px;
+}
+.cm-share-emailer table {
+    width:100%;
+}
+.cm-share-emailer textarea {
+    width:100%;
+    max-width:392px;  /* total outside width 400px */
+    height:6em;
+    font-family:arial;
+    font-size:13px;
+    padding:3px;
+    border:1px solid #c0c0c0;
+}
+
+.cm-email-error {
+  color:#a00;
+}
+
+/* Editor dialog */
+.cm-html-editor th, .cm-share-emailer th {
+  vertical-align:top;
+  padding-top:12px;
+}
+.cm-html-editor textarea {
+  width:100%;
+  max-width:392px;  /* total outside width 400px */
+  height:6em;
+  font-family:arial;
+  font-size:13px;
+  padding:3px;
+  border:1px solid #c0c0c0;
+}
+.cm-html-editor .cm-disclosure {
+  margin:4px 0 0;
+}
+.cm-html-editor .cm-disclosure .cm-triangle {
+  display:inline-block;
+  width:9px;
+  color:#666;
+  margin-right:2px;
+  font-size:9px;
+  cursor:default;
+}
+.cm-html-editor .cm-disclosure .cm-label {
+  color: #666;
+  font-size:12px;
+  cursor:default;
+}
+.cm-html-editor .cm-disclosure:hover .cm-triangle {
+  color:#000;
+}
+.cm-html-editor .cm-preview {
+  width:100%;
+  max-width:391px;  /* total outside width 400px */
+  height:6em;
+  overflow:auto;
+  border-left:1px solid #c0c0c0;
+  padding:0 4px;
+  margin-top:2px;
+}
+
+.cm-number-editor input {
+  width:4em;
+}
+.cm-number-editor .cm-validation-error {
+  display:inline;
+  margin-left:0.5em;
+}
+
+.cm-text-editor input {
+  width:100%;
+  max-width:394px;  /* total outside width 400px */
+}
+
+.cm-lat-lon-box-editor table.cm-extents {
+  width:12em;
+  float:left;
+  margin-right:1em;
+}
+.cm-lat-lon-box-editor table.cm-extents tr:first-child td {
+  padding-top:0;  /* outer cell already has 8px padding-top, don't double up */
+}
+.cm-lat-lon-box-editor table.cm-extents td {
+  text-align:center;
+  white-space:nowrap;
+}
+.cm-lat-lon-box-editor table.cm-extents input {
+  width:6em;
+}
+.cm-lat-lon-box-editor .cm-west {
+  padding-right:2em;
+}
+.cm-lat-lon-box-editor .cm-copy-viewport {
+  padding:4px 0 6px;
+}
+.cm-lat-lon-box-editor .cm-copy-viewport input {
+  margin-right:4px;
+}
+.cm-lat-lon-box-editor .cm-box-size-label {
+  font-size:11px;
+}
+.cm-lat-lon-box-editor .cm-viewport-info {
+  font-size:11px;
+  display:inline-block;
+  color:#dd4b39;
+  margin-top:6px;
+}
+.cm-validation-error {
+  display:block;
+  font-size:11px;
+  color: #a00;
+}
+.cm-arranger {
+  cursor:move;
+}
+
+/* Standard Google button styles */
+.cm-popup .cm-button-area {
+  margin:21px 0 5px;
+}
+.cm-button-area .cm-button {
+  margin-right:14px;
+}
+.cm-button, .cm-body .cm-button {
+  display:inline-block;
+  min-width:72px;
+  height:29px;
+  line-height:27px;
+  border:1px;
+  font-size:11px;
+  font-family:arial,sans-serif;
+  font-weight:bold;
+  border-radius:2px;
+  border:1px solid #505050;
+  text-align:center;
+  padding:0 8px;
+  border:1px solid rgba(0,0,0,0.1);
+  color:#444;
+  background:#f5f5f5;
+  background-image:-webkit-linear-gradient(top,#f5f5f5,#f1f1f1);
+  background-image:linear-gradient(top,#f5f5f5,#f1f1f1);
+}
+.cm-button:hover {
+  border:1px solid #c6c6c6;
+  color:#222;
+  background:#f8f8f8;
+  background-image:-webkit-linear-gradient(top,#f8f8f8,#f1f1f1);
+  background-image:linear-gradient(top,#f8f8f8,#f1f1f1);
+  -webkit-box-shadow:0px 1px 1px rgba(0,0,0,0.1);
+  box-shadow:0px 1px 1px rgba(0,0,0,0.1);
+}
+.cm-button:active {
+  background:#f6f6f6;
+  background-image:-webkit-linear-gradient(top,#f6f6f6,#f1f1f1);
+  background-image:linear-gradient(top,#f6f6f6,#f1f1f1);
+  -webkit-box-shadow:inset 0px 1px 2px rgba(0,0,0,0.1);
+  box-shadow:inset 0px 1px 2px rgba(0,0,0,0.1);
+}
+.cm-button.cm-submit {
+  border:1px solid #3079ed;
+  color:#fff;
+  background:#4d90fe;
+  background-image:-webkit-linear-gradient(top,#4d90fe,#4787ed);
+  background-image:linear-gradient(top,#4d90fe,#4787ed);
+}
+.cm-button.cm-submit:hover {
+  border:1px solid #2f5bb7;
+  color:#fff;
+  background:#357ae8;
+  background-image:-webkit-linear-gradient(top,#4d90fe,#357ae8);
+  background-image:linear-gradient(top,#4d90fe,#357ae8);
+  -webkit-box-shadow:0px 1px 1px rgba(0,0,0,0.1);
+  box-shadow:0px 1px 1px rgba(0,0,0,0.1);
+}
+.cm-button.cm-submit:active {
+  -webkit-box-shadow:inset 0px 1px 2px rgba(0,0,0,0.3);
+  box-shadow:inset 0px 1px 2px rgba(0,0,0,0.3);
+}
+.cm-button.cm-create {
+  border:1px solid transparent;
+  color:#fff;
+  background:#d14836;
+  background-image:-webkit-linear-gradient(top,#dd4b39,#d14836);
+  background-image:linear-gradient(top,#dd4b39,#d14836);
+  text-transform:uppercase;
+}
+.cm-button.cm-create:hover {
+  border:1px solid #b0281a;
+  border-bottom-color:#af301f;
+  color:#fff;
+  background:#c53727;
+  background-image:-webkit-linear-gradient(top,#dd4b39,#c53727);
+  background-image:linear-gradient(top,#dd4b39,#c53727);
+  -webkit-box-shadow:0px 1px 1px rgba(0,0,0,0.2);
+  box-shadow:0px 1px 1px rgba(0,0,0,0.2);
+}
+.cm-button.cm-create:active {
+  border:1px solid #992a1b;
+  background:#b0281a;
+  background-image:-webkit-linear-gradient(top,#dd4b39,#b0281a);
+  background-image:linear-gradient(top,#dd4b39,#b0281a);
+  -webkit-box-shadow:inset 0px 1px 2px rgba(0,0,0,0.3);
+  box-shadow:inset 0px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Build info */
+.cm-build-info {
+  cursor:default;
+  position:absolute;
+  font-size:10px;
+  color:#fff;
+  right:0;
+  bottom:0;
+  padding:2px 3px;
+  z-index:1;
+  opacity:0;  /* developers have to know where to look for it */
+}
+
+.cm-build-info:hover {
+  color:#888;
+  background:#eee;
+  opacity:1;
+}
+
+/* Mouse lat/lng coordinates */
+.cm-lat-lng {
+  position:absolute;
+  font-size:12px;
+  width: 400px;
+  left:0;
+  bottom:0;
+  padding:2px 6px;
+  z-index: 1
+}
+
+/* Arranger panel with draggable elements */
+.cm-arranger {
+  opacity:1.0 !important;
+}
+.cm-arranger .cm-button-area {
+  margin:21px 0 5px 20px;
+}
+.cm-arranger-inner {
+  padding:20px 20px 10px 20px;
+}
+.cm-draggable-layer {
+  cursor:move;
+  margin:0px 2px 0px 0px;
+}
+.cm-draggable-layer-title {
+  display:inline-block;
+  line-height:36px;
+  background-position-y:46%;
+  padding-left:18px;
+  white-space:nowrap;
+}
+.cm-draggable-layer-bg {
+  background:url('icon_check.png') no-repeat left !important;
+}
+.cm-draggable-folder-bg {
+  background:url('icon_folder.png') no-repeat left !important;
+}
+.cm-active-draggable-layer {
+  border:1px dotted #e0e0e0;
+  margin-top:-1px;
+  margin-left:-9px;
+  padding-left:8px;
+  color:#e0e0e0;
+}
+.cm-draggable-sublayer-container {
+  margin-left:20px;
+}
+.cm-dragged-clone {
+  margin:0px 0px 0px 0px;
+  padding-right:18px;
+  position:absolute;
+  background-color:#ccc;
+  z-index:1;
+  opacity:0.4;
+  white-space:nowrap;
+}
+.cm-drop-target-line {
+  height:2px;
+  margin-bottom:-2px;
+  background-color:#000000;
+  text-align:center;
+  width:100px;
+  white-space:nowrap;
+}

@@ -1,0 +1,57 @@
+# Copyright 2012 Google Inc.  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy
+# of the License at: http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distrib-
+# uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+# OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+# specific language governing permissions and limitations under the License.
+
+
+Building and running Stratomap
+------------------------------
+
+Setup:
+  Ensure that you have svn, ant, and a JDK installed.
+
+  Download the Closure library: http://developers.google.com/closure/library
+  and the Closure compiler: http://developers.google.com/closure/compiler
+
+  Download the App Engine SDK (get the LINUX ZIP FILE regardless of your OS):
+  http://developers.google.com/appengine/downloads
+
+  Put the Closure library and compiler in $HOME/closure and unzip the SDK in
+  $HOME/google_appengine.  All of the following should exist:
+    $HOME/closure/closure/goog/
+    $HOME/closure/third_party/closure/goog/
+    $HOME/closure/compiler.jar
+    $HOME/google_appengine/dev_appserver.py
+
+To build and run, simply:
+  make
+  tools/run
+
+...then visit the local server at http://localhost:8000/.  You can edit
+JS files and see the changes just by re-running "make" and hitting Reload
+in your browser; no need to restart the server.
+
+The first run of "make" will take about 5 minutes or so because it needs
+to download and build the whole google-caja project to generate one little
+file, html4-defs.js.  This only has to happen once; subsequent runs of
+"make" will be much faster.
+
+
+Running the tests
+-----------------
+
+Setup:
+  Install py.test: sudo easy_install-2.5 pytest
+
+  Install google-js-test: http://code.google.com/p/google-js-test/
+
+To run the tests:
+  tools/pytests
+  tools/jstests
+

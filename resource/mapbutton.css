@@ -1,0 +1,55 @@
+/* Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License. */
+
+/**
+ * CSS for maps style buttons. From
+ * http://code.google.com/p/gmaps-samples-v3/source/browse/trunk/controls/
+ */
+.cm-mapbutton {
+  margin:5px;
+  cursor:pointer;
+  font-family:Arial,sans-serif;
+  font-size:13px;
+  overflow:hidden;
+  text-align:center;
+  border:1px solid #717B87;
+  background:white;
+  color:#333;
+  padding:1px 7px;
+  box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+  -moz-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+  -webkit-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
+  -webkit-user-select:none;
+  -moz-user-select:none;
+}
+
+.cm-mapbutton.cm-selected {
+  padding:1px 6px;
+  font-weight:bold;
+  color:#000;
+}
+
+.cm-mapbutton:hover {
+  background:#E6E6E6;
+  background:-moz-linear-gradient(top, #FFF 0%, #E6E6E6 100%);
+  background:-webkit-gradient(linear, left top, left bottom, from(#FFF), to(#E6E6E6));
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFFFF', endColorstr='#E6E6E6',GradientType=0);
+}
+
+.cm-touch .cm-mapbutton {
+  font-size:14px;
+  line-height:221%;
+  padding:1.38px 9.67px;
+}
+
+.cm-touch .cm-mapbutton.cm-selected {
+  padding:1.38px 8.28px;
+}

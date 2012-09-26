@@ -1,0 +1,58 @@
+{% extends "base.html" %} {# Django wants this first, even before comments #}
+
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+{% block navbar %}
+  <div class="cm-button-area">
+    <form method="post" action="/crisismap/create">
+      <input type="submit" class="cm-create cm-button"
+          title="Create a new map" value="Create map">
+    </form>
+  </div>
+  {{block.super}}
+{% endblock navbar %}
+
+{% block content %}
+  <form action="/crisismap/a/{{domain}}" method="post">
+    <table class="cm-map-list" summary="The list of catalog entries visible to you.">
+      <tr>
+        <th colspan=5 class="cm-map-list-header">
+          Published maps for {{domain}}
+        </th>
+      </tr>
+      <tr class="cm-admin-map-row">
+        <th class="cm-catalog-entry-enabled">In menu</th>
+        <th class="cm-catalog-entry-label">Label</th>
+        <th class="cm-catalog-entry-path">URL path</th>
+        <th class="cm-map-title">Title</th>
+        <th>Published</th>
+      </tr>
+      {% for e in entries %}
+      <tr>
+        <td><input type="checkbox" name="{{e.label}}" value="True"
+                   {{e.is_listed|yesno:"checked,"}}></td>
+        <td>{{e.label}}</td>
+        <td>
+          <a href="/crisismap/a/{{e.domain}}/{{e.label}}">
+            /crisismap/a/{{e.domain}}/{{e.label}}
+          </a>
+        </td>
+        <td>{{e.title}}</td>
+        <td>{{e.last_updated|timesince}} ago by {{e.last_updater}}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <input type="submit" value="Save changes">
+  </form>
+{% endblock content %}

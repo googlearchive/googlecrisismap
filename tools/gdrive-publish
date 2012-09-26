@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+# Copyright 2012 Google Inc.  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy
+# of the License at: http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distrib-
+# uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+# OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+# specific language governing permissions and limitations under the License.
+
+"""Uploads one file to a Google Drive account and makes it publicly visible.
+
+Requires gdata-2.0.16.  To use this script:
+
+1. Download the latest version of the Google Data Python library from
+   http://code.google.com/apis/gdata/docs/client-libraries.html
+
+2. Unpack and install the library (unzip; then sudo python setup.py install).
+
+3. Run this script as "gdrive-publish <filename>".
+"""
+
+import getpass
+import mimetypes
+import optparse
+import os
+
+import gdata.docs.client
+import gdata.docs.data
+
+PUBLIC_SCOPE = gdata.acl.data.AclScope(type='default')
+READER_ROLE = gdata.acl.data.AclRole(value='reader')
+WORLD_READABLE = gdata.docs.data.AclEntry(scope=PUBLIC_SCOPE, role=READER_ROLE)
+UPLOAD_URI = '%s?convert=false' % gdata.docs.client.RESOURCE_UPLOAD_URI
+
+
+def SetupClient(email, password):
+  """Sets up and returns a new Google Drive API client."""
+  client = gdata.docs.client.DocsClient()
+  client.api_version = '3'
+  client.ssl = True
+  client.ClientLogin(email, password, 'gdrive-publish.py')
+  return client
+
+
+def PublishFile(client, filename, title):
+  """Uploads a file to Google Drive and makes it publicly visible."""
+  mime_type, _ = mimetypes.guess_type(filename)
+  size = os.path.getsize(filename)
+  print 'Uploading: %s (%s, %d bytes)' % (filename, mime_type, size)
+
+  resource = gdata.docs.data.Resource(filename, title)
+  media = gdata.data.MediaSource()
+  # TODO(kpy): Consider accepting URLs as well as local files.
+  media.SetFileHandle(filename, mime_type)
+  document = client.CreateResource(resource, create_uri=UPLOAD_URI, media=media)
+
+  client.add_acl_entry(document, WORLD_READABLE)
+  document_id = document.resource_id.text.replace('file:', '')
+  print 'Now publicly available with ID:', document_id
+
+
+def main():
+  parser = optparse.OptionParser(usage="""%prog [options] <filename>
+
+Uploads a document to your Google Drive account.""")
+  parser.add_option('-e', dest='email',
+                    help='user e-mail (default: $USER_EMAIL)')
+  parser.add_option('-p', dest='password', help='user password')
+  parser.add_option('-t', dest='title',
+                    help='document title (default: same as filename)')
+  options, args = parser.parse_args()
+
+  if len(args) != 1:
+    parser.error('Please specify exactly one filename.')
+  default_email = os.environ.get('USER_EMAIL')
+  email = options.email or default_email or raw_input('User e-mail: ')
+  password = options.password or getpass.getpass('Password: ')
+
+  client = SetupClient(email, password)
+  PublishFile(client, args[0], options.title or args[0])
+
+
+if __name__ == '__main__':
+  main()

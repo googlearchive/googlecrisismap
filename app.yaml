@@ -1,0 +1,99 @@
+# Copyright 2012 Google Inc.  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy
+# of the License at: http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distrib-
+# uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+# OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+# specific language governing permissions and limitations under the License.
+
+application: crisislanding-hr
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: .*/remote_api
+  script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
+  login: admin
+
+- url: /favicon.ico
+  static_files: static/favicon.ico
+  upload: static/favicon.ico
+
+- url: /crisismap/static/(.*).json
+  static_files: static/\1.json
+  upload: static/(.*).json
+  mime_type: application/json
+
+- url: /crisismap/static
+  static_dir: static
+
+- url: /crisismap/js/compiled/(.*).js
+  static_files: js/compiled/\1.js
+  upload: js/compiled/(.*).js
+
+# NOTE(cimamoglu): metadata_cleaner, metadata_scheduler and metadata_retriever
+# should have login: admin for security. This is a temporary solution until we
+# find out why cron jobs return with HTTP 403.
+- url: /crisismap/metadata_cleaner
+  script: metadata_cleaner.py
+
+- url: /crisismap/metadata_scheduler
+  script: metadata_scheduler.py
+
+- url: /crisismap/metadata_retriever
+  script: metadata_retriever.py
+
+- url: /crisismap/metadata
+  script: metadata.py
+
+- url: /crisismap/shorturl
+  script: shortener.py
+
+- url: /crisismap/jsonp
+  script: jsonp.py
+
+- url: /crisismap/api/.*
+  script: api.py
+  login: required
+
+- url: /crisismap/delete
+  script: delete.py
+  login: required
+
+- url: /crisismap/create
+  script: create.py
+  login: required
+
+- url: /crisismap/publish
+  script: publish.py
+  login: required
+
+- url: /crisismap/unpublish
+  script: unpublish.py
+  login: required
+
+- url: /crisismap/share/.*
+  script: share.py
+  login: required
+
+- url: /crisismap/maps
+  script: list.py
+  login: required
+
+- url: /crisismap/a/[\w.-]+
+  script: catalog.py
+  login: required
+
+- url: /crisismap/maps/[\w-]+
+  script: map.py
+
+- url: /crisismap/(a/[\w.-]+/)?[\w-]+
+  script: map.py
+
+- url: (/crisismap)?/*
+  script: index.py
+

@@ -1,0 +1,80 @@
+/* Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License. */
+
+/* Common layout styles for administration pages */
+.cm-header {
+  padding:12px 16px;
+  border-bottom:1px solid #ebebeb;
+}
+.cm-body a {
+  text-decoration: none;
+}
+.cm-body a:hover {
+  text-decoration: underline;
+}
+.cm-navbar {
+  float:left;
+  padding:7px 16px;
+  width:150px;
+}
+.cm-navbar ul {
+  margin-top:10px;
+  padding:0;
+  line-height:150%;
+  list-style-type:none;
+}
+.cm-content {
+  margin-left:182px; /* cm-navbar width + left padding + right padding */
+}
+
+/* Map listing page */
+.cm-navbar .cm-button {
+  margin:0;
+}
+.cm-map-list {
+  width:100%;
+  border-collapse:collapse;
+}
+.cm-map-list th.cm-map-list-header {
+  font-size:11px;
+  color:#777;
+  text-transform:none;
+}
+.cm-map-list td, .cm-map-list th {
+  padding:4px;
+  border-bottom:1px solid #ebebeb;
+  line-height:15px; /* so that td and th have consistent heights */
+  text-align:left;
+  vertical-align:top;
+}
+.cm-map-list th {
+  text-transform:uppercase;
+  font-size:11px;
+  color:#555;
+  white-space:nowrap;
+}
+.cm-map-list .cm-publish-status {
+  white-space:nowrap;
+}
+.cm-map-list .cm-publish-status form {
+  display:inline;
+}
+.cm-map-list .cm-publish-age {
+  color:#888;
+  font-size:11px;
+}
+
+/* Error page */
+.cm-error-box {
+  margin:12px;
+  padding:12px;
+  border:1px solid #f44;
+}

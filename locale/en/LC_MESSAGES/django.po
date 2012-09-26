@@ -1,0 +1,78 @@
+# Copyright 2012 Google Inc.  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy
+# of the License at: http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distrib-
+# uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+# OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+# specific language governing permissions and limitations under the License.
+
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2011-09-09 12:50+1000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: templates/index.html:61
+msgid "Google Crisis Response"
+msgstr ""
+
+#: templates/index.html:67
+msgid ""
+"\n"
+"    This map displays information about current crises for which the\n"
+"    <a href=\"http://www.google.org/crisisresponse\" target=\"_blank"
+"\">Google\n"
+"     Crisis Response team</a> has collected geographic information.\n"
+"     The data comes from a variety of sources, including official\n"
+"     information sources and user-generated content.  See the Layers list "
+"for\n"
+"     source details on each layer.\n"
+"    "
+msgstr ""
+
+#: templates/index.html:77
+msgid ""
+"\n"
+"      Tips for using this site:\n"
+"     <ul>\n"
+"       <li>Zoom and pan the map using the on-screen controls or your mouse\n"
+"       controls.\n"
+"       <li>Find additional layers in the Layers list, where you can turn "
+"them on\n"
+"       or off.  Scroll to see all layers.\n"
+"       <li>Zoom to an appropriate view for each layer by clicking the \"Zoom "
+"to\n"
+"       area\" links in the Layers list.\n"
+"       <li>View selected layers in <a href=\"http://www.google.com/earth/\"\n"
+"         target=\"_blank\">Google Earth</a> by clicking the \"Download KML\" "
+"links\n"
+"       in the Layers list.\n"
+"       <li>Share the map view e-mail, clicking the Share button and copying\n"
+"       the link URL.\n"
+"       <li>Embed the map on your website or blog by getting a snippet of "
+"HTML\n"
+"       code from the Share button.\n"
+"     </ul>\n"
+"     "
+msgstr ""
+
+#: templates/index.html:97
+msgid ""
+"\n"
+"     If you wish to provide feedback or comments on the map, or if you are "
+"aware\n"
+"     of map layers or other datasets that you would like to see included on\n"
+"     our maps, please submit them for our evaluation using this\n"
+"     <a href=\"http://goo.gl/MCJLS\" target=\"_blank\">this form</a>.\n"
+"     "
+msgstr ""

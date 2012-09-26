@@ -1,0 +1,72 @@
+{
+  "id": "foo",
+  "title": "Test Maproot Internal",
+  "description": "For internal testing of maps with maproot GoogleMapData layer types.",
+  "viewport": {
+    "lat_lon_alt_box": {
+      "north": 38.905,
+      "south": 37.781,
+      "east": -75,
+      "west": -120
+    }
+  },
+  "base_map_type": "roadmap",
+  "languages": ["en"],
+  "layers": [{
+    "id": "could_be_anything",
+    "title": "Maps Engine Layer Internal",
+    "description": "La la la",
+    "visibility": "DEFAULT_ON",
+    "viewport": {
+      "lat_lon_alt_box": {
+        "north": 42.700,
+        "south": 42.200,
+        "east": -83.200,
+        "west": -83.700
+      }
+    },
+    "type": "GOOGLE_MAP_DATA",
+    "source": {
+      "google_map_data": {
+        "sub_type": "VECTOR",
+        "tile_auth_token": {
+          "token": "some_token"
+        },
+        "vector_layer": {
+          "table_id": "1234",
+          "style_id": 2,
+          "balloon_template_id": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "could_be_anything_2",
+    "title": "Maps Engine Layer Internal Image",
+    "description": "La la la",
+    "visibility": "DEFAULT_ON",
+    "viewport": {
+      "lat_lon_alt_box": {
+        "north": 42.700,
+        "south": 42.200,
+        "east": -83.200,
+        "west": -83.700
+      }
+    },
+    "type": "GOOGLE_MAP_DATA",
+    "source": {
+      "google_map_data": {
+        "sub_type": "IMAGE",
+        "tile_auth_token": {
+          "token": "1234"
+        },
+        "image_layer": {
+          "asset_id": "10446176163891957399-10297006806646011125-4/2",
+          "tile_height": 256,
+          "tile_width": 256,
+          "epoch": 2
+        }
+      }
+    }
+  }]
+}
