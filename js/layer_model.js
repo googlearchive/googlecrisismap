@@ -357,6 +357,10 @@ cm.LayerModel.prototype.changed = function(key) {
   cm.events.emit(this, cm.events.MODEL_CHANGED);
 };
 
+// Export this method so it can be called by the MVCObject machinery.
+goog.exportProperty(cm.LayerModel.prototype, 'changed',
+                    cm.LayerModel.prototype.changed);
+
 /**
  * Returns a string that represents the address of a layer. The format of the
  * string depends on the type of the layer.

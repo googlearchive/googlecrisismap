@@ -131,6 +131,10 @@ cm.MapModel.prototype.changed = function(key) {
   cm.events.emit(this, cm.events.MODEL_CHANGED);
 };
 
+// Export this method so it can be called by the MVCObject machinery.
+goog.exportProperty(cm.MapModel.prototype, 'changed',
+                    cm.MapModel.prototype.changed);
+
 /**
  * Gets a layer by its ID.
  * @param {string} id A layer ID.
