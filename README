@@ -14,22 +14,31 @@ Building and running Stratomap
 ------------------------------
 
 Setup:
-  Ensure that you have svn, ant, and a JDK installed.
+  Ensure that you have make, svn, ant, and javac installed.  Linux and Mac
+  machines will often already have these; you can check for them with the
+  commands "which make", "which svn", "which ant", "which javac".  If you're
+  on a Mac and need "make", you can get it by installing Xcode.
 
-  Download the Closure library: http://developers.google.com/closure/library
-  and the Closure compiler: http://developers.google.com/closure/compiler
+  Download the latest zip file of the Closure library from:
+    http://code.google.com/p/closure-library/downloads/list
 
-  Download the App Engine SDK (get the LINUX ZIP FILE regardless of your OS):
-  http://developers.google.com/appengine/downloads
+  Download the latest zip file of the Closure compiler from:
+    http://code.google.com/p/closure-compiler/downloads/list
 
-  Put the Closure library and compiler in $HOME/closure and unzip the SDK in
-  $HOME/google_appengine.  All of the following should exist:
+  Make a directory at $HOME/closure and unzip both of the above zip files
+  in that directory.  When you're done these files should exist:
     $HOME/closure/closure/goog/
     $HOME/closure/third_party/closure/goog/
     $HOME/closure/compiler.jar
+
+  Download the App Engine SDK (get the LINUX ZIP FILE regardless of your OS):
+    http://developers.google.com/appengine/downloads
+
+  Make a directory at $HOME/google_appengine and unzip the above zip file
+  in that directory, so for example this file should exist:
     $HOME/google_appengine/dev_appserver.py
 
-To build and run, simply:
+To build and run, cd to this directory (containing this README) and type:
   make
   tools/run
 
@@ -37,9 +46,9 @@ To build and run, simply:
 JS files and see the changes just by re-running "make" and hitting Reload
 in your browser; no need to restart the server.
 
-The first run of "make" will take about 5 minutes or so because it needs
-to download and build the whole google-caja project to generate one little
-file, html4-defs.js.  This only has to happen once; subsequent runs of
+The first run of "make" will unfortunately take about 5 minutes or so because
+it needs to download and build the whole google-caja project to generate one
+little file, html4-defs.js.  This only has to happen once; subsequent runs of
 "make" will be much faster.
 
 
