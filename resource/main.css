@@ -774,7 +774,7 @@ input[type=checkbox]:checked::after {
   padding-top:5px;
   padding-left:3px;
 }
-.cm-layer-title {
+.cm-importer .cm-layer-title {
   display:inline-block;
   margin-top:2px !important;
   margin-bottom:4px !important;
