@@ -43,6 +43,9 @@ var MSG_DOWNLOAD_KML_LINK = goog.getMsg('Download KML');
 /** @desc Label for a link to download a GeoRSS file. */
 var MSG_DOWNLOAD_GEORSS_LINK = goog.getMsg('Download GeoRSS');
 
+/** @desc Label for a link to view data from a Fusion table. */
+var MSG_VIEW_FUSION_TABLE_LABEL = goog.getMsg('View data');
+
 /** @desc Label for a link to download a GeoRSS file. */
 var MSG_OPACITY_TOOLTIP = goog.getMsg('Adjust layer transparency');
 
@@ -318,7 +321,8 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   cm.events.onChange(model, 'title', this.updateTitle_, this);
   cm.events.onChange(model, 'description', this.updateDescription_, this);
   cm.events.onChange(model, 'legend', this.updateLegend_, this);
-  cm.events.onChange(model, ['suppress_download_link', 'type', 'url'],
+  cm.events.onChange(model,
+                     ['suppress_download_link', 'type', 'url', 'ft_from'],
                      this.updateDownloadLink_, this);
   cm.events.onChange(model, ['viewport', 'type'], this.updateZoomLink_, this);
   cm.events.onChange(model, 'time', this.updateTime_, this);
@@ -491,18 +495,33 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
     var type = /** @type cm.LayerModel.Type */(this.model_.get('type'));
     var hideLink = this.metadataModel_.serverErrorOccurred(id) ||
         /** @type boolean */(this.model_.get('suppress_download_link'));
-    if (!hideLink &&
-        (type == cm.LayerModel.Type.KML || type == cm.LayerModel.Type.GEORSS)) {
-      var url = /** @type string */(this.model_.get('url'));
-      this.downloadElem_.appendChild(
-          cm.ui.create('span', {},
-              cm.ui.SEPARATOR_DOT,
-              cm.ui.createLink(type === cm.LayerModel.Type.KML ?
-                  MSG_DOWNLOAD_KML_LINK : MSG_DOWNLOAD_GEORSS_LINK, url)
-      ));
+    if (!hideLink) {
+      var url = null;
+      var linkText = null;
+      switch (type) {
+        case cm.LayerModel.Type.KML:
+          url = /** @type string */(this.model_.get('url'));
+          linkText = MSG_DOWNLOAD_KML_LINK;
+          break;
+        case cm.LayerModel.Type.GEORSS:
+          url = /** @type string */(this.model_.get('url'));
+          linkText = MSG_DOWNLOAD_GEORSS_LINK;
+          break;
+        case cm.LayerModel.Type.FUSION:
+          url = 'http://www.google.com/fusiontables/DataSource?dsrcid=' +
+              this.model_.get('ft_from');
+          linkText = MSG_VIEW_FUSION_TABLE_LABEL;
+          break;
+      }
+      if (linkText && url) {
+        cm.ui.append(this.downloadElem_, cm.ui.SEPARATOR_DOT,
+                     cm.ui.createLink(linkText, url));
+      }
       // Show file size in human readable form as tooltip.
-      this.downloadElem_.title = hideLink ? '' :
+      this.downloadElem_.title =
           goog.format.fileSize(this.metadataModel_.getContentLength(id));
+    } else {
+      this.downloadElem_.title = '';
     }
   }
 };

@@ -366,6 +366,42 @@ LayerEntryViewTest.prototype.updateUrlGeorss = function() {
 };
 
 /**
+ * Tests that the View Data links are not created when a Fusion Table's source
+ * changes, as specified by a true value for suppress_download_link.
+ */
+LayerEntryViewTest.prototype.updateUrlFusionNoLink = function() {
+  this.layerModel_.set('type', cm.LayerModel.Type.FUSION);
+  this.layerModel_.set('ft_from', 11111);
+  this.layerModel_.set('suppress_download_link', true);
+
+  var parent = this.createView_();
+  this.layerModel_.set('ft_from', 22222);
+  expectNoDescendantOf(parent, 'a', withText('View data'));
+};
+
+/**
+ * Tests that the View Data links are updated when a Fusion LayerModel's source
+ * changes.
+ */
+LayerEntryViewTest.prototype.updateUrlFusion = function() {
+  this.layerModel_.set('type', cm.LayerModel.Type.FUSION);
+  this.layerModel_.set('ft_from', 11111);
+
+  var parent = this.createView_();
+  expectDescendantOf(
+      parent, 'a', withText('View data'),
+      withHref('http://www.google.com/fusiontables/DataSource?dsrcid=11111'));
+
+  this.layerModel_.set('ft_from', 22222);
+  expectNoDescendantOf(
+      parent, 'a',
+      withHref('http://www.google.com/fusiontables/DataSource?dsrcid=11111'));
+  expectDescendantOf(
+      parent, 'a', withText('View data'),
+      withHref('http://www.google.com/fusiontables/DataSource?dsrcid=22222'));
+};
+
+/**
  * Tests that the download links are NOT updated when a non-GeoRSS/non-KML
  * LayerModel's URL changes.
  */
