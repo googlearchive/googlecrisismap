@@ -107,7 +107,7 @@ CreateLayersCommandTest.prototype.redoPreservesLayerID = function() {
 CreateLayersCommandTest.prototype.redoPreservesLayerIDMultiple = function() {
   this.multipleCommand_.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
-             elementsAre(['layer8', 'layer7', 'a', 'b']));
+             elementsAre(['layer7', 'layer8', 'a', 'b']));
 
   this.multipleCommand_.undo(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
@@ -115,7 +115,7 @@ CreateLayersCommandTest.prototype.redoPreservesLayerIDMultiple = function() {
 
   this.multipleCommand_.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
-             elementsAre(['layer8', 'layer7', 'a', 'b']));
+             elementsAre(['layer7', 'layer8', 'a', 'b']));
 };
 
 /** Tests that we can create a folder with sublayers, and undo and redo it. */

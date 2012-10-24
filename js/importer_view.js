@@ -290,12 +290,12 @@ cm.ImporterView.prototype.getParentFolderElem_ = function(sublayerElem) {
  * Shows or hides a folder's sublayers.
  * @param {Element} expanderElem The expander element that was clicked.
  * @param {Element} folderElem The folder element containing sublayers.
- * @param {Object} event The click event object.
+ * @param {Object} e The click event object.
  * @private
  */
 cm.ImporterView.prototype.handleExpanderClick_ = function(
-    expanderElem, folderElem, event) {
-  event.stopPropagation();
+    expanderElem, folderElem, e) {
+  e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
   var expanded = goog.dom.classes.toggle(expanderElem, 'cm-expanded');
   goog.style.showElement(folderElem, expanded);
 };

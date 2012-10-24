@@ -24,7 +24,8 @@ goog.require('cm.util');
 /**
  * A command to create new layers from MapRoot objects and add them to a map.
  * @param {Object|Array.<Object>} layerMapRoots One or more layer objects in
- *     MapRoot format, specifying the layers to create.
+ *     MapRoot format, specifying the layers to create. These are created in
+ *     order, as well as positioned in the map model in the same order.
  * @constructor
  * @implements cm.Command
  */
@@ -39,10 +40,10 @@ cm.CreateLayersCommand = function(layerMapRoots) {
 
 /** @override */
 cm.CreateLayersCommand.prototype.execute = function(appState, mapModel) {
-  goog.array.forEach(this.layerMapRoots_, function(layerMapRoot) {
+  goog.array.forEach(this.layerMapRoots_, function(layerMapRoot, i) {
     // The layer's ID is auto-assigned the first time execute() is called.
     var layer = cm.LayerModel.newFromMapRoot(layerMapRoot);
-    mapModel.get('layers').insertAt(0, layer);
+    mapModel.get('layers').insertAt(i, layer);
     // Inserting the layer into the map causes it and its sublayers' 'id'
     // property to be populated. We save the ID so that redo() will create the
     // layer again with the same ID.
