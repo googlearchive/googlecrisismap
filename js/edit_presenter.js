@@ -221,24 +221,22 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     importer.openImporter();
   });
 
-  // The user has finished importing or creating layers/folders and wants to
-  // commit the changes. The event should either have a maproots field, or a
-  // newValues array field which will be used to construct a maproot if no
-  // maproots were given.
-  // TODO(user): Separate into two events: one for maproots, and one for
-  // handling a list of properties.
+  // The user has selected some layers to import and wants to import them.
   cm.events.listen(goog.global, cm.events.ADD_LAYERS, function(e) {
-    var maproots = e.maproots;
-    if (!maproots && e.newValues) {
-      var model = cm.LayerModel.newFromMapRoot({type: 'KML'});
-      for (var key in e.newValues) {
-        if (e.newValues[key] !== undefined) {
-          model.set(key, e.newValues[key]);
-        }
+    this.doCommand(new cm.CreateLayersCommand(e.layers), appState, mapModel);
+  }, this);
+
+  // The user has filled in properties for a new layer and wants to create the
+  // layer.
+  cm.events.listen(goog.global, cm.events.NEW_LAYER, function(e) {
+    var model = cm.LayerModel.newFromMapRoot({type: 'KML'});
+    for (var key in e.properties) {
+      if (e.properties[key] !== undefined) {
+        model.set(key, e.properties[key]);
       }
-      maproots = [model.toMapRoot()];
     }
-    this.doCommand(new cm.CreateLayersCommand(maproots), appState, mapModel);
+    this.doCommand(new cm.CreateLayersCommand([model.toMapRoot()]),
+                   appState, mapModel);
   }, this);
 
   // The user has requested to delete a layer.

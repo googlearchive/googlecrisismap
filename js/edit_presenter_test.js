@@ -124,37 +124,36 @@ EditPresenterTest.prototype.testArrangerEvent = function() {
 };
 
 /** Tests that the EditPresenter responds to ADD_LAYERS events. */
-EditPresenterTest.prototype.testLayerCreatedEvent = function() {
+EditPresenterTest.prototype.testAddLayersEvent = function() {
   var presenter = new cm.EditPresenter(null, null, null);
 
-  // Emitting a CREATE_LAYER event should create and execute a
+  // Emitting a ADD_LAYERS event should create and execute a
   // CreateLayersCommand.
-  var maproots = [{title: 'Empty Layer'}];
-  var createLayersCommand = this.expectNew_('cm.CreateLayersCommand', maproots);
+  var layers = [{title: 'Empty Layer'}];
+  var createLayersCommand = this.expectNew_('cm.CreateLayersCommand', layers);
   expectCall(createLayersCommand.execute)(_, _);
-  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {maproots: maproots});
+  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {layers: layers});
 };
 
 /**
- * Tests that the EditPresenter responds to ADD_LAYERS events, for an event with
- * newValues instead of maproots.
+ * Tests that the EditPresenter responds to NEW_LAYER events
  */
-EditPresenterTest.prototype.testLayerCreatedEventWithNewValues = function() {
+EditPresenterTest.prototype.testNewLayerEvent = function() {
   var presenter = new cm.EditPresenter(null, null, null);
 
   // Emitting a CREATE_LAYER event should create and execute a
   // CreateLayersCommand.
-  var newValues = {title: 'Empty Layer'};
+  var properties = {title: 'Empty Layer'};
   var createLayersCommand = this.expectNew_('cm.CreateLayersCommand',
       new gjstest.Matcher(
-          'has one maproot with title ' + newValues['title'],
-          'doesn\'t have one maproot with title ' + newValues['title'],
+          'has one maproot with title ' + properties['title'],
+          'doesn\'t have one maproot with title ' + properties['title'],
           function(maproots) {
             return (maproots.length = 1 &&
-                maproots[0]['title'] === newValues['title']);
+                maproots[0]['title'] === properties['title']);
           }));
   expectCall(createLayersCommand.execute)(_, _);
-  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {newValues: newValues});
+  cm.events.emit(goog.global, cm.events.NEW_LAYER, {properties: properties});
 };
 
 /** Tests that the EditPresenter responds to DELETE_LAYER events. */

@@ -343,16 +343,16 @@ cm.ImporterView.prototype.handleNewLayer_ = function() {
  * @private
  */
 cm.ImporterView.prototype.handleOk_ = function() {
-  var maproots = [];
+  var layers = [];
   var selectedElems = cm.ui.getAllByClass(
       'cm-layer-selected', this.layerListElem_);
   goog.array.forEach(selectedElems, function(layerElem) {
     var index = parseInt(layerElem.getAttribute('data-index'), 10);
-    maproots.push(this.layerModels_[index].toMapRoot());
+    layers.push(this.layerModels_[index].toMapRoot());
   }, this);
 
   this.close_();
-  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {maproots: maproots});
+  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {layers: layers});
 };
 
 /**

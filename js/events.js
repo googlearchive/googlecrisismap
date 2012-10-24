@@ -149,8 +149,16 @@ cm.events.REDO = 'REDO';
 /** The user rearranged the map layers/sublayers (undoable). */
 cm.events.LAYERS_ARRANGED = 'LAYERS_ARRANGED';
 
-/** The user requested to create one or more new layers (undoable). */
+/**
+ * The user requested to create one or more new layers from an array of layer
+ * maproots (undoable).
+ */
 cm.events.ADD_LAYERS = 'ADD_LAYERS';
+
+/**
+ * The user requested to create a new layer from a set of properties (undoable).
+ */
+cm.events.NEW_LAYER = 'NEW_LAYER';
 
 // ==== Events emitted when the user performs a non-editing action ====
 

@@ -33,10 +33,10 @@ function ImporterViewTest() {
 
   // Listen for an ADD_LAYERS event.
   this.layersCreated_ = false;
-  this.maproots_ = null;
+  this.layers_ = null;
   cm.events.listen(goog.global, cm.events.ADD_LAYERS, function(e) {
     this.layersCreated_ = true;
-    this.maproots_ = e.maproots;
+    this.layers_ = e.layers;
   }, this);
 }
 ImporterViewTest.prototype = new cm.TestBase();
@@ -189,15 +189,15 @@ ImporterViewTest.prototype.testImportLayers = function() {
 
   // Verify layers were created with the correct title, and an ID.
   expectTrue(this.layersCreated_);
-  expectEq(selectedTitles.length, this.maproots_.length);
-  goog.array.forEach(this.maproots_, function(maproot, i) {
+  expectEq(selectedTitles.length, this.layers_.length);
+  goog.array.forEach(this.layers_, function(maproot, i) {
     expectThat(maproot.id, not(isUndefined));
     expectEq(selectedTitles[i], maproot.title);
   });
 
   // Verify that the folder was added correctly
   var expectedFolder = this.rows_[selectedTitles[3]].layer;
-  var folder = this.maproots_[3];
+  var folder = this.layers_[3];
   expectEq(1, folder.sublayers.length);
   var sublayer = folder.sublayers[0];
   expectThat(sublayer.id, not(isUndefined));

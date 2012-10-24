@@ -229,7 +229,7 @@ cm.InspectorView.prototype.handleOk_ = function() {
     }
   }
   if (this.isNew_) {
-    cm.events.emit(goog.global, cm.events.ADD_LAYERS, {newValues: newValues});
+    cm.events.emit(goog.global, cm.events.NEW_LAYER, {properties: newValues});
   } else {
     var object = this.object_;
     cm.events.emit(goog.global, cm.events.OBJECT_EDITED, {

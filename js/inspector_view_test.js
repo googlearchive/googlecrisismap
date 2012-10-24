@@ -115,21 +115,21 @@ InspectorViewTest.prototype.testOkForNew = function() {
   aInput.value = 'x';
   cm.events.emit(aInput, 'keyup');
 
-  // Listen for an ADD_LAYERS event.
+  // Listen for an NEW_LAYER event.
   var layersCreated = false;
-  var newValues = null;
-  cm.events.listen(goog.global, cm.events.ADD_LAYERS, function(e) {
+  var properties = null;
+  cm.events.listen(goog.global, cm.events.NEW_LAYER, function(e) {
     layersCreated = true;
-    newValues = e.newValues;
+    properties = e.properties;
   }, this);
 
   // Click the OK button.
   var button = expectDescendantOf(this.popup_, 'button', withText('OK'));
   cm.events.emit(button, 'click');
 
-  // Confirm that the ADD_LAYERS event was emitted with the right maproot
+  // Confirm that the NEW_LAYER event was emitted with the right maproot
   expectTrue(layersCreated);
-  expectThat(newValues, recursivelyEquals({a: 'x'}));
+  expectThat(properties, recursivelyEquals({a: 'x'}));
 
   // Confirm that the popup disappeared.
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
@@ -146,19 +146,19 @@ InspectorViewTest.prototype.testConditionalsForNew = function() {
   bInput.value = '5';
   cm.events.emit(bInput, 'keyup');
 
-  // Listen for an ADD_LAYERS event.
+  // Listen for an NEW_LAYER event.
   var layersCreated = false;
-  var newValues = null;
-  cm.events.listen(goog.global, cm.events.ADD_LAYERS, function(e) {
+  var properties = null;
+  cm.events.listen(goog.global, cm.events.NEW_LAYER, function(e) {
     layersCreated = true;
-    newValues = e.newValues;
+    properties = e.properties;
   }, this);
 
   // Click OK and verify the correct values have been set.
   button = expectDescendantOf(this.popup_, 'button', withText('OK'));
   cm.events.emit(button, 'click');
   expectTrue(layersCreated);
-  expectThat(newValues, recursivelyEquals({a: 'yes', b: 5}));
+  expectThat(properties, recursivelyEquals({a: 'yes', b: 5}));
 };
 
 /** Tests that clicking the Cancel button discards the user's edits. */
