@@ -99,8 +99,8 @@ cm.ImporterView = function() {
           cm.ui.create('h2', {}, MSG_IMPORT_TITLE),
           newLayerLink = cm.ui.createLink(MSG_CREATE_NEW_LAYER)),
       this.layerListElem_ = cm.ui.create('div',
-          // 'tabindex' makes element focusable
-          {'class': 'cm-importer-list', 'tabindex': 0}),
+          // 'tabIndex' makes element focusable
+          {'class': 'cm-importer-list', 'tabIndex': 0}),
       cm.ui.create('div', {'class': 'cm-button-area'},
           okBtn = cm.ui.create('button', {'class': 'cm-button cm-submit'},
               MSG_IMPORTER_OK),
