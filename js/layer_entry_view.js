@@ -74,7 +74,6 @@ var MSG_OUT_OF_ZOOM_RANGE_TOOLTIP =
  * @param {cm.AppState} appState The application state model.
  * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     enable_editing: Allow any editing at all?
- *     enable_map_data_layer_editing: Allow editing of MAP_DATA layers?
  * @param {number} opt_index The index into the parent element's child list at
  *     which to insert the layer entry.
  * @constructor
@@ -234,14 +233,7 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   var isTimeSeries = model.isTimeSeries();
 
   // Figure out whether to enable editing.
-  var enableEditing = false;
-  if (this.config_['enable_editing']) {
-    if (layerType === cm.LayerModel.Type.MAP_DATA) {
-      enableEditing = this.config_['enable_map_data_layer_editing'];
-    } else {
-      enableEditing = true;
-    }
-  }
+  var enableEditing = this.config_['enable_editing'];
 
   // These links will be replaced by icons (e.g. pencil, rubbish bin). Mocks:
   // http://folder/nsavio/dotorg/crisis_response/crisis_maps/20120424&s

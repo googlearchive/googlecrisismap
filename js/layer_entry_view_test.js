@@ -103,13 +103,6 @@ LayerEntryViewTest.prototype.testEnableEditingFlags = function() {
   expectDescendantOf(parent, 'a', withText('Edit'));
   expectDescendantOf(parent, 'a', withText('Delete'));
 
-  // Test the enable_map_data_layer_editing flag.
-  this.layerModel_.set('type', cm.LayerModel.Type.MAP_DATA);
-  parent = this.createView_({enable_editing: true});
-  expectNoDescendantOf(parent, 'a', withText('Edit'));
-  parent = this.createView_(
-      {enable_editing: true, enable_map_data_layer_editing: true});
-  expectDescendantOf(parent, 'a', withText('Edit'));
 };
 
 /**

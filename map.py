@@ -100,8 +100,6 @@ class ClientConfig(db.Model):
   # Whether to hide the Twitter sharing button in the Share box
   hide_twitter_button = db.BooleanProperty(default=False)
 
-  # Whether to allow adding Earth Builder layers in the map editor
-  enable_map_data_layer_editing = db.BooleanProperty(default=False)
 
   # Whether to display minimal map controls (small zoom control, no
   # scale control, no pegman).

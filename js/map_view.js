@@ -317,8 +317,9 @@ cm.MapView.prototype.removeOverlay_ = function(id) {
 cm.MapView.prototype.addOverlay_ = function(layer) {
   this.updateOverlay_(layer);
   var properties = ['type', 'url', 'url_is_tile_index', 'ft_select', 'ft_from',
-                    'ft_where', 'layer_id', 'temperature_unit',
-                    'wind_speed_unit', 'label_color'];
+                    'ft_where', 'maps_engine_map_id', 'maps_engine_layer_key',
+                    'layer_id', 'temperature_unit', 'wind_speed_unit',
+                    'label_color'];
   this.listenerTokens_[layer.get('id')] =
       /** @type Array.<cm.events.ListenerToken> */(cm.events.onChange(
           layer, properties, function() {

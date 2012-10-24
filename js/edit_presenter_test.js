@@ -86,32 +86,6 @@ function findTypeEditorSpec(editorSpecs) {
   }
 }
 
-/** Tests that the opt_enableMapDataLayerType flag has the expected effect. */
-EditPresenterTest.prototype.testEnableMapDataLayerType = function() {
-  var MAP_DATA_CHOICE = {value: 'MAP_DATA', label: 'Maps Engine'};
-  var layer = new cm.LayerModel();
-  var inspector = this.expectNew_('cm.InspectorView');
-  var specs;
-  inspector.inspect = function(title, editorSpecs, object) {
-    specs = editorSpecs;
-  };
-
-  // This should call inspector.inspect, which captures the 'editorSpecs' arg.
-  var presenter = new cm.EditPresenter(null, null, null, {});
-  cm.events.emit(goog.global, cm.events.INSPECT, {object: layer});
-  // The MAP_DATA option should not be present.
-  var spec = findTypeEditorSpec(specs);
-  expectThat(spec.choices, not(contains(recursivelyEquals(MAP_DATA_CHOICE))));
-
-  // Try again, this time with enable_map_data_layer_editing set.
-  presenter = new cm.EditPresenter(null, null, null,
-                                   {enable_map_data_layer_editing: true});
-  cm.events.emit(goog.global, cm.events.INSPECT, {object: layer});
-  // The MAP_DATA option should be present this time.
-  spec = findTypeEditorSpec(specs);
-  expectThat(spec.choices, contains(recursivelyEquals(MAP_DATA_CHOICE)));
-};
-
 /** Tests that the EditPresenter responds correctly to ARRANGE events. */
 EditPresenterTest.prototype.testArrangerEvent = function() {
   var arranger = this.expectNew_('cm.ArrangeView',

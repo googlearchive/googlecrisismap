@@ -55,8 +55,12 @@ cm.CheckboxEditor = function(parentElem, id, options) {
   parentElem.appendChild(this.checkbox_);
 
   cm.events.listen(this.checkbox_, 'click', function() {
-    this.setValid_(this.checkbox_.checked ? this.checkedValue_ :
-        this.uncheckedValue_);
+    // In the puppet test in IE 8, the .checked attribute is updated *after*
+    // the 'click' event occurs, so we have to read .checked asynchronously.
+    goog.global.setTimeout(goog.bind(function() {
+      this.setValid_(this.checkbox_.checked ? this.checkedValue_ :
+          this.uncheckedValue_);
+    }, this), 0);
   }, this);
 };
 goog.inherits(cm.CheckboxEditor, cm.Editor);

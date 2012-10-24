@@ -36,7 +36,6 @@ goog.require('cm.events');
  * @param {cm.MapModel} mapModel The map model.
  * @param {cm.ArrangeView} arranger The nested folder arranger view.
  * @param {Object} opt_config Configuration settings.  These fields are used:
- *     enable_map_data_layer_editing: Allow MAP_DATA in the layer type menu?
  *     share_url: The URL to which to POST to share the map.
  *     save_url: The URL to which to POST to save the edited map data.
  * @constructor
@@ -92,7 +91,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.LayerModel.Type.TRAFFIC, label: 'Google Traffic'},
     {value: cm.LayerModel.Type.TRANSIT, label: 'Google Transit'},
     {value: cm.LayerModel.Type.WEATHER, label: 'Google Weather'},
-    {value: cm.LayerModel.Type.CLOUD, label: 'Google Cloud Imagery'}
+    {value: cm.LayerModel.Type.CLOUD, label: 'Google Cloud Imagery'},
+    {value: cm.LayerModel.Type.MAP_DATA, label: 'Google Maps Engine'}
   ];
 
   var mapTypeChoices = [
@@ -104,10 +104,6 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.MapModel.Type.CUSTOM, label: 'Custom'}
   ];
 
-  if (config['enable_map_data_layer_editing']) {
-    layerTypeChoices.push(
-      {value: cm.LayerModel.Type.MAP_DATA, label: 'Maps Engine'});
-  }
 
   var mapFields = [
    {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
@@ -148,6 +144,13 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      conditions: {'type': isPlainLayer}},
     {key: 'url', label: 'Source URL', type: cm.editors.Type.TEXT,
      conditions: {'type': usesUrlField}},
+    {key: 'suppress_download_link', label: 'Show download link?',
+     type: cm.editors.Type.CHECKBOX, checked_value: null,
+      unchecked_value: true, conditions: {'type': downloadable}},
+    {key: 'url_is_tile_index', label: 'Tile index URL?',
+     type: cm.editors.Type.CHECKBOX, checked_value: true,
+     unchecked_value: false,
+     conditions: {'type': isType(cm.LayerModel.Type.TILE)}},
     {key: 'ft_from', label: 'Fusion Table ID',
      type: cm.editors.Type.TEXT,
      conditions: {'type': isType(cm.LayerModel.Type.FUSION)}},
@@ -157,13 +160,6 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'ft_where', label: 'Fusion Table WHERE Clause',
      type: cm.editors.Type.TEXT,
      conditions: {'type': isType(cm.LayerModel.Type.FUSION)}},
-    {key: 'suppress_download_link', label: 'Show download link?',
-     type: cm.editors.Type.CHECKBOX, checked_value: null,
-     unchecked_value: true, conditions: {'type': downloadable}},
-    {key: 'url_is_tile_index', label: 'Tile index URL?',
-     type: cm.editors.Type.CHECKBOX, checked_value: true,
-     unchecked_value: false,
-     conditions: {'type': isType(cm.LayerModel.Type.TILE)}},
     {key: 'label_color', label: 'Label color',
      type: cm.editors.Type.MENU,
      conditions: {'type': isType(cm.LayerModel.Type.WEATHER)},
@@ -190,6 +186,12 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
        {value: cm.LayerModel.WindSpeedUnit.MILES_PER_HOUR,
         label: 'mph'}
      ]},
+    {key: 'maps_engine_map_id', label: 'Map ID',
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)}},
+    {key: 'maps_engine_layer_key', label: 'Layer ID',
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)}},
     {key: 'locked', label: 'Locked?',
      type: cm.editors.Type.CHECKBOX, checked_value: true,
      unchecked_value: false,

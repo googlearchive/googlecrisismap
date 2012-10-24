@@ -60,7 +60,6 @@ class MapTest(test_utils.BaseTest):
                        'panel_float': False,
                        'enable_editing': True,
                        'enable_metadata_pipeline': False,
-                       'enable_map_data_layer_editing': False,
                        'minimal_map_controls': False,
                        'hide_panel_header': False},
                       config.AsDict())

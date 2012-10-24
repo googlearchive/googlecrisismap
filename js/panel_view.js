@@ -53,7 +53,6 @@ var MSG_DRAFT_TOOLTIP = goog.getMsg(
  *     draft_mode: Indicate that the map is an unpublished draft?
  *     hide_panel_header: Hide the map title and description?
  *     enable_editing: Allow any editing at all?
- *     enable_map_data_layer_editing: Allow editing of MAP_DATA layers?
  * @constructor
  */
 cm.PanelView = function(frameElem, parentElem, mapContainer,
