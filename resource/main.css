@@ -786,6 +786,7 @@ input[type=checkbox]:checked::after {
   width:14px;
   height:14px;
   background:url(triangle_right.png) no-repeat -4px -2px;
+  background-size:21px;
   cursor:pointer;
 }
 .cm-importer .cm-triangle.cm-expanded {
