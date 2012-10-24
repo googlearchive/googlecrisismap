@@ -44,7 +44,9 @@ html, body {
 }
 
 /* Headings */
-.cm-header h1, .cm-panel h1 {  /* map title */
+.cm-header h1,
+.cm-panel h1,
+.cm-map-title {  /* map title */
   font-size:18px;
   font-weight:normal;
   color:#dd4b39;
@@ -57,6 +59,7 @@ html, body {
   font-size:16px;
   font-weight:normal;
   color:#333;
+  display:inline-block;
 }
 .cm-panel h3, .cm-popup h3 {  /* item headings */
   font-size:14px;
@@ -64,6 +67,9 @@ html, body {
 }
 
 /* Links */
+.cm-popup h2 + a {
+  float: right;
+}
 .cm-panel a, .cm-footer a, .cm-popup a {
   text-decoration:none;
 }
@@ -82,6 +88,7 @@ html, body {
   font-size:11px;
 }
 .cm-panel .cm-layer-description,
+.cm-importer .cm-layer-description,
 .cm-panel .cm-warning,
 .cm-panel .cm-timestamp,
 .cm-preview.cm-layer-description {
@@ -318,7 +325,7 @@ html, body {
   display: block;
   margin-left:-20px;
 }
-.cm-layer-title {
+.cm-panel .cm-layer-title {
   font-size:14px;
   line-height:16px;
   padding-left:2px;
@@ -744,7 +751,64 @@ input[type=checkbox]:checked::after {
   color:#c00;
 }
 
+/* Importer dialog */
+.cm-importer {
+  width:350px;
+  max-width:350px;
+}
+.cm-importer-header {
+  margin-bottom:8px;
+}
+.cm-importer h2 {
+  margin-bottom:4px;
+}
+.cm-importer-list {
+  border:1px grey inset;
+  overflow:auto;
+}
+.cm-layer-item {
+  position:relative;
+}
+.cm-importer .cm-map-title {
+  display:block;
+  padding-top:5px;
+  padding-left:3px;
+}
+.cm-layer-title {
+  display:inline-block;
+  margin-top:2px !important;
+  margin-bottom:4px !important;
+  margin-left:14px; /* to match triangle width */
+  cursor:default;
+}
+.cm-importer .cm-triangle {
+  position:absolute;
+  width:14px;
+  height:14px;
+  background:url(triangle_right.png) no-repeat -4px -2px;
+  cursor:pointer;
+}
+.cm-importer .cm-triangle.cm-expanded {
+  background-image:url(triangle_down.png) !important;
+}
+/* Support for high density screens. */
+@media screen and (-webkit-min-device-pixel-ratio:2) {
+  .cm-importer .cm-triangle {
+    background-image:url(triangle_right_2x.png) !important;
+  }
+  .cm-importer .cm-triangle.cm-expanded {
+    background-image:url(triangle_down_2x.png) !important;
+  }
+}
+.cm-layer-selected {
+  color:#fff;
+  background:#3875d7;
+}
+
 /* Inspector dialog */
+.cm-inspector h2 {
+  display:inline-block;
+}
 .cm-inspector table.cm-editors {
   width:100%;
 }
@@ -766,19 +830,19 @@ input[type=checkbox]:checked::after {
 
 /* ShareEmailer dialog */
 .cm-share-emailer {
-    width:400px;
+  width:400px;
 }
 .cm-share-emailer table {
-    width:100%;
+  width:100%;
 }
 .cm-share-emailer textarea {
-    width:100%;
-    max-width:392px;  /* total outside width 400px */
-    height:6em;
-    font-family:arial;
-    font-size:13px;
-    padding:3px;
-    border:1px solid #c0c0c0;
+  width:100%;
+  max-width:392px;  /* total outside width 400px */
+  height:6em;
+  font-family:arial;
+  font-size:13px;
+  padding:3px;
+  border:1px solid #c0c0c0;
 }
 
 .cm-email-error {

@@ -26,6 +26,9 @@ var MSG_OK = goog.getMsg('OK');
 /** @desc Label for the Cancel button on a dialog with OK and Cancel buttons. */
 var MSG_CANCEL = goog.getMsg('Cancel');
 
+/** @desc Link to import/copy an existing layer. */
+var MSG_COPY_EXISTING = goog.getMsg('Copy an existing layer');
+
 /**
  * A property inspector.  Call inspect() to inspect an object's properties.
  * @constructor
@@ -47,6 +50,12 @@ cm.InspectorView = function() {
    * @type Element
    * @private
    */
+  this.copyLayerLink_;
+
+  /**
+   * @type Element
+   * @private
+   */
   this.tableElem_;
 
   /**
@@ -61,8 +70,17 @@ cm.InspectorView = function() {
    */
   this.cancelBtn_;
 
+  /**
+   * Whether or not this dialog is for a newly created layer.
+   * @type {boolean}
+   * @private
+   */
+  this.isNew_;
+
   this.popup_ = cm.ui.create('div', {'class': 'cm-inspector cm-popup'},
-      this.titleElem_ = cm.ui.create('h2'),
+      cm.ui.create('div', undefined,
+          this.titleElem_ = cm.ui.create('h2'),
+          this.copyLayerLink_ = cm.ui.createLink(MSG_COPY_EXISTING)),
       this.tableElem_ = cm.ui.create('table',
           {'class': 'cm-editors', 'cellpadding': '0', 'cellspacing': '0'}),
       cm.ui.create('div', {'class': 'cm-button-area'},
@@ -70,17 +88,18 @@ cm.InspectorView = function() {
               'button', {'class': 'cm-button cm-submit'}, MSG_OK),
           this.cancelBtn_ = cm.ui.create(
               'button', {'class': 'cm-button'}, MSG_CANCEL)));
+
+  cm.events.listen(this.copyLayerLink_, 'click', this.handleCopyClick_, this);
   cm.events.listen(this.okBtn_, 'click', this.handleOk_, this);
   cm.events.listen(this.cancelBtn_, 'click', this.handleCancel_, this);
 };
 
 /**
- * Build and show an object property inspector.  Accepts a MapModel or
- * LayerModel and a list of editor specifications (indicating which properties
- * to edit and the types of editors to show).  If the user presses "OK", the
- * edits are applied all at once in a single EditCommand.
- * @param {cm.MapModel|cm.LayerModel} object The object whose properties
- *     to edit.
+ * Build and show an object property inspector.  Accepts a list of editor
+ * specifications (indicating which properties to edit and the types of editors
+ * to show), and optionally a MapModel or LayerModel to populate the initial
+ * values with.  If the user presses "OK", the edits are applied all at once in
+ * a single EditCommand, or a new LayerModel is created if no object was given.
  * @param {string} title The title to show on the dialog.
  * @param {Array.<Object.<{key: string,
  *                         label: string,
@@ -94,14 +113,19 @@ cm.InspectorView = function() {
  *     only when all the predicates are true.  Some editors accept other
  *     options, which are given as additional properties in the editorSpecs
  *     item; see the cm.*Editor constructors for details.
+ * @param {cm.MapModel|cm.LayerModel=} opt_object If specified, the MapModel or
+ *     LayerModel whose properties will be edited. Otherwise, a blank inspector
+ *     will be displayed, and a new LayerModel will be created on OK.
  */
-cm.InspectorView.prototype.inspect = function(object, title, editorSpecs) {
+cm.InspectorView.prototype.inspect = function(title, editorSpecs, opt_object) {
   // We bind the editors to a separate "draft" copy of the object (instead of
   // the original object) so we can apply all the edits in a single Command.
-  this.object_ = object;
+  this.isNew_ = !opt_object;
+  this.object_ = opt_object || new google.maps.MVCObject();
   this.draft_ = new google.maps.MVCObject();
 
   cm.ui.setText(this.titleElem_, title);
+  goog.dom.classes.enable(this.copyLayerLink_, 'cm-hidden', !this.isNew_);
 
   /** The table row DOM elements (each one holds a label and an editor). */
   this.rows_ = {};
@@ -144,7 +168,7 @@ cm.InspectorView.prototype.inspect = function(object, title, editorSpecs) {
     // TODO(kpy): Offer some help text next to each editor.
 
     // Bind the editor to a property on our draft new version of the object.
-    this.draft_.set(spec.key, object.get(spec.key));
+    this.draft_.set(spec.key, this.object_.get(spec.key));
     editor.bindTo('value', this.draft_, spec.key);
     this.rows_[spec.key] = row;
 
@@ -159,13 +183,23 @@ cm.InspectorView.prototype.inspect = function(object, title, editorSpecs) {
 
   // Bring up the inspector dialog.
   cm.ui.showPopup(this.popup_);
-  cm.events.emit(goog.global, cm.events.INSPECTOR_OPENED, {value: true});
+  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: true});
   this.updateConditionalEditors_();
 
   // Listen for changes that will affect conditional editors.
   for (var key in triggerKeys) {
     cm.events.onChange(this.draft_, key, this.updateConditionalEditors_, this);
   }
+};
+
+/**
+ * Switches to importer dialog.
+ * @private
+ */
+cm.InspectorView.prototype.handleCopyClick_ = function() {
+  cm.events.emit(goog.global, cm.events.IMPORT);
+  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
+  cm.ui.remove(this.popup_);
 };
 
 /**
@@ -194,13 +228,17 @@ cm.InspectorView.prototype.handleOk_ = function() {
       newValues[key] = newValue;
     }
   }
-  var object = this.object_;
-  cm.events.emit(goog.global, cm.events.OBJECT_EDITED, {
-    oldValues: oldValues,
-    newValues: newValues,
-    layerId: object instanceof cm.LayerModel ? object.get('id') : null
-  });
-  cm.events.emit(goog.global, cm.events.INSPECTOR_OPENED, {value: false});
+  if (this.isNew_) {
+    cm.events.emit(goog.global, cm.events.ADD_LAYERS, {newValues: newValues});
+  } else {
+    var object = this.object_;
+    cm.events.emit(goog.global, cm.events.OBJECT_EDITED, {
+      oldValues: oldValues,
+      newValues: newValues,
+      layerId: object instanceof cm.LayerModel ? object.get('id') : null
+    });
+  }
+  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
   cm.ui.remove(this.popup_);
 };
 
@@ -209,7 +247,7 @@ cm.InspectorView.prototype.handleOk_ = function() {
  * @private
  */
 cm.InspectorView.prototype.handleCancel_ = function() {
-  cm.events.emit(goog.global, cm.events.INSPECTOR_OPENED, {value: false});
+  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
   cm.ui.remove(this.popup_);
 };
 

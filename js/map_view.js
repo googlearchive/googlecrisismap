@@ -152,7 +152,7 @@ cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config) {
         cm.util.round(event.latLng.lng(), 4));
   });
   // Only show lat/lon coordinates when the inspector dialog is open.
-  cm.events.listen(goog.global, cm.events.INSPECTOR_OPENED, function(e) {
+  cm.events.listen(goog.global, cm.events.INSPECTOR_VISIBLE, function(e) {
     mouseLatLngElem.style.display = e.value ? '' : 'none';
   });
 

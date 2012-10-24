@@ -30,9 +30,11 @@ registerTestSuite(InspectorViewTest);
 
 /**
  * Opens the inspector.
+ * @param {boolean=} opt_isNew Whether or not to open an inspector for a new
+ *     layer.
  * @private
  */
-InspectorViewTest.prototype.openInspector_ = function() {
+InspectorViewTest.prototype.openInspector_ = function(opt_isNew) {
   // Grab the popup that the InspectorView will open.
   var me = this;
   this.setForTest_('cm.ui.showPopup', function(popup) {
@@ -42,11 +44,11 @@ InspectorViewTest.prototype.openInspector_ = function() {
   // Open the inspector on a sample MVCObject.
   var object = new google.maps.MVCObject();
   object.setValues({a: 'x', b: 5});
-  this.view_.inspect(object, 'Title text', [
+  this.view_.inspect('Title text', [
     {key: 'a', label: 'First field', type: cm.editors.Type.TEXT},
     {key: 'b', label: 'Second field', type: cm.editors.Type.NUMBER,
      conditions: {'a': function(x) { return x == 'yes'; }}}
-  ]);
+  ], opt_isNew ? undefined : object);
 };
 
 /** Tests that the inspect() method works properly. */
@@ -106,6 +108,59 @@ InspectorViewTest.prototype.testOk = function() {
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
 };
 
+/** Tests that clicking the OK button creates a new layer. */
+InspectorViewTest.prototype.testOkForNew = function() {
+  this.openInspector_(true);
+  var aInput = expectDescendantOf(this.popup_, 'input');
+  aInput.value = 'x';
+  cm.events.emit(aInput, 'keyup');
+
+  // Listen for an ADD_LAYERS event.
+  var layersCreated = false;
+  var newValues = null;
+  cm.events.listen(goog.global, cm.events.ADD_LAYERS, function(e) {
+    layersCreated = true;
+    newValues = e.newValues;
+  }, this);
+
+  // Click the OK button.
+  var button = expectDescendantOf(this.popup_, 'button', withText('OK'));
+  cm.events.emit(button, 'click');
+
+  // Confirm that the ADD_LAYERS event was emitted with the right maproot
+  expectTrue(layersCreated);
+  expectThat(newValues, recursivelyEquals({a: 'x'}));
+
+  // Confirm that the popup disappeared.
+  expectNoDescendantOf(cm.ui.document.body, this.popup_);
+};
+
+/** Tests that conditional fields are added to new layers. */
+InspectorViewTest.prototype.testConditionalsForNew = function() {
+  this.openInspector_(true);
+  var inputs = allDescendantsOf(this.popup_, isElement('input'));
+  var aInput = inputs[0];
+  aInput.value = 'yes'; // condition field
+  cm.events.emit(aInput, 'keyup');
+  var bInput = inputs[1];
+  bInput.value = '5';
+  cm.events.emit(bInput, 'keyup');
+
+  // Listen for an ADD_LAYERS event.
+  var layersCreated = false;
+  var newValues = null;
+  cm.events.listen(goog.global, cm.events.ADD_LAYERS, function(e) {
+    layersCreated = true;
+    newValues = e.newValues;
+  }, this);
+
+  // Click OK and verify the correct values have been set.
+  button = expectDescendantOf(this.popup_, 'button', withText('OK'));
+  cm.events.emit(button, 'click');
+  expectTrue(layersCreated);
+  expectThat(newValues, recursivelyEquals({a: 'yes', b: 5}));
+};
+
 /** Tests that clicking the Cancel button discards the user's edits. */
 InspectorViewTest.prototype.testCancel = function() {
   this.inspectAndEdit_();
@@ -129,13 +184,14 @@ InspectorViewTest.prototype.testConditionalHidden = function() {
   expectEq(2, rows.length);
   var aInput = expectDescendantOf(rows[0], 'input');
 
-  // The 'b' editor should be initially hidden, since the initial value
-  // of property 'a' is 'x', not 'yes'.
+  // The 'b' editor should be initially hidden, since the initial
+  // value of property 'a' is 'x', not 'yes'.
   expectEq('none', rows[1].style.display);
 
   aInput.value = 'no';
   cm.events.emit(aInput, 'keyup');
-  // Since 'no' fails the predicate, the 'b' editor should now be hidden.
+  // Since 'no' fails the predicate, the 'b' editor should now be
+  // hidden.
   expectEq('none', rows[1].style.display);
 
   // Click the OK button.
@@ -143,10 +199,12 @@ InspectorViewTest.prototype.testConditionalHidden = function() {
   cm.events.emit(button, 'click');
 
   // Confirm that an OBJECT_EDITED event was emitted with the right parameters.
-  // The 'b' property should be undefined because its editor was disabled.
+  // The 'b' property should be undefined because its editor was
+  // disabled.
   expectTrue(this.objectEdited_);
   expectThat(this.oldValues_, recursivelyEquals({a: 'x', b: 5}));
-  expectThat(this.newValues_, recursivelyEquals({a: 'no', b: undefined}));
+  expectThat(this.newValues_, recursivelyEquals(
+      {a: 'no', b: undefined}));
 };
 
 /** Tests a conditional editor under conditions when it should be shown. */
@@ -158,13 +216,14 @@ InspectorViewTest.prototype.testConditionalShown = function() {
   var aInput = expectDescendantOf(rows[0], 'input');
   var bInput = expectDescendantOf(rows[1], 'input');
 
-  // The 'b' editor should be initially hidden, since the initial value
-  // of property 'a' is 'x', not 'yes'.
+  // The 'b' editor should be initially hidden, since the initial
+  // value of property 'a' is 'x', not 'yes'.
   expectEq('none', rows[1].style.display);
 
   aInput.value = 'yes';
   cm.events.emit(aInput, 'keyup');
-  // Since 'yes' satisfies the predicate, the 'b' editor should now be shown.
+  // Since 'yes' satisfies the predicate, the 'b' editor should now
+  // be shown.
   expectEq('', rows[1].style.display);
 
   // Make a change in the 'b' editor.
@@ -176,10 +235,11 @@ InspectorViewTest.prototype.testConditionalShown = function() {
   cm.events.emit(button, 'click');
 
   // Confirm that the OBJECT_EDITED event was emitted with the right parameters.
-  // The 'b' property should be present because its editor was enabled.
+  // The 'b' property should be present because its editor was enabled
   expectTrue(this.objectEdited_);
   expectThat(this.oldValues_, recursivelyEquals({a: 'x', b: 5}));
-  expectThat(this.newValues_, recursivelyEquals({a: 'yes', b: 6}));
+  expectThat(this.newValues_, recursivelyEquals(
+      {a: 'yes', b: 6}));
 };
 
 /** Tests that validation error messages are shown in the inspector. */
@@ -194,3 +254,22 @@ InspectorViewTest.prototype.testValidationErrorShown = function() {
   expectDescendantOf(rows[1], withClass('cm-validation-error'),
                      withText('should be a number'));
 };
+
+/** Tests navigation to the new layer dialog (inspector). */
+InspectorViewTest.prototype.testImport = function() {
+  this.openInspector_(true);
+
+  var fired = false;
+  cm.events.listen(goog.global, cm.events.IMPORT, function() {
+    fired = true;
+  });
+
+  var link = expectDescendantOf(this.popup_, 'a',
+      withText('Copy an existing layer'));
+  cm.events.emit(link, 'click');
+  expectTrue(fired);
+
+  // Confirm that the popup disappeared.
+  expectNoDescendantOf(cm.ui.document.body, this.popup_);
+};
+

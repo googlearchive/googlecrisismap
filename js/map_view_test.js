@@ -191,9 +191,9 @@ MapViewTest.prototype.mouseLatLonCoordinates = function() {
   new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
   var latLonElem = expectDescendantOf(this.elem_, withClass('cm-lat-lng'));
   expectEq('none', latLonElem.style.display);
-  cm.events.emit(goog.global, cm.events.INSPECTOR_OPENED, {value: true});
+  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: true});
   expectEq('', latLonElem.style.display);
-  cm.events.emit(goog.global, cm.events.INSPECTOR_OPENED, {value: false});
+  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
   expectEq('none', latLonElem.style.display);
 };
 

@@ -33,29 +33,30 @@ class ApiTest(test_utils.BaseTest):
                                 viewers=['viewer@gmail.com'])
 
   # pylint: disable-msg=C6409
-  def testApiGet(self):
+  def testMapsGet(self):
     """Fetches a map through the API."""
     json_dict = {'json': True, 'stuff': [0, 1]}
     maproot_json = json.dumps(json_dict)
     self.map.PutNewVersion(maproot_json)
-    handler = test_utils.SetupHandler('/api/%s' % self.map.id, api.Api())
+    handler = test_utils.SetupHandler('/api/maps/%s' % self.map.id, api.Maps())
     handler.get(self.map.id)
     result_dict = json.loads(handler.response.out.getvalue())
     expect_dict = {'json': json_dict}
     self.assertEquals(expect_dict, result_dict)
 
-  def testBadApiGet(self):
+  def testBadMapsGet(self):
     """Attempts to fetch a map that doesn't exist."""
     nonexistent_id = 'xxx' + self.map.id
-    handler = test_utils.SetupHandler('/api/%s' % nonexistent_id, api.Api())
+    handler = test_utils.SetupHandler('/api/maps/%s' % nonexistent_id,
+                                      api.Maps())
     handler.get(nonexistent_id)
     self.assertEquals(404, handler.response.status)
 
-  def testApiPost(self):
+  def testMapsPost(self):
     """Posts a new version of a map."""
     json_dict = {'json': True, 'stuff': [0, 1]}
     maproot_json = json.dumps(json_dict)
-    handler = test_utils.SetupHandler('/api/%s' % self.map.id, api.Api(),
+    handler = test_utils.SetupHandler('/api/maps/%s' % self.map.id, api.Maps(),
                                       'json=%s' % maproot_json)
     handler.post(self.map.id)
     # response 201 indicates Location was set.
@@ -64,6 +65,39 @@ class ApiTest(test_utils.BaseTest):
     map_object = model.Map.Get(self.map.id)
     # verify that the pieces were saved properly
     self.assertEquals(maproot_json, map_object.GetCurrentJson())
+
+  def testPublishedMaps(self):
+    map1 = {'title': 'Map 1',
+            'layers': [{'id': 12, 'type': 'KML',
+                        'source': {'kml': {'url': 'x.com/a.kml'}}},
+                       {'id': 15, 'type': 'GEORSS',
+                        'source': {'georss': {'url': 'y.com/b.xml'}}}]}
+    map2 = {'title': 'Map 2',
+            'layers': [{'id': 13, 'type': 'KML',
+                        'source': {'kml': {'url': 'a.com/y.kml'}}},
+                       {'id': 17, 'type': 'GEORSS',
+                        'source': {'georss': {'url': 'b.com/x.xml'}}}]}
+    draft = {'title': 'Map 2',
+             'layers': [{'id': 13, 'type': 'KML',
+                         'source': {'kml': {'url': 'a.com/y.kml'}}},
+                        {'id': 17, 'type': 'GEORSS',
+                         'source': {'georss': {'url': 'b.com/x.xml'}}}]}
+
+    test_utils.BecomeAdmin()
+    # Create and publish two maps
+    model.CatalogEntry.Create('google.com', 'Map 1',
+                              model.Map.Create(json.dumps(map1)))
+    model.CatalogEntry.Create('google.com', 'Map 2',
+                              model.Map.Create(json.dumps(map2)))
+    # Create a draft; should not be returned by api.Maps
+    model.Map.Create(json.dumps(draft))
+
+    test_utils.ClearUser()
+    handler = test_utils.SetupHandler('/api/maps', api.PublishedMaps())
+    handler.get()
+    maps = json.loads(handler.response.out.getvalue())
+    self.assertEquals([map2, map1], maps)
+
 
 if __name__ == '__main__':
   test_utils.main()

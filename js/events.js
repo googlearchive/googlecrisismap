@@ -132,6 +132,9 @@ cm.events.SHARE_EMAIL_FAILED = 'SHARE_EMAIL_FAILED';
  * 'Undo' */
 cm.events.UNDO_REDO_BUFFER_CHANGED = 'UNDO_REDO_BUFFER_CHANGED';
 
+/** Event fired when layers are loaded from server, for the importer. */
+cm.events.LAYERS_LOADED_EVENT = 'LAYERS_LOADED';
+
 // ==== Events emitted when the user performs an edit action ====
 
 /** The user edited the properties of an MVCObject (undoable). */
@@ -146,11 +149,8 @@ cm.events.REDO = 'REDO';
 /** The user rearranged the map layers/sublayers (undoable). */
 cm.events.LAYERS_ARRANGED = 'LAYERS_ARRANGED';
 
-/** The user has opened or closed the inspector dialog. */
-cm.events.INSPECTOR_OPENED = 'INSPECTOR_OPENED';
-
-/** The user has opened or closed the importer dialog. */
-cm.events.IMPORTER_OPENED = 'IMPORTER_OPENED';
+/** The user requested to create one or more new layers (undoable). */
+cm.events.ADD_LAYERS = 'ADD_LAYERS';
 
 // ==== Events emitted when the user performs a non-editing action ====
 
@@ -159,6 +159,9 @@ cm.events.SAVE = 'SAVE';
 
 /** The user requested to open an inspector on an object (not undoable). */
 cm.events.INSPECT = 'INSPECT';
+
+/** The user has opened or closed the inspector dialog. */
+cm.events.INSPECTOR_VISIBLE = 'INSPECTOR_VISIBLE';
 
 /** The user requested to arrange the layers in the panel (not undoable). */
 cm.events.ARRANGE = 'ARRANGE';
@@ -193,8 +196,8 @@ cm.events.PROMOTE_LAYER = 'PROMOTE_LAYER';
 /** The user requested to delete a layer (undoable). */
 cm.events.DELETE_LAYER = 'DELETE_LAYER';
 
-/** The user requested to create one or more new layers (undoable). */
-cm.events.CREATE_LAYERS = 'CREATE_LAYERS';
+/** The user requested to add/import layers. */
+cm.events.IMPORT = 'IMPORT';
 
 /** The user requested to reset the view to the map's default view. */
 cm.events.RESET_VIEW = 'RESET_VIEW';

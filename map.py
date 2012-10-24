@@ -316,7 +316,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
   elif map_object:
     config['map_root'] = json.loads(map_object.GetCurrentJson())
     config['map_id'] = map_object.id
-    config['save_url'] = '/crisismap/api/%s' % map_object.id
+    config['save_url'] = '/crisismap/api/maps/%s' % map_object.id
     config['share_url'] = '/crisismap/share/%s' % map_object.id
     config['enable_editing'] = map_object.CheckAccess(model.ROLES.MAP_EDITOR)
     config['draft_mode'] = True

@@ -27,15 +27,24 @@ TestUtilTest.prototype.fakeElementConstructor = function() {
 /** Exercises FakeElement.appendChild(). */
 TestUtilTest.prototype.fakeElementAppendChild = function() {
   var parent = new FakeElement('div');
-  var child = new FakeElement('img');
-  parent.appendChild(child);
-  expectEq(parent, child.parentNode);
+  var child1 = new FakeElement('img');
+  var child2 = new FakeElement('p');
+  parent.appendChild(child1);
+  expectEq(parent, child1.parentNode);
   expectEq(1, parent.childNodes.length);
-  expectEq(child, parent.childNodes[0]);
+  expectEq(child1, parent.childNodes[0]);
+
+  parent.appendChild(child2);
+  expectEq(parent, child2.parentNode);
+  expectEq(2, parent.childNodes.length);
+  expectEq(child2, parent.childNodes[1]);
+  expectEq(child2, child1.nextSibling);
+  expectEq(child1, child2.previousSibling);
 
   parent.appendChild('ABC');
-  expectEq(2, parent.childNodes.length);
-  expectEq('ABC', parent.childNodes[1]);
+  expectEq(3, parent.childNodes.length);
+  expectEq('ABC', parent.childNodes[2]);
+  expectEq('ABC', child2.nextSibling);
 };
 
 /** Exercises FakeUi.getText() with both innerHTML and child text nodes. */

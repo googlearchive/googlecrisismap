@@ -152,7 +152,7 @@ cm.ui.get = function(id) {
 };
 
 /**
- * Return the first element in the document with the given class name.
+ * Returns the first element in the document with the given class name.
  * If opt_parent is given, limit search to its descendants.
  * @param {string} className A class name.
  * @param {?Element} opt_parent A DOM element to look in.
@@ -160,6 +160,17 @@ cm.ui.get = function(id) {
  */
 cm.ui.getByClass = function(className, opt_parent) {
   return goog.dom.getElementByClass(className, opt_parent);
+};
+
+/**
+ * Returns all the elements in the document with the given class name.
+ * If opt_parent is given, limit search to its descendants.
+ * @param {string} className A class name.
+ * @param {?Element} opt_parent A DOM element to look in.
+ * @return { {length: number} } The elements with the given class name.
+ */
+cm.ui.getAllByClass = function(className, opt_parent) {
+  return goog.dom.getElementsByClass(className, opt_parent);
 };
 
 /**

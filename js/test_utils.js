@@ -30,6 +30,8 @@ FakeElement = function(nodeName, opt_attrs) {
   }
   this.firstChild = null;
   this.lastChild = null;
+  this.previousSibling = null;
+  this.nextSibling = null;
   this.childNodes = [];
   this.selectedIndex = -1;
   this.options = this.childNodes; // For pretend select objects
@@ -106,6 +108,15 @@ FakeElement.prototype.toString = function() {
 };
 
 /**
+ * Fake implementation of getAttribute.
+ * @param {string} name The attribute's name.
+ * @return {string} The attribute's value.
+ */
+FakeElement.prototype.getAttribute = function(name) {
+  return this.attrs_[name];
+};
+
+/**
  * Fake implementation of setAttribute.
  * @param {string} name The attribute's name.
  * @param {string} value The attribute's value.
@@ -143,6 +154,14 @@ FakeElement.prototype.removeChild = function(element) {
   var n = this.childNodes.length;
   this.firstChild = n ? this.childNodes[0] : null;
   this.lastChild = n ? this.childNodes[n - 1] : null;
+  if (element.previousSibling) {
+    element.previousSibling.nextSibling = null;
+    element.previousSibling = null;
+  }
+  if (element.nextSibling) {
+    element.nextSibling.previousSibling = null;
+    element.nextSibling = null;
+  }
   element.parentNode = null;
 };
 
@@ -155,6 +174,12 @@ FakeElement.prototype.appendChild = function(element) {
   this.firstChild = this.childNodes[0];
   this.lastChild = element;
   element.parentNode = this;
+  var length = this.childNodes.length;
+  if (length > 1) {
+    var previous = this.childNodes[length - 2];
+    element.previousSibling = previous;
+    previous.nextSibling = element;
+  }
 };
 
  /**
@@ -171,7 +196,17 @@ FakeElement.prototype.insertBefore = function(element, referenceElement) {
   }
   this.childNodes.splice(i, 0, element);
   this.firstChild = this.childNodes[0];
+  this.lastChild = this.childNodes[this.childNodes.length - 1];
   element.parentNode = this;
+  if (i > 0) {
+    var previous = this.childNodes[i - 1];
+    element.previousSibling = previous;
+    previous.nextSibling = element;
+  }
+  if (this.lastChild !== element) {
+    element.nextSibling = referenceElement;
+    referenceElement.previousSibling = element;
+  }
 };
 
 /**
@@ -193,6 +228,11 @@ FakeElement.prototype.detachEvent = function(eventObj, handler) {
   // TODO(arb): do we want to do anything with this?
 };
 
+/**
+ * Fake focus method.
+ */
+FakeElement.prototype.focus = goog.nullFunction;
+
 /** A namespace for fake implementations of cm.ui functions. */
 FakeUi = {};
 
@@ -209,10 +249,21 @@ FakeUi.get = function(id) {
  * Fake implementation of cm.ui.getByClass.
  * @param {string} className A class name.
  * @param {?FakeElement} opt_parent A DOM element to look in.
- * @return {FakeElement} The element with the given class name, if found.
+ * @return {FakeElement} The first element with the given class name, if found.
  */
 FakeUi.getByClass = function(className, opt_parent) {
-  return findDescendantOf(opt_parent || cm.ui.document, withClass(className));
+  var elems = FakeUi.getAllByClass(className, opt_parent);
+  return elems[0] ? elems[0] : null;
+};
+
+/**
+ * Fake implementation of cm.ui.getAllByClass.
+ * @param {string} className A class name.
+ * @param {?FakeElement} opt_parent A DOM element to look in.
+ * @return {Array.<FakeElement>} The elements with the given class name.
+ */
+FakeUi.getAllByClass = function(className, opt_parent) {
+  return allDescendantsOf(opt_parent || cm.ui.document, withClass(className));
 };
 
 /**
@@ -298,6 +349,7 @@ cm.TestBase = function() {
   this.setForTest_('cm.ui.create', FakeUi.create);
   this.setForTest_('cm.ui.get', FakeUi.get);
   this.setForTest_('cm.ui.getByClass', FakeUi.getByClass);
+  this.setForTest_('cm.ui.getAllByClass', FakeUi.getAllByClass);
   this.setForTest_('cm.ui.getText', FakeUi.getText);
   this.setForTest_('cm.ui.setText', FakeUi.setText);
 

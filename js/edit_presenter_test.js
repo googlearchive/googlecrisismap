@@ -17,6 +17,15 @@ function EditPresenterTest() {
 EditPresenterTest.prototype = new cm.TestBase();
 registerTestSuite(EditPresenterTest);
 
+/** Tests that the EditPresenter responds correctly to IMPORT events. */
+EditPresenterTest.prototype.testImportEvent = function() {
+  var map = new cm.MapModel();
+  var importer = this.expectNew_('cm.ImporterView');
+  var presenter = new cm.EditPresenter(null, map, null);
+  expectCall(importer.openImporter)();
+  cm.events.emit(goog.global, cm.events.IMPORT, {});
+};
+
 /** Tests that the EditPresenter responds correctly to INSPECT events. */
 EditPresenterTest.prototype.testInspectEvent = function() {
   var map = new cm.MapModel();
@@ -24,7 +33,7 @@ EditPresenterTest.prototype.testInspectEvent = function() {
   var presenter = new cm.EditPresenter(null, map, null);
 
   // Emitting an INSPECT event on a map should open an inspector on the map.
-  expectCall(inspector.inspect)(map, 'Edit map details', allOf([
+  expectCall(inspector.inspect)('Edit map details', allOf([
     contains(recursivelyEquals(
         {key: 'title', label: 'Title', type: cm.editors.Type.TEXT})),
     contains(recursivelyEquals(
@@ -33,12 +42,12 @@ EditPresenterTest.prototype.testInspectEvent = function() {
     contains(recursivelyEquals(
         {key: 'viewport', label: 'Default viewport',
          type: cm.editors.Type.LAT_LON_BOX, app_state: null}))
-  ]));
+  ]), map);
   cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
 
   // Emitting an INSPECT event on a layer should open an inspector on the layer.
   var layer = new cm.LayerModel();
-  expectCall(inspector.inspect)(layer, 'Edit layer details', allOf([
+  var layerSpecExpect = allOf([
     contains(recursivelyEquals(
         {key: 'default_visibility', label: 'On in default view',
          type: cm.editors.Type.CHECKBOX})),
@@ -49,7 +58,7 @@ EditPresenterTest.prototype.testInspectEvent = function() {
          preview_class: 'cm-layer-description'})),
     contains(recursivelyEquals(
         {key: 'legend', label: 'Legend', type: cm.editors.Type.HTML,
-         preview_class: 'cm-layer-legend'})),
+          preview_class: 'cm-layer-legend'})),
     contains(recursivelyEquals(
         {key: 'viewport', label: '"Zoom to area" viewport',
          type: cm.editors.Type.LAT_LON_BOX, app_state: null})),
@@ -59,8 +68,14 @@ EditPresenterTest.prototype.testInspectEvent = function() {
     contains(recursivelyEquals(
         {key: 'max_zoom', type: cm.editors.Type.NUMBER, require_integer: true,
          label: 'Maximum zoom level', minimum: 0, maximum: 20}))
-  ]));
+  ]);
+  expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, layer);
   cm.events.emit(goog.global, cm.events.INSPECT, {object: layer});
+
+  // Emitting an INSPECT event with no object should open an inspector on a new
+  // layer.
+  expectCall(inspector.inspect)('Create new layer', layerSpecExpect);
+  cm.events.emit(goog.global, cm.events.INSPECT, {});
 };
 
 function findTypeEditorSpec(editorSpecs) {
@@ -77,7 +92,7 @@ EditPresenterTest.prototype.testEnableMapDataLayerType = function() {
   var layer = new cm.LayerModel();
   var inspector = this.expectNew_('cm.InspectorView');
   var specs;
-  inspector.inspect = function(object, title, editorSpecs) {
+  inspector.inspect = function(title, editorSpecs, object) {
     specs = editorSpecs;
   };
 
@@ -108,7 +123,7 @@ EditPresenterTest.prototype.testArrangerEvent = function() {
   cm.events.emit(goog.global, cm.events.ARRANGE, {});
 };
 
-/** Tests that the EditPresenter responds to CREATE_LAYER events. */
+/** Tests that the EditPresenter responds to ADD_LAYERS events. */
 EditPresenterTest.prototype.testLayerCreatedEvent = function() {
   var presenter = new cm.EditPresenter(null, null, null);
 
@@ -117,7 +132,29 @@ EditPresenterTest.prototype.testLayerCreatedEvent = function() {
   var maproots = [{title: 'Empty Layer'}];
   var createLayersCommand = this.expectNew_('cm.CreateLayersCommand', maproots);
   expectCall(createLayersCommand.execute)(_, _);
-  cm.events.emit(goog.global, cm.events.CREATE_LAYERS, {maproots: maproots});
+  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {maproots: maproots});
+};
+
+/**
+ * Tests that the EditPresenter responds to ADD_LAYERS events, for an event with
+ * newValues instead of maproots.
+ */
+EditPresenterTest.prototype.testLayerCreatedEventWithNewValues = function() {
+  var presenter = new cm.EditPresenter(null, null, null);
+
+  // Emitting a CREATE_LAYER event should create and execute a
+  // CreateLayersCommand.
+  var newValues = {title: 'Empty Layer'};
+  var createLayersCommand = this.expectNew_('cm.CreateLayersCommand',
+      new gjstest.Matcher(
+          'has one maproot with title ' + newValues['title'],
+          'doesn\'t have one maproot with title ' + newValues['title'],
+          function(maproots) {
+            return (maproots.length = 1 &&
+                maproots[0]['title'] === newValues['title']);
+          }));
+  expectCall(createLayersCommand.execute)(_, _);
+  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {newValues: newValues});
 };
 
 /** Tests that the EditPresenter responds to DELETE_LAYER events. */

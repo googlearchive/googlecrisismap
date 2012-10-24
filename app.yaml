@@ -58,7 +58,6 @@ handlers:
 
 - url: /crisismap/api/.*
   script: api.py
-  login: required
 
 - url: /crisismap/delete
   script: delete.py

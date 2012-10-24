@@ -32,7 +32,7 @@ var MSG_ARRANGE_LAYERS_LINK = goog.getMsg('Arrange');
 var MSG_SHARE_EMAIL_LINK = goog.getMsg('Share with user');
 
 /** @desc Link text to add a new layer to the map. */
-var MSG_ADD_NEW_LAYER = goog.getMsg('Add layer');
+var MSG_ADD_NEW_LAYERS = goog.getMsg('Add layers');
 
 /** @desc Default title for an empty layer. */
 var MSG_UNTITLED_LAYER = goog.getMsg('Untitled Layer');
@@ -85,17 +85,16 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch) {
     cm.events.forward(arrangeLink, 'click', goog.global, cm.events.ARRANGE);
   }
 
-  var addNewLayerLink = cm.ui.createLink(MSG_ADD_NEW_LAYER);
-  cm.events.forward(
-      addNewLayerLink, 'click', goog.global, cm.events.CREATE_LAYERS, {
-    model: mapModel,
-    maproots: [{title: MSG_UNTITLED_LAYER, type: cm.LayerModel.Type.KML}]
-  });
+  var addNewLayerLink = cm.ui.createLink(MSG_ADD_NEW_LAYERS);
+  cm.events.forward(addNewLayerLink, 'click', goog.global,
+      cm.events.IMPORT);
   cm.ui.append(toolbarElem, addNewLayerLink, cm.ui.SEPARATOR_DOT);
 
+  // TODO(user): Use INSPECT event to create new folders by using a type
+  // FOLDER argument.
   var addNewFolderLink = cm.ui.createLink(MSG_ADD_NEW_FOLDER);
   cm.events.forward(
-      addNewFolderLink, 'click', goog.global, cm.events.CREATE_LAYERS, {
+      addNewFolderLink, 'click', goog.global, cm.events.ADD_LAYERS, {
     model: mapModel,
     maproots: [{title: MSG_UNTITLED_FOLDER, type: cm.LayerModel.Type.FOLDER}]
   });

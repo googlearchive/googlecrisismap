@@ -64,9 +64,9 @@ ToolbarViewTest.prototype.testArrangeLink = function() {
 
 /** Verifies that the 'Add layer' link works properly. */
 ToolbarViewTest.prototype.testAddLayerLink = function() {
-  var link = expectDescendantOf(this.parent_, withText('Add layer'));
+  var link = expectDescendantOf(this.parent_, withText('Add layers'));
   var eventEmitted = false;
-  cm.events.listen(goog.global, cm.events.CREATE_LAYERS, function() {
+  cm.events.listen(goog.global, cm.events.IMPORT, function() {
     eventEmitted = true;
   });
   cm.events.emit(link, 'click');
@@ -77,7 +77,7 @@ ToolbarViewTest.prototype.testAddLayerLink = function() {
 ToolbarViewTest.prototype.testAddFolderLink = function() {
   var link = expectDescendantOf(this.parent_, withText('Add folder'));
   var eventEmitted = false;
-  cm.events.listen(goog.global, cm.events.CREATE_LAYERS, function() {
+  cm.events.listen(goog.global, cm.events.ADD_LAYERS, function() {
     eventEmitted = true;
   });
   cm.events.emit(link, 'click');
