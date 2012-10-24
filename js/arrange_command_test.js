@@ -92,6 +92,8 @@ ArrangeCommandTest.prototype.moveToFromFolders = function() {
              elementsAre(['layer3']));
   expectThat(this.mapModel_.getLayer('layer3').getSublayerIds(),
              elementsAre(['layer4']));
+  expectEq(this.mapModel_.getLayer('layer2'),
+           this.mapModel_.getLayer('layer3').get('parent'));
   // Move layer3 out of layer2
   command.undo(null, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(), elementsAre(['layer1', 'layer3']));
@@ -100,4 +102,5 @@ ArrangeCommandTest.prototype.moveToFromFolders = function() {
   expectEq(0, this.mapModel_.getLayer('layer2').getSublayerIds().length);
   expectThat(this.mapModel_.getLayer('layer3').getSublayerIds(),
              elementsAre(['layer4']));
+  expectThat(this.mapModel_.getLayer('layer3').get('parent'), isUndefined);
 };

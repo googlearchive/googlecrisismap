@@ -101,14 +101,17 @@ cm.ArrangeCommand.prototype.arrange_ = function(layerIds, mapModel) {
    *     sublayerIds: Array.<Object>}>>} ids The new hierarchy
    *         of layerIds.
    * @param {cm.MapModel} mapModel The map model.
+   * @param {?cm.LayerModel} opt_parent This list of layers' parent layer model,
+   *     if they are sublayers.
    * @return {?google.maps.MVCArray} The layer or sublayer models.
    */
-  function assembleLayers(ids, mapModel) {
+  function assembleLayers(ids, mapModel, opt_parent) {
     // Create a layer array corresponding to ids.
     var layers = new google.maps.MVCArray();
     goog.array.forEach(ids, function(node) {
       // Add each LayerModel to the layers array.
       var layer = mapModel.getLayer(node.id);
+      layer.set('parent', opt_parent || undefined);
       layers.push(layer);
       // Recursively assemble this layer's sublayers array from this
       // node's sublayerIds. We explicitly set the 'sublayers' property
@@ -116,7 +119,7 @@ cm.ArrangeCommand.prototype.arrange_ = function(layerIds, mapModel) {
       // unregistered from the map.
       layer.set('sublayers', node.sublayerIds === undefined ?
           new google.maps.MVCArray() :
-              assembleLayers(node.sublayerIds, mapModel));
+              assembleLayers(node.sublayerIds, mapModel, layer));
     });
     return layers;
   }
