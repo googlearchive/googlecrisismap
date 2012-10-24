@@ -35,19 +35,20 @@ MenuEditorTest.prototype.createEditor_ = function() {
 /** Tests construction of the MenuEditor. */
 MenuEditorTest.prototype.testConstructor = function() {
   var parent = this.createEditor_();
+  expectEq('x', this.editor_.get('value'));
 };
 
 /** Tests that selecting a menu option sets the 'value' property. */
 MenuEditorTest.prototype.buttonsUpdateValueProperty = function() {
   var parent = this.createEditor_();
 
-  this.editor_.select_.selectedIndex = 0;
-  cm.events.emit(this.editor_.select_, 'change');
-  expectEq('x', this.editor_.get('value'));
-
   this.editor_.select_.selectedIndex = 1;
   cm.events.emit(this.editor_.select_, 'change');
   expectEq('y', this.editor_.get('value'));
+
+  this.editor_.select_.selectedIndex = 0;
+  cm.events.emit(this.editor_.select_, 'change');
+  expectEq('x', this.editor_.get('value'));
 };
 
 /** Tests that the 'value' property propagates to the dropdown menu. */
@@ -59,4 +60,22 @@ MenuEditorTest.prototype.valuePropertyUpdatesButtons = function() {
 
   this.editor_.set('value', 'y');
   expectEq(1, this.editor_.select_.selectedIndex);
+};
+
+/**
+ * Tests that changes to the editor's value with null or undefined values not in
+ * the list cause the value to be set to the first option.
+ */
+MenuEditorTest.prototype.testInvalidValue = function() {
+  var parent = this.createEditor_();
+
+  this.editor_.select_.selectedIndex = 1;
+  this.editor_.set('value', null);
+  expectEq('x', this.editor_.get('value'));
+  expectEq(0, this.editor_.select_.selectedIndex);
+
+  this.editor_.select_.selectedIndex = 1;
+  this.editor_.set('value', undefined);
+  expectEq('x', this.editor_.get('value'));
+  expectEq(0, this.editor_.select_.selectedIndex);
 };

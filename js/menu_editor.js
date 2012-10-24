@@ -19,7 +19,10 @@ goog.require('cm.Editor');
 goog.require('cm.ui');
 
 /**
- * A list of radio buttons.
+ * A select list of options. This editor's value will default to the first
+ * option in the given list whenever its value is set to null or undefined, and
+ * that value isn't in the choices array. When no choices are given, it will
+ * default to null.
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
  * @param {{choices: Array.<cm.InputChoice>, div_class: string,
@@ -55,6 +58,10 @@ cm.MenuEditor = function(parentElem, id, options) {
     this.values_.push(choice.value);
   }
   cm.events.listen(this.select_, 'change', this.updateValue_, this);
+
+  // Call updateUI to correct invalid values.
+  this.updateUi(/** @type {Object|boolean|number|string|null} */
+                (this.get('value')));
 };
 goog.inherits(cm.MenuEditor, cm.Editor);
 
@@ -66,12 +73,29 @@ cm.MenuEditor.prototype.updateValue_ = function() {
   this.setValid_(this.values_[this.select_.selectedIndex]);
 };
 
-/** @override */
+/**
+ * Update the UI to select the given value. If the given value is not one of
+ * this list's option, and was null or undefined, sets the editor's value back
+ * to its first option (or null if there are no options).
+ * @override
+ */
 cm.MenuEditor.prototype.updateUi = function(value) {
   for (var i = 0; i < this.values_.length; i++) {
     if (this.values_[i] === value) {
       this.select_.selectedIndex = i;
-      break;
+      return;
     }
+  }
+
+  // Value was not in the menu; set the editor's value back to the first one
+  // if the value is null or undefined. This has the effect of preventing this
+  // editor's 'value' property (and any bound properties) from being set to
+  // null or undefined.  If anyone calls .set(..., {null|undefined}) on this
+  // editor's 'value' property (or any property bound to it), and  this will
+  // immediately reset the 'value' property and all bound properties to the
+  // value of the first option.
+  if (value === null || value == undefined) {
+    this.select_.selectedIndex = 0;
+    this.setValid_(this.values_.length > 0 ? this.values_[0] : null);
   }
 };
