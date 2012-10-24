@@ -95,9 +95,8 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch) {
   var addNewFolderLink = cm.ui.createLink(MSG_ADD_NEW_FOLDER);
   cm.events.forward(
       addNewFolderLink, 'click', goog.global, cm.events.ADD_LAYERS, {
-    model: mapModel,
-    maproots: [{title: MSG_UNTITLED_FOLDER, type: cm.LayerModel.Type.FOLDER}]
-  });
+        layers: [{title: MSG_UNTITLED_FOLDER, type: cm.LayerModel.Type.FOLDER}]
+      });
   cm.ui.append(toolbarElem, addNewFolderLink);
 
   if (enableSave) {
