@@ -327,18 +327,29 @@ cm.TileOverlay.prototype.initializeImageMapType_ = function(
       }
 
       var newUrl = tileUrl;
+      // If we're zoomed out far enough, we get tiles outside a valid x range
+      // because maps repeats the globe.
+      var maxTilesHorizontal = 1 << zoom;
+      var x = coord.x % maxTilesHorizontal;
+      // Javascript modulo doesn't do the right thing for -ve numbers.
+      if (x < 0) {
+        x += maxTilesHorizontal;
+      }
+      var y = coord.y;
       // convention is that a maptile url of type:
       // http://foo/{X}_{Y}_{Z}.jpg will be provided
       // replace with actual values for each request
-      newUrl = newUrl.replace(/{X}/, coord.x);
-      newUrl = newUrl.replace(/{Y}/, coord.y);
-      newUrl = newUrl.replace(/{Z}/, zoom);
+      newUrl = newUrl.replace(/{X}/, x.toString()).
+          replace(/{Y}/, y.toString()).
+          replace(/{Z}/, zoom);
       if (isHybrid) {
         newUrl = newUrl.replace(
             /\.\w*$/, intersect == Overlap.INTERSECTING ? '.png' : '.jpg');
       }
+      // If loading from google static tile service, round robin between
+      // mw1 and mw2 - browser will open 4 parallel connections to each.
       if (coord.x % 2 == 1) {
-        newUrl = newUrl.replace('mw1.google.com', 'mw2.google.com');
+        newUrl = newUrl.replace('mw1.gstatic.com', 'mw2.gstatic.com');
       }
       return newUrl;
     },
