@@ -217,3 +217,19 @@ EditPresenterTest.prototype.testShareEmailView = function() {
   cm.events.emit(goog.global, cm.events.SHARE_EMAIL);
   expectTrue(url);
 };
+
+/**
+ * Tests that the edit presenter correctly creates a new SetDefaultView command
+ * when the DEFAULT_VIEW_SET event is fired.
+ */
+EditPresenterTest.prototype.testSetDefaultView = function() {
+  var oldDefault = new cm.AppState('fr');
+  var newDefault = new cm.AppState('es');
+  var command = this.expectNew_(
+      'cm.SetDefaultViewCommand', oldDefault, newDefault);
+  expectCall(command.execute)(_, _);
+
+  var presenter = new cm.EditPresenter(null, null, null);
+  cm.events.emit(goog.global, cm.events.DEFAULT_VIEW_SET,
+      {oldDefault: oldDefault, newDefault: newDefault});
+};

@@ -21,7 +21,7 @@ function PanelViewTest() {
   this.mapModel_.set('description',
       cm.Html.fromSanitizedHtml('A giant green monster attacked!'));
   this.metadataModel_ = new google.maps.MVCObject();
-  this.appState_ = createMockInstance(cm.AppState);
+  this.appState_ = new cm.AppState();
   this.config_ = {'enable_editing': false};
 }
 PanelViewTest.prototype = new cm.TestBase();
@@ -232,4 +232,33 @@ PanelViewTest.prototype.testUpdateTitle = function() {
   this.panelView_.model_.set('title', 'New Title');
   expectDescendantOf(parent, 'h1', withText('New Title'));
   expectEq('New Title', cm.ui.document.title);
+};
+
+/**
+ * Tests that the set default view link is not shown by default (because
+ * enable_editing is false).
+ */
+PanelViewTest.prototype.testSetDefaultViewHidden = function() {
+  var parent = this.createView_();
+  var link = expectNoDescendantOf(parent,
+      withText('Set current view as default'));
+};
+
+/**
+ * Test that the set default view link is shown when enable_editing is true, and
+ * fires the appropriate event.
+ */
+PanelViewTest.prototype.testSetDefaultView = function() {
+  this.config_['enable_editing'] = true;
+  var parent = this.createView_();
+  var link = expectDescendantOf(parent,
+      withText('Set current view as default'));
+
+  var event = undefined;
+  cm.events.listen(goog.global, cm.events.DEFAULT_VIEW_SET, function(e) {
+    event = e;
+  });
+  cm.events.emit(link, 'click', {});
+  expectThat(event.oldDefault, not(isUndefined));
+  expectThat(event.newDefault, not(isUndefined));
 };

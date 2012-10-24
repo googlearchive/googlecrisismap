@@ -26,6 +26,7 @@ goog.require('cm.ImporterView');
 goog.require('cm.InspectorView');
 goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
+goog.require('cm.SetDefaultViewCommand');
 goog.require('cm.ShareEmailView');
 goog.require('cm.editors');
 goog.require('cm.events');
@@ -275,6 +276,12 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
 
   cm.events.listen(goog.global, cm.events.SHARE_EMAIL_FAILED, function() {
     sharer.emailError();
+  }, this);
+
+  // The user has set the current view as the default view.
+  cm.events.listen(goog.global, cm.events.DEFAULT_VIEW_SET, function(e) {
+    this.doCommand(new cm.SetDefaultViewCommand(e.oldDefault, e.newDefault),
+                   appState, mapModel);
   }, this);
 };
 

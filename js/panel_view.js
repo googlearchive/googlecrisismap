@@ -33,6 +33,9 @@ var EMPTY_PNG = '//maps.gstatic.com/mapfiles/transparent.png';
 /** @desc Label for a link that resets the map to its default view. */
 var MSG_RESET_VIEW_LINK = goog.getMsg('Reset to default view');
 
+/** @desc Label for a link that resets the map to its default view. */
+var MSG_SET_DEFAULT_VIEW_LINK = goog.getMsg('Set current view as default');
+
 /** @desc Label to show for a draft (unpublished) map. */
 var MSG_DRAFT_LABEL = goog.getMsg('DRAFT');
 
@@ -137,7 +140,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
   mapContainer.appendChild(expand);
 
   // Create the elements for the map title and description.
-  var resetLink;
+  var setDefaultViewLink, resetLink;
   cm.ui.append(parentElem, cm.ui.create('div', {'class': 'cm-panel-inner'},
       collapse,
       this.headerElem_ = cm.ui.create('div', {'class': 'cm-panel-header'},
@@ -149,7 +152,10 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
               {'class': 'cm-map-title'})),
       this.descElem_ = cm.ui.create('div', {'class': 'cm-map-description'}),
       cm.ui.create('div', {'class': 'cm-panel-links'},
-                   resetLink = cm.ui.createLink(MSG_RESET_VIEW_LINK)),
+          setDefaultViewLink = this.config_['enable_editing'] ?
+              cm.ui.createLink(MSG_SET_DEFAULT_VIEW_LINK) : null,
+          setDefaultViewLink && cm.ui.create('br'),
+          resetLink = cm.ui.createLink(MSG_RESET_VIEW_LINK)),
       this.layerListElem_ = cm.ui.create('div', {'class': 'cm-panel-layers'})
   ));
   if (this.config_['hide_panel_header']) {
@@ -164,6 +170,17 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
   // Keep this view up to date with changes in the model.
   cm.events.onChange(model, 'title', this.updateTitle_, this);
   cm.events.onChange(model, 'description', this.updateDescription_, this);
+
+  if (setDefaultViewLink) {
+    // Set the current view as default.
+    cm.events.listen(setDefaultViewLink, 'click', function() {
+      var oldDefault = cm.AppState.fromAppState(this.appState_);
+      oldDefault.setFromMapModel(this.model_);
+      var newDefault = cm.AppState.fromAppState(this.appState_);
+      cm.events.emit(goog.global, cm.events.DEFAULT_VIEW_SET,
+          {oldDefault: oldDefault, newDefault: newDefault});
+    }, this);
+  }
 
   // Reset to the default view of the map.
   cm.events.forward(resetLink, 'click', goog.global,

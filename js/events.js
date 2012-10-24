@@ -160,6 +160,9 @@ cm.events.ADD_LAYERS = 'ADD_LAYERS';
  */
 cm.events.NEW_LAYER = 'NEW_LAYER';
 
+/** The user set the current view as the default view. */
+cm.events.DEFAULT_VIEW_SET = 'DEFAULT_VIEW_SET';
+
 // ==== Events emitted when the user performs a non-editing action ====
 
 /** The user requested to save the document. */

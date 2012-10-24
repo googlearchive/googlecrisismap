@@ -28,6 +28,35 @@ AppStateTest.prototype.testConstruction = function() {
   expectEq(google.maps.MapTypeId.ROADMAP, this.appState_.get('map_type_id'));
 };
 
+/** Test the AppState fromAppState copy method. */
+AppStateTest.prototype.testFromAppState = function() {
+  this.appState_.set('language', 'es');
+  this.appState_.get('enabled_layer_ids').add('x');
+  this.appState_.get('promoted_layer_ids').add('y');
+  this.appState_.set('layer_opacities', {a: 50});
+  this.appState_.set('viewport', new cm.LatLonBox(10, -10, 20, -20));
+  this.appState_.set('map_type_id', google.maps.MapTypeId.SATELLITE);
+
+  // Check that all the properties are equal.
+  var newAppState = cm.AppState.fromAppState(this.appState_);
+  expectEq(this.appState_.get('language'), newAppState.get('language'));
+  expectTrue(this.appState_.get('enabled_layer_ids').equals(
+      newAppState.get('enabled_layer_ids')));
+  expectTrue(this.appState_.get('promoted_layer_ids').equals(
+      newAppState.get('promoted_layer_ids')));
+  expectThat(newAppState.get('layer_opacities'), recursivelyEquals(
+      this.appState_.get('layer_opacities')));
+  expectTrue(this.appState_.get('viewport').equals(
+      newAppState.get('viewport')));
+  expectEq(this.appState_.get('map_type_id'), newAppState.get('map_type_id'));
+
+  // Check that object references are not the same.
+  var keys = ['enabled_layer_ids', 'promoted_layer_ids', 'layer_opacities'];
+  goog.array.forEach(keys, function(key) {
+    expectTrue(newAppState.get(key) !== this.appState_.get(key));
+  }, this);
+};
+
 /**
  * Create fake LayerModel as an MVCObject.
  * @param {string} id The layer ID.
@@ -277,4 +306,86 @@ AppStateTest.prototype.testSetFromUriPromoted = function() {
   expectFalse(this.appState_.getLayerPromoted('b'));
   expectTrue(this.appState_.getLayerPromoted('c'));
   expectTrue(this.appState_.getLayerPromoted('d'));
+};
+
+/** Test that the setFromMapModel() method works correctly. */
+AppStateTest.prototype.testSetFromMapModel = function() {
+  var viewport = new cm.LatLonBox(10, -10, 20, -20);
+  var mapModel = cm.MapModel.newFromMapRoot({
+    id: 'map', base_map_type: 'GOOGLE_SATELLITE',
+    viewport: {lat_lon_alt_box: viewport.toMapRoot()}, layers: [
+      {id: 'layer', type: cm.LayerModel.Type.KML,
+       default_visibility: true, opacity: 0},
+      {id: 'folderA', type: cm.LayerModel.Type.FOLDER,
+       default_visibility: true, opacity: 1, sublayers: [
+         {id: 'sublayerA', type: cm.LayerModel.Type.KML,
+          default_visibility: false, opacity: 25}
+      ]},
+      {id: 'folderB', type: cm.LayerModel.Type.FOLDER,
+       default_visibility: false, opacity: 75, sublayers: [
+         {id: 'sublayerB', type: cm.LayerModel.Type.KML,
+          default_visibility: true, opacity: 100}
+      ]},
+      {id: 'timeSeries', type: cm.LayerModel.Type.FOLDER,
+       tags: [cm.LayerModel.IS_TIME_SERIES_FOLDER], sublayers: [
+         {id: 'timeA', type: cm.LayerModel.Type.KML},
+         {id: 'promoted', type: cm.LayerModel.Type.KML,
+          last_update: 1},
+         {id: 'timeC', type: cm.LayerModel.Type.KML}
+      ]}
+    ]
+  });
+  this.appState_.setFromMapModel(mapModel);
+
+  expectEq(cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapModel.get('map_type')],
+      this.appState_.get('map_type_id'));
+  expectTrue(this.appState_.get('viewport').equals(viewport));
+
+  expectThat(this.appState_.get('promoted_layer_ids').getValues(),
+      recursivelyEquals(['promoted']));
+  var opacities = this.appState_.get('layer_opacities');
+  var enabledLayerIds = this.appState_.get('enabled_layer_ids');
+  cm.util.forLayersInMap(mapModel, function(layer) {
+    var id = /** @type {string} */ (layer.get('id'));
+    var opacity = layer.get('opacity');
+    var matchers = [equals(opacity * 100)];
+    if (opacity === 1) {
+      matchers.push(isUndefined);
+    }
+    expectThat(opacities[id], anyOf(matchers),
+              'Unexpected opacity for layer id ' + id);
+    expectEq(layer.get('default_visibility'), enabledLayerIds.contains(id),
+             'Unexpected visibility for layer id ' + id);
+  });
+};
+
+/** Test that the writeToMapModel() method works correctly. */
+AppStateTest.prototype.testWriteToMapModel = function() {
+  this.appState_.set('enabled_layer_ids', new goog.structs.Set(['a', 'c']));
+  this.appState_.set('layer_opacities', {a: 0, b: 50, c: 100});
+  this.appState_.set('viewport', new cm.LatLonBox(10, -10, 20, 20));
+  this.appState_.set('map_type_id', google.maps.MapTypeId.SATELLITE);
+
+  var mapModel = cm.MapModel.newFromMapRoot({
+    id: 'map', layers: [
+      {id: 'a', type: cm.LayerModel.Type.KML},
+      {id: 'b', type: cm.LayerModel.Type.KML},
+      {id: 'c', type: cm.LayerModel.Type.KML}
+    ]
+  });
+  this.appState_.writeToMapModel(mapModel);
+
+  expectEq(this.appState_.get('viewport'), mapModel.get('viewport'));
+  expectEq(this.appState_.get('map_type_id'),
+      cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapModel.get('map_type')]);
+  var opacities = this.appState_.get('layer_opacities');
+  var enabledLayerIds = this.appState_.get('enabled_layer_ids');
+  cm.util.forLayersInMap(mapModel, function(layer) {
+    var id = /** @type {string} */ (layer.get('id'));
+    var opacity = layer.get('opacity');
+    expectEq(opacities[id], opacity && /** @type {number} */(opacity) * 100,
+        'Unexpected opacity for layer id ' + id);
+    expectEq(enabledLayerIds.contains(id), layer.get('default_visibility'),
+        'Unexpected visibility for layer id ' + id);
+  });
 };

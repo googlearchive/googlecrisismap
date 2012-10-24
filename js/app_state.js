@@ -81,6 +81,25 @@ cm.AppState = function(opt_language) {
 goog.inherits(cm.AppState, google.maps.MVCObject);
 
 /**
+ * Creates a new AppState from a given app state, copying its properties.
+ * @param {cm.AppState} appState AppState to copy from.
+ * @return {cm.AppState} The new app state.
+ */
+cm.AppState.fromAppState = function(appState) {
+  var newAppState = new cm.AppState(
+      /** @type {string} */ (appState.get('language')));
+  newAppState.set('enabled_layer_ids',
+      appState.get('enabled_layer_ids').clone());
+  newAppState.set('promoted_layer_ids',
+      appState.get('promoted_layer_ids').clone());
+  newAppState.set('layer_opacities', goog.object.clone(
+      /** @type {Object} */ (appState.get('layer_opacities'))));
+  newAppState.set('viewport', appState.get('viewport'));
+  newAppState.set('map_type_id', appState.get('map_type_id'));
+  return newAppState;
+};
+
+/**
  * Returns whether or not a particular layer is enabled.
  * @param {string} id A layer ID.
  * @return {boolean} The enabled state for the layer.
@@ -192,6 +211,28 @@ cm.AppState.prototype.getVisibleLayerIds = function(mapModel) {
 };
 
 /**
+ * Updates the given mapModel with the properties of this AppState. The map
+ * type, viewport, default layers, and layer opacities will be updated.
+ * @param {cm.MapModel} mapModel The MapModel to update.
+ */
+cm.AppState.prototype.writeToMapModel = function(mapModel) {
+  mapModel.set('viewport', this.get('viewport'));
+  var mapType = this.get('map_type_id');
+  if (mapType) {
+    mapModel.set('map_type',
+        goog.object.transpose(cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES)[mapType]);
+  }
+
+  var enabledLayers = this.get('enabled_layer_ids');
+  var opacities = this.get('layer_opacities');
+  cm.util.forLayersInMap(mapModel, function(layer) {
+    var id = /** @type {string} */(layer.get('id'));
+    layer.set('default_visibility', enabledLayers.contains(id));
+    layer.set('opacity', opacities[id] !== undefined ? opacities[id] / 100 : 1);
+  }, null, this);
+};
+
+/**
  * Sets the base map type, map viewport, layer visibility, layer promotion,
  * and layer opacities to the default view specified by the MapModel.
  * @param {cm.MapModel} mapModel The MapModel.
@@ -222,6 +263,7 @@ cm.AppState.prototype.setFromMapModel = function(mapModel) {
              cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapModel.get('map_type')]);
   }
   this.set('layer_opacities', opacities);
+  this.set('viewport', mapModel.get('viewport'));
 };
 
 /** @return {!goog.Uri} A URI that encodes all the application state. */
