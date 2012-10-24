@@ -129,41 +129,59 @@ LayerEntryViewTest.prototype.testConstructorIndex = function() {
   expectDescendantOf(childNodes[4], withText('monsters'));
 };
 
-/** Tests that TILE layers get a slider initialized to the right value. */
+/**
+ * Tests that the opacity slider is toggled on and off appropriately for TILE
+ * layers and non-TILE layers, respectively. Also tests that the value is
+ * initialized correctly for TILE layers.
+ */
 LayerEntryViewTest.prototype.testOpacitySlider = function() {
-  expectCall(this.appState_.get)('layer_opacities')
-      .willRepeatedly(returnWith({'layer0': 50}));
-
-  this.layerModel_.set('type', cm.LayerModel.Type.TILE);
-  this.layerModel_.set('opacity', 0.5);
-
-  var slider = this.expectNew_('goog.ui.Slider');
-  var fakeThumb = cm.ui.create('div');
-  expectCall(slider.setMoveToPointEnabled)(true);
-  expectCall(slider.render)(_);
-  expectCall(slider.getValueThumb)().willOnce(returnWith(fakeThumb));
-  expectCall(slider.getValue)().willRepeatedly(returnWith(0));
-  expectCall(slider.setValue)(50);
-
+  // Create view with non-TILE layer.
   this.createView_();
 
-  // Test whether changes in slider emit cm.events.CHANGE_OPACITY.
+  // Change the layer to TILE, and verify the slider is created.
+  this.slider_ = this.expectNew_('goog.ui.Slider');
+  this.fakeThumb_ = cm.ui.create('div');
+  expectCall(this.slider_.setMoveToPointEnabled)(true);
+  expectCall(this.slider_.render)(_);
+  expectCall(this.slider_.getValueThumb)().
+      willOnce(returnWith(this.fakeThumb_));
+  expectCall(this.appState_.get)('layer_opacities').
+      willOnce(returnWith({}));
+  expectCall(this.slider_.setValue)(100);
+
+  this.layerModel_.set('type', cm.LayerModel.Type.TILE);
+  var sliderDot = expectDescendantOf(
+      this.fakeThumb_, withClass('cm-slider-dot'));
+  expectEq(1, sliderDot.style.opacity);
+
+  // Test that the slider's 'change' event fires a CHANGE_OPACITY event with the
+  // correct opacity.
+  expectCall(this.slider_.getValue)().willOnce(returnWith(50));
   var changeOpacityEmitted = false;
+  var opacity;
   cm.events.listen(goog.global, cm.events.CHANGE_OPACITY, function(e) {
     changeOpacityEmitted = true;
+    opacity = e.opacity;
   });
-  cm.events.emit(slider, 'change');
+  cm.events.emit(this.slider_, 'change');
   expectTrue(changeOpacityEmitted);
+  expectEq(50, opacity);
 
-  // Test whether changes in the application state is reflected upon the slider.
+  // Test whether changes in the app state are reflected upon the slider.
   expectCall(this.appState_.get)('layer_opacities')
-      .willRepeatedly(returnWith({'layer0': 47}));
-  expectCall(slider.setValue)(47);
+      .willRepeatedly(returnWith({'layer0': 40}));
+  expectCall(this.slider_.setValue)(40);
   cm.events.emit(this.appState_, 'layer_opacities_changed');
+  expectEq(0.4, sliderDot.style.opacity);
 
   // The slider thumb should contain circle and dot divs.
-  var circle = expectDescendantOf(fakeThumb, withClass('cm-slider-circle'));
+  var circle = expectDescendantOf(
+      this.fakeThumb_, withClass('cm-slider-circle'));
   expectDescendantOf(circle, withClass('cm-slider-dot'));
+
+  // Change the layer to non-TILE to verify that the slider is destroyed.
+  expectCall(this.slider_.dispose)();
+  this.layerModel_.set('type', cm.LayerModel.Type.KML);
 };
 
 /** Tests that time series layers get a sublayer picker. */

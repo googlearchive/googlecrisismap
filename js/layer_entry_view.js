@@ -210,7 +210,8 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   this.warningElem_;
 
   /**
-   * @type goog.ui.Slider
+   * The opacity slider, or null if this is not a TILES layer.
+   * @type {?goog.ui.Slider}
    * @private
    */
   this.slider_ = null;
@@ -220,6 +221,13 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
    * @private
    */
   this.sliderDot_;
+
+  /**
+   * Listener tokens for the slider control, or null if it does not exist.
+   * @type {?Array.<cm.events.ListenerToken>}
+   * @private
+   */
+  this.sliderListeners_ = null;
 
   /**
    * @type Object
@@ -289,16 +297,6 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
     this.sublayerPicker_ = new cm.SublayerPicker(this.headerElem_, this.model_);
   }
 
-  if (layerType === cm.LayerModel.Type.TILE) {
-    // Add an opacity slider (by default, a goog.ui.Slider goes from 0 to 100).
-    this.slider_ = new goog.ui.Slider();
-    this.slider_.setMoveToPointEnabled(true);
-    this.slider_.render(this.sliderDiv_);
-    this.slider_.getValueThumb().appendChild(
-        cm.ui.create('div', {'class': 'cm-slider-circle'},
-            this.sliderDot_ = cm.ui.create('div', {'class': 'cm-slider-dot'})));
-  }
-
   // Add views for all the sublayers.
   var sublayers = /** @type google.maps.MVCArray */(model.get('sublayers'));
   goog.array.forEach(sublayers.getArray(), this.insertSublayer_, this);
@@ -310,7 +308,7 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   this.updateDownloadLink_();
   this.updateEnabled_();
   this.updateFolderDecorator_();
-  this.updateSlider_();
+  this.updateSliderVisibility_();
   this.updateZoomLink_();
   this.updateTime_();
   this.updateWarning_();
@@ -328,6 +326,7 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
     this.updateFolderDecorator_();
     this.updateEnabled_();
   }, this);
+  cm.events.onChange(model, 'type', this.updateSliderVisibility_, this);
   cm.events.onChange(metadataModel, id, function() {
     var metadata = this.metadataModel_.get(id);
     this.updateWarning_();
@@ -372,16 +371,6 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   if (deleteLink) {
     cm.events.forward(deleteLink, 'click', this,
                       cm.events.DELETE_LAYER, {id: id});
-  }
-
-  if (this.slider_) {
-    // When the user moves the slider, forward a CHANGE_OPACITY event.
-    cm.events.listen(this.slider_, 'change', function() {
-        cm.events.emit(goog.global, cm.events.CHANGE_OPACITY,
-                       {id: id, opacity: this.slider_.getValue()});
-    }, this);
-    // Keep the slider updated.
-    cm.events.onChange(appState, 'layer_opacities', this.updateSlider_, this);
   }
 
   if (isTimeSeries) {
@@ -681,10 +670,48 @@ cm.LayerEntryView.prototype.updateEnabled_ = function() {
 };
 
 /**
- * Updates the opacity slider to match the application state.
+ * Creates or destroys the slider element if appropriate based on its current
+ * existence and the layer type.
  * @private
  */
-cm.LayerEntryView.prototype.updateSlider_ = function() {
+cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
+  var isTilesLayer = this.model_.get('type') === cm.LayerModel.Type.TILE;
+  if (isTilesLayer && !this.slider_) {
+    // Add an opacity slider (by default, a goog.ui.Slider goes from 0 to 100).
+    this.slider_ = new goog.ui.Slider();
+    this.slider_.setMoveToPointEnabled(true);
+    this.slider_.render(this.sliderDiv_);
+    this.slider_.getValueThumb().appendChild(
+        cm.ui.create('div', {'class': 'cm-slider-circle'},
+            this.sliderDot_ = cm.ui.create('div', {'class': 'cm-slider-dot'})));
+    this.updateSliderValue_();
+
+    this.sliderListeners_ = [
+      // When the user moves the slider, forward a CHANGE_OPACITY event.
+      cm.events.listen(this.slider_, 'change', function() {
+        cm.events.emit(
+            goog.global, cm.events.CHANGE_OPACITY,
+            {id: this.model_.get('id'), opacity: this.slider_.getValue()});
+      }, this),
+      // Keep the slider's value updated.
+      cm.events.onChange(this.appState_, 'layer_opacities',
+                         this.updateSliderValue_, this)
+    ];
+  } else if (!isTilesLayer && this.slider_) {
+    this.slider_.dispose();
+    this.slider_ = null;
+    cm.events.unlisten(this.sliderListeners_);
+    this.sliderListeners_ = null;
+  }
+};
+
+/**
+ * Updates the opacity slider to match the application state. This will do
+ * nothing if the slider control does not exist (i.e. this is not a TILES
+ * layer).
+ * @private
+ */
+cm.LayerEntryView.prototype.updateSliderValue_ = function() {
   if (this.slider_) {
     var opacities =  /** @type Object.<number> */(
         this.appState_.get('layer_opacities') || {});
