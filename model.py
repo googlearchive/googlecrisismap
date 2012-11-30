@@ -685,8 +685,9 @@ class CatalogEntry(object):
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
 
   def SetMapVersion(self, map_object):
-    """Sets the MapVersionModel and title for this entry."""
-    self.model.current_version = map_object.GetCurrent().key
+    """Points this entry at the specified MapVersionModel."""
+    self.model.map_id = map_object.id
+    self.model.map_version = map_object.GetCurrent().key
     self.model.title = map_object.title
 
   def Put(self):

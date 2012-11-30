@@ -438,7 +438,8 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertEquals('title', mc.title)
 
     # Update the CatalogEntry to point at a new MapVersion.
-    mm.PutNewVersion('{"description": "description2", "title": "title2"}')
+    new_json = '{"description": "description2", "title": "title2"}'
+    new_vid = mm.PutNewVersion(new_json)
     e = mc.Get('foo.com', 'label')
     self.assertEquals(vid, e.model.map_version.key().id())
     mc.is_listed = False
@@ -453,8 +454,9 @@ class CatalogEntryTests(test_utils.BaseTest):
 
     # The CatalogEntry should now point at the new MapVersion.
     mc = model.CatalogEntry.Get('foo.com', 'label')
-    self.assertEquals(mc.model.map_version.key().id(), vid)
+    self.assertEquals(new_vid, mc.model.map_version.key().id())
     self.assertEquals('title2', mc.title)
+    self.assertEquals(new_json, mc.maproot_json)
     self.assertEquals(False, mc.is_listed)
 
   def testListedMaps(self):

@@ -44,6 +44,7 @@ class PublishTest(test_utils.BaseTest):
 
   def testRepublish(self):
     """Verifies that the is_listed status of an existing entry is preserved."""
+    # Publish a listed entry.
     handler = test_utils.SetupHandler(
         '/crisismap/publish', publish.Publish(),
         'domain=foo.com&label=abc&map_id=%s' % self.map_id)
@@ -51,12 +52,21 @@ class PublishTest(test_utils.BaseTest):
     entry = model.CatalogEntry.Get('foo.com', 'abc')
     entry.is_listed = True
     entry.Put()
+
+    # Add a new map version.
+    vid = self.map_object.PutNewVersion('{"title": "new version"}')
+
+    # Republish.
     handler = test_utils.SetupHandler(
         '/crisismap/publish', publish.Publish(),
         'domain=foo.com&label=abc&map_id=%s' % self.map_id)
     handler.post()
     entry = model.CatalogEntry.Get('foo.com', 'abc')
     self.assertTrue(entry.is_listed)
+
+    # Confirm that we get the new data.
+    self.assertEquals(vid, entry.model.map_version.key().id())
+    self.assertEquals('{"title": "new version"}', entry.maproot_json)
 
   def testInvalidLabels(self):
     """Tests to makes sure invalid labels don't get published."""
