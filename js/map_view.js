@@ -436,6 +436,10 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       // FusionTablesLayer makes the info window content available in the event
       // itself, but KmlLayer hides it behind 'featureData';
       var content = (event['featureData'] || event)['infoWindowHtml'];
+      // htmlToDocumentFragment doesn't like leading/trailing whitespace
+      if (content) {
+        content = goog.string.trim(content);
+      }
       var contentDiv = goog.dom.htmlToDocumentFragment(content);
       if (!!contentDiv.innerHTML) {
         this.infoWindow_.setOptions(/** @type google.maps.InfoWindowOptions */({

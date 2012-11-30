@@ -571,6 +571,16 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
                              kmlEvent.latLng, kmlEvent.pixelOffset);
   cm.events.emit(overlay, 'click', kmlEvent);
 
+  // Make sure leading and trailing whitespace is trimmed
+  kmlEvent = {
+    featureData: {infoWindowHtml: '\r\n grossest ice cream ever\n\t  '},
+    latLng: {},
+    pixelOffset: {}
+  };
+  this.expectInfoWindowOpen_('grossest ice cream ever',
+                             kmlEvent.latLng, kmlEvent.pixelOffset);
+  cm.events.emit(overlay, 'click', kmlEvent);
+
   // featureData is NOT defined in Fusion Tables events.
   var ftEvent = {
     infoWindowHtml: '<u>grossest</u> ice cream ever',
