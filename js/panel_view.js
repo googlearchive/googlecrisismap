@@ -221,6 +221,18 @@ cm.PanelView.prototype.getHeader = function() {
 };
 
 /**
+ * Makes the title text a clickable target to bring up the MapPicker.
+ * @param {cm.MapPicker} picker The MapPicker to trigger.
+ */
+cm.PanelView.prototype.enableMapPicker = function(picker) {
+  goog.dom.classes.add(this.titleElem_, 'cm-map-title-picker');
+  cm.events.listen(this.titleElem_, 'click', goog.bind(function(e) {
+      picker.showMenu(true);
+      e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
+  }, picker));
+};
+
+/**
  * Updates the displayed title to match the MapModel.
  * @private
  */

@@ -17,6 +17,7 @@ goog.provide('cm.MapPicker');
 goog.require('cm');
 goog.require('cm.events');
 goog.require('cm.ui');
+goog.require('goog.Uri');
 goog.require('goog.array');
 goog.require('goog.dom.classes');
 
@@ -30,8 +31,26 @@ goog.require('goog.dom.classes');
  * @constructor
  */
 cm.MapPicker = function(parentElem, menuItems) {
+  /**
+   * @type boolean
+   * @private
+   */
+  this.menuShown_;
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.menuElem_;
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.buttonElem_;
+
   var menuElem = cm.MapPicker.createMenu_(menuItems);
-  cm.MapPicker.createMenuButton_(parentElem, menuElem);
+  this.createMenuButton_(parentElem, menuElem);
 };
 
 /**
@@ -83,33 +102,41 @@ cm.MapPicker.positionMenu_ = function(menu, button) {
 };
 
 /**
+ * Shows or hides the menu.
+ * @param {boolean} show If true, show menu, otherwise hide it.
+ */
+cm.MapPicker.prototype.showMenu = function(show) {
+  if (show) {
+    cm.MapPicker.positionMenu_(this.menuElem_, this.buttonElem_);
+    cm.ui.append(cm.ui.document.body, this.menuElem_);
+  } else {
+    cm.ui.remove(this.menuElem_);
+  }
+  this.menuShown_ = show;
+};
+
+/**
  * Creates the dropdown button with listeners to open the menu when clicked.
  * @param {Element} parentElem The parent element in which to create the button.
  * @param {Element} menuElem The menu to show when the button is clicked.
  * @private
  */
-cm.MapPicker.createMenuButton_ = function(parentElem, menuElem) {
-  var buttonElem = cm.ui.create('div', {'class': 'cm-map-picker-button'});
-  cm.ui.append(parentElem, buttonElem);
+cm.MapPicker.prototype.createMenuButton_ = function(parentElem, menuElem) {
+  this.menuShown_ = false;
+  this.menuElem_ = menuElem;
+  this.buttonElem_ = cm.ui.create('div', {'class': 'cm-map-picker-button'});
 
-  var menuShown = false;
-  function showMenu(show) {
-    if (show) {
-      cm.MapPicker.positionMenu_(menuElem, buttonElem);
-      cm.ui.append(cm.ui.document.body, menuElem);
-    } else {
-      cm.ui.remove(menuElem);
-    }
-    menuShown = show;
-  }
+  cm.ui.append(parentElem, this.buttonElem_);
 
-  cm.events.listen(cm.ui.document.body, 'click', function(e) {
+  cm.events.listen(cm.ui.document.body, 'click', goog.bind(function(e) {
     // If the user clicks on the button, we toggle whether the menu is showing.
     // If the user clicks anywhere else, we hide the menu.
-    showMenu((e.target == buttonElem) ? !menuShown : false);
-  });
+    this.showMenu((e.target == this.buttonElem_) ? !this.menuShown_ : false);
+  }, this));
   // If things move around, just hide the menu (don't bother to reposition it).
   // Collapsing the cm.PanelView emits 'resize' on the window, so this happens
   // on panel expand/collapse as well as manual resizing of the browser window.
-  cm.events.listen(goog.global, 'resize', function(e) { showMenu(false); });
+  cm.events.listen(goog.global, 'resize', goog.bind(function(e) {
+    this.showMenu(false);
+  }, this));
 };

@@ -52,6 +52,9 @@ html, body {
   color:#dd4b39;
   display:inline;
 }
+.cm-map-title-picker:hover, .cm-edit .cm-map-title:hover {
+  text-decoration: underline;
+}
 .cm-header h1 {  /* product heading */
   font-size:16px;
 }
@@ -243,6 +246,15 @@ html, body {
 }
 .cm-map-title {
   width:240px; /** space for vertical scrollbar */
+}
+.cm-edit .cm-map-title {
+  padding-right: 20px;
+}
+.cm-edit .cm-map-title:after {
+  content: url('edit_pencil.png');
+  opacity: .40;
+  filter: alpha(opacity=40);
+  filter: progid:DXImageTransform.Microsoft.Alpha(opacity=0.4);
 }
 .cm-embedded .cm-map-title {
   display:inline;

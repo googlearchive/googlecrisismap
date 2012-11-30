@@ -245,8 +245,10 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   }
   var panelView = new cm.PanelView(
       frameElem, panelElem, mapElem, mapModel, metadataModel, appState, config);
-  if (opt_menuItems && opt_menuItems.length && !config['draft_mode']) {
-    new cm.MapPicker(panelView.getHeader(), opt_menuItems);
+  if (opt_menuItems && opt_menuItems.length &&
+      !config['draft_mode'] && !config['enable_editing']) {
+    panelView.enableMapPicker(new cm.MapPicker(panelView.getHeader(),
+                                               opt_menuItems));
   }
   var arranger;
   goog.module.require('edit', 'cm.ArrangeView', function(ArrangeView) {
