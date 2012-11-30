@@ -521,8 +521,9 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
                      cm.ui.createLink(linkText, url));
       }
       // Show file size in human readable form as tooltip.
-      this.downloadElem_.title =
-          goog.format.fileSize(this.metadataModel_.getContentLength(id));
+      var size = this.metadataModel_.getContentLength(id);
+      this.downloadElem_.title = goog.isNumber(size) ?
+          goog.format.fileSize(size) : '';
     } else {
       this.downloadElem_.title = '';
     }
