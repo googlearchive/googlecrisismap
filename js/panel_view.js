@@ -236,7 +236,11 @@ cm.PanelView.prototype.updateTitle_ = function() {
  */
 cm.PanelView.prototype.updateDescription_ = function() {
   var description = /** @type cm.Html */(this.model_.get('description'));
-  description.pasteInto(this.descElem_);
+  var html = description.getHtml();
+  // Incredibly, on the Android web browser, the panel will not scroll if there
+  // are any <p> tags in the map description.  Remove them and scrolling works
+  // just fine.  <p> tags in layer descriptions are harmless, though.
+  this.descElem_.innerHTML = html.replace(/<[pP]( [^>]*)?>/g, '<br><br>');
 };
 
 /**

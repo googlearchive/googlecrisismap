@@ -57,9 +57,16 @@ PanelViewTest.prototype.testConstructorHiddenHeader = function() {
   var parent = this.createView_();
   var title = expectDescendantOf(parent, withClass('cm-panel-header'));
   expectEq('none', title.style.display);
-  var description = expectDescendantOf(parent,
-                                       withClass('cm-map-description'));
+  var description = expectDescendantOf(parent, withClass('cm-map-description'));
   expectEq('none', description.style.display);
+};
+
+/** Tests the workaround for the Android browser scrolling bug. */
+PanelViewTest.prototype.testAndroidScrollingBugWorkaround = function() {
+  this.mapModel_.set('description', cm.Html.fromSanitizedHtml('one<p>two'));
+  var parent = this.createView_();
+  var description = expectDescendantOf(parent, withClass('cm-map-description'));
+  expectEq('one<br><br>two', description.innerHTML);
 };
 
 /**
