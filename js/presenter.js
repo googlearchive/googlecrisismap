@@ -89,6 +89,17 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     cm.events.emit(panelElem, 'panelclose');
   }, this);
 
+  cm.events.listen(panelElem, 'panelopen', function(event) {
+    cm.Analytics.logEvent('panel', 'open', mapId, 1);
+    // TODO(kpy): Open/close the cm.PanelView here, consistent with the way
+    // we handle other events.  At the moment, the cm.LayersButton emits an
+    // event directly on the cm.PanelView's DOM element.
+  });
+
+  cm.events.listen(panelElem, 'panelclose', function(event) {
+    cm.Analytics.logEvent('panel', 'close', mapId, 0);
+  });
+
   cm.events.listen(goog.global, cm.events.SHARE_BUTTON, function(event) {
     cm.Analytics.logEvent('share', 'open', mapId);
     // TODO(kpy): Open the cm.SharePopup here, consistent with the way we

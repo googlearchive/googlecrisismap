@@ -48,6 +48,20 @@ function PresenterTest() {
 PresenterTest.prototype = new cm.TestBase();
 registerTestSuite(PresenterTest);
 
+/** Tests that opening/closing the panel logs the correct Analytics events. */
+PresenterTest.prototype.openClosePanel = function() {
+  cm.events.emit(this.panelElem_, 'panelopen');
+  expectThat(this.events_, recursivelyEquals([
+    ['panel', 'open', 'map1', 1]
+  ]));
+
+  this.events_.splice(0, this.events_.length);  // clear the array in place
+  cm.events.emit(this.panelElem_, 'panelclose');
+  expectThat(this.events_, recursivelyEquals([
+    ['panel', 'close', 'map1', 0]
+  ]));
+};
+
 /** Tests that the resetView method sends the correct Analytics events. */
 PresenterTest.prototype.resetView = function() {
   expectCall(this.mapView_.matchViewport)(_);
