@@ -177,6 +177,9 @@ cm.events.INSPECTOR_VISIBLE = 'INSPECTOR_VISIBLE';
 /** The user requested to arrange the layers in the panel (not undoable). */
 cm.events.ARRANGE = 'ARRANGE';
 
+/** The user did a location search using the cm.SearchBox widget. */
+cm.events.LOCATION_SEARCH = 'LOCATION_SEARCH';
+
 /** The user requested to open the "Share this view" dialog. */
 cm.events.SHARE_BUTTON = 'SHARE_BUTTON';
 

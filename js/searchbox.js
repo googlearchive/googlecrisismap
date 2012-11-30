@@ -124,6 +124,9 @@ cm.SearchBox.isStreetAddress_ = function(result) {
  * @private
  */
 cm.SearchBox.prototype.goToPlace_ = function(geometry, addMarker) {
+  cm.events.emit(goog.global, cm.events.LOCATION_SEARCH,
+                 {marker: addMarker});  // for analytics
+
   if (geometry.viewport) {
     this.map_.fitBounds(geometry.viewport);
   } else {

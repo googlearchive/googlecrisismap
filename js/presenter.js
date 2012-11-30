@@ -99,6 +99,10 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     // handle other events.  At the moment, the cm.SharePopup is tightly
     // coupled to cm.ShareButton (cm.ShareButton owns a private this.popup_).
   });
+
+  cm.events.listen(goog.global, cm.events.LOCATION_SEARCH, function(event) {
+    cm.Analytics.logEvent('search', 'geocode', mapId, event.marker ? 1 : 0);
+  });
 };
 
 /**
