@@ -64,7 +64,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
 
   cm.events.listen(panelView, cm.events.TOGGLE_LAYER, function(event) {
     this.logEvent_(event.value ? 'toggle_on' : 'toggle_off', event.id,
-                  event.value ? 1 : 0);
+                   event.value ? 1 : 0);
     appState.setLayerEnabled(event.id, event.value);
   }, this);
 
@@ -74,7 +74,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
 
   cm.events.listen(panelView, cm.events.PROMOTE_LAYER, function(event) {
     this.logEvent_(event.value ? 'promote_on' : 'promote_off', event.id,
-                  event.value ? 1 : 0);
+                   event.value ? 1 : 0);
     if (event.value) {
       appState.promoteLayer(event.object);
     } else {
@@ -141,16 +141,31 @@ cm.Presenter.prototype.resetView = function(mapModel, opt_uri, opt_initial) {
   var newIds = this.appState_.get('enabled_layer_ids').getValues();
   if (opt_initial) {
     goog.array.forEach(newIds, function(id) {
-      this.logEvent_('load_on', id);
+      this.logEvent_('load_on', id, 1);
     }, this);
   } else {
     var added = (new goog.structs.Set(newIds)).difference(oldIds).getValues();
     var removed = (new goog.structs.Set(oldIds)).difference(newIds).getValues();
     goog.array.forEach(added, function(id) {
-      this.logEvent_('reset_on', id);
+      this.logEvent_('reset_on', id, 1);
     }, this);
     goog.array.forEach(removed, function(id) {
-      this.logEvent_('reset_off', id);
+      this.logEvent_('reset_off', id, 0);
     }, this);
+  }
+};
+
+/**
+ * Zoom to the user's geolocation.
+ * @param {number} zoom The zoom level to apply when the geolocation is found.
+ */
+cm.Presenter.prototype.zoomToUserLocation = function(zoom) {
+  var mapView = this.mapView_;
+  if (navigator && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      mapView.set('zoom', zoom);
+      mapView.set('center', new google.maps.LatLng(
+          position.coords.latitude, position.coords.longitude));
+    });
   }
 };

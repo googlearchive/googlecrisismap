@@ -285,6 +285,12 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
       appState, mapView, panelView, panelElem, config['map_id'] || '');
   presenter.resetView(mapModel, window.location, true);
 
+  // If "#gz=..." is specified, get the user's geolocation and zoom to it.
+  var match = window.location.hash.match('gz=([0-9]+)');
+  if (match) {
+    presenter.zoomToUserLocation(match[1] - 0);
+  }
+
   // Initialize the dynamic module loader and tell it how to find module URLs.
   var getModuleUrl = config['get_module_url'] || function(baseUrl, module) {
     return baseUrl + '/crisismap_' + module + '__' + opt_language + '.js';

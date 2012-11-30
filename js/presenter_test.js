@@ -11,6 +11,10 @@
 
 // Author: kpy@google.com (Ka-Ping Yee)
 
+/** An equality function for comparing test results. */
+google.maps.LatLng.prototype.gjstestEquals =
+    google.maps.LatLng.prototype.equals;
+
 function PresenterTest() {
   cm.TestBase.call(this);
   this.mapModel_ = cm.MapModel.newFromMapRoot({
@@ -71,4 +75,14 @@ PresenterTest.prototype.resetView = function() {
   expectThat(this.events_, recursivelyEquals([
     ['layer', 'load_on', 'map1.layer1', 1]
   ]));
+};
+
+/** Tests that zoomToUserLocation sets the map view correctly. */
+PresenterTest.prototype.zoomToUserLocation = function() {
+  this.setForTest_('navigator', {geolocation: {getCurrentPosition: function(f) {
+    f({coords: {latitude: 40, longitude: -75}});
+  }}});
+  expectCall(this.mapView_.set)('zoom', 12);
+  expectCall(this.mapView_.set)('center', new google.maps.LatLng(40, -75));
+  this.presenter_.zoomToUserLocation(12);
 };
