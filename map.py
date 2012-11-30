@@ -310,6 +310,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
   # If we have MapRoot data from the datastore, include it.
   if catalog_entry:
     config['map_root'] = json.loads(catalog_entry.maproot_json)
+    config['map_id'] = catalog_entry.map_id
     config['label'] = catalog_entry.label
   elif map_object:
     config['map_root'] = json.loads(map_object.GetCurrentJson())
