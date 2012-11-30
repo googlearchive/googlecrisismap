@@ -508,9 +508,12 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
           linkText = MSG_DOWNLOAD_GEORSS_LINK;
           break;
         case cm.LayerModel.Type.FUSION:
-          url = 'http://www.google.com/fusiontables/DataSource?dsrcid=' +
-              this.model_.get('ft_from');
-          linkText = MSG_VIEW_FUSION_TABLE_LABEL;
+          var value = this.model_.get('ft_from') + '';
+          if (value) {
+            url = 'http://www.google.com/fusiontables/DataSource?' +
+                (value.match(/^\d{1,8}$/) ? 'dsrcid' : 'docid') + '=' + value;
+            linkText = MSG_VIEW_FUSION_TABLE_LABEL;
+          }
           break;
       }
       if (linkText && url) {

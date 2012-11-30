@@ -387,6 +387,7 @@ LayerEntryViewTest.prototype.updateUrlFusion = function() {
   this.layerModel_.set('type', cm.LayerModel.Type.FUSION);
   this.layerModel_.set('ft_from', 11111);
 
+  // Old-style table IDs should be used with the 'dsrcid' parameter.
   var parent = this.createView_();
   expectDescendantOf(
       parent, 'a', withText('View data'),
@@ -399,6 +400,16 @@ LayerEntryViewTest.prototype.updateUrlFusion = function() {
   expectDescendantOf(
       parent, 'a', withText('View data'),
       withHref('http://www.google.com/fusiontables/DataSource?dsrcid=22222'));
+
+  // New-style document IDs should be used with the 'docid' parameter.
+  this.layerModel_.set('ft_from', '1nCWC1X_g-pOFUit_EmYV_fAIFQ5MLAz4HNhM2h4');
+  expectNoDescendantOf(
+      parent, 'a',
+      withHref('http://www.google.com/fusiontables/DataSource?dsrcid=22222'));
+  expectDescendantOf(
+      parent, 'a', withText('View data'),
+      withHref('http://www.google.com/fusiontables/DataSource?' +
+               'docid=1nCWC1X_g-pOFUit_EmYV_fAIFQ5MLAz4HNhM2h4'));
 };
 
 /**
