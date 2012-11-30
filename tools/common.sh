@@ -62,14 +62,19 @@ for python in \
     $(which python2.6) \
     /usr/local/bin/python2.6 \
     /usr/bin/python2.6 \
-    /Library/Frameworks/Python.framework/Versions/2.6/bin/python; do
+    /Library/Frameworks/Python.framework/Versions/2.6/bin/python \
+    $(which python2.7) \
+    /usr/local/bin/python2.7 \
+    /usr/bin/python2.7 \
+    /Library/Frameworks/Python.framework/Versions/2.7/bin/python; do
     if [ -x "$python" ]; then
         export PYTHON="$python"
+        break
     fi
 done
 
 if [ -z "$PYTHON" ]; then
-    echo "Could not find python2.5 or python2.6 executable.  Set PYTHON."
+    echo "Could not find python2.5-2.7 executable.  Set PYTHON."
     exit 1
 fi
 

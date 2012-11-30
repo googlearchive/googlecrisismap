@@ -23,8 +23,11 @@ use_library('django', '1.2')
 import os
 from django.conf import settings
 from django.utils import translation
-import languages
 import model
+try:
+  import languages
+except ImportError:
+  languages = model.Struct(ALL_LANGUAGES=['en'])
 
 from google.appengine.api import users
 from google.appengine.ext import webapp
