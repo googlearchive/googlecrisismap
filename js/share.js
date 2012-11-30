@@ -63,7 +63,10 @@ cm.ShareButton = function(map, appState, showFacebookButton,
   cm.events.listen(button, 'mousedown', function() {
     if (!this.popup_.isVisible()) {
       goog.dom.classes.add(button, 'cm-selected');
-      cm.Analytics.logEvent('Share', 'Open');
+      cm.events.emit(goog.global, cm.events.SHARE_BUTTON);
+      // TODO(kpy): Let the cm.Presenter open the cm.SharePopup, instead of
+      // making the popup private to the cm.ShareButton.  This decoupling will
+      // enable us to open the popup from other places, e.g. toolbar or panel.
       this.popup_.show();
     }
   }, this);

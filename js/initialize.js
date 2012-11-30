@@ -198,7 +198,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   // Set up Analytics.
   cm.Analytics.initialize(config['analytics_id'] || '');
   if (opt_mapName) {
-    cm.Analytics.logEvent('Page', 'Load', opt_mapName, embedded ? 1 : 0);
+    cm.Analytics.logEvent('map', 'load', config['map_id'], embedded ? 1 : 0);
   }
 
   // Create the DOM tree within the frame.
@@ -278,7 +278,8 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   }
 
   // Create the Presenter and let it set up the view based on the model and URI.
-  var presenter = new cm.Presenter(appState, mapView, panelView, panelElem);
+  var presenter = new cm.Presenter(
+      appState, mapView, panelView, panelElem, config['map_id'] || '');
   presenter.resetView(mapModel, window.location);
 
   // Initialize the dynamic module loader and tell it how to find module URLs.

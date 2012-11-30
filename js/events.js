@@ -177,7 +177,10 @@ cm.events.INSPECTOR_VISIBLE = 'INSPECTOR_VISIBLE';
 /** The user requested to arrange the layers in the panel (not undoable). */
 cm.events.ARRANGE = 'ARRANGE';
 
-/** The user requested to share the map with another user. */
+/** The user requested to open the "Share this view" dialog. */
+cm.events.SHARE_BUTTON = 'SHARE_BUTTON';
+
+/** The user requested to open the "Share via e-mail" dialog. */
 cm.events.SHARE_EMAIL = 'SHARE_EMAIL';
 
 /** The user requested to change the opacity of a layer. */

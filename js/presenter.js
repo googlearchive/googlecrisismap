@@ -35,9 +35,10 @@ goog.require('cm.ui');
  * @param {cm.MapView} mapView The map view.
  * @param {cm.PanelView} panelView The panel view.
  * @param {Element} panelElem The panel element.
+ * @param {string} mapId The map ID, for logging with Analytics.
  * @constructor
  */
-cm.Presenter = function(appState, mapView, panelView, panelElem) {
+cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
   /**
    * @type cm.AppState
    * @private
@@ -52,12 +53,12 @@ cm.Presenter = function(appState, mapView, panelView, panelElem) {
 
   /**
    * Logs a layer action with Analytics.
-   * @param {string} id A layer id.
-   * @param {string} action An action identifier to record in Analytics.
+   * @param {string} id A layer ID (will be logged with the map ID in front).
+   * @param {string} action An action label to record in Analytics.
+   * @param {number} opt_value An optional numeric value to record in Analytics.
    */
-  function logLayerEvent(id, action) {
-    var position = (id.match(/\d+$/) - 0) + 1;
-    cm.Analytics.logEvent('Layers', action, id, position);
+  function logLayerEvent(id, action, opt_value) {
+    cm.Analytics.logEvent('layer', action, mapId + '.' + id);
   }
 
   cm.events.listen(goog.global, cm.events.RESET_VIEW, function(event) {
@@ -65,7 +66,8 @@ cm.Presenter = function(appState, mapView, panelView, panelElem) {
   }, this);
 
   cm.events.listen(panelView, cm.events.TOGGLE_LAYER, function(event) {
-    logLayerEvent(event.id, event.value ? 'Toggle_ON' : 'Toggle_OFF');
+    logLayerEvent(event.id, event.value ? 'toggle_on' : 'toggle_off',
+                  event.value ? 1 : 0);
     appState.setLayerEnabled(event.id, event.value);
   });
 
@@ -74,8 +76,9 @@ cm.Presenter = function(appState, mapView, panelView, panelElem) {
   });
 
   cm.events.listen(panelView, cm.events.PROMOTE_LAYER, function(event) {
-      logLayerEvent(event.object.get('id'), event.value ?
-          'Promote_ON' : 'Promote_OFF');
+      logLayerEvent(event.object.get('id'),
+                    event.value ? 'promote_on' : 'promote_off',
+                    event.value ? 1 : 0);
       if (event.value) {
         appState.promoteLayer(event.object);
       } else {
@@ -84,10 +87,17 @@ cm.Presenter = function(appState, mapView, panelView, panelElem) {
     });
 
   cm.events.listen(panelView, cm.events.ZOOM_TO_LAYER, function(event) {
-    logLayerEvent(event.id, 'ZoomTo');
+    logLayerEvent(event.id, 'zoom_to');
     appState.setLayerEnabled(event.id, true);
     mapView.zoomToLayer(event.id);
     cm.events.emit(panelElem, 'panelclose');
+  });
+
+  cm.events.listen(goog.global, cm.events.SHARE_BUTTON, function(event) {
+    cm.Analytics.logEvent('share', 'open', mapId);
+    // TODO(kpy): Open the cm.SharePopup here, consistent with the way we
+    // handle other events.  At the moment, the cm.SharePopup is tightly
+    // coupled to cm.ShareButton (cm.ShareButton owns a private this.popup_).
   });
 };
 
