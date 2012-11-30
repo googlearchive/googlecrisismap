@@ -317,6 +317,7 @@ html, body {
   border:1px solid #ccc;
 }
 .cm-embedded.cm-touch .cm-panel-inner {
+  height:100%;
   overflow:auto;
   top:auto;
   bottom:auto;
