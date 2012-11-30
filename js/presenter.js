@@ -66,7 +66,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     this.logEvent_(event.value ? 'toggle_on' : 'toggle_off', event.id,
                   event.value ? 1 : 0);
     appState.setLayerEnabled(event.id, event.value);
-  });
+  }, this);
 
   cm.events.listen(goog.global, cm.events.CHANGE_OPACITY, function(event) {
     appState.setLayerOpacity(event.id, event.opacity);
@@ -80,14 +80,14 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     } else {
       appState.demoteSublayers(event.object);
     }
-  });
+  }, this);
 
   cm.events.listen(panelView, cm.events.ZOOM_TO_LAYER, function(event) {
     this.logEvent_('zoom_to', event.id);
     appState.setLayerEnabled(event.id, true);
     mapView.zoomToLayer(event.id);
     cm.events.emit(panelElem, 'panelclose');
-  });
+  }, this);
 
   cm.events.listen(goog.global, cm.events.SHARE_BUTTON, function(event) {
     cm.Analytics.logEvent('share', 'open', mapId);
