@@ -23,6 +23,7 @@ goog.require('cm.MapPicker');
 goog.require('cm.MapView');
 goog.require('cm.MetadataModel');
 goog.require('cm.MetadataUpdater');
+goog.require('cm.MyLocationButton');
 goog.require('cm.PanelView');
 goog.require('cm.Presenter');
 goog.require('cm.SearchBox');
@@ -232,6 +233,9 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
                        !config['hide_facebook_button'],
                        !config['hide_google_plus_button'],
                        !config['hide_twitter_button']);
+  }
+  if (!config['hide_mylocation_button']) {
+    new cm.MyLocationButton(mapView.getMap());
   }
 
   if (config['panel_float']) {

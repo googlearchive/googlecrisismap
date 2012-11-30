@@ -219,6 +219,9 @@ cm.events.IMPORT = 'IMPORT';
 /** The user requested to reset the view to the map's default view. */
 cm.events.RESET_VIEW = 'RESET_VIEW';
 
+/** The user pressed the my location button. */
+cm.events.GO_TO_MY_LOCATION = 'GO_TO_MY_LOCATION';
+
 // NOTE(kpy): Everything below this line is not specific to Crisis Map.
 // -------------------------------------------------------------------------
 

@@ -808,6 +808,19 @@ input[type=checkbox]:checked::after {
 .cm-importer .cm-triangle.cm-expanded {
   background-image:url(triangle_down.png) !important;
 }
+.cm-mylocation-button {
+  opacity:0.8;
+  width:27px;
+  height:27px;
+  padding: 3px !important;
+  background-image:url(btn_show_myl-160dpi.png) !important;
+  background-size:32px 32px !important;
+  background-repeat:no-repeat !important;
+}
+.cm-mylocation-button:hover {
+  opacity:1.0 !important;
+  background-color:white !important;
+}
 /* Support for high density screens. */
 @media screen and (-webkit-min-device-pixel-ratio:2) {
   .cm-importer .cm-triangle {
@@ -815,6 +828,9 @@ input[type=checkbox]:checked::after {
   }
   .cm-importer .cm-triangle.cm-expanded {
     background-image:url(triangle_down_2x.png) !important;
+  }
+  .cm-mylocation-button {
+    background-image:url(btn_show_myl-240dpi.png) !important;
   }
 }
 .cm-layer-selected {

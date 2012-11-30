@@ -28,6 +28,9 @@ goog.require('cm.PanelView');
 goog.require('cm.events');
 goog.require('cm.ui');
 
+/** Default zoom level for "my location" button clicks */
+/** @const */var DEFAULT_MY_LOCATION_ZOOM_LEVEL = 11;
+
 /**
  * The Presenter translates user actions into effects on the application,
  * and also logs those actions as Analytics events.
@@ -110,6 +113,11 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
   cm.events.listen(goog.global, cm.events.LOCATION_SEARCH, function(event) {
     cm.Analytics.logEvent('search', 'geocode', mapId, event.marker ? 1 : 0);
   });
+
+  cm.events.listen(goog.global, cm.events.GO_TO_MY_LOCATION, function(event) {
+    cm.Analytics.logEvent('mylocation', 'click', mapId);
+    this.zoomToUserLocation(DEFAULT_MY_LOCATION_ZOOM_LEVEL);
+  }, this);
 };
 
 /**
