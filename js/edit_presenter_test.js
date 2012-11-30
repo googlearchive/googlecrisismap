@@ -49,9 +49,6 @@ EditPresenterTest.prototype.testInspectEvent = function() {
   var layer = new cm.LayerModel();
   var layerSpecExpect = allOf([
     contains(recursivelyEquals(
-        {key: 'default_visibility', label: 'On in default view',
-         type: cm.editors.Type.CHECKBOX})),
-    contains(recursivelyEquals(
         {key: 'title', label: 'Title', type: cm.editors.Type.TEXT})),
     contains(recursivelyEquals(
         {key: 'description', label: 'Description', type: cm.editors.Type.HTML,

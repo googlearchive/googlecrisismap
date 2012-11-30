@@ -124,8 +124,6 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
 
   var layerFields = [
     // Settings that don't depend on the layer type
-    {key: 'default_visibility', label: 'On in default view',
-     type: cm.editors.Type.CHECKBOX},
     {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
     {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
      preview_class: 'cm-layer-description'},
