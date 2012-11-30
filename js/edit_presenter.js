@@ -194,7 +194,15 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'locked', label: 'Locked?',
      type: cm.editors.Type.CHECKBOX, checked_value: true,
      unchecked_value: false,
-     conditions: {'type': isType(cm.LayerModel.Type.FOLDER)}}
+     conditions: {'type': isType(cm.LayerModel.Type.FOLDER)}},
+    {key: 'tile_coordinate_type', label: 'Tile coordinates',
+     type: cm.editors.Type.MENU,
+     conditions: {'type': isType(cm.LayerModel.Type.TILE)},
+     choices: [
+       {value: cm.LayerModel.TileCoordinateType.GOOGLE,
+        label: 'Google Tile Coordinates'},
+       {value: cm.LayerModel.TileCoordinateType.BING,
+        label: 'Bing Tile Coordinates'}]}
  ];
 
   // The user has asked us to bring up an inspector.

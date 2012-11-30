@@ -16,7 +16,12 @@ function TileOverlayTest() {
   this.map_ = this.expectNew_('google.maps.Map');
   this.layer_ = new google.maps.MVCObject();
   this.appState_ = new google.maps.MVCObject();
-  expectCall(this.map_.getProjection)().willRepeatedly(returnWith({}));
+
+  this.projection_ = createMockFunction();
+  this.projection_.fromLatLngToPoint = createMockFunction('fromLatLngToPoint');
+  this.projection_.fromPointToLatLng = createMockFunction('fromPointToLatLng');
+  expectCall(this.map_.getProjection)().willRepeatedly(
+      returnWith(this.projection_));
 }
 TileOverlayTest.prototype = new cm.TestBase();
 registerTestSuite(TileOverlayTest);
@@ -106,4 +111,50 @@ TileOverlayTest.prototype.toggleUrlIsTileIndex = function() {
 
   // Turning it off again should do nothing.
   this.layer_.set('url_is_tile_index', false);
+};
+
+/** Tests addressing for Google tile coordinates. */
+TileOverlayTest.prototype.testGoogleTileAddressing = function() {
+  this.layer_.set('url', 'http://google.tileset.url/{Z}/{X}/{Y}.png');
+  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
+
+  var polyCoords = [
+    new google.maps.LatLng(0, 0),
+    new google.maps.LatLng(0, 0),
+    new google.maps.LatLng(0, 0),
+    new google.maps.LatLng(0, 0),
+    new google.maps.LatLng(0, 0)];
+  expectCall(this.projection_.fromLatLngToPoint)(_)
+      .willRepeatedly(returnWith({}));
+  this.setForTest_('intersectQuadAndTile', function() {
+    return Overlap.INTERSECTING; });
+  var url = tileOverlay.getTileUrl(polyCoords, false,
+                                   new google.maps.Point(3, 6), 4);
+  expectEq('http://google.tileset.url/4/3/6.png', url);
+};
+
+/**
+ * Tests addressing for Bing tile coordinates.
+ * Reference: http://msdn.microsoft.com/en-us/library/bb259689.aspx
+ */
+TileOverlayTest.prototype.testBingTileAddressing = function() {
+  this.layer_.set('tile_coordinate_type',
+                  cm.LayerModel.TileCoordinateType.BING);
+  this.layer_.set('url', 'http://bing.tileset.url');
+  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
+
+  var polyCoords = [
+    new google.maps.LatLng(0, 0),
+    new google.maps.LatLng(0, 0),
+    new google.maps.LatLng(0, 0),
+    new google.maps.LatLng(0, 0),
+    new google.maps.LatLng(0, 0)];
+  expectCall(this.projection_.fromLatLngToPoint)(_)
+      .willRepeatedly(returnWith({}));
+  this.setForTest_('intersectQuadAndTile', function() {
+    return Overlap.INTERSECTING; });
+
+  var url = tileOverlay.getTileUrl(polyCoords, false,
+                                   new google.maps.Point(3, 6), 4);
+  expectEq('http://bing.tileset.url/0231', url);
 };

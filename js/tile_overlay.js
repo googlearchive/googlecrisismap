@@ -130,6 +130,46 @@ cm.TileOverlay = function(layer, map, appState) {
    */
   this.layerModel_ = layer;
 
+
+  /**
+   * To be populated if bounds are specified.
+   * @type {?string}
+   * @private
+   */
+  this.boundsString_ = null;
+
+  /**
+   * Minimum zoom at which tiles are visible. If NaN, visible at all
+   * levels less than or equal to this.maxZoom_.
+   * @type {number}
+   * @private
+   */
+  this.minZoom_ = NaN;
+
+  /**
+   * Maximum zoom at which tiles are visible. If NaN, visible at all
+   * levels greater than or equal to this.minZoom_.
+   * @type {number}
+   * @private
+   */
+  this.maxZoom_ = NaN;
+
+  /**
+   * The map's projection, for computing point coordinates to LatLngs;
+   * populated when the map finishes initialising.
+   * @type {google.maps.Projection}
+   * @private
+   */
+  this.projection_ = null;
+
+  /**
+   * The type of tile coordinates used for constructing the tile URL.
+   * @type {cm.LayerModel.TileCoordinateType}
+   * @private
+   */
+  this.tileCoordinateType_ = /** @type cm.LayerModel.TileCoordinateType */(
+      layer.get('tile_coordinate_type'));
+
   var isHybrid = /** @type boolean */(layer.get('is_hybrid'));
   this.bindTo('url', layer);
   this.bindTo('url_is_tile_index', layer);
@@ -144,9 +184,9 @@ cm.TileOverlay = function(layer, map, appState) {
 
   var layerBounds = layer.get('bounds');
   if (layerBounds) {
-    bounds = /** @type {string} */(layerBounds['coords']);
-    minZoom = parseInt(layerBounds['min_zoom'], 10);
-    maxZoom = parseInt(layerBounds['max_zoom'], 10);
+    this.boundsString_ = /** @type {string} */(layerBounds['coords']);
+    this.minZoom_ = parseInt(layerBounds['min_zoom'], 10);
+    this.maxZoom_ = parseInt(layerBounds['max_zoom'], 10);
 
     if (layerBounds['display_bounds']) {
       /**
@@ -180,12 +220,12 @@ cm.TileOverlay = function(layer, map, appState) {
     // NOTE(user): We only support the initial map's projection.  If the map's
     // projection changes, we would need to refresh everything - including the
     // imagery.
-    var projection = map.getProjection();
+    this.projection_ = map.getProjection();
     // We can finish init if we have a both a projection and a tile url pattern.
     // We may not have a tile url pattern if we have a url index not yet loaded.
-    var canFinish = !!projection && !!this.tileUrlPattern_;
+    var canFinish = !!this.projection_ && !!this.tileUrlPattern_;
     if (canFinish) {
-       me.init_(projection, viewport, bounds, minZoom, maxZoom, isHybrid);
+       me.init_(viewport, isHybrid);
       // Check if setMap(map) has been called before initialization, and add the
       // map type to the map at this time.
       if (me.onMap_) {
@@ -209,24 +249,19 @@ cm.TileOverlay = function(layer, map, appState) {
 goog.inherits(cm.TileOverlay, google.maps.MVCObject);
 
 /**
- * @param {google.maps.Projection} projection The map's projection object.
  * @param {cm.LatLonBox} viewport The layer's viewport.
- * @param {?string} bounds The layer's bounds, as a string.
- * @param {number} minZoom The minimum zoom level at which tiles are available.
- * @param {number} maxZoom The maximum zoom level at which tiles are available.
  * @param {boolean} isHybrid If true, transparent tiles should be loaded around
  *     the border of this tile layer.
  * @private
  */
-cm.TileOverlay.prototype.init_ = function(projection, viewport, bounds,
-      minZoom, maxZoom, isHybrid) {
+cm.TileOverlay.prototype.init_ = function(viewport, isHybrid) {
   // The polygon coordinates that define the default viewport to zoom to,
   // the optional outline to draw on the map for discoverability, and
   // the region to intersect with the tile coordinates when determining
   // what tiles to fetch.
   var polyCoords;
-  if (bounds) {
-    polyCoords = cm.TileOverlay.normalizeCoords(bounds);
+  if (this.boundsString_) {
+    polyCoords = cm.TileOverlay.normalizeCoords(this.boundsString_);
     for (var i = 0; i < polyCoords.length; ++i) {
       this.bounds_.extend(polyCoords[i]);
     }
@@ -248,8 +283,8 @@ cm.TileOverlay.prototype.init_ = function(projection, viewport, bounds,
     this.bounds_ = null;
   }
 
-  this.mapType_ = this.initializeImageMapType_(
-      projection, polyCoords, minZoom, maxZoom, isHybrid);
+  this.mapType_ = this.initializeImageMapType_(polyCoords, isHybrid);
+
   cm.events.onChange(this.appState_, 'layer_opacities', this.updateOpacity_,
                      this);
   this.updateOpacity_();
@@ -290,73 +325,93 @@ cm.TileOverlay.normalizeCoords = function(coordString) {
 };
 
 /**
- * @param {google.maps.Projection} projection The map's projection for computing
- *     point coordinates to LatLngs.
- * @param {Array.<google.maps.LatLng>} polyCoords The coordinates of the poly
- *     for detecting what's inside and outside the imagery.
- * @param {number} minZoom The minimum zoom level at which tiles are available.
- * @param {number} maxZoom The maximum zoom level at which tiles are available.
- * @param {boolean} isHybrid If true, the file extension is replaced with .png
- *     along the edge and .jpg inside so that the border tiles are transparent
- *     and the inside tiles are compressed well.
+ * @param {Array.<google.maps.LatLng>} polyCoords The coordinates of the
+ *     viewport polygon, for detecting whether it intersects with the imagery.
+ * @param {boolean} isHybrid If true, the file extension for Google tiles is
+ *     replaced with .png along the edge and .jpg inside so that the border
+ *     tiles are transparent and the inside tiles are compressed.
  * @return {google.maps.ImageMapType} The image map type object.
  * @private
  */
 cm.TileOverlay.prototype.initializeImageMapType_ = function(
-    projection, polyCoords, minZoom, maxZoom, isHybrid) {
+    polyCoords, isHybrid) {
   var me = this;
   var mapTypeOptions = {
-    getTileUrl: function(coord, zoom) {
-      me.lastTilesLoadedMs_ = new Date().getTime();
-      var tileUrl = me.tileUrlPattern_;
-      if (!tileUrl) return null;
-
-      if (!isNaN(minZoom) && zoom < minZoom ||
-          !isNaN(maxZoom) && zoom > maxZoom) {
-        return null;
-      }
-
-      var corners = getTileRange(coord, zoom);
-      var low = corners[0];
-      var high = corners[1];
-      var polyVertices = getPolyPoints(projection, polyCoords);
-      var intersect = intersectQuadAndTile(polyVertices, low, high);
-      if (intersect == Overlap.OUTSIDE) {
-        // Returning null will cause no tile to be displayed.
-        return null;
-      }
-
-      var newUrl = tileUrl;
-      // If we're zoomed out far enough, we get tiles outside a valid x range
-      // because maps repeats the globe.
-      var maxTilesHorizontal = 1 << zoom;
-      var x = coord.x % maxTilesHorizontal;
-      // Javascript modulo doesn't do the right thing for -ve numbers.
-      if (x < 0) {
-        x += maxTilesHorizontal;
-      }
-      var y = coord.y;
-      // convention is that a maptile url of type:
-      // http://foo/{X}_{Y}_{Z}.jpg will be provided
-      // replace with actual values for each request
-      newUrl = newUrl.replace(/{X}/, x.toString()).
-          replace(/{Y}/, y.toString()).
-          replace(/{Z}/, zoom);
-      if (isHybrid) {
-        newUrl = newUrl.replace(
-            /\.\w*$/, intersect == Overlap.INTERSECTING ? '.png' : '.jpg');
-      }
-      // If loading from google static tile service, round robin between
-      // mw1 and mw2 - browser will open 4 parallel connections to each.
-      if (coord.x % 2 == 1) {
-        newUrl = newUrl.replace('mw1.gstatic.com', 'mw2.gstatic.com');
-      }
-      return newUrl;
-    },
+    getTileUrl: goog.bind(this.getTileUrl, this, polyCoords, isHybrid),
     tileSize: new google.maps.Size(256, 256)
   };
-
   return new google.maps.ImageMapType(mapTypeOptions);
+};
+
+/**
+ * @param {Array.<google.maps.LatLng>} polyCoords The coordinates of the
+ *     viewport polygon, for detecting whether it intersects with the imagery.
+ * @param {boolean} isHybrid If true, the file extension for Google tiles is
+ *     replaced with .png along the edge and .jpg inside so that the border
+ *     tiles are transparent and the inside tiles are compressed.
+ * @param {google.maps.Point} coord The tile coordinates.
+ * @param {number} zoom The map zoom level.
+ * @return {?string} The URL of the tile to fetch.
+ */
+cm.TileOverlay.prototype.getTileUrl = function(polyCoords, isHybrid,
+                                               coord, zoom) {
+  this.lastTilesLoadedMs_ = new Date().getTime();
+  var tileUrl = this.tileUrlPattern_;
+  if (!tileUrl) return null;
+
+  if (!isNaN(this.minZoom_) && zoom < this.minZoom_ ||
+      !isNaN(this.maxZoom_) && zoom > this.maxZoom_) {
+    return null;
+  }
+
+  // If we're zoomed out far enough, we get tiles outside a valid x range
+  // because maps repeats the globe.
+  var maxTilesHorizontal = 1 << zoom;
+  var x = coord.x % maxTilesHorizontal;
+  // Javascript modulo doesn't do the right thing for -ve numbers.
+  if (x < 0) {
+    x += maxTilesHorizontal;
+  }
+  var y = coord.y;
+  coord.x = x;
+
+  var corners = getTileRange(coord, zoom);
+  var low = corners[0];
+  var high = corners[1];
+  var polyVertices = getPolyPoints(this.projection_, polyCoords);
+  var intersect = intersectQuadAndTile(polyVertices, low, high);
+  if (intersect == Overlap.OUTSIDE) {
+    // Returning null will cause no tile to be displayed.
+    return null;
+  }
+
+  if (this.tileCoordinateType_ === cm.LayerModel.TileCoordinateType.BING) {
+    // Reference: http://msdn.microsoft.com/en-us/library/bb259689.aspx
+    var quad = '';
+    for (var i = zoom, mask = (1 << (zoom - 1)); i > 0; i--, mask >>= 1) {
+      var cell = 0;   // the digit for this level
+      if ((x & mask) != 0) cell++;
+      if ((y & mask) != 0) cell += 2;
+      quad += cell;
+    }
+    return tileUrl + '/' + quad;
+  } else {
+    var newUrl = tileUrl;
+    // Replace parameters in Google tile URL, e.g. http://foo/{X}_{Y}_{Z}.jpg
+    newUrl = newUrl.replace(/{X}/, x.toString()).
+                    replace(/{Y}/, y.toString()).
+                    replace(/{Z}/, zoom.toString());
+    if (isHybrid) {
+      newUrl = newUrl.replace(
+          /\.\w*$/, intersect == Overlap.INTERSECTING ? '.png' : '.jpg');
+    }
+    // If loading from google static tile service, round robin between
+    // mw1 and mw2 - browser will open 4 parallel connections to each.
+    if (coord.x % 2 == 1) {
+      newUrl = newUrl.replace('mw1.gstatic.com', 'mw2.gstatic.com');
+    }
+    return newUrl;
+  }
 };
 
 /**

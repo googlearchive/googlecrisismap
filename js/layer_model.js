@@ -77,6 +77,12 @@ cm.LayerModel.SOURCE_TYPES_BY_LAYER_TYPE = goog.object.create(
 );
 
 /** @enum {string} */
+cm.LayerModel.TileCoordinateType = {
+  GOOGLE: 'GOOGLE',
+  BING: 'BING'
+};
+
+/** @enum {string} */
 cm.LayerModel.LabelColor = {
   BLACK: 'BLACK',
   WHITE: 'WHITE'
@@ -193,6 +199,8 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       var tile = source['google_map_tiles'] || {};
       model.set('url', tile['url']);
       model.set('url_is_tile_index', tile['url_is_tile_index']);
+      model.set('tile_coordinate_type', tile['tile_coordinate_type'] ||
+          cm.LayerModel.TileCoordinateType.GOOGLE);
       break;
     case cm.LayerModel.Type.FUSION:
       var fusion = source['google_fusion_tables'] || {};
@@ -273,7 +281,10 @@ cm.LayerModel.prototype.toMapRoot = function() {
     case cm.LayerModel.Type.TILE:
       source['google_map_tiles'] = {
         'url': this.get('url'),
-        'url_is_tile_index': this.get('url_is_tile_index')};
+        'url_is_tile_index': this.get('url_is_tile_index'),
+        'tile_coordinate_type' : this.get('tile_coordinate_type') ===
+            cm.LayerModel.TileCoordinateType.BING ?
+                cm.LayerModel.TileCoordinateType.BING : null};
       break;
     case cm.LayerModel.Type.FUSION:
       source['google_fusion_tables'] = {
