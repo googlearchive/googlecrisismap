@@ -89,14 +89,14 @@ def connect(url, email=None, password=None, exit_on_failure=False):
         try:
             remote_api_stub.ConfigureRemoteApi(
                 None, path, get_login, hostport, secure=secure)
-        except Exception as e:
+        except Exception, e:
             if not path.endswith('/remote_api'):
                 path = path.rstrip('/') + '/remote_api'
                 remote_api_stub.ConfigureRemoteApi(
                     None, path, get_login, hostport, secure=secure)
             else:
                 raise
-    except Exception as e:
+    except Exception, e:
         if isinstance(e, urllib2.HTTPError):
             print >>sys.stderr, 'HTTP error %d from URL: %s' % (e.code, e.url)
         elif isinstance(e, urllib2.URLError):

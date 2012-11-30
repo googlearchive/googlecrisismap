@@ -20,7 +20,7 @@ OUT_DIR=js/compiled
 
 # Produce a checksum from the provide and require lines in all the files.
 MD5 := $(shell if which md5 >/dev/null; then echo md5; else echo md5sum; fi)
-DEP_SUM := $(shell egrep 'goog.(provide|require)' js/* | $(MD5) | cut -f1 -d' ')
+DEP_SUM := $(shell egrep -d skip 'goog.(provide|require)' js/* | $(MD5) | cut -f1 -d' ')
 
 # The external/ directory contains external dependencies (all fetched by make).
 EXTERNALS=external/google_maps_api_v3.js external/html4-defs.js external/html-sanitizer.js external/maps_api.js
