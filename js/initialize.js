@@ -250,11 +250,6 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     panelView.enableMapPicker(new cm.MapPicker(panelView.getHeader(),
                                                opt_menuItems));
   }
-  var arranger;
-  goog.module.require('edit', 'cm.ArrangeView', function(ArrangeView) {
-      arranger = new ArrangeView(arrangerElem, panelElem, appState, mapModel);
-  });
-
   var footerView = new cm.FooterView(footerElem, mapWrapperElem, mapModel);
   goog.style.showElement(footerElem, !config['hide_footer']);
 
@@ -299,6 +294,11 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
 
   // Load the 'edit' module only if editing is enabled.
   if (config['enable_editing']) {
+    var arranger;
+    goog.module.require('edit', 'cm.ArrangeView', function(ArrangeView) {
+        arranger = new ArrangeView(arrangerElem, panelElem, appState, mapModel);
+    });
+
     // Mark the body as editable so other styles can adjust accordingly.
     goog.dom.classes.add(frameElem, 'cm-edit');
 
