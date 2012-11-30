@@ -558,26 +558,26 @@ class CatalogEntry(object):
     """Returns all entries across all domains, including the unlisted ones.
 
     Returns:
-      A list of all CatalogEntry entities, in reverse creation order.
+      A list of all CatalogEntry entities, sorted by decreasing update time.
     """
     # No access control; all catalog entries are publicly visible.
     # We use '*' in the cache key for the list that includes all domains.
     return GetCachedItem([CatalogEntry, '*', 'all'], lambda: map(
-        CatalogEntry, CatalogEntryModel.all().order('-created')))
+        CatalogEntry, CatalogEntryModel.all().order('-last_updated')))
 
   @staticmethod
   def GetListed():
     """Returns all the listed entries across all domains.
 
     Returns:
-      A list of all CatalogEntry entities that are marked listed, in reverse
-      creation order.
+      A list of all CatalogEntry entities that are marked listed, sorted by
+      decreasing update time.
     """
     # No access control; all catalog entries are publicly visible.
     # We use '*' in the cache key for the list that includes all domains.
     return GetCachedItem([CatalogEntry, '*', 'listed'], lambda: map(
         CatalogEntry, CatalogEntryModel.all().order(
-            '-created').filter('is_listed =', True)))
+            '-last_updated').filter('is_listed =', True)))
 
   @staticmethod
   def GetByMapId(map_id):
@@ -593,11 +593,13 @@ class CatalogEntry(object):
       domain: A string, the domain whose catalog entries to return.
 
     Returns:
-      A list of the domain's CatalogEntry entities, in reverse creation order.
+      A list of the domain's CatalogEntry entities, sorted by decreasing
+      update time.
     """
     # No access control; all catalog entries are publicly visible.
     return GetCachedItem([CatalogEntry, domain, 'all'], lambda: map(
-        CatalogEntry, CatalogEntryModel.AllInDomain(domain).order('-created')))
+        CatalogEntry, CatalogEntryModel.AllInDomain(domain).order(
+            '-last_updated')))
 
   @staticmethod
   def GetListedInDomain(domain):
@@ -607,13 +609,13 @@ class CatalogEntry(object):
       domain: A string, the domain whose catalog entries to return.
 
     Returns:
-      A list of the domain's CatalogEntry entities that are marked listed, in
-      reverse creation order.
+      A list of the domain's CatalogEntry entities that are marked listed,
+      sorted by decreasing update time.
     """
     # No access control; all catalog entries are publicly visible.
     return GetCachedItem([CatalogEntry, domain, 'listed'], lambda: map(
         CatalogEntry, CatalogEntryModel.AllInDomain(domain).order(
-            '-created').filter('is_listed =', True)))
+            '-last_updated').filter('is_listed =', True)))
 
   @staticmethod
   def Create(domain, label, map_object, is_listed=False):
@@ -736,11 +738,11 @@ class Map(object):
 
   @staticmethod
   def _GetAll():
-    """Yields all non-deleted maps in reverse creation order.
+    """Yields all non-deleted maps, sorted by decreasing update time.
 
     This method does not do access check.
     """
-    for model in MapModel.all().order('-created').filter(
+    for model in MapModel.all().order('-last_updated').filter(
         'is_deleted = ', False):
       yield Map(model)
 

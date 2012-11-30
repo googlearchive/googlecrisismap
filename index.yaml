@@ -45,6 +45,31 @@ indexes:
   - name: created
     direction: desc
 
+- kind: CatalogEntryModel
+  properties:
+  - name: domain
+  - name: last_updated
+    direction: desc
+
+- kind: CatalogEntryModel
+  properties:
+  - name: domain
+  - name: is_listed
+  - name: last_updated
+    direction: desc
+
+- kind: CatalogEntryModel
+  properties:
+  - name: is_listed
+  - name: last_updated
+    direction: desc
+
+- kind: CatalogEntryModel
+  properties:
+  - name: map_id
+  - name: last_updated
+    direction: desc
+
 - kind: MapModel
   properties:
   - name: is_deleted
@@ -56,6 +81,19 @@ indexes:
   - name: visibility
   - name: is_deleted
   - name: created
+    direction: desc
+
+- kind: MapModel
+  properties:
+  - name: is_deleted
+  - name: last_updated
+    direction: desc
+
+- kind: MapModel
+  properties:
+  - name: visibility
+  - name: is_deleted
+  - name: last_updated
     direction: desc
 
 - kind: MapVersionModel
