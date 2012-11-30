@@ -147,19 +147,20 @@ function installHtmlSanitizer(html) {
     // TODO(kpy): We're using dictionary lookups for 'makeTagPolicy' and
     // 'sanitizeWithPolicy' because a recent change in Caja disabled renaming.
     // When fixed, revert to html.makeTagPolicy and html.sanitizeWithPolicy.
-    attribs = html['makeTagPolicy'](
+    var decision = html['makeTagPolicy'](
         function(uri) { return uri; })(tagName, attribs);
     // A tag policy can return null to mean "delete this tag"; we pass that on.
-    if (!attribs) {
+    if (!decision) {
       return null;
     }
     // The HTML sanitizer normally deletes 'style' attributes.  We add back the
     // original 'style' attribute if there is one, since we want to keep it.
+    attribs = decision['attribs'] || [];
     if (attrDict['style']) {
       attribs.push('style');
       attribs.push(attrDict['style']);  // TODO(kpy): Sanitize the CSS too.
     }
-    return attribs;
+    return {'attribs': attribs};
   };
   cm.Html.installSanitizer(function(unsanitizedHtml) {
     return html['sanitizeWithPolicy'](unsanitizedHtml, tagPolicy);

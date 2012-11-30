@@ -398,10 +398,10 @@ html, body {
   -ms-box-shadow:0 4px 16px rgba(0,0,0,0.2);
   box-shadow:0 4px 16px rgba(0,0,0,0.2);
 }
-.cm-popup :first-child {
+.cm-popup > :first-child {
   margin-top:0;
 }
-.cm-popup :last-child {
+.cm-popup > :last-child {
   margin-bottom:0;
 }
 .cm-close-button {

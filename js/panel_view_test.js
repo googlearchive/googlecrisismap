@@ -61,14 +61,6 @@ PanelViewTest.prototype.testConstructorHiddenHeader = function() {
   expectEq('none', description.style.display);
 };
 
-/** Tests the workaround for the Android browser scrolling bug. */
-PanelViewTest.prototype.testAndroidScrollingBugWorkaround = function() {
-  this.mapModel_.set('description', cm.Html.fromSanitizedHtml('one<p>two'));
-  var parent = this.createView_();
-  var description = expectDescendantOf(parent, withClass('cm-map-description'));
-  expectEq('one<br><br>two', description.innerHTML);
-};
-
 /**
  * @param {string} id A layer ID.
  * @return {google.maps.MVCObject} A trivial fake for a LayerModel.
