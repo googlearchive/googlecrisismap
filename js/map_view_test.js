@@ -153,6 +153,10 @@ MapViewTest.prototype.controlPositionNotTouch = function() {
 
 /** Tests map controls for touch browsers. */
 MapViewTest.prototype.controlPositionTouch = function() {
+  this.expectedMapOptions_.scaleControl = false;
+  this.expectedMapOptions_.streetViewControl = false;
+  this.expectedMapOptions_.zoomControlOptions.style =
+      google.maps.ZoomControlStyle.SMALL;
   new cm.MapView(this.elem_, this.mapModel_, this.appState_, true);
 };
 

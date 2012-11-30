@@ -92,13 +92,14 @@ cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config) {
     zoomControlPosition = google.maps.ControlPosition.RIGHT_BOTTOM;
     scaleControlPosition = google.maps.ControlPosition.LEFT_BOTTOM;
   }
-  var zoomControlStyle = config['minimal_map_controls'] ?
+  var minimalMapControls = config['minimal_map_controls'] || touchDevice;
+  var zoomControlStyle = minimalMapControls ?
       google.maps.ZoomControlStyle.SMALL :
       google.maps.ZoomControlStyle.DEFAULT;
   var mapOptions = /** @type google.maps.MapOptions */({
-    'streetViewControl': !(config['minimal_map_controls']),
+    'streetViewControl': !minimalMapControls,
     'panControl': false,
-    'scaleControl': !config['minimal_map_controls'],
+    'scaleControl': !minimalMapControls,
     'scaleControlOptions': {
       'position': scaleControlPosition
     },
