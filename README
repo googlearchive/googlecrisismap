@@ -1,66 +1,13 @@
-# Copyright 2012 Google Inc.  All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may not
-# use this file except in compliance with the License.  You may obtain a copy
-# of the License at: http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software distrib-
-# uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
-# OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
-# specific language governing permissions and limitations under the License.
+Use Stratomap to create, publish, and share maps by combining layers from
+anywhere on the web.  Supported layer formats include KML, GeoRSS, Tile URLs,
+and Fusion Tables. This is the code that powers http://google.org/crisismap/.
 
+This project is maintained at https://code.google.com/p/stratomap/.
 
-Building and running Stratomap
-------------------------------
+To deploy your own running copy of the app, see:
 
-Setup:
-  Ensure that you have make, svn, ant, and javac installed.  Linux and Mac
-  machines will often already have these; you can check for them with the
-  commands "which make", "which svn", "which ant", "which javac".  If you're
-  on a Mac and need "make", you can get it by installing Xcode.
+    https://code.google.com/p/stratomap/wiki/Deploying
 
-  Download the latest zip file of the Closure library from:
-    http://code.google.com/p/closure-library/downloads/list
+To get started developing the code, see:
 
-  Download the latest zip file of the Closure compiler from:
-    http://code.google.com/p/closure-compiler/downloads/list
-
-  Make a directory at $HOME/closure and unzip both of the above zip files
-  in that directory.  When you're done these files should exist:
-    $HOME/closure/closure/goog/
-    $HOME/closure/third_party/closure/goog/
-    $HOME/closure/compiler.jar
-
-  Download the App Engine SDK (get the LINUX ZIP FILE regardless of your OS):
-    http://developers.google.com/appengine/downloads
-
-  Make a directory at $HOME/google_appengine and unzip the above zip file
-  in that directory, so for example this file should exist:
-    $HOME/google_appengine/dev_appserver.py
-
-To build and run, cd to this directory (containing this README) and type:
-  make
-  tools/run
-
-...then visit the local server at http://localhost:8000/.  You can edit
-JS files and see the changes just by re-running "make" and hitting Reload
-in your browser; no need to restart the server.
-
-The first run of "make" will unfortunately take about 5 minutes or so because
-it needs to download and build the whole google-caja project to generate one
-little file, html4-defs.js.  This only has to happen once; subsequent runs of
-"make" will be much faster.
-
-
-Running the tests
------------------
-
-Setup:
-  Install py.test: sudo easy_install-2.5 pytest
-
-  Install google-js-test: http://code.google.com/p/google-js-test/
-
-To run the tests:
-  tools/pytests
-  tools/jstests
-
+    https://code.google.com/p/stratomap/wiki/GettingStarted
