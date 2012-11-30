@@ -75,6 +75,9 @@ handlers:
   script: unpublish.py
   login: required
 
+- url: /crisismap/redirect/[\w.-]+
+  script: redirect.py
+
 - url: /crisismap/share/.*
   script: share.py
   login: required
