@@ -46,6 +46,13 @@ function MapViewTest() {
     zoomControlOptions: {
       position: google.maps.ControlPosition.LEFT_BOTTOM,
       style: google.maps.ZoomControlStyle.DEFAULT
+    },
+    mapTypeControlOptions: {
+      mapTypeIds: [
+        google.maps.MapTypeId.ROADMAP,
+        google.maps.MapTypeId.SATELLITE
+      ],
+     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
     }
   };
   this.map_ = this.expectNew_('google.maps.Map', this.elem_,
@@ -55,7 +62,8 @@ function MapViewTest() {
   expectCall(this.map_.bindTo)('center', _);
   expectCall(this.map_.bindTo)('zoom', _);
   expectCall(this.map_.setOptions)(recursivelyEquals({mapTypeControlOptions: {
-    mapTypeIds: DEFAULT_MAP_TYPE_IDS
+    mapTypeIds: DEFAULT_MAP_TYPE_IDS,
+    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
   }}));
   expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.ROADMAP);
 
@@ -974,7 +982,8 @@ MapViewTest.prototype.testUpdateMapStyle = function() {
   expectCall(this.mapModel_.get)('base_map_style')
       .willRepeatedly(returnWith('{\"invalid\": \"json'));
   expectCall(this.map_.setOptions)(recursivelyEquals({mapTypeControlOptions: {
-    mapTypeIds: DEFAULT_MAP_TYPE_IDS
+    mapTypeIds: DEFAULT_MAP_TYPE_IDS,
+    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
   }}));
   expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.ROADMAP);
   cm.events.emit(this.mapModel_, 'base_map_style_changed');
@@ -996,7 +1005,8 @@ MapViewTest.prototype.testUpdateMapStyle = function() {
       .willRepeatedly(returnWith(undefined));
   // Custom map is added at the end.
   expectCall(this.map_.setOptions)(recursivelyEquals({mapTypeControlOptions: {
-      mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat([cm.MapModel.Type.CUSTOM])
+      mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat([cm.MapModel.Type.CUSTOM]),
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
   }})).willRepeatedly(returnWith(undefined));
   cm.events.emit(this.mapModel_, 'map_type_changed');
 
@@ -1006,7 +1016,8 @@ MapViewTest.prototype.testUpdateMapStyle = function() {
   expectCall(this.mapModel_.get)('map_type')
       .willRepeatedly(returnWith(cm.MapModel.Type.SATELLITE));
   expectCall(this.map_.setOptions)(recursivelyEquals({mapTypeControlOptions: {
-    mapTypeIds: DEFAULT_MAP_TYPE_IDS
+    mapTypeIds: DEFAULT_MAP_TYPE_IDS,
+    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
   }}));
   expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.SATELLITE);
   cm.events.emit(this.mapModel_, 'map_type_changed');

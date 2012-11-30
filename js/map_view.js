@@ -106,7 +106,14 @@ cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config) {
     'zoomControlOptions': /** @type google.maps.ZoomControlOptions */({
       'position': zoomControlPosition,
       'style': zoomControlStyle
-    })
+    }),
+    'mapTypeControlOptions': {
+      'mapTypeIds': [
+        google.maps.MapTypeId.ROADMAP,
+        google.maps.MapTypeId.SATELLITE
+      ],
+      'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
+    }
   });
 
   // The MapView has its own "center" and "zoom" properties so that we can
@@ -292,8 +299,12 @@ cm.MapView.prototype.updateMapType = function() {
   }
   this.map_.setMapTypeId(
       cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[/** @type string */(mapType)]);
-  this.map_.setOptions({'mapTypeControlOptions':
-                        {'mapTypeIds': mapTypeIds}});
+  this.map_.setOptions({
+      'mapTypeControlOptions': {
+        'mapTypeIds': mapTypeIds,
+        'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
+      }
+  });
 };
 
 /**
