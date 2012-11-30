@@ -178,6 +178,9 @@ html, body {
 .cm-expand-icon, .cm-panel-left .cm-collapse-icon {
   background:url('//maps.gstatic.com/mapfiles/hpimgs28.png') -132px -26px;
 }
+.cm-searchbox {
+  width:200px;
+}
 /* NOTE(arb): The lack of a space in the following is on purpose! */
 .cm-panel-collapsed.cm-panel-left .cm-searchbox {
   margin-left:24px;  /* move over to avoid the expand button on the left */
