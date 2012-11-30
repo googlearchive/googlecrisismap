@@ -283,7 +283,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   // Create the Presenter and let it set up the view based on the model and URI.
   var presenter = new cm.Presenter(
       appState, mapView, panelView, panelElem, config['map_id'] || '');
-  presenter.resetView(mapModel, window.location);
+  presenter.resetView(mapModel, window.location, true);
 
   // Initialize the dynamic module loader and tell it how to find module URLs.
   var getModuleUrl = config['get_module_url'] || function(baseUrl, module) {
