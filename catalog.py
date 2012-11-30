@@ -45,9 +45,10 @@ class Catalog(BaseHandler):
     entries = model.CatalogEntry.GetAllInDomain(domain)
     for entry in entries:
       # Only checked checkboxes' values are sent from the client.
-      val = bool(self.request.get(entry.label))
-      entry.is_listed = val
-      entry.Put()
+      value = bool(self.request.get(entry.label))
+      if bool(entry.is_listed) != value:
+        entry.is_listed = value
+        entry.Put()
     self.redirect('/crisismap/a/' + domain)
 
 
