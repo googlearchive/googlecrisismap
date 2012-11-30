@@ -63,6 +63,7 @@ cm.ShareButton = function(map, appState, showFacebookButton,
   cm.events.listen(button, 'mousedown', function() {
     if (!this.popup_.isVisible()) {
       goog.dom.classes.add(button, 'cm-selected');
+      cm.Analytics.logEvent('Share', 'Open');
       this.popup_.show();
     }
   }, this);
