@@ -39,9 +39,13 @@ class Publish(BaseHandler):
     domain = self.request.get('domain')
     label = self.request.get('label').strip()
     map_id = self.request.get('map_id')
+    map_object = model.Map.Get(map_id)
     if re.match(r'^[\w\-]+$', label):  # Valid if alphanumeric, -, _
-      model.CatalogEntry.Create(
-          domain, label, model.Map.Get(map_id), is_listed=False)
+      # Preserve the "is_listed" flag if the CatalogEntry already exists.
+      entry = (model.CatalogEntry.Get(domain, label) or
+               model.CatalogEntry.Create(domain, label, map_object))
+      entry.SetMapVersion(map_object)
+      entry.Put()
       self.redirect('/crisismap/maps')
     else:
       raise base_handler.Error(
