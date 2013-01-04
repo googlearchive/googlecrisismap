@@ -19,6 +19,7 @@ goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
 goog.require('cm.events');
 goog.require('cm.ui');
+goog.require('goog.i18n.MessageFormat');
 
 // TODO(joeysilva): These messages will be moved (see b/7232521)
 /**
