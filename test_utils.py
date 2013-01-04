@@ -64,6 +64,13 @@ def SetupHandler(url, handler, post_data=None):
     request.body = post_data
     request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
   handler.initialize(request, response)
+
+  # Passing Unicode to redirect() is fatal in production.  Make it so in tests.
+  def TestRedirect(uri, *kwargs):
+    if type(uri) != str:
+      raise TypeError('redirect() must be called with an 8-bit string')
+    original_redirect(uri, *kwargs)
+  original_redirect, handler.redirect = handler.redirect, TestRedirect
   return handler
 
 

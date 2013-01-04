@@ -38,7 +38,7 @@ class Index(webapp2.RequestHandler):
 
   # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
   def get(self):
-    self.redirect(GetDestination(self.request))
+    self.redirect(str(GetDestination(self.request)))  # non-Unicode is required
 
 
 app = webapp2.WSGIApplication([('.*', Index)])

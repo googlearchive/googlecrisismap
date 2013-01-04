@@ -28,7 +28,7 @@ class Redirect(webapp2.RequestHandler):
   # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
   def get(self, key_name):
     redirection = Redirection.get_by_key_name(key_name)
-    self.redirect(redirection and redirection.url or '/')
+    self.redirect(redirection and str(redirection.url) or '/')
 
 
 app = webapp2.WSGIApplication([

@@ -37,25 +37,32 @@ class IndexTest(test_utils.BaseTest):
 
   def testGetDestinationWithCrisisParam(self):
     """Tests GetDestination with old-style id= and crisis= parameters."""
-    request = test_utils.SetupRequest('http://foo/crisismap?id=abc&layers=def')
+    handler = test_utils.SetupHandler(
+        'http://foo/crisismap?id=abc&layers=def', index.Index())
+    handler.get()
     self.assertEquals('http://foo/crisismap/abc?layers=def',
-                      index.GetDestination(request))
+                      handler.response.headers['Location'])
 
-    request = test_utils.SetupRequest(
-        'http://foo/crisismap?crisis=abc&layers=def')
+    handler = test_utils.SetupHandler(
+        'http://foo/crisismap?crisis=abc&layers=def', index.Index())
+    handler.get()
     self.assertEquals('http://foo/crisismap/abc?layers=def',
-                      index.GetDestination(request))
+                      handler.response.headers['Location'])
 
   def testGetDestinationDefault(self):
     """Tests GetDestination with no label parameter."""
-    request = test_utils.SetupRequest('http://foo/crisismap?layers=abc')
+    handler = test_utils.SetupHandler(
+        'http://foo/crisismap?layers=abc', index.Index())
+    handler.get()
     self.assertEquals('http://foo/crisismap/empty?layers=abc',
-                      index.GetDestination(request))
+                      handler.response.headers['Location'])
 
     model.Config.Set('default_label', 'qwerty')
-    request = test_utils.SetupRequest('http://foo/crisismap?layers=abc')
+    handler = test_utils.SetupHandler(
+        'http://foo/crisismap?layers=abc', index.Index())
+    handler.get()
     self.assertEquals('http://foo/crisismap/qwerty?layers=abc',
-                      index.GetDestination(request))
+                      handler.response.headers['Location'])
 
 
 if __name__ == '__main__':
