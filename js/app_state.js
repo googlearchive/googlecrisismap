@@ -41,19 +41,19 @@ cm.AppState = function(opt_language) {
   google.maps.MVCObject.call(this);
   /**
    * The BCP 47 language code for the current UI language.
-   * @type string
+   * type string
    */
   this.set('language', opt_language || DEFAULT_LANGUAGE);
 
   /**
    * The set of layers currently enabled in the panel.
-   * @type goog.structs.Set
+   * type goog.structs.Set
    */
   this.set('enabled_layer_ids', new goog.structs.Set());
 
   /**
    * The set of layers that are currently promoted sublayers of a time series.
-   * @type goog.structs.Set
+   * type goog.structs.Set
    */
   this.set('promoted_layer_ids', new goog.structs.Set());
 
@@ -61,20 +61,20 @@ cm.AppState = function(opt_language) {
    * The dictionary to keep opacity values of layers.  Indexed by layer ID.  The
    * values in the dictionary are integers from 0 to 100.  All layers that
    * don't appear in the dictionary are assumed to have opacity 100.
-   * @type Object
+   * type Object
    */
   this.set('layer_opacities', {});
 
   /**
    * The current map viewport.  This shouldn't ever be null.
-   * @type !cm.LatLonBox
+   * type !cm.LatLonBox
    */
   this.set('viewport', cm.LatLonBox.ENTIRE_MAP);
 
   /**
    * The Maps API MapTypeId of the currently selected base map (road,
    * satellite, terrain, etc.).
-   * @type google.maps.MapTypeId
+   * type google.maps.MapTypeId
    */
   this.set('map_type_id', google.maps.MapTypeId.ROADMAP);
 };
