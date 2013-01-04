@@ -42,7 +42,7 @@ EditPresenterTest.prototype.testInspectEvent = function() {
     contains(recursivelyEquals(
         {key: 'viewport', label: 'Default viewport',
          type: cm.editors.Type.LAT_LON_BOX, app_state: null}))
-  ]), map);
+  ]), null, map);
   cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
 
   // Emitting an INSPECT event on a layer should open an inspector on the layer.
@@ -66,12 +66,13 @@ EditPresenterTest.prototype.testInspectEvent = function() {
         {key: 'max_zoom', type: cm.editors.Type.NUMBER, require_integer: true,
          label: 'Maximum zoom level', minimum: 0, maximum: 20}))
   ]);
-  expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, layer);
+  expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, null,
+                                layer);
   cm.events.emit(goog.global, cm.events.INSPECT, {object: layer});
 
   // Emitting an INSPECT event with no object should open an inspector on a new
   // layer.
-  expectCall(inspector.inspect)('Create new layer', layerSpecExpect);
+  expectCall(inspector.inspect)('Create new layer', layerSpecExpect, null);
   cm.events.emit(goog.global, cm.events.INSPECT, {});
 };
 

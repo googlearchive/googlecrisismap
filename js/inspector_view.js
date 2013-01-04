@@ -120,16 +120,19 @@ cm.InspectorView = function() {
  *     only when all the predicates are true.  Some editors accept other
  *     options, which are given as additional properties in the editorSpecs
  *     item; see the cm.*Editor constructors for details.
+ * @param {cm.AppState} appState The application state.
  * @param {cm.MapModel|cm.LayerModel=} opt_object If specified, the MapModel or
  *     LayerModel whose properties will be edited. Otherwise, a blank inspector
  *     will be displayed, and a new LayerModel will be created on OK.
  */
-cm.InspectorView.prototype.inspect = function(title, editorSpecs, opt_object) {
+cm.InspectorView.prototype.inspect = function(
+    title, editorSpecs, appState, opt_object) {
   // We bind the editors to a separate "draft" copy of the object (instead of
   // the original object) so we can apply all the edits in a single Command.
   this.isNew_ = !opt_object;
   this.object_ = opt_object || new google.maps.MVCObject();
   this.draft_ = new google.maps.MVCObject();
+  this.appState_ = appState;
 
   cm.ui.setText(this.titleElem_, title);
   goog.dom.classes.enable(this.copyLayerLink_, 'cm-hidden', !this.isNew_);
@@ -202,6 +205,11 @@ cm.InspectorView.prototype.inspect = function(title, editorSpecs, opt_object) {
   for (var key in triggerKeys) {
     cm.events.onChange(this.draft_, key, this.updateConditionalEditors_, this);
   }
+
+  //  Listen on the appstate so we can close this inspector view if this layer
+  //  is disabled.
+  cm.events.onChange(this.appState_, 'enabled_layer_ids',
+                     this.cancelIfLayerDisabled_, this);
 };
 
 /**
@@ -268,13 +276,27 @@ cm.InspectorView.prototype.handleCancel_ = function() {
  * @private
  */
 cm.InspectorView.prototype.dispose_ = function(opt_disposeInspector) {
-  goog.array.forEach(this.editors_, function(editor) {
-    editor.dispose();
-  });
-  this.editors_ = null;
+  if (this.editors_) {
+    goog.array.forEach(this.editors_, function(editor) {
+      editor.dispose();
+    });
+    this.editors_ = null;
+  }
   if (opt_disposeInspector) {
     cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
     cm.ui.remove(this.popup_);
+  }
+};
+
+/**
+ * Closes the inspector view if the layer has been disabled.
+ * @private
+ */
+cm.InspectorView.prototype.cancelIfLayerDisabled_ = function() {
+  // Close the inspector view only if the layer isn't new and isn't enabled.
+  if (this.object_ instanceof cm.LayerModel && !this.isNew_ &&
+      !this.appState_.getLayerEnabled(this.object_.get('id'))) {
+    this.handleCancel_();
   }
 };
 

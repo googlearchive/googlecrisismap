@@ -214,11 +214,11 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   cm.events.listen(goog.global, cm.events.INSPECT, function(e) {
     if (!e.object) {
       // New layer
-      inspector.inspect('Create new layer', layerFields);
+      inspector.inspect('Create new layer', layerFields, appState);
     } else if (e.object instanceof cm.MapModel) {
-      inspector.inspect('Edit map details', mapFields, e.object);
+      inspector.inspect('Edit map details', mapFields, appState, e.object);
     } else if (e.object instanceof cm.LayerModel) {
-      inspector.inspect('Edit layer details', layerFields, e.object);
+      inspector.inspect('Edit layer details', layerFields, appState, e.object);
     }
   });
 

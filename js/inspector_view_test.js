@@ -13,6 +13,7 @@
 
 function InspectorViewTest() {
   cm.TestBase.call(this);
+  this.appState_ = createMockInstance(cm.AppState);
   this.view_ = new cm.InspectorView();
 
   // Listen for an OBJECT_EDITED event.
@@ -32,23 +33,26 @@ registerTestSuite(InspectorViewTest);
  * Opens the inspector.
  * @param {boolean=} opt_isNew Whether or not to open an inspector for a new
  *     layer.
+ * @param {cm.MapModel|cm.LayerModel=} opt_object LayerModel or MapModel to use
+ *     for the test.
  * @private
  */
-InspectorViewTest.prototype.openInspector_ = function(opt_isNew) {
+InspectorViewTest.prototype.openInspector_ = function(opt_isNew, opt_object) {
   // Grab the popup that the InspectorView will open.
   var me = this;
   this.setForTest_('cm.ui.showPopup', function(popup) {
     me.popup_ = popup;
+    cm.ui.document.body.appendChild(popup);
   });
 
   // Open the inspector on a sample MVCObject.
-  var object = new google.maps.MVCObject();
-  object.setValues({a: 'x', b: 5});
+  var object = opt_object || new google.maps.MVCObject();
+  object.setValues({a: 'x', b: 5, id: 'layer0'});
   this.view_.inspect('Title text', [
     {key: 'a', label: 'First field', type: cm.editors.Type.TEXT},
     {key: 'b', label: 'Second field', type: cm.editors.Type.NUMBER,
      conditions: {'a': function(x) { return x == 'yes'; }}}
-  ], opt_isNew ? undefined : object);
+  ], this.appState_, opt_isNew ? undefined : object);
 };
 
 /** Tests that the inspect() method works properly. */
@@ -94,6 +98,7 @@ InspectorViewTest.prototype.inspectAndEdit_ = function() {
 /** Tests that clicking the OK button applies the user's edits. */
 InspectorViewTest.prototype.testOk = function() {
   this.inspectAndEdit_();
+  expectDescendantOf(cm.ui.document.body, this.popup_);
 
   // Click the OK button.
   var button = expectDescendantOf(this.popup_, 'button', withText('OK'));
@@ -111,6 +116,8 @@ InspectorViewTest.prototype.testOk = function() {
 /** Tests that clicking the OK button creates a new layer. */
 InspectorViewTest.prototype.testOkForNew = function() {
   this.openInspector_(true);
+  expectDescendantOf(cm.ui.document.body, this.popup_);
+
   var aInput = expectDescendantOf(this.popup_, 'input');
   aInput.value = 'x';
   cm.events.emit(aInput, 'keyup');
@@ -164,6 +171,7 @@ InspectorViewTest.prototype.testConditionalsForNew = function() {
 /** Tests that clicking the Cancel button discards the user's edits. */
 InspectorViewTest.prototype.testCancel = function() {
   this.inspectAndEdit_();
+  expectDescendantOf(cm.ui.document.body, this.popup_);
 
   // Click the Cancel button.
   var button = expectDescendantOf(this.popup_, 'button', withText('Cancel'));
@@ -174,6 +182,28 @@ InspectorViewTest.prototype.testCancel = function() {
 
   // Confirm that the popup disappeared.
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
+};
+
+/** Tests that disabling the layer closes the edit window. */
+InspectorViewTest.prototype.testCancelIfLayerDisabled = function() {
+  this.openInspector_(false, new cm.LayerModel());
+
+  // Enable layer0 and verify that the popup is still shown.
+  expectCall(this.appState_.getLayerEnabled)('layer0')
+      .willOnce(returnWith(true));
+  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  expectDescendantOf(cm.ui.document.body, this.popup_);
+
+  // Disable layer0 and verify that the popup is not displayed.
+  expectCall(this.appState_.getLayerEnabled)('layer0')
+      .willRepeatedly(returnWith(false));
+  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  expectNoDescendantOf(cm.ui.document.body, this.popup_);
+
+  // Don't hide the popup if this is not a layer model.
+  this.openInspector_(false);
+  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  expectDescendantOf(cm.ui.document.body, this.popup_);
 };
 
 /** Tests a conditional editor under conditions when it should be hidden. */
