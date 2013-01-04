@@ -18,10 +18,11 @@ import StringIO
 import urllib
 import xml.etree.ElementTree as ElementTree
 import zipfile
-import simplejson as json
 
 import legend_item_extractor
 from legend_item_extractor import GetLegendItems
+import mox
+import simplejson as json
 import test_utils
 
 
@@ -313,28 +314,18 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     </kml>""" % (href_icon, colored_icon, no_href, linestyle, polystyle,
                  linestyle + polystyle, color_style)
 
-    # Map lambda is not too long. pylint: disable-msg=C6402
-    icon_styles = map(self.CreateIconFromString,
-                      [no_href, colored_icon, href_icon])
-    icon_style_set = set()
-    for icon_style in icon_styles:
-      icon_style_set.add(tuple(sorted(icon_style.items())))
-    icon_styles = map(dict, icon_style_set)
-
-    polygon_styles = [self.CreatePolygonFromString(polystyle),
-                      self.CreatePolygonFromString(polystyle, linestyle)]
-    polygon_style_set = set()
-    for polygon_style in polygon_styles:
-      polygon_style_set.add(tuple(sorted(polygon_style.items())))
-    polygon_styles = map(dict, polygon_style_set)
-
     self.assertEquals(
         # Icons
-        (icon_styles,
+        # Map lambda is not too long. pylint: disable-msg=C6402
+        (mox.SameElementsAs(map(self.CreateIconFromString,
+                                [no_href, colored_icon, href_icon])),
          # Lines
          [self.CreateLineFromString(linestyle)],
          # Polygons
-         polygon_styles,
+         mox.SameElementsAs([
+             self.CreatePolygonFromString(polystyle),
+             self.CreatePolygonFromString(polystyle, linestyle)
+         ]),
          # Static icons; Colors
          set(static_icons), set(self.CssColors(kml_colors))),
         legend_item_extractor.Extract(kml))
@@ -490,23 +481,15 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     </kml>""" % (polystyles[0], linestyles[0],
                  polystyles[1], linestyles[1])
 
-    polygon_styles = [
-        # From separate styles
-        self.CreatePolygonFromString(polystyles[0], linestyles[0]),
-        self.CreatePolygonFromString(polystyles[1], linestyles[1]),
-        # From shared style
-        self.CreatePolygonFromString(polystyles[1])
-    ]
-    polygon_style_set = set()
-    for polygon_style in polygon_styles:
-      polygon_style_set.add(tuple(sorted(polygon_style.items())))
-    polygon_styles = map(dict, polygon_style_set)
-
     self.assertEquals(
         # Line from shared style
         ([], [self.CreateLineFromString(linestyles[1])],
          # Polygons
-         polygon_styles,
+         mox.SameElementsAs([
+             self.CreatePolygonFromString(polystyles[0], linestyles[0]),
+             self.CreatePolygonFromString(polystyles[1], linestyles[1]),
+             self.CreatePolygonFromString(polystyles[1])
+         ]),
          # Icons and colors
          set(), set(self.CssColors(kml_colors))),
         legend_item_extractor.Extract(kml))
