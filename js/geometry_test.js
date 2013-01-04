@@ -27,12 +27,15 @@ google.maps.Point.prototype.gjstestEquals =
     google.maps.Point.prototype.equals;
 
 function GeometryTest() {
+  cm.TestBase.call(this);
+
   // This is intended to mock the google.maps.Projection interface, but there
   // is no google.maps.Projection class so we just use a mock function.
   this.projection_ = createMockFunction();
   this.projection_.fromLatLngToPoint = createMockFunction('fromLatLngToPoint');
   this.projection_.fromPointToLatLng = createMockFunction('fromPointToLatLng');
 }
+GeometryTest.prototype = new cm.TestBase();
 registerTestSuite(GeometryTest);
 
 /** Tests the boundingBoxesOverlap() function. */
@@ -136,9 +139,9 @@ GeometryTest.prototype.testGetTileRange = function() {
 
 /** Tests the getBoundingBox() function. */
 GeometryTest.prototype.testGetBoundingBox = function() {
-  cm.ui.document = {
+  this.setForTest_('cm.ui.document', {
     'body': {'offsetWidth': 1000, 'offsetHeight': 1000}
-  };
+  });
   var latLng = new google.maps.LatLng(50, 50);
   var projectedLatLng = new google.maps.Point(100, 100);
   expectCall(this.projection_.fromLatLngToPoint)(latLng)

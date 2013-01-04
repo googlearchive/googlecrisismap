@@ -102,7 +102,7 @@ SharePopupTest.prototype.shortenUrl = function() {
 
   // Note that gjsmock's willOnce action can take a function that will allow
   // you to act on the arguments. Neat. Not very clear from the gjsdocs.
-  goog.net.XhrIo.send = createMockFunction('goog.net.XhrIo.send');
+  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
   expectCall(goog.net.XhrIo.send)(cm.ShareBox.GOOG_SHORTENER_URI_, _, 'POST', _)
       .willOnce(function(url, callback, method, data) {
         callback({'target': {

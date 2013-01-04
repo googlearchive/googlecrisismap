@@ -30,7 +30,7 @@ function LayerEntryViewTest() {
 
   this.metadataModel_ = new cm.MetadataModel();
 
-  goog.style.setOpacity = createMockFunction('goog.style.setOpacity');
+  this.setForTest_('goog.style.setOpacity', createMockFunction());
   expectCall(goog.style.setOpacity)(_, 1).willRepeatedly(returnWith(undefined));
 
   this.appState_ = createMockInstance(cm.AppState);

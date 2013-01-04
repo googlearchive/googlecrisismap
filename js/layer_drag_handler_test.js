@@ -24,10 +24,11 @@ goog.math.Rect.prototype.gjstestEquals = function(other) {
 function LayerDragHandlerTest() {
   cm.TestBase.call(this);
 
-  goog.style.getBounds = createMockFunction('goog.style.getBounds');
-  goog.style.getMarginBox = createMockFunction('goog.style.getMarginBox');
-  stubReturn(goog.style, 'setPosition', null);
-  stubReturn(goog.style, 'getSize', {'width': 0, 'height': 0});
+  this.setForTest_('goog.style.getBounds', createMockFunction());
+  this.setForTest_('goog.style.getMarginBox', createMockFunction());
+  this.setForTest_('goog.style.setPosition', function() { return null; });
+  this.setForTest_('goog.style.getSize',
+      function() { return {'width': 0, 'height': 0}; });
 
   this.cloneElem_ = new FakeElement('span', {'class': 'cm-dragged-clone'});
   this.layerListElem_ = new FakeElement('div', {'class': 'cm-arranger-inner'});

@@ -43,7 +43,7 @@ AboutPopupTest.prototype.testCloseButtonCallback = function() {
 
 /** Verifies that show() makes the popup appear with the correct dimensions. */
 AboutPopupTest.prototype.testShow = function() {
-  cm.ui.offscreenSize = createMockFunction('cm.ui.offscreenSize');
+  this.setForTest_('cm.ui.offscreenSize', createMockFunction());
   expectCall(cm.ui.offscreenSize)(this.popup_, this.container_)
       .willOnce(returnWith({width: 100, height: 100}));
 

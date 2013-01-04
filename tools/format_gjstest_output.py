@@ -17,23 +17,18 @@
 
 import sys
 
-buffer = []
+failures = 0
 for line in sys.stdin:
   if line.rstrip() in ['[----------]', '[  PASSED  ]', '[  FAILED  ]']:
     pass  # omit overall summary messages.
   elif line[:12] == '[ RUN      ]':
     name = line[12:].strip()
-    buffer = []
   elif line[:12] == '[       OK ]':
     print '\x1b[32m' + line.rstrip() + '\x1b[0m'  # show success in green
   elif line[:12] == '[  FAILED  ]' and line[12:].strip():
     print '\x1b[31m' + line.rstrip() + '\x1b[0m'  # show failure in red
-    print ''.join(buffer).rstrip()  # show the buffered output only on failure
-    buffer = []
+    failures += 1
   else:
-    buffer.append(line)  # buffer the output from a test
+    print line.rstrip()
 
-# Leftover messages (e.g. syntax errors) that aren't associated with a test.
-messages = ''.join(buffer).rstrip()
-if messages:
-  print messages
+sys.exit(failures > 0)

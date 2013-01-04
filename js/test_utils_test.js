@@ -11,7 +11,6 @@
 
 
 function TestUtilTest() {
-  cm.ui.create = gjstest.createMockFunction('cm.ui.create');
 }
 registerTestSuite(TestUtilTest);
 
@@ -103,80 +102,4 @@ TestUtilTest.prototype.fakeElementMatchers = function() {
   expectThat(element, hasDescendant('li', withText('one')));
   expectEq(grandchild, expectDescendantOf(element, withAttr('foo', 'bar')));
   expectEq(grandchild, expectDescendantOf(element, withText('two')));
-};
-
-/**
- * Tests expectations when no optional arguments are passed to cm.ui.create.
- */
-TestUtilTest.prototype.expectCreateNoArgs = function() {
-  var result = expectCreate('A', 'div');
-  expectEq(result, cm.ui.create('div'));
-};
-
-/**
- * Tests expectations when attributes are passed to ui.create, but no children.
- */
-TestUtilTest.prototype.expectCreateAttributes = function() {
-  expectCreate('A', 'div', {type: 'custom'});
-  cm.ui.create('div', {type: 'custom'});
-};
-
-/**
- * Tests expectations when one child element is passed to cm.ui.create.
- */
-TestUtilTest.prototype.expectCreateOneChild = function() {
-  var img = expectCreate('B', 'img');
-  expectCreate('A', 'div', null, img);
-  cm.ui.create('div', null, cm.ui.create('img'));
-};
-
-/**
- * Tests expectations when multiple child elements are passed to ui.create, but
- * not in an array.
- */
-TestUtilTest.prototype.expectCreateMultipleChildren = function() {
-  var img = expectCreate('A', 'img');
-  var span = expectCreate('B', 'span');
-  expectCreate('C', 'div', null, img, span);
-  cm.ui.create('div', null, cm.ui.create('img'), cm.ui.create('span'));
-};
-
-/**
- * Tests expectations when an array of child elements is passed to cm.ui.create.
- */
-TestUtilTest.prototype.expectCreateArrayOfChildren = function() {
-  var img = expectCreate('A', 'img');
-  var span = expectCreate('B', 'span');
-  expectCreate('C', 'div', null, [img, span]);
-  cm.ui.create('div', null, [cm.ui.create('img'), cm.ui.create('span')]);
-};
-
-/**
- * Tests expectations when attributes and a child element are passed to
- * cm.ui.create.
- */
-TestUtilTest.prototype.expectCreateAttributesAndChild = function() {
-  var img = expectCreate('B', 'img');
-  expectCreate('A', 'div', {sky: 'blue', water: 'green'}, img);
-  cm.ui.create('div', {water: 'green', sky: 'blue'}, cm.ui.create('img'));
-};
-
-/**
- * Tests expectations when an Html object is passed to cm.ui.create.
- */
-TestUtilTest.prototype.expectCreateHtmlChild = function() {
-  var html = cm.Html.fromSanitizedHtml('abc');
-  var element = expectCreate('X', 'div', {}, html);
-  cm.ui.create('div', {}, html);
-  expectEq('abc', element.childNodes[0].innerHTML);
-};
-
-/**
- * Tests expectations when a text string is passed to cm.ui.create.
- */
-TestUtilTest.prototype.expectCreateTextChild = function() {
-  var text = 'xyz';
-  var element = expectCreate('X', 'div', {}, text);
-  cm.ui.create('div', {}, text);
-  expectEq('xyz', element.childNodes[0].textContent);
 };

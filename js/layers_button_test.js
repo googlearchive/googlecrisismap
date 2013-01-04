@@ -12,28 +12,23 @@
 // Author: romano@google.com (Raquel Romano)
 
 function LayersButtonTest() {
-  cm.ui.create = createMockFunction('ui.create');
+  cm.TestBase.call(this);
 
-  this.button_ = expectCreate(
-      'BUTTON', 'div', {'class': 'cm-panel-button cm-mapbutton'},
-      cm.LayersButton.MSG_LAYER_BUTTON_);
-  this.button_.index = 0;
-
-  this.map_ = gjstest.createMockInstance(google.maps.Map);
-  this.map_.controls = {};
-  this.map_.controls[google.maps.ControlPosition.TOP_RIGHT] = [];
-
+  this.map_ = createMockInstance(google.maps.Map);
+  this.map_.controls = goog.object.create(
+      google.maps.ControlPosition.TOP_RIGHT, []);
   this.layersButton_ = new cm.LayersButton(this.map_, {});
+  this.button_ = this.map_.controls[google.maps.ControlPosition.TOP_RIGHT][0];
 }
+LayersButtonTest.prototype = new cm.TestBase();
 registerTestSuite(LayersButtonTest);
 
-/**
- * Verifies constructor adds button to map.
- */
+/** Verifies button construction. */
 LayersButtonTest.prototype.constructorTest = function() {
   expectEq(2, this.button_.index);
-  expectEq(this.button_,
-           this.map_.controls[google.maps.ControlPosition.TOP_RIGHT][0]);
+  expectThat(this.button_, isElement(
+      'div', withClass('cm-mapbutton'), withClass('cm-panel-button'),
+      withText(cm.LayersButton.MSG_LAYER_BUTTON_)));
 };
 
 /**
@@ -41,10 +36,8 @@ LayersButtonTest.prototype.constructorTest = function() {
  * verifying that the button class has changed to now be selected.
  */
 LayersButtonTest.prototype.buttonClickOpensPanel = function() {
-  this.button_.className = 'cm-panel-button cm-mapbutton';
   cm.events.emit(this.button_, 'click');
-  expectEq('cm-panel-button cm-mapbutton cm-selected',
-           this.button_.className);
+  expectThat(this.button_, isElement(withClass('cm-selected')));
 };
 
 /**
@@ -54,5 +47,5 @@ LayersButtonTest.prototype.buttonClickOpensPanel = function() {
 LayersButtonTest.prototype.buttonClickClosesPanel = function() {
   this.button_.className = 'cm-panel-button cm-mapbutton cm-selected';
   cm.events.emit(this.button_, 'click');
-  expectEq('cm-panel-button cm-mapbutton', this.button_.className);
+  expectThat(this.button_, isElement(not(withClass('cm-selected'))));
 };

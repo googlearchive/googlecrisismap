@@ -15,37 +15,30 @@ function SearchboxTest() {
   cm.TestBase.call(this);
 
   this.map_ = createMockInstance(google.maps.Map);
-  this.map_.controls = {};
-  this.map_.controls[google.maps.ControlPosition.TOP_LEFT] = [];
-
-  cm.ui.create = createMockFunction('cm.ui.create');
-
-  this.span_ = expectCreate(
-      'SEARCHBUTTON', 'span', {'class': 'cm-mapbutton cm-searchbox'});
-  var input = expectCreate('SEARCHINPUT', 'input');
+  this.map_.controls = goog.object.create(
+      google.maps.ControlPosition.TOP_LEFT, []);
 
   this.autocomplete_ = this.expectNew_('google.maps.places.Autocomplete',
-      input, recursivelyEquals({'types': ['geocode']}));
+      isElement('input'), recursivelyEquals({'types': ['geocode']}));
   expectCall(this.autocomplete_.bindTo)('bounds', this.map_);
+
   this.geocoder_ = this.expectNew_('google.maps.Geocoder');
   this.marker_ = this.expectNew_('google.maps.Marker');
 
   this.searchbox_ = new cm.SearchBox(this.map_);
+  this.span_ = this.map_.controls[google.maps.ControlPosition.TOP_LEFT][0];
+  this.input_ = expectDescendantOf(this.span_, 'input');
 }
 SearchboxTest.prototype = new cm.TestBase();
 registerTestSuite(SearchboxTest);
 
-/**
- * Tests the constructor.
- */
+/** Tests the constructor. */
 SearchboxTest.prototype.constructorTest = function() {
-  expectEq(this.span_,
-           this.map_.controls[google.maps.ControlPosition.TOP_LEFT][0]);
+  expectThat(this.span_, isElement(
+      'span', withClass('cm-mapbutton'), withClass('cm-searchbox')));
 };
 
-/**
- * Tests the places autocomplete widget fires with a viewport.
- */
+/** Tests the case when the autocomplete widget fires with a viewport. */
 SearchboxTest.prototype.autocompletePlaceChangedViewport = function() {
   var viewport = 'aabbccddee';
   var place = {geometry: {viewport: viewport}};
@@ -58,9 +51,7 @@ SearchboxTest.prototype.autocompletePlaceChangedViewport = function() {
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };
 
-/**
- * Tests the places autocomplete widget fires with a location.
- */
+/** Tests the case when the autocomplete widget fires with a location. */
 SearchboxTest.prototype.autocompletePlaceChangedLocation = function() {
   var location = 'aabbccddee';
   var place = {geometry: {location: location},
@@ -72,15 +63,14 @@ SearchboxTest.prototype.autocompletePlaceChangedLocation = function() {
   expectCall(this.map_.setCenter)(location);
   expectCall(this.map_.setZoom)(15);
   expectCall(this.marker_.setOptions)(
-      recursivelyEquals({'position': location,
-                         'map': this.map_}));
+      recursivelyEquals({'position': location, 'map': this.map_}));
 
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };
 
 /**
- * Tests the places autocomplete widget fires without geometry information and
- * the geocoder returns a viewport.
+ * Tests the case when the autocomplete widget fires without geometry
+ * information and the geocoder returns a viewport.
  */
 SearchboxTest.prototype.autocompleteNoGeometryViewport = function() {
   var name = 'Trousers, DE';
@@ -105,8 +95,8 @@ SearchboxTest.prototype.autocompleteNoGeometryViewport = function() {
 };
 
 /**
- * Tests the places autocomplete widget fires without geometry information and
- * the geocoder returns a location.
+ * Tests the case when the autocomplete widget fires without geometry
+ * information and the geocoder returns a location.
  */
 SearchboxTest.prototype.autocompleteNoGeometryLocation = function() {
   var name = 'Trousers, DE';
@@ -134,9 +124,7 @@ SearchboxTest.prototype.autocompleteNoGeometryLocation = function() {
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };
 
-/**
- * Check if the searchbox shows correctly.
- */
+/** Verifies that the searchbox shows correctly. */
 SearchboxTest.prototype.show = function() {
   var resize = createMockFunction('resize');
   cm.events.listen(this.span_, 'resize', resize);
@@ -146,9 +134,7 @@ SearchboxTest.prototype.show = function() {
   expectEq('block', this.span_.style.display);
 };
 
-/**
- * Check if the searchbox hides correctly.
- */
+/** Verifies that the searchbox hides correctly. */
 SearchboxTest.prototype.hide = function() {
   var resize = createMockFunction('resize');
   cm.events.listen(this.span_, 'resize', resize);

@@ -12,30 +12,26 @@
 // Author: Steven Hakusa (shakusa@googel.com)
 
 function MyLocationButtonTest() {
-  cm.ui.create = createMockFunction('ui.create');
+  cm.TestBase.call(this);
 
-  this.button_ = expectCreate(
-      'BUTTON', 'div', {'class': 'cm-mapbutton cm-my-location-button',
-                        'index': -1});
-
-  this.map_ = gjstest.createMockInstance(google.maps.Map);
-  this.map_.controls = {};
-  this.map_.controls[google.maps.ControlPosition.TOP_RIGHT] = [];
-
+  this.map_ = createMockInstance(google.maps.Map);
+  this.map_.controls = goog.object.create(
+      google.maps.ControlPosition.TOP_RIGHT, []);
   this.myLocationButton_ = new cm.MyLocationButton(this.map_, {});
+  this.button_ = this.map_.controls[google.maps.ControlPosition.TOP_RIGHT][0];
 }
+MyLocationButtonTest.prototype = new cm.TestBase();
 registerTestSuite(MyLocationButtonTest);
 
-/** Tests button construction. */
+/** Verifies button construction. */
 MyLocationButtonTest.prototype.constructorTest = function() {
-  // Position to the outside of the default maptype controls
-  expectEq(this.button_,
-           this.map_.controls[google.maps.ControlPosition.TOP_RIGHT][0]);
+  expectThat(this.button_, isElement(
+      'div', withClass('cm-mapbutton'), withClass('cm-my-location-button')));
 };
 
-/** Tests click emits a GO_TO_MY_LOCATION event. */
+/** Verifies that clicking emits a GO_TO_MY_LOCATION event. */
 MyLocationButtonTest.prototype.clickTest = function() {
-  var handler = gjstest.createMockFunction('handler');
+  var handler = createMockFunction('handler');
   cm.events.listen(goog.global, cm.events.GO_TO_MY_LOCATION, handler);
   expectCall(handler)(_);
   cm.events.emit(this.button_, 'click');

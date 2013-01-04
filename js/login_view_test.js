@@ -16,46 +16,46 @@ LOGIN_URL = '/test/login/whatever';
 LOGOUT_URL = '/test/logout/whatever';
 
 function LoginViewTest() {
-  this.parent_ = new FakeElement('PARENT');
-  cm.ui.create = gjstest.createMockFunction('cm.ui.create');
-  cm.ui.createLink = gjstest.createMockFunction('cm.ui.createLink');
-  FakeElement.prototype.appendChild = gjstest.createMockFunction('appendChild');
+  cm.TestBase.call(this);
 }
+LoginViewTest.prototype = new cm.TestBase();
 registerTestSuite(LoginViewTest);
+
+/**
+ * Creates a cm.LoginView.
+ * @param {Object} config The configuration settings (cm_config).
+ * @return {Element} A DOM element containing the new cm.LoginView.
+ * @private
+ */
+LoginViewTest.prototype.createView_ = function(config) {
+  var parent = cm.ui.create('div');
+  new cm.LoginView(parent, config);
+  return parent;
+};
 
 /** Tests construction of the LoginView when the user is signed in. */
 LoginViewTest.prototype.testSignedInConstruction = function() {
-  cm_config = {'user_email': USER_EMAIL, 'logout_url': LOGOUT_URL,
-               'login_url': LOGIN_URL};
+  var parent = this.createView_({
+      'login_url': LOGIN_URL,
+      'logout_url': LOGOUT_URL,
+      'user_email': USER_EMAIL
+  });
 
-  var userElem = new FakeElement('USER');
-  expectCall(cm.ui.create)('span', recursivelyEquals({'class': 'cm-user'}),
-                           USER_EMAIL)
-      .willOnce(returnWith(userElem));
-  var signOutLink = new FakeElement('LINK');
-  expectCall(cm.ui.createLink)('Sign out', LOGOUT_URL)
-      .willOnce(returnWith(signOutLink));
-  var loginDiv = new FakeElement('LOGIN');
-  expectCall(cm.ui.create)('div', recursivelyEquals({'class': 'cm-login'}),
-                           userElem, cm.ui.SEPARATOR_DOT, signOutLink)
-      .willOnce(returnWith(loginDiv));
-  expectCall(this.parent_.appendChild)(loginDiv);
-
-  var view = new cm.LoginView(this.parent_, cm_config);
+  var div = expectDescendantOf(parent, 'div', withClass('cm-login'));
+  expectDescendantOf(div, 'span', withClass('cm-user'), withText(USER_EMAIL));
+  expectDescendantOf(div, 'a', withHref(LOGOUT_URL), withText('Sign out'));
+  expectNoDescendantOf(div, 'a', withHref(LOGIN_URL));
 };
 
 /** Tests construction of the LoginView when the user is signed out. */
 LoginViewTest.prototype.testSignedOutConstruction = function() {
-  cm_config = {'logout_url': LOGOUT_URL, 'login_url': LOGIN_URL};
+  var parent = this.createView_({
+      'login_url': LOGIN_URL,
+      'logout_url': LOGOUT_URL
+  });
 
-  var signInLink = new FakeElement('LINK');
-  expectCall(cm.ui.createLink)('Sign in', LOGIN_URL)
-      .willOnce(returnWith(signInLink));
-  var loginDiv = new FakeElement('LOGIN');
-  expectCall(cm.ui.create)('div', recursivelyEquals({'class': 'cm-login'}),
-                           signInLink)
-      .willOnce(returnWith(loginDiv));
-  expectCall(this.parent_.appendChild)(loginDiv);
-
-  var view = new cm.LoginView(this.parent_, cm_config);
+  var div = expectDescendantOf(parent, 'div', withClass('cm-login'));
+  expectDescendantOf(div, 'a', withHref(LOGIN_URL), withText('Sign in'));
+  expectNoDescendantOf(div, 'span', withClass('cm-user'));
+  expectNoDescendantOf(div, 'a', withHref(LOGOUT_URL));
 };

@@ -103,7 +103,7 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
   encodeURIComponent = createMockFunction('encodeURIComponent');
   expectCall(encodeURIComponent)(goog.json.serialize(mapRoot)).
       willOnce(returnWith('encoded'));
-  goog.net.XhrIo.send = createMockFunction('goog.net.XhrIo.send');
+  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
   expectCall(goog.net.XhrIo.send)('/crisismap/diff/map_id',
       _, 'POST', 'new_json=encoded').willOnce(function(url, callback) {
         callback({'target': {

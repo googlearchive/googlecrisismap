@@ -757,6 +757,7 @@ function isElement(var_args) {
       function(x) { return x !== null && x instanceof FakeElement; }
   )];
   for (var i = 0; i < arguments.length; i++) {
+    // allOf() will convert any FakeElement x to a matcher, equals(x).
     matchers.push(typeof(arguments[i]) === 'string' ?
         withNodeName(arguments[i]) :
         arguments[i] instanceof FakeElement ?
@@ -862,49 +863,6 @@ function expectDescendantOf(element, var_args) {
 function expectNoDescendantOf(element, var_args) {
   var args = Array.prototype.slice.call(arguments, 1);
   expectThat(element, not(hasDescendant.apply(null, args)));
-}
-
-/**
- * Sets up the expectations for a call to ui.create, returning a newly created
- * FakeElement.  TODO(kpy): Remove this when it is no longer used in tests.
- * @param {string} name A name to give the element for easier debugging.
- * @param {string} type The type of element expected.
- * @param {map} opt_attrs The (optional) attributes to pass to ui.create.
- * @param {*} var_args The (optional) children to pass to ui.create.
- * @return {FakeElement} The newly created element.
- */
-function expectCreate(name, type, opt_attrs, var_args) {
-  var newElement = new FakeElement(name);
-  var args = [type];
-  if (arguments.length >= 3) {  // opt_attrs was supplied
-    args.push(opt_attrs ? recursivelyEquals(opt_attrs) : equals(opt_attrs));
-  }
-  // Get the array of arguments starting from var_args onwards.
-  var_args = Array.prototype.slice.call(arguments, 3);
-  if (var_args.length > 0) {
-    if (var_args.length == 1 && var_args[0] instanceof Array) {
-      args.push(recursivelyEquals(var_args[0]));
-    } else {
-      args = args.concat(var_args);
-    }
-  }
-  // Populate the element with its children.
-  for (var i = 0; i < var_args.length; i++) {
-    if (var_args[i] instanceof cm.Html) {
-      var div = new FakeElement('div');
-      var_args[i].pasteInto(div);
-      newElement.childNodes.push(div);
-    } else if (typeof(var_args[i]) === 'string') {
-      var text = new FakeElement('#text');
-      text.textContent = var_args[i];
-      newElement.childNodes.push(text);
-    } else {
-      newElement.childNodes.push(var_args[i]);
-    }
-  }
-  expectCall(cm.ui.create).apply(null, args)
-      .willOnce(returnWith(newElement));
-  return newElement;
 }
 
 /**

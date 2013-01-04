@@ -49,8 +49,7 @@ cm.SearchBox = function(map, opt_domHelper) {
   map.controls[google.maps.ControlPosition.TOP_LEFT].push(span);
 
   var autocomplete = this.autocomplete_ = new google.maps.places.Autocomplete(
-      /** @type {HTMLInputElement} */(input),
-      {'types': ['geocode']});
+      /** @type {HTMLInputElement} */(input), {'types': ['geocode']});
   autocomplete.bindTo('bounds', map);
 
   this.map_ = map;

@@ -30,8 +30,7 @@ function MapViewTest() {
   this.metadataModel_ = createMockInstance(cm.MetadataModel);
   this.stubReturnVisibleLayerIds_([]);
 
-  goog.dom.htmlToDocumentFragment = createMockFunction(
-      'goog.dom.htmlToDocumentFragment');
+  this.setForTest_('goog.dom.htmlToDocumentFragment', createMockFunction());
   expectCall(this.appState_.get)('viewport')
       .willRepeatedly(returnWith(cm.LatLonBox.ENTIRE_MAP));
 
