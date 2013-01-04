@@ -138,8 +138,11 @@ cm.AppState.prototype.setLayerOpacity = function(id, opacity) {
  */
 cm.AppState.prototype.promoteLayer = function(layer) {
   var id = /** @type string */(layer.get('id'));
-  var siblingIds = layer.get('parent').getSublayerIds();
   var promotedLayerIds = this.get('promoted_layer_ids');
+  if (promotedLayerIds.contains(id)) {
+    return;
+  }
+  var siblingIds = layer.get('parent').getSublayerIds();
   var enabledLayerIds = this.get('enabled_layer_ids');
   var promotedClone = promotedLayerIds.clone();
   var enabledClone = enabledLayerIds.clone();
@@ -158,14 +161,16 @@ cm.AppState.prototype.promoteLayer = function(layer) {
 };
 
 /**
- * Demote all sublayers of the given layer. We don't check whether
- * the sublayers were already promoted before calling notify(), because
- * typically there is a single sublayer promoted when this is called.
+ * Demote any and all promoted sublayers of the given layer.
  * @param {cm.LayerModel} layer The parent layer.
  */
 cm.AppState.prototype.demoteSublayers = function(layer) {
-  this.get('promoted_layer_ids').removeAll(layer.getSublayerIds());
-  this.notify('promoted_layer_ids');
+  var toDemote = this.get('promoted_layer_ids').intersection(
+      layer.getSublayerIds());
+  if (!toDemote.isEmpty()) {
+    this.get('promoted_layer_ids').removeAll(toDemote);
+    this.notify('promoted_layer_ids');
+  }
 };
 
 /**
