@@ -21,10 +21,15 @@ goog.require('cm.events');
 goog.require('cm.ui');
 
 // TODO(joeysilva): These messages will be moved (see b/7232521)
-/** @desc Label for the OK button on a dialog with OK and Cancel buttons. */
-var MSG_IMPORTER_OK = goog.getMsg('OK');
+/**
+ * @desc Label for the submit button of the importer dialog, which will import
+ *     the layers selected by the user.
+ */
+var MSG_IMPORTER_SUBMIT = goog.getMsg('Import selected layers');
 
-/** @desc Label for the Cancel button on a dialog with OK and Cancel buttons. */
+/**
+ * @desc Label for the Cancel button on the importer dialog.
+ */
 var MSG_IMPORTER_CANCEL = goog.getMsg('Cancel');
 
 /** @desc Link to create new, blank layer. */
@@ -32,6 +37,30 @@ var MSG_CREATE_NEW_LAYER = goog.getMsg('Create new layer');
 
 /** @desc Title text for import dialog. */
 var MSG_IMPORT_TITLE = goog.getMsg('Select layers to import');
+
+/**
+ * @desc Message shown in the importer when there are no layers in any published
+ *     maps to import.
+ */
+var MSG_NO_LAYERS = goog.getMsg(
+    'There are no layers in any published maps to import.');
+
+/**
+ * @desc Text shown in the importer initially, before the user has selected
+ *     anything.
+ */
+var MSG_NONE_SELECTED_INITIAL = goog.getMsg(
+    'No layers selected -- click layer names to select them');
+
+/** @desc [ICU Syntax] Text displaying how many layers the user has selected. */
+var MSG_LAYERS_SELECTED = goog.getMsg('{SELECTED, plural, ' +
+    '=0 {No layers selected}' +
+    '=1 {1 layer selected}' +
+    'other {# layers selected}}');
+
+/** @desc Tooltip text for folder previews that have no visible layers. */
+var MSG_NO_PREVIEW =
+    goog.getMsg('This folder has no layers visible by default.');
 
 /**
  * A dialog to import a clone of an existing layer as a new layer.
@@ -74,6 +103,24 @@ cm.ImporterView = function() {
   this.layerListElem_;
 
   /**
+   * Keeps track of how many layers are currently selected.
+   * @type {number}
+   */
+  this.selectedLayersCount_;
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.selectedCountElem_;
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.submitBtn_;
+
+  /**
    * Listener token for the window's 'resize' event.
    * @type {cm.events.ListenerToken}
    * @private
@@ -107,8 +154,16 @@ cm.ImporterView = function() {
    */
   this.closePreviewListeners_;
 
+  /**
+   * Flag to cancel the next preview link click. Set when an already active
+   * preview link is clicked, and reset when it would have otherwise been
+   * re-opened.
+   * @type {boolean}
+   * @private
+   */
+  this.cancelPreviewClick_ = false;
+
   var newLayerLink;
-  var okBtn;
   var closeBtn;
 
   this.popup_ = cm.ui.create('div', {'class': 'cm-importer cm-popup'},
@@ -118,14 +173,17 @@ cm.ImporterView = function() {
       this.layerListElem_ = cm.ui.create('div',
           // 'tabIndex' makes element focusable
           {'class': 'cm-importer-list', 'tabIndex': 0}),
+      this.selectedCountElem_ = cm.ui.create('div',
+          {'class': 'cm-selected-count'}),
       cm.ui.create('div', {'class': 'cm-button-area'},
-          okBtn = cm.ui.create('button', {'class': 'cm-button cm-submit'},
-              MSG_IMPORTER_OK),
+          this.submitBtn_ = cm.ui.create('button',
+              {'class': 'cm-button cm-submit'},
+              MSG_IMPORTER_SUBMIT),
           closeBtn = cm.ui.create('button', {'class': 'cm-button'},
               MSG_IMPORTER_CANCEL)));
 
   cm.events.listen(newLayerLink, 'click', this.handleNewLayer_, this);
-  cm.events.listen(okBtn, 'click', this.handleOk_, this);
+  cm.events.listen(this.submitBtn_, 'click', this.handleOk_, this);
   cm.events.listen(closeBtn, 'click', this.handleCancel_, this);
   cm.events.listen(this.layerListElem_, 'selectstart', function(e) {
     e.preventDefault();
@@ -168,7 +226,8 @@ cm.ImporterView.PREVIEW_MAX_LENGTH_PX_ = 300;
 cm.ImporterView.TOTAL_EXTRA_HEIGHT_ =
     1 + 20 +      // cm-popup top border and padding, respectively
     8 +           // cm-importer-header bottom margin
-    21 + 29 + 5 + // cm-button-area top margin, height, and bottom margin
+    12 +          // cm-select-count top margin
+    11 + 29 + 5 + // cm-button-area top margin, height, and bottom margin
     20 + 1;       // cm-popup bottom padding and border, respectively
 
 /**
@@ -176,6 +235,10 @@ cm.ImporterView.TOTAL_EXTRA_HEIGHT_ =
  */
 cm.ImporterView.prototype.openImporter = function() {
   this.layerModels_ = [];
+  this.selectedLayersCount_ = 0;
+  this.selectedCountElem_.innerHTML = MSG_NONE_SELECTED_INITIAL;
+  this.submitBtn_.setAttribute('disabled', 'disabled');
+
   cm.ui.showPopup(this.popup_);
   this.handleResize_();
   this.windowResizeListener_ = /** @type {cm.events.ListenerToken} */
@@ -230,7 +293,13 @@ cm.ImporterView.prototype.renderLayerList_ = function(maps) {
       }, this));
     }
   }, this);
-  this.layerListElem_.focus();
+
+  if (this.layerModels_.length) {
+    this.layerListElem_.focus();
+  } else {
+    cm.ui.clear(this.layerListElem_);
+    this.layerListElem_.innerHTML = MSG_NO_LAYERS;
+  }
 };
 
 /**
@@ -271,7 +340,6 @@ cm.ImporterView.prototype.renderLayerElem_ = function(parent, layerModel,
 
   var sublayers = layerModel.get('sublayers');
   if (sublayers.length > 0) {
-    cm.ui.remove(previewLink);
     goog.style.showElement(folderElem, false);
 
     sublayers.forEach(goog.bind(function(sublayer) {
@@ -300,13 +368,27 @@ cm.ImporterView.prototype.handleLayerClick_ = function(layerElem) {
     var parentFolder = this.getParentFolderElem_(layerElem);
     while (parentFolder && !removed) {
       removed = goog.dom.classes.remove(parentFolder, 'cm-layer-selected');
+      if (removed) {
+        this.selectedLayersCount_--;
+      }
       parentFolder = this.getParentFolderElem_(parentFolder);
     }
     // Look for sublayers to deselect.
     goog.array.forEach(
         cm.ui.getAllByClass('cm-layer-selected',
-            /** @type {Element} */(layerElem.nextSibling)),
-        function(e) { goog.dom.classes.remove(e, 'cm-layer-selected') });
+        /** @type {Element} */(layerElem.nextSibling)), function(e) {
+          goog.dom.classes.remove(e, 'cm-layer-selected');
+          this.selectedLayersCount_--;
+        }, this);
+  }
+
+  this.selectedLayersCount_ += selected ? 1 : -1;
+  this.selectedCountElem_.innerHTML = (new goog.i18n.MessageFormat(
+      MSG_LAYERS_SELECTED)).format({'SELECTED': this.selectedLayersCount_});
+  if (this.selectedLayersCount_) {
+    this.submitBtn_.removeAttribute('disabled');
+  } else {
+    this.submitBtn_.setAttribute('disabled', 'disabled');
   }
 };
 
@@ -330,24 +412,69 @@ cm.ImporterView.prototype.renderPreviewLink_ = function(mapLabel,
   var previewLink;
   var href = '/crisismap/' + mapLabel;
   if (opt_layerModel) {
-    // Must add all of this layer's ancestors to the 'layers' URL parameter to
-    // make sure it is shown.
-    var ids = [];
-    for (var layer = opt_layerModel; layer = layer.get('parent');) {
-      ids.push(layer.get('id'));
-    }
+    var ids = new goog.structs.Set();
+    var foundVisibleLeaf = false;
+    var isVisibleOrRoot = function(layer) {
+      return /** @type {boolean}*/(layer.get('default_visibility')) ||
+          layer === opt_layerModel;
+    };
+    cm.util.forLayerAndDescendants(opt_layerModel, function(layer) {
+      if (isVisibleOrRoot(layer)) {
+        ids.add(layer.get('id'));
+        if (!layer.get('sublayers').length) {
+          foundVisibleLeaf = true;
+        }
+      }
+    }, isVisibleOrRoot);
 
-    // Construct the iframe URL. Only set the viewport explicitly if the layer
-    // model specifies a viewport.
-    var layerViewport = opt_layerModel.get('viewport');
-    href = href + '?preview=1&layers=' + ids.join() +
-        (layerViewport ? '&llbox=' + layerViewport.round(4) : '');
-    previewLink = cm.ui.create('div', {'class': 'cm-preview-link'});
-    cm.events.listen(previewLink, 'click', function(e) {
-      e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
-      this.closePreview_();
-      this.handlePreviewClick_(previewLink, href, opt_viewport);
-    }, this);
+    previewLink = cm.ui.create('div',
+        {'class': 'cm-preview-link' +
+            (foundVisibleLeaf ? '' : ' cm-no-preview')});
+    if (foundVisibleLeaf) {
+      // Must add all of this layer's ancestors to the 'layers' URL parameter to
+      // make sure it is shown.
+      for (var layer = opt_layerModel; layer; layer = layer.get('parent')) {
+        ids.add(layer.get('id'));
+      }
+
+      // Construct the iframe URL. Only set the viewport explicitly if the layer
+      // model specifies a viewport.
+      var layerViewport = opt_layerModel.get('viewport');
+      href = href + '?preview=1&layers=' + ids.getValues().join() +
+          (layerViewport ? '&llbox=' + layerViewport.round(4) : '');
+
+      cm.events.listen(previewLink, 'click', function(e) {
+        e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
+        this.closePreview_();
+        if (this.cancelPreviewClick_) {
+          this.cancelPreviewClick_ = false;
+        } else {
+          this.handlePreviewClick_(previewLink, href, opt_viewport);
+        }
+      }, this);
+    } else {
+      // No preview link.
+      var tooltip = null;
+      cm.events.listen(previewLink, 'click', function(e) {
+        e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
+      });
+      cm.events.listen(previewLink, 'mousemove', function(e) {
+        if (!tooltip) {
+          tooltip = cm.ui.create('div', {'class': 'cm-tooltip'},
+              MSG_NO_PREVIEW);
+          cm.ui.append(cm.ui.document.body, tooltip);
+        }
+        var pos = goog.style.getClientPosition(e);
+        pos.x += 12;
+        goog.style.setPosition(tooltip, pos);
+      });
+      cm.events.listen(previewLink, 'mouseout', function() {
+        if (tooltip) {
+          cm.ui.remove(tooltip);
+          tooltip = null;
+        }
+      });
+    }
   } else {
     previewLink = cm.ui.create('a',
         {'class': 'cm-preview-link', 'target': '_blank', 'href': href});
@@ -387,6 +514,7 @@ cm.ImporterView.prototype.handlePreviewClick_ = function(previewLink, href,
 
   var pos = goog.style.getRelativePosition(previewLink, container);
   pos.x += previewLink.offsetWidth + 10;
+  pos.y -= 8;
   if (pos.y + height > container.offsetHeight) {
     // Preview is too low. Display it at the bottom of the screen with a 10px
     // margin (or at the top of the container, if it is too small for a margin).
@@ -399,10 +527,12 @@ cm.ImporterView.prototype.handlePreviewClick_ = function(previewLink, href,
       cm.ui.create('iframe', {
           'src': href, 'width': width + 'px', 'height': height + 'px'}));
   cm.ui.append(container, this.layerPreview_);
+  goog.dom.classes.add(previewLink, 'cm-preview-active');
+
   cm.ui.createCloseButton(
       this.layerPreview_, goog.bind(this.closePreview_, this));
   this.closePreviewListeners_ = /** @type {Array.<cm.events.ListenerToken>} */
-      cm.events.listen(container, ['mousedown', 'click'],
+      cm.events.listen(container, ['click', 'mousedown'],
                        this.closePreview_, this);
 };
 
@@ -456,7 +586,7 @@ cm.ImporterView.prototype.handleResize_ = function(opt_container) {
 
   // Calculate the maximum height the list may be.
   var maxListHeight = maxPopupHeight - cm.ImporterView.TOTAL_EXTRA_HEIGHT_ -
-      this.headerElem_.offsetHeight;
+      this.headerElem_.offsetHeight - this.selectedCountElem_.offsetHeight;
   this.layerListElem_.style.maxHeight = maxListHeight + 'px';
 
   // Anchor popup such that it is centered in the case of maximum
@@ -517,9 +647,11 @@ cm.ImporterView.prototype.close_ = function() {
 /**
  * Disposes of the open layer preview, if it exists, and cleans up its close
  * listeners.
+ * @param {Object=} opt_event DOM event, used to check if an already active
+ *     preview link is being clicked, in order to cancel re-opening it.
  * @private
  */
-cm.ImporterView.prototype.closePreview_ = function() {
+cm.ImporterView.prototype.closePreview_ = function(opt_event) {
   if (this.layerPreview_) {
     cm.ui.remove(this.layerPreview_);
     this.layerPreview_ = null;
@@ -527,5 +659,13 @@ cm.ImporterView.prototype.closePreview_ = function() {
       cm.events.unlisten(this.closePreviewListeners_, this);
     }
     this.closePreviewListeners_ = null;
+
+    var activeLink = cm.ui.getByClass('cm-preview-active', this.popup_);
+    if (activeLink) {
+      goog.dom.classes.remove(activeLink, 'cm-preview-active');
+      if (opt_event && opt_event.srcElement === activeLink) {
+        this.cancelPreviewClick_ = true;
+      }
+    }
   }
 };

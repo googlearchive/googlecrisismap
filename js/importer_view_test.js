@@ -106,7 +106,7 @@ ImporterViewTest.prototype.testOpenImporter = function() {
   expectDescendantOf(this.popup_, 'h2');
   expectDescendantOf(this.popup_, 'div', withClass('cm-importer-list'));
   var buttonArea = expectDescendantOf(this.popup_, withClass('cm-button-area'));
-  expectDescendantOf(buttonArea, 'button', withText('OK'));
+  expectDescendantOf(buttonArea, 'button', withText('Import selected layers'));
   expectDescendantOf(buttonArea, 'button', withText('Cancel'));
 
   // Confirm that the map headings are there, with preview links.
@@ -198,12 +198,17 @@ ImporterViewTest.prototype.testImportLayers = function() {
       withClass('cm-triangle')));
   cm.events.emit(arrow, 'click', {stopPropagation: goog.nullFunction});
 
+  var button = expectDescendantOf(this.popup_, 'button',
+      withText('Import selected layers'));
+  expectThat(button, withAttr('disabled', 'disabled'));
+
   // Select some layers and click OK.
   var selectedTitles = ['Layer A', 'Sublayer A', 'Layer B', 'Folder B'];
   goog.array.forEach(selectedTitles, function(title) {
     cm.events.emit(this.rows_[title].elem, 'click');
   }, this);
-  var button = expectDescendantOf(this.popup_, 'button', withText('OK'));
+
+  expectThat(button, not(withAttr('disabled', 'disabled')));
   cm.events.emit(button, 'click');
 
   // Verify layers were created with the correct title, and an ID.
@@ -257,4 +262,97 @@ ImporterViewTest.prototype.testCreateNew = function() {
 
   // Confirm that the popup disappeared.
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
+};
+
+/** Tests that preview links are correctly created. */
+ImporterViewTest.prototype.testPreviewLinks = function() {
+  this.maps_ = [
+    {label: 'map_a', maproot: {
+     title: 'Map A', layers: [
+       // Leaf layer, default-off.
+       {title: 'Layer A', id: 'layer_a', type: cm.LayerModel.Type.KML},
+       // Folder with no default-on children.
+       {title: 'Folder A', id: 'folder_a', type: cm.LayerModel.Type.FOLDER,
+        sublayers: [
+          {title: 'Sublayer A', id: 'sublayer_a', type: cm.LayerModel.Type.KML}
+        ]},
+       // Folder with some default-on children.
+       {title: 'Folder B', id: 'folder_b', type: cm.LayerModel.Type.FOLDER,
+        sublayers: [
+          {title: 'Sublayer B', id: 'sublayer_b', type: cm.LayerModel.Type.KML},
+          {title: 'Sublayer C', id: 'sublayer_c', type: cm.LayerModel.Type.KML,
+            visibility: 'DEFAULT_ON'}
+        ]},
+        // Nested folder with no visible default-on children.
+        {title: 'Folder C', id: 'folder_c', type: cm.LayerModel.Type.FOLDER,
+         sublayers: [
+           {title: 'Subfolder A', id: 'subfolder_a', visibility: 'DEFAULT_ON',
+            type: cm.LayerModel.Type.FOLDER, sublayers: [
+              {title: 'Sublayer D', id: 'sublayer_d',
+               type: cm.LayerModel.Type.KML}
+            ]},
+            // Default-on children, subfolder not visible though.
+            {title: 'Subfolder B', id: 'subfolder_b',
+             type: cm.LayerModel.Type.FOLDER, sublayers: [
+               {title: 'Sublayer E', id: 'sublayer_e',
+                type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'}
+            ]}
+         ]},
+        // Nested folder with some default-on children.
+        {title: 'Folder D', id: 'folder_d', type: cm.LayerModel.Type.FOLDER,
+         sublayers: [
+           {title: 'Subfolder C', id: 'subfolder_c', visibility: 'DEFAULT_ON',
+            type: cm.LayerModel.Type.FOLDER, sublayers: [
+              {title: 'Sublayer F', id: 'sublayer_f',
+               type: cm.LayerModel.Type.KML},
+              {title: 'Sublayer G', id: 'sublayer_g',
+               type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'}
+            ]}
+         ]}
+     ]
+    }}
+  ];
+  this.openImporter_();
+
+  var previewSrc = '/crisismap/map_a?preview=1&layers=';
+
+  // Test that leaf layers have previews, regardless of visibility.
+  var link = expectDescendantOf(this.rows_['Layer A'].elem,
+                                withClass('cm-preview-link'));
+  cm.events.emit(link, 'click');
+  expectDescendantOf(cm.ui.document.body, isElement(
+      'iframe', withAttr('src', previewSrc + 'layer_a')));
+
+  // Test closing the preview by clicking the close button.
+  cm.events.emit(
+      expectDescendantOf(cm.ui.document.body, withClass('cm-close-button')),
+      'click');
+  expectNoDescendantOf(cm.ui.document.body, 'iframe');
+
+  // Test that folders with no default-on layers have no preview.
+  expectDescendantOf(this.rows_['Folder A'].elem,
+                       withClass('cm-no-preview'));
+
+  // Test that folders with some default-on layers have a preview.
+  link = expectDescendantOf(this.rows_['Folder B'].elem,
+                            withClass('cm-preview-link'));
+  cm.events.emit(link, 'click');
+  expectDescendantOf(cm.ui.document.body, isElement(
+      'iframe', withAttr('src', previewSrc + 'folder_b,sublayer_c')));
+
+  // Test closing by clicking the body.
+  cm.events.emit(cm.ui.document.body, 'click');
+  expectNoDescendantOf(cm.ui.document.body, 'iframe');
+
+  // Test that nested folders with no default-on descendants have no preview.
+  expectDescendantOf(this.rows_['Folder C'].elem,
+                     withClass('cm-no-preview'));
+
+  // Test that nested folders with some default-on descendants have a preview.
+  link = expectDescendantOf(this.rows_['Folder D'].elem,
+                            withClass('cm-preview-link'));
+  cm.events.emit(link, 'click');
+  expectDescendantOf(cm.ui.document.body, isElement(
+      'iframe', withAttr('src', previewSrc +
+          'folder_d,subfolder_c,sublayer_g')));
 };

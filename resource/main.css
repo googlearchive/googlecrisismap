@@ -784,6 +784,7 @@ input[type=checkbox]:checked::after {
   margin-bottom:8px;
 }
 .cm-importer h2 {
+  margin-top:0;
   margin-bottom:4px;
 }
 .cm-importer-list {
@@ -793,22 +794,30 @@ input[type=checkbox]:checked::after {
 }
 .cm-layer-item {
   position:relative;
+  border-bottom: 1px solid #ebebeb;
+  width:100%;
+  display:table;
+  cursor:pointer;
+}
+.cm-layer-item.cm-layer-selected {
+  background:#ffc !important;
 }
 .cm-importer .cm-map-title {
   position:relative;
   display:inline-block;
   width:100%;
-  padding-top:5px;
+  padding:32px 0 4px 0;
+  border-bottom:1px solid #ebebeb;
+}
+.cm-importer .cm-map-title:first-child {
+  padding-top:8px;
 }
 .cm-importer .cm-map-title > span {
-  padding-left:3px;
+  padding-left:6px;
 }
 .cm-importer .cm-layer-title {
   display:inline-block;
-  margin-top:2px !important;
-  margin-bottom:4px !important;
-  margin-left:14px; /* to match triangle width */
-  cursor:default;
+  padding:9px 0 9px 14px; /* padding-left to match triangle width */
 }
 .cm-importer .cm-triangle {
   position:absolute;
@@ -817,6 +826,7 @@ input[type=checkbox]:checked::after {
   background:url(triangle_right.png) no-repeat -4px -2px;
   background-size:21px;
   cursor:pointer;
+  margin-top:8px;
 }
 .cm-importer .cm-triangle.cm-expanded {
   background-image:url(triangle_down.png) !important;
@@ -846,9 +856,10 @@ input[type=checkbox]:checked::after {
     background-image:url(my_location_240dpi.png) !important;
   }
 }
-.cm-layer-selected {
-  color:#fff;
-  background:#3875d7;
+div.cm-layer-selected + div div.cm-layer-item,
+div.cm-layer-selected + div div.cm-layer-item:hover {
+  /* sets light background on children of a selected folder */
+  background-color:#ffffec;
 }
 .cm-preview-link {
   display:inline-block;
@@ -860,17 +871,34 @@ a.cm-preview-link {
   height:10px;
   background:url(external_link.png) no-repeat top left;
   background-size:10px;
-  top:10px;
-  right:8px;
+  bottom:10px;
+  right:12px;
 }
 div.cm-preview-link {
-  width:13px;
-  height:13px;
+  width:16px;
+  height:16px;
   background:url(preview.png) no-repeat top left;
   background-size:13px;
   margin-bottom:-1px;
-  top:4px;
-  right:6px;
+  top:10px;
+  right:10px;
+  display:none;
+}
+.cm-layer-item:hover div.cm-preview-link {
+  display:inherit;
+  filter:alpha(opacity=55);
+  opacity:0.55;
+}
+.cm-layer-item:hover div.cm-preview-link.cm-no-preview,
+div.cm-preview-link.cm-no-preview:hover {
+  filter:alpha(opacity=20)!important;
+  opacity:0.2!important;
+  cursor:auto;
+}
+div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
+  display:inherit;
+  filter:alpha(opacity=100)!important;
+  opacity:1.0!important;
 }
 /* Support for high density screens. */
 @media screen and (-webkit-min-device-pixel-ratio:2) {
@@ -893,6 +921,22 @@ div.cm-preview-link {
 .cm-layer-preview iframe {
   border:none;
   margin-bottom:-3px;
+}
+.cm-selected-count {
+  margin-top:12px;
+  margin-left:4px;
+}
+.cm-importer .cm-button-area {
+  margin-top:11px !important;
+}
+
+/* Tooltips */
+.cm-tooltip {
+  position:absolute;
+  background:#feffcd;
+  border:1px gray solid;
+  padding:0 2px 0 2px;
+  z-index:1;
 }
 
 /* Inspector dialog */
@@ -1098,6 +1142,11 @@ div.cm-preview-link {
 .cm-button.cm-submit:active {
   -webkit-box-shadow:inset 0px 1px 2px rgba(0,0,0,0.3);
   box-shadow:inset 0px 1px 2px rgba(0,0,0,0.3);
+}
+.cm-button.cm-submit[disabled] {
+  background:#4d90fe;
+  filter:alpha(opacity=50);
+  opacity:0.5;
 }
 .cm-button.cm-create {
   border:1px solid transparent;
