@@ -49,11 +49,12 @@ goog.require('goog.ui.Component');
  * screens.
  * @param {boolean} embedded This map should be embedded.
  * @param {boolean} touch True if the map is displayed on a touch device.
+ * @param {boolean} preview True if the map is being displayed as a preview.
  * @param {Element} mapWrapperElem The box around the map to resize.
  * @param {Element} footerElem The footer element.
  * @param {Element} panelElem The panel element.
  */
-function sizeComponents(map, container, searchbox, embedded, touch,
+function sizeComponents(map, container, searchbox, embedded, touch, preview,
                         mapWrapperElem, footerElem, panelElem) {
 
   /**
@@ -119,7 +120,7 @@ function sizeComponents(map, container, searchbox, embedded, touch,
   // searchbox behind other controls, has since been fixed.
   var uncoveredMapWidth =
       mapWrapperElem.offsetWidth - (panelFloat ? panelElem.offsetWidth : 0);
-  if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX) {
+  if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX || preview) {
     searchbox.hide();
   } else {
     searchbox.show();
@@ -193,6 +194,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   var touch = (new cm.BrowserDetect()).supportsTouch();
   var uri = new goog.Uri(window.location);
   var embedded = !!uri.getParameterValue('embedded');
+  var preview = !!uri.getParameterValue('preview');
 
   // Forward model changes to global scope.
   cm.events.forward(mapModel, cm.events.MODEL_CHANGED, goog.global);
@@ -225,16 +227,19 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   // Create all the views and UI elements.
   // The MapView must be created first because it replaces the contents of the
   // map <div> element, and other views add stuff within that <div> element.
-  var mapView = new cm.MapView(mapElem, mapModel, appState, touch, config);
+  var mapView = new cm.MapView(mapElem, mapModel, appState, touch, config,
+                               preview);
   var searchbox = new cm.SearchBox(mapView.getMap());
-  new cm.LayersButton(mapView.getMap(), panelElem);
-  if (!config['hide_share_button']) {
-    new cm.ShareButton(mapView.getMap(), appState,
-                       !config['hide_facebook_button'],
-                       !config['hide_google_plus_button'],
-                       !config['hide_twitter_button']);
+  if (!preview) {
+    new cm.LayersButton(mapView.getMap(), panelElem);
+    if (!config['hide_share_button']) {
+      new cm.ShareButton(mapView.getMap(), appState,
+                         !config['hide_facebook_button'],
+                         !config['hide_google_plus_button'],
+                         !config['hide_twitter_button']);
+    }
   }
-  if (!config['hide_my_location_button']) {
+  if (!(config['hide_my_location_button'] || preview)) {
     new cm.MyLocationButton(mapView.getMap());
   }
 
@@ -255,20 +260,20 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
                                                opt_menuItems));
   }
   var footerView = new cm.FooterView(footerElem, mapWrapperElem, mapModel);
-  goog.style.showElement(footerElem, !config['hide_footer']);
+  goog.style.showElement(footerElem, !config['hide_footer'] && !preview);
 
   new cm.BuildInfoView(mapElem);
 
   // Lay out the UI components.  This needs to happen (in order to determine
   // the size of the map's DOM element) before we set up the viewport.
   sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
-                 mapWrapperElem, footerElem, panelElem);
+                 preview, mapWrapperElem, footerElem, panelElem);
   // We readjust the layout whenever the ViewportSizeMonitor detects that the
   // window resized, and also when anything emits 'resize' on goog.global.
   cm.events.forward(new goog.dom.ViewportSizeMonitor(), 'resize', goog.global);
   cm.events.listen(goog.global, 'resize', function() {
-      sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
-                     mapWrapperElem, footerElem, panelElem);
+    sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
+                   preview, mapWrapperElem, footerElem, panelElem);
   });
 
   // If allowed, pass the google.maps.Map element to the parent frame.

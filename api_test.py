@@ -85,9 +85,9 @@ class ApiTest(test_utils.BaseTest):
 
     test_utils.BecomeAdmin()
     # Create and publish two maps
-    model.CatalogEntry.Create('google.com', 'Map 1',
+    model.CatalogEntry.Create('google.com', 'Map1',
                               model.Map.Create(json.dumps(map1)))
-    model.CatalogEntry.Create('google.com', 'Map 2',
+    model.CatalogEntry.Create('google.com', 'Map2',
                               model.Map.Create(json.dumps(map2)))
     # Create a draft; should not be returned by api.Maps
     model.Map.Create(json.dumps(draft))
@@ -96,7 +96,8 @@ class ApiTest(test_utils.BaseTest):
     handler = test_utils.SetupHandler('/api/maps', api.PublishedMaps())
     handler.get()
     maps = json.loads(handler.response.out.getvalue())
-    self.assertEquals([map2, map1], maps)
+    self.assertEquals([{'label': 'Map2', 'maproot': map2},
+                       {'label': 'Map1', 'maproot': map1}], maps)
 
 
 if __name__ == '__main__':

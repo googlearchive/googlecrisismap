@@ -53,7 +53,8 @@ function MapViewTest() {
         google.maps.MapTypeId.SATELLITE
       ],
      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-    }
+    },
+    mapTypeControl: true
   };
   this.map_ = this.expectNew_('google.maps.Map', this.elem_,
                               recursivelyEquals(this.expectedMapOptions_));
@@ -186,6 +187,17 @@ MapViewTest.prototype.minimalControls = function() {
       google.maps.ZoomControlStyle.SMALL;
   new cm.MapView(this.elem_, this.mapModel_, this.appState_, false,
                  {'minimal_map_controls': true});
+};
+
+/** Tests preview view. */
+MapViewTest.prototype.previewView = function() {
+  this.expectedMapOptions_.scaleControl = false;
+  this.expectedMapOptions_.streetViewControl = false;
+  this.expectedMapOptions_.zoomControlOptions.style =
+      google.maps.ZoomControlStyle.SMALL;
+  this.expectedMapOptions_.mapTypeControl = false;
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false, undefined,
+                 true);
 };
 
 /** Tests that clicking on the map closes the open InfoWindow. */

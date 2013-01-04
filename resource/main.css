@@ -777,8 +777,8 @@ input[type=checkbox]:checked::after {
 
 /* Importer dialog */
 .cm-importer {
-  width:350px;
-  max-width:350px;
+  width:375px;
+  max-width:375px;
 }
 .cm-importer-header {
   margin-bottom:8px;
@@ -789,13 +789,18 @@ input[type=checkbox]:checked::after {
 .cm-importer-list {
   border:1px grey inset;
   overflow:auto;
+  position:relative;
 }
 .cm-layer-item {
   position:relative;
 }
 .cm-importer .cm-map-title {
-  display:block;
+  position:relative;
+  display:inline-block;
+  width:100%;
   padding-top:5px;
+}
+.cm-importer .cm-map-title > span {
   padding-left:3px;
 }
 .cm-importer .cm-layer-title {
@@ -844,6 +849,50 @@ input[type=checkbox]:checked::after {
 .cm-layer-selected {
   color:#fff;
   background:#3875d7;
+}
+.cm-preview-link {
+  display:inline-block;
+  cursor:pointer;
+  position:absolute;
+}
+a.cm-preview-link {
+  width:10px;
+  height:10px;
+  background:url(external_link.png) no-repeat top left;
+  background-size:10px;
+  top:10px;
+  right:8px;
+}
+div.cm-preview-link {
+  width:13px;
+  height:13px;
+  background:url(preview.png) no-repeat top left;
+  background-size:13px;
+  margin-bottom:-1px;
+  top:4px;
+  right:6px;
+}
+/* Support for high density screens. */
+@media screen and (-webkit-min-device-pixel-ratio:2) {
+  a.cm-preview-link {
+    background-image:url(external_link_2x.png) !important;
+  }
+  div.cm-preview-link {
+    background-image:url(preview_2x.png) !important;
+  }
+}
+.cm-popup.cm-layer-preview {
+  padding:0;
+  min-width:inherit;
+  max-width:inherit;
+  border-color:white;
+}
+.cm-layer-preview .cm-close-button {
+  padding:0;
+}
+.cm-layer-preview iframe {
+  border:none;
+  margin-bottom:-3px;
 }
 
 /* Inspector dialog */

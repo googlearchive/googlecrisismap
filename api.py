@@ -56,7 +56,8 @@ class PublishedMaps(webapp.RequestHandler):
   # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
   def get(self):
     self.response.out.write(jsonp.ToHtmlSafeJson([
-        json.loads(entry.maproot_json)
+        {'label': entry.label,
+         'maproot': json.loads(entry.maproot_json)}
         for entry in model.CatalogEntry.GetAll()
     ]))
 

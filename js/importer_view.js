@@ -39,10 +39,10 @@ var MSG_IMPORT_TITLE = goog.getMsg('Select layers to import');
  */
 cm.ImporterView = function() {
   /**
-   * Array of JSON maps loaded from the server. Cached and used until time equal
-   * to cm.ImporterView.MAPS_CACHE_TTL_MS_ has passed.
+   * Array of catalog maps loaded from the server. Cached and reused until time
+   * equal to cm.ImporterView.MAPS_CACHE_TTL_MS_ has passed.
    * TODO(joeysilva): Add refresh button to importer.
-   * @type {Array.<cm.MapModel>|undefined}
+   * @type {Array.<{maproot: Object, label: string}>|undefined}
    * @private
    */
   this.maps_;
@@ -91,6 +91,22 @@ cm.ImporterView = function() {
    */
   this.layerModels_;
 
+  /**
+   * Popup element displaying a map layer in an iframe, or null if there is
+   * no preview visible.
+   * @type {?Element}
+   * @private
+   */
+   this.layerPreview_;
+
+  /**
+   * Listener tokens for 'mousedown' and 'click' events to close an open layer
+   * preview, or null if there is no preview.
+   * @type {?Array.<cm.events.ListenerToken>}
+   * @private
+   */
+  this.closePreviewListeners_;
+
   var newLayerLink;
   var okBtn;
   var closeBtn;
@@ -133,6 +149,16 @@ cm.ImporterView.MAPS_CACHE_TTL_MS_ = 15 * 60 * 1000; // 15 minutes
 cm.ImporterView.MAX_HEIGHT_ = 0.9;
 
 /**
+ * The maximum width or height of layer previews. The larger dimension will be
+ * equal to this, while the other dimension will depend on the aspect ratio
+ * given by the viewport of the layer, or its map.
+ * @const
+ * @type {number}
+ * @private
+ */
+cm.ImporterView.PREVIEW_MAX_LENGTH_PX_ = 300;
+
+/**
  * Total number of pixels from element CSS properties that contribute to the
  * popup's total height.
  * @const
@@ -169,10 +195,8 @@ cm.ImporterView.prototype.openImporter = function() {
         return;
       }
       if (event.target.isSuccess()) {
-        var maps = event.target.getResponseJson();
-        if (maps) {
-          this.maps_ = goog.array.map(maps,
-              cm.MapModel.newFromMapRoot);
+        this.maps_ = event.target.getResponseJson();
+        if (this.maps_) {
           this.mapsLoadedTimestampMs_ = (new Date()).getTime();
           this.renderLayerList_(this.maps_);
         }
@@ -184,19 +208,25 @@ cm.ImporterView.prototype.openImporter = function() {
 /**
  * Constructs the layer list from the given list of maps, also constructing the
  * flat list of layer models (this.layerModels_).
- * @param {Array.<cm.MapModel>} maps Array of maps with layers to display.
+ * @param {Array.<{maproot: Object, label: string}>} maps Array of maps with
+ *     layers to display. Each item contains a maproot object and the label of
+ *     the published map, used to access and display a preview.
  * @private
  */
 cm.ImporterView.prototype.renderLayerList_ = function(maps) {
   cm.ui.clear(this.layerListElem_);
   goog.array.forEach(maps, function(map) {
-    var layers = map.get('layers');
+    var label = map['label'];
+    var model = cm.MapModel.newFromMapRoot(map['maproot']);
+    var layers = model.get('layers');
     if (layers.getLength()) {
       cm.ui.append(this.layerListElem_,
           cm.ui.create('div', {'class': 'cm-map-title'},
-              /** @type {string} */(map.get('title'))));
+              cm.ui.create('span', {},
+                  /** @type {string} */(model.get('title'))),
+              this.renderPreviewLink_(label)));
       layers.forEach(goog.bind(function(layer) {
-        this.renderLayerElem_(layer, this.layerListElem_);
+        this.renderLayerElem_(this.layerListElem_, layer, model, label);
       }, this));
     }
   }, this);
@@ -207,41 +237,50 @@ cm.ImporterView.prototype.renderLayerList_ = function(maps) {
  * Renders this row according to layerModel, and appends itself to the given
  * parent element. Will add the layerModel to this.layerModels_, and recursively
  * add sublayers as rows nested in folder divs.
- * @param {cm.LayerModel} layerModel The LayerModel for which to render a row.
  * @param {Element} parent Parent element to add the layer element to.
+ * @param {cm.LayerModel} layerModel The LayerModel to render a row for.
+ * @param {cm.MapModel} mapModel MapModel of the layer's map.
+ * @param {string} mapLabel Label of the published map the layer belongs to, for
+ *     constructing the map's url, e.g. /crisismap/<mapLabel>.
  * @param {number=} opt_depth Depth level for sublayers, set recursively.
  *     Defaults to 0 (root level).
  * @private
  */
-cm.ImporterView.prototype.renderLayerElem_ = function(layerModel, parent,
-    opt_depth) {
+cm.ImporterView.prototype.renderLayerElem_ = function(parent, layerModel,
+    mapModel, mapLabel, opt_depth) {
   var depth = opt_depth || 0;
   var index = this.layerModels_.length;
   this.layerModels_[index] = layerModel;
 
-  var layerElem, expanderElem, containerElem;
+  var layerElem, expanderElem, previewLink, folderElem;
   cm.ui.append(parent,
       layerElem = cm.ui.create('div', {
           'data-index': index, 'class': 'cm-layer-item',
           'style': 'padding-left: ' + (depth * 16) + 'px;'},
           expanderElem = cm.ui.create('div', {'class': 'cm-triangle'}),
           cm.ui.create('span', {'class': 'cm-layer-title'},
-              /** @type {string} */(layerModel.get('title')))),
-      containerElem = cm.ui.create('div', {'class': 'cm-folder-container'}));
+              /** @type {string} */(layerModel.get('title'))),
+          previewLink = this.renderPreviewLink_(
+              mapLabel, layerModel, /** @type {cm.LatLonBox|undefined} */
+              (layerModel.get('viewport') || mapModel.get('viewport')))),
+      folderElem =
+          cm.ui.create('div', {'class': 'cm-folder-container'}));
 
   cm.events.listen(layerElem, 'click',
       goog.bind(this.handleLayerClick_, this, layerElem));
 
   var sublayers = layerModel.get('sublayers');
   if (sublayers.length > 0) {
-    goog.style.showElement(containerElem, false);
+    cm.ui.remove(previewLink);
+    goog.style.showElement(folderElem, false);
 
     sublayers.forEach(goog.bind(function(sublayer) {
-      this.renderLayerElem_(sublayer, containerElem, depth + 1);
+      this.renderLayerElem_(
+          folderElem, sublayer, mapModel, mapLabel, depth + 1);
     }, this));
 
     cm.events.listen(expanderElem, 'click', goog.bind(
-        this.handleExpanderClick_, this, expanderElem, containerElem));
+        this.handleExpanderClick_, this, expanderElem, folderElem));
   } else {
     cm.ui.remove(expanderElem);
   }
@@ -272,6 +311,102 @@ cm.ImporterView.prototype.handleLayerClick_ = function(layerElem) {
 };
 
 /**
+ * Creates a link to preview either the given map in a new tab, or the given
+ * layer in a preview box.
+ * @param {string} mapLabel Label indicating where this map is published, used
+ *     to construct the map URL /crisismap/<mapLabel>.
+ * @param {cm.LayerModel=} opt_layerModel If specified, this link will display a
+ *     popup box previewing this layer. Otherwise the link will open a new
+ *     window that previews the entire map.
+ * @param {cm.LatLonBox=} opt_viewport The viewport used to determine the sizing
+ *     of the preview box. Not used for the actual preview's viewport; for that,
+ *     the layer model is accessed directly. Ignored if opt_layerModel is not
+ *     provided.
+ * @return {Element} The preview link.
+ * @private
+ */
+cm.ImporterView.prototype.renderPreviewLink_ = function(mapLabel,
+    opt_layerModel, opt_viewport) {
+  var previewLink;
+  var href = '/crisismap/' + mapLabel;
+  if (opt_layerModel) {
+    // Must add all of this layer's ancestors to the 'layers' URL parameter to
+    // make sure it is shown.
+    var ids = [];
+    for (var layer = opt_layerModel; layer = layer.get('parent');) {
+      ids.push(layer.get('id'));
+    }
+
+    // Construct the iframe URL. Only set the viewport explicitly if the layer
+    // model specifies a viewport.
+    var layerViewport = opt_layerModel.get('viewport');
+    href = href + '?preview=1&layers=' + ids.join() +
+        (layerViewport ? '&llbox=' + layerViewport.round(4) : '');
+    previewLink = cm.ui.create('div', {'class': 'cm-preview-link'});
+    cm.events.listen(previewLink, 'click', function(e) {
+      e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
+      this.closePreview_();
+      this.handlePreviewClick_(previewLink, href, opt_viewport);
+    }, this);
+  } else {
+    previewLink = cm.ui.create('a',
+        {'class': 'cm-preview-link', 'target': '_blank', 'href': href});
+  }
+  return previewLink;
+};
+
+/**
+ * Renders and displays a new layer preview relative to the given preview link.
+ * This preview is be cleared any time the user mousedowns or clicks outside of
+ * the preview.
+ * @param {Element} previewLink The clicked preview link.
+ * @param {string} href Link to the layer preview.
+ * @param {cm.LatLonBox=} opt_viewport The viewport that the preview box will be
+ *     scaled according to. Defaults to cm.LatLonBox.ENTIRE_MAP.
+ * @param {Element=} opt_container Parent container of the popup; defaults to
+ *     cm.ui.document.body.
+ * @private
+ */
+cm.ImporterView.prototype.handlePreviewClick_ = function(previewLink, href,
+    opt_viewport, opt_container) {
+  var viewport = opt_viewport || cm.LatLonBox.ENTIRE_MAP;
+  var container = opt_container || cm.ui.document.body;
+
+  var aspectRatio = viewport.getEastWestMeters() /
+      viewport.getNorthSouthMeters();
+  // Set height equal to the max preview length if this preview at least as tall
+  // as it is wide. Otherwise, set the height relative to the max preview length
+  // by using the aspect ratio. The height should never be more than the
+  // container's height.
+  var height = Math.min(
+      container.offsetHeight,
+      aspectRatio <= 1 ? cm.ImporterView.PREVIEW_MAX_LENGTH_PX_ :
+          Math.round(cm.ImporterView.PREVIEW_MAX_LENGTH_PX_ / aspectRatio));
+  // Simply set the width based off the height and the aspect ratio.
+  var width = height * aspectRatio;
+
+  var pos = goog.style.getRelativePosition(previewLink, container);
+  pos.x += previewLink.offsetWidth + 10;
+  if (pos.y + height > container.offsetHeight) {
+    // Preview is too low. Display it at the bottom of the screen with a 10px
+    // margin (or at the top of the container, if it is too small for a margin).
+    pos.y = Math.max(container.offsetHeight - height - 10, 0);
+  }
+
+  this.layerPreview_ = cm.ui.create('div', {
+      'class': 'cm-popup cm-layer-preview',
+      'style': goog.string.format('left:%dpx; top:%dpx', pos.x, pos.y)},
+      cm.ui.create('iframe', {
+          'src': href, 'width': width + 'px', 'height': height + 'px'}));
+  cm.ui.append(container, this.layerPreview_);
+  cm.ui.createCloseButton(
+      this.layerPreview_, goog.bind(this.closePreview_, this));
+  this.closePreviewListeners_ = /** @type {Array.<cm.events.ListenerToken>} */
+      cm.events.listen(container, ['mousedown', 'click'],
+                       this.closePreview_, this);
+};
+
+/**
  * Returns the folder element (with class cm-layer-item) of the given layer
  * element, or null if it has no parent folder.
  * @param {Element} sublayerElem The layer element whose parent folder will be
@@ -296,7 +431,10 @@ cm.ImporterView.prototype.getParentFolderElem_ = function(sublayerElem) {
  */
 cm.ImporterView.prototype.handleExpanderClick_ = function(
     expanderElem, folderElem, e) {
+  // Stop this click from selecting the layer. Because we do this, we must
+  // close any open previews since the document will not witness this click.
   e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
+  this.closePreview_();
   var expanded = goog.dom.classes.toggle(expanderElem, 'cm-expanded');
   goog.style.showElement(folderElem, expanded);
 };
@@ -371,6 +509,23 @@ cm.ImporterView.prototype.handleCancel_ = function() {
  */
 cm.ImporterView.prototype.close_ = function() {
   cm.events.unlisten(this.windowResizeListener_, this);
+  this.closePreview_();
   cm.ui.remove(this.popup_);
   cm.ui.clear(this.layerListElem_);
+};
+
+/**
+ * Disposes of the open layer preview, if it exists, and cleans up its close
+ * listeners.
+ * @private
+ */
+cm.ImporterView.prototype.closePreview_ = function() {
+  if (this.layerPreview_) {
+    cm.ui.remove(this.layerPreview_);
+    this.layerPreview_ = null;
+    if (this.closePreviewListeners_) {
+      cm.events.unlisten(this.closePreviewListeners_, this);
+    }
+    this.closePreviewListeners_ = null;
+  }
 };

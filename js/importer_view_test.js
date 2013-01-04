@@ -18,18 +18,24 @@ function ImporterViewTest() {
   // Layers will be keyed by title in this.rows_; therefore the titles must be
   // unique.
   this.maps_ = [
-    {title: 'Map A', layers: [
-      {title: 'Layer A', type: cm.LayerModel.Type.KML},
-      {title: 'Folder A', type: cm.LayerModel.Type.FOLDER, sublayers: [
-        {title: 'Sublayer A', type: cm.LayerModel.Type.KML}
-      ]}
-    ]},
-    {title: 'Map B', layers: [
-      {title: 'Layer B', type: cm.LayerModel.Type.KML},
-      {title: 'Folder B', type: cm.LayerModel.Type.FOLDER, sublayers: [
-        {title: 'Sublayer B', type: cm.LayerModel.Type.KML}
-      ]}
-    ]}
+    {label: 'map_a', maproot: {
+      title: 'Map A', layers: [
+        {title: 'Layer A', id: 'layer_a', type: cm.LayerModel.Type.KML},
+        {title: 'Folder A', id: 'folder_a', type: cm.LayerModel.Type.FOLDER,
+         sublayers: [
+           {title: 'Sublayer A', id: 'sublayer_a', type: cm.LayerModel.Type.KML}
+        ]}
+      ]
+    }},
+    {label: 'map_b', maproot: {
+      title: 'Map B', layers: [
+        {title: 'Layer B', id: 'layer_b', type: cm.LayerModel.Type.KML},
+        {title: 'Folder B', id: 'folder_b', type: cm.LayerModel.Type.FOLDER,
+         sublayers: [
+           {title: 'Sublayer B', id: 'sublayer_b', type: cm.LayerModel.Type.KML}
+         ]}
+      ]
+    }}
   ];
 
   // Listen for an ADD_LAYERS event.
@@ -75,14 +81,19 @@ ImporterViewTest.prototype.openImporter_ = function() {
       isElement('div', withClass('cm-layer-item')));
   var rowCounter = 0;
   this.rows_ = {};
-  var addLayer = function(layer) {
-    this.rows_[layer.title] = {layer: layer, elem: rowElems[rowCounter++]};
+  var addLayer = function(layer, mapLabel) {
+    me.rows_[layer.title] =
+        {mapLabel: mapLabel, layer: layer, elem: rowElems[rowCounter++]};
     if (layer.sublayers) {
-      goog.array.forEach(layer.sublayers, addLayer, this);
+      goog.array.forEach(layer.sublayers, function(layer) {
+        addLayer(layer, mapLabel);
+      });
     }
   };
   goog.array.forEach(this.maps_, function(map) {
-    goog.array.forEach(map.layers, addLayer, this);
+    goog.array.forEach(map.maproot.layers, function(layer) {
+      addLayer(layer, map.label);
+    });
   }, this);
   expectEq(rowCounter, rowElems.length);
 };
@@ -98,14 +109,21 @@ ImporterViewTest.prototype.testOpenImporter = function() {
   expectDescendantOf(buttonArea, 'button', withText('OK'));
   expectDescendantOf(buttonArea, 'button', withText('Cancel'));
 
-  // Confirm that the map headings are there
-  expectDescendantOf(this.popup_, 'div', withText('Map A'));
-  expectDescendantOf(this.popup_, 'div', withText('Map B'));
+  // Confirm that the map headings are there, with preview links.
+  expectDescendantOf(this.popup_, 'span', withText('Map A'));
+  expectDescendantOf(this.popup_, 'a', withClass('cm-preview-link',
+                     withAttr('href', '/crisismap/map_a')));
+  expectDescendantOf(this.popup_, 'span', withText('Map B'));
+  expectDescendantOf(this.popup_, 'a', withClass('cm-preview-link',
+                     withAttr('href', '/crisismap/map_b')));
 
-  // Confirm the layer rows are there
-  for (title in this.rows_) {
+  // Confirm the layer rows are there, with correct titles and preview links.
+  for (var title in this.rows_) {
     var row = this.rows_[title];
     expectDescendantOf(row.elem, 'span', withText(title));
+    if (!this.rows_[title].layer.sublayers) {
+      expectDescendantOf(row.elem, 'div', withClass('cm-preview-link'));
+    }
   }
 
   // Confirm the arrows are there and not expanded.

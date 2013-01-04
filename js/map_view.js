@@ -35,10 +35,12 @@ goog.require('goog.json');
  *         control, no pegman)?
  *     panel_side: The side of the map the panel will be placed on,
  *         which dictates placement of the map controls.
+ * @param {boolean=} opt_preview Whether or not this is a preview view.
  * @constructor
  * @extends google.maps.MVCObject
  */
-cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config) {
+cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config,
+    opt_preview) {
   /**
    * @type cm.MapModel
    * @private
@@ -92,7 +94,8 @@ cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config) {
     zoomControlPosition = google.maps.ControlPosition.RIGHT_BOTTOM;
     scaleControlPosition = google.maps.ControlPosition.LEFT_BOTTOM;
   }
-  var minimalMapControls = config['minimal_map_controls'] || touchDevice;
+  var minimalMapControls =
+      config['minimal_map_controls'] || touchDevice || opt_preview;
   var zoomControlStyle = minimalMapControls ?
       google.maps.ZoomControlStyle.SMALL :
       google.maps.ZoomControlStyle.DEFAULT;
@@ -113,7 +116,8 @@ cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config) {
         google.maps.MapTypeId.SATELLITE
       ],
       'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
-    }
+    },
+    'mapTypeControl': !opt_preview
   });
 
   // The MapView has its own "center" and "zoom" properties so that we can
