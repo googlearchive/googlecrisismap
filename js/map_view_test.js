@@ -738,8 +738,8 @@ MapViewTest.prototype.zoomToKMLLayerModelViewport = function() {
       this.elem_, this.mapModel_, this.appState_, false);
 
   // Define the 'viewport' property.
-  this.mapModel_.getLayer('green-tea').viewport =
-      new cm.LatLonBox(40, 30, -100, -120);
+  this.mapModel_.getLayer('green-tea').set(
+      'viewport', new cm.LatLonBox(40, 30, -100, -120));
   // Return a non-null defaultViewport.
   var defaultViewport = new google.maps.LatLngBounds();
   stubReturn(overlay, 'getDefaultViewport', defaultViewport);
@@ -766,8 +766,8 @@ MapViewTest.prototype.zoomToGeoRSSLayerModelViewport = function() {
       this.elem_, this.mapModel_, this.appState_, false);
 
   // Define the 'viewport' property.
-  this.mapModel_.getLayer('guava').viewport =
-      new cm.LatLonBox(30, 40, -80, -100);
+  this.mapModel_.getLayer('guava').set(
+      'viewport', new cm.LatLonBox(30, 40, -80, -100));
   // Return a non-null defaultViewport.
   var defaultViewport = new google.maps.LatLngBounds();
   stubReturn(overlay, 'getDefaultViewport', defaultViewport);
@@ -855,8 +855,8 @@ MapViewTest.prototype.zoomToLayerModelViewport = function() {
       this.elem_, this.mapModel_, this.appState_, false);
 
   // This box just fits in a 800 x 800 window at zoom level 7.
-  this.mapModel_.getLayer('chocolate').viewport =
-      new cm.LatLonBox(42, 37, -106.5, -115);
+  this.mapModel_.getLayer('chocolate').set(
+      'viewport', new cm.LatLonBox(42, 37, -106.5, -115));
   expectCall(overlay.setMap)(this.map_);
   mapView.zoomToLayer('chocolate');
   expectEq(
@@ -864,8 +864,8 @@ MapViewTest.prototype.zoomToLayerModelViewport = function() {
   expectEq(7, mapView.get('zoom'));
 
   // This box is just a bit too big for a 800 x 800 window at zoom level 7.
-  this.mapModel_.getLayer('chocolate').viewport =
-      new cm.LatLonBox(42, 37, -106, -115.5);
+  this.mapModel_.getLayer('chocolate').set(
+      'viewport', new cm.LatLonBox(42, 37, -106, -115.5));
   expectCall(overlay.setMap)(this.map_);
   mapView.zoomToLayer('chocolate');
   expectEq(
