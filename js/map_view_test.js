@@ -124,7 +124,7 @@ MapViewTest.prototype.expectInfoWindowOpen_ = function(
     content, position, pixelOffset) {
   expectCall(this.infoWindow_.close)();
   expectCall(goog.dom.htmlToDocumentFragment)(content)
-      .willOnce(returnWith({innerHTML: 'stuff'}));
+      .willOnce(returnWith({childNodes: ['stuff']}));
   expectCall(this.infoWindow_.setOptions)(recursivelyEquals({
     position: position, pixelOffset: pixelOffset, content: content
   }));
@@ -598,6 +598,31 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
   this.expectInfoWindowOpen_(ftEvent.infoWindowHtml, ftEvent.latLng,
                              ftEvent.pixelOffset);
   cm.events.emit(overlay, 'click', ftEvent);
+};
+
+/**
+ * Tests that clicking on an overlay with empty info window does not
+ * open the info window.
+ */
+MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
+  this.addLayer_({id: 'bubble-gum', type: cm.LayerModel.Type.KML, url: 'url'});
+  this.stubReturnVisibleLayerIds_(['bubble-gum']);
+
+  var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
+  expectCall(overlay.setMap)(this.map_);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+
+  // Make sure a single empty element is ignored
+  var kmlEvent = {
+    featureData: {infoWindowHtml: '<div style="foo"></div>'},
+    latLng: {},
+    pixelOffset: {}
+  };
+  expectCall(this.infoWindow_.close)();
+  expectCall(goog.dom.htmlToDocumentFragment)('<div style="foo"></div>')
+      .willOnce(returnWith({childNodes: []}));
+  expectCall(this.infoWindow_.open)().times(0);
+  cm.events.emit(overlay, 'click', kmlEvent);
 };
 
 /**

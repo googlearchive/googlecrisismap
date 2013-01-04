@@ -447,12 +447,18 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       // FusionTablesLayer makes the info window content available in the event
       // itself, but KmlLayer hides it behind 'featureData';
       var content = (event['featureData'] || event)['infoWindowHtml'];
-      // htmlToDocumentFragment doesn't like leading/trailing whitespace
+      // Strip whitespace from content before checking if it has child nodes;
+      // otherwise, whitespace (unless you're on IE) counts as a node in the
+      // document fragment, which defeats the purpose of the
+      // "suppress empty info windows" check
       if (content) {
         content = goog.string.trim(content);
       }
+      // TODO(shakusa) htmlToDocumentFragment is somewhat convoluted.
+      // Try to do this check without using that method.
       var contentDiv = goog.dom.htmlToDocumentFragment(content);
-      if (!!contentDiv.innerHTML) {
+      if (contentDiv && contentDiv.childNodes &&
+          contentDiv.childNodes.length > 0) {
         this.infoWindow_.setOptions(/** @type google.maps.InfoWindowOptions */({
           position: event['latLng'],
           pixelOffset: event['pixelOffset'],
