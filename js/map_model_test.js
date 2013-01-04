@@ -11,9 +11,6 @@
 
 
 // Test input: a map in MapRoot JSON format.
-
-goog.require('cm.json_files');
-
 var DRACULA_MAPROOT = {
   id: 'foo',
   languages: ['en', 'fr'],

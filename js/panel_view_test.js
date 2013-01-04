@@ -12,8 +12,7 @@
 
 function PanelViewTest() {
   cm.TestBase.call(this);
-  cm.ui.document.body.offsetWidth = 500;
-
+  this.setForTest_('cm.ui.document.body.offsetWidth', 500);
   this.mapDiv_ = new FakeElement('div');
   this.mapModel_ = new google.maps.MVCObject();
   this.mapModel_.set('title', 'Monster Attack 2000');

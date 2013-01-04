@@ -22,11 +22,12 @@ function MetadataUpdaterTest() {
   this.xhr_ = this.expectNew_('goog.net.XhrIo');
   expectCall(this.xhr_.setTimeoutInterval)(_);
 
+  var TICK = goog.Timer.TICK;
   this.timer_ = this.expectNew_('goog.Timer', _);
-
-  // NOTE: The following lines are for monkey patching in order to let
-  // a Closure mock, this.timer_, to emit events through Crisis Maps events.
-  goog.Timer.TICK = 'tick';
+  // NOTE: Due to this.expectNew_ above, goog.Timer is a mock at this point,
+  // so we can set properties on it without worrying about restoring them.
+  // The code under test uses the goog.Timer.TICK constant, so we provide it.
+  goog.Timer.TICK = TICK;
 
   expectCall(this.timer_.start)();
   expectCall(this.timer_.dispatchTick)();

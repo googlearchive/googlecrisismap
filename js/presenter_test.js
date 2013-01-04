@@ -11,12 +11,10 @@
 
 // Author: kpy@google.com (Ka-Ping Yee)
 
-/** An equality function for comparing test results. */
-google.maps.LatLng.prototype.gjstestEquals =
-    google.maps.LatLng.prototype.equals;
-
 function PresenterTest() {
   cm.TestBase.call(this);
+  this.setGjstestEquals_('google.maps.LatLng');
+
   this.mapModel_ = cm.MapModel.newFromMapRoot({
     title: 'title',
     layers: [{

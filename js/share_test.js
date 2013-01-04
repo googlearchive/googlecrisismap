@@ -48,8 +48,6 @@ SharePopupTest.prototype.createPopup_ = function(
   expectCall(this.popup_.setHideOnEscape)(true);
   expectCall(this.popup_.setAutoHide)(true);
   expectCall(this.popup_.setEnableCrossIframeDismissal)(false);
-  browserDetect = this.expectNew_('cm.BrowserDetect');
-  stubReturn(browserDetect, 'supportsTouch', false);
 
   // Create the cm.SharePopup.
   stubReturn(goog.style, 'showElement', null);

@@ -14,20 +14,13 @@
  * @author romano@google.com (Raquel Romano)
  */
 
-/** An equality function for comparing test results. */
-google.maps.LatLng.prototype.gjstestEquals =
-    google.maps.LatLng.prototype.equals;
-
-/** An equality function for comparing test results. */
-google.maps.LatLngBounds.prototype.gjstestEquals =
-    google.maps.LatLngBounds.prototype.equals;
-
-/** An equality function for comparing test results. */
-google.maps.Point.prototype.gjstestEquals =
-    google.maps.Point.prototype.equals;
-
+/** @constructor */
 function GeometryTest() {
   cm.TestBase.call(this);
+
+  this.setGjstestEquals_('google.maps.LatLng');
+  this.setGjstestEquals_('google.maps.LatLngBounds');
+  this.setGjstestEquals_('google.maps.Point');
 
   // This is intended to mock the google.maps.Projection interface, but there
   // is no google.maps.Projection class so we just use a mock function.

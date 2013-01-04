@@ -11,9 +11,6 @@
 
 // @author joeysilva@google.com (Joey Silva)
 
-/** Make gjstest use Html.equals for equality comparison. */
-cm.Html.prototype.gjstestEquals = cm.Html.prototype.equals;
-
 var EXTRACTED_LEGEND_ITEMS = {
   static_icon_urls: ['icon_href'],
   line_styles: [{color: '#111111'}],
@@ -23,6 +20,7 @@ var EXTRACTED_LEGEND_ITEMS = {
 
 function LegendEditorTest() {
   cm.TestBase.call(this);
+  this.setGjstestEquals_('cm.Html');
   this.setForTest_('cm.Html.sanitize_', function(x) { return '*' + x + '*'; });
 
   this.featurePalette_ = this.expectNew_('goog.ui.Palette');

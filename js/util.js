@@ -12,10 +12,27 @@
 // Author: romano@google.com (Raquel Romano)
 
 /**
- * @fileoverview Utility functions for walking through all layers descending
- * from a a given layer, or all layers in a map.
+ * @fileoverview Global utility functions.
  */
 goog.provide('cm.util');
+
+/** @return {boolean} True if the browser supports touch events. */
+cm.util.browserSupportsTouch = function() {
+  return cm.util.browserSupportsEvent('ontouchstart') &&
+         cm.util.browserSupportsEvent('ontouchmove') &&
+         cm.util.browserSupportsEvent('ontouchend');
+};
+
+/**
+ * @param {string} eventName The name of a DOM event type.
+ * @return {boolean} True if the browser supports this event type.
+ */
+cm.util.browserSupportsEvent = function(eventName) {
+  var elem = cm.ui.create('div');
+  elem.setAttribute(eventName, 'return;');
+  return (typeof elem[eventName] == 'function' ||
+          eventName in cm.ui.document.documentElement);
+};
 
 /**
  * Recursively apply callback to the given layer and its tree of sublayers.

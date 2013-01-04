@@ -62,7 +62,7 @@ cm.MapPicker = function(parentElem, menuItems) {
  * @private
  */
 cm.MapPicker.createMenu_ = function(menuItems) {
-  var currentUrl = new goog.Uri(window.location);
+  var currentUrl = new goog.Uri(goog.global.location);
   currentUrl.setQuery('');
   currentUrl.setFragment('');
   return cm.ui.create('ul', {'class': 'cm-popup cm-map-picker'},

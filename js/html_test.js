@@ -12,11 +12,11 @@
 // Author: kpy@google.com (Ka-Ping Yee)
 
 function HtmlTest() {
+  cm.TestBase.call(this);
+  this.setGjstestEquals_('cm.Html');
 }
+HtmlTest.prototype = new cm.TestBase();
 registerTestSuite(HtmlTest);
-
-/** Make gjstest use our .equals() for expectEq and expectNe. */
-cm.Html.prototype.gjstestEquals = cm.Html.prototype.equals;
 
 /** Exercises the Html constructor and the getUnsanitizedHtml() getter. */
 HtmlTest.prototype.constructorAndGetUnsanitizedHtml = function() {

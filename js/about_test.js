@@ -13,11 +13,11 @@
 
 function AboutPopupTest() {
   cm.TestBase.call(this);
-  goog.dom.htmlToDocumentFragment = function(html) {
+  this.setForTest_('goog.dom.htmlToDocumentFragment', function(html) {
     var e = new FakeElement('fragment');
     e.innerHtml = html;
     return e;
-  };
+  });
   this.container_ = cm.ui.create('div');
   this.aboutText_ = cm.ui.create('div', {'class': 'cm-aboutText'});
   this.about_ = new cm.AboutPopup(this.container_, this.aboutText_);

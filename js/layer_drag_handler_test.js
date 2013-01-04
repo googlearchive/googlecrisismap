@@ -11,19 +11,13 @@
 
 // Author: romano@google.com (Raquel Romano)
 
-/**
- * Define how gjstest makes equality comparisons for Rect objects.
- * @param {goog.math.Rect} other The object to compare this to.
- * @return {boolean} True iff they are equivalent.
- */
-goog.math.Rect.prototype.gjstestEquals = function(other) {
-  return other && other.x === this.x && other.y === this.y &&
-      other.h === this.h && other.w === this.w;
-};
-
 function LayerDragHandlerTest() {
   cm.TestBase.call(this);
 
+  this.setForTest_('goog.math.Rect.prototype.gjstestEquals', function(other) {
+    return other && other.x === this.x && other.y === this.y &&
+        other.h === this.h && other.w === this.w;
+  });
   this.setForTest_('goog.style.getBounds', createMockFunction());
   this.setForTest_('goog.style.getMarginBox', createMockFunction());
   this.setForTest_('goog.style.setPosition', function() { return null; });

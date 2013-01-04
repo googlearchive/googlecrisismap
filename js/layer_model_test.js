@@ -60,20 +60,12 @@ var MAPTILE_MAP_ROOT_JSON = {
 function LayerModelTest() {
   cm.TestBase.call(this);
   this.setGjstestEquals_('cm.LatLonBox');
+  this.setForTest_('cm.LayerModel.nextId_', 0);
 }
 LayerModelTest.prototype = new cm.TestBase();
 registerTestSuite(LayerModelTest);
 
-/**
- * Resets test values.
- */
-LayerModelTest.prototype.tearDown = function() {
-  cm.LayerModel.nextId_ = 0;
-};
-
-/**
- * Tests LayerModel.newFromMapRoot with a KML layer in MapRoot JSON.
- */
+/** Tests LayerModel.newFromMapRoot with a KML layer in MapRoot JSON. */
 LayerModelTest.prototype.newFromMapRootKmlLayer = function() {
   var layerModel = cm.LayerModel.newFromMapRoot(KML_MAP_ROOT_JSON);
   expectEq('prawn', layerModel.get('id'));
@@ -91,9 +83,7 @@ LayerModelTest.prototype.newFromMapRootKmlLayer = function() {
   expectEq(0.5, layerModel.get('opacity'));
 };
 
-/**
- * Tests LayerModel.newFromMapRoot with a Maptile layer in MapRoot JSON.
- */
+/** Tests LayerModel.newFromMapRoot with a Maptile layer in MapRoot JSON. */
 LayerModelTest.prototype.newFromMapRootMaptileLayer = function() {
   var layerModel = cm.LayerModel.newFromMapRoot(MAPTILE_MAP_ROOT_JSON);
   expectEq('foo', layerModel.get('id'));
@@ -101,9 +91,7 @@ LayerModelTest.prototype.newFromMapRootMaptileLayer = function() {
   expectEq(true, layerModel.get('url_is_tile_index'));
 };
 
-/**
- * Tests the default values set in LayerModel.newFromMapRoot.
- */
+/** Tests the default values set in LayerModel.newFromMapRoot. */
 LayerModelTest.prototype.newFromMapRootDefaultValues = function() {
   var EMPTY_MAPROOT = {type: 'KML', title: 'Empty map'};
   var layerModel = cm.LayerModel.newFromMapRoot(EMPTY_MAPROOT);
@@ -324,9 +312,7 @@ LayerModelTest.prototype.toMapRoot = function() {
   expectThat(layerModel.toMapRoot(), recursivelyEquals(KML_MAP_ROOT_JSON));
 };
 
-/**
- * Tests that toMapRoot constructs a hierarchy of nested folders.
- */
+/** Tests that toMapRoot constructs a hierarchy of nested folders. */
 LayerModelTest.prototype.toMapRootFolders = function() {
   var json = {
     id: 'folder0',
@@ -422,9 +408,7 @@ LayerModelTest.prototype.insertLayer = function() {
   expectEq(parent, child1.get('parent'));
 };
 
-/**
- * Tests whether source adress is returned correctly.
- */
+/** Tests whether source adress is returned correctly. */
 LayerModelTest.prototype.testGetSourceAddress = function() {
   var layerModel = cm.LayerModel.newFromMapRoot(KML_MAP_ROOT_JSON);
   expectEq('http://monkfish.com', layerModel.getSourceAddress());

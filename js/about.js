@@ -18,7 +18,6 @@ goog.provide('cm.AboutPopup');
 goog.require('cm');
 goog.require('cm.ui');
 goog.require('goog.dom');
-goog.require('goog.dom.TagName');
 
 /**
  * A graphical element that displays information about the map.
@@ -35,8 +34,7 @@ cm.AboutPopup = function(container, opt_aboutContainer) {
     this.container_ = container;
 
     this.popup_ = cm.ui.create(
-        goog.dom.TagName.DIV, {'id': 'cm-about', 'class': 'cm-popup'},
-        aboutBox);
+        'div', {'id': 'cm-about', 'class': 'cm-popup'}, aboutBox);
 
     // Creates a close button for the about popup.
     cm.ui.createCloseButton(this.popup_, goog.bind(function() {
@@ -68,16 +66,14 @@ cm.AboutPopup.prototype.show = function() {
 cm.AboutPopup.populate_ = function(opt_aboutContainer) {
   var aboutBox = opt_aboutContainer || cm.ui.get('cm-aboutText');
   if (aboutBox) {
-    var header = cm.ui.create(
-        goog.dom.TagName.H2, {'id': 'cm-about-header'});
+    var header = cm.ui.create('h2', {'id': 'cm-about-header'});
     header.appendChild(
         goog.dom.htmlToDocumentFragment(cm.AboutPopup.MSG_ABOUT_HEADER_));
     aboutBox.appendChild(header);
-    var text = cm.ui.create(
-        goog.dom.TagName.P, {
-          'id': 'cm-about-text',
-          'class': 'cm-about-text'
-        });
+    var text = cm.ui.create('p', {
+      'id': 'cm-about-text',
+      'class': 'cm-about-text'
+    });
     text.appendChild(
         goog.dom.htmlToDocumentFragment(cm.AboutPopup.MSG_ABOUT_HTML_));
     aboutBox.appendChild(text);

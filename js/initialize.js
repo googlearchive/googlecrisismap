@@ -191,7 +191,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   var metadataModel = new cm.MetadataModel();
   var mapModel = cm.MapModel.newFromMapRoot(mapRoot);
   document.title = /** @type string */(mapModel.get('title'));
-  var touch = (new cm.BrowserDetect()).supportsTouch();
+  var touch = cm.util.browserSupportsTouch();
   var uri = new goog.Uri(window.location);
   var embedded = !!uri.getParameterValue('embedded');
   var preview = !!uri.getParameterValue('preview');

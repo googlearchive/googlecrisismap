@@ -119,7 +119,7 @@ cm.Html.prototype.isEmpty = function() {
 
 /**
  * Compares this object with another Html object.  (To use this for comparison
- * in tests, set Html.prototype.gjstestEquals = Html.prototype.equals.)
+ * in tests, set cm.Html.prototype.gjstestEquals = cm.Html.prototype.equals.)
  * @param {cm.Html} other An Html object or null.
  * @return {boolean} True if this object and 'other' have identical observable
  *     behaviour.

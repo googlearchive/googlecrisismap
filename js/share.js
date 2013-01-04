@@ -18,7 +18,6 @@ goog.provide('cm.ShareButton');
 goog.provide('cm.SharePopup');
 
 goog.require('cm.AppState');
-goog.require('cm.BrowserDetect');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.Disposable');
@@ -189,7 +188,7 @@ cm.ShareBox = function(parentElem, appState, showFacebookButton,
    */
   this.appState_ = appState;
   var language = /** @type string */(appState.get('language'));
-  var touch = (new cm.BrowserDetect()).supportsTouch();
+  var touch = cm.util.browserSupportsTouch();
 
   /**
    * @type {Element}

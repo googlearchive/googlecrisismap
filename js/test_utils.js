@@ -407,9 +407,8 @@ cm.TestBase = function() {
       textNode.textContent = text;
       return textNode;
     },
-    'document': {
-      'documentElement': fakeHtml
-    }
+    'documentElement': fakeHtml,
+    'nodeType': goog.dom.NodeType.DOCUMENT
   };
 
   // Create a fresh goog.global object, ensuring that global variables and
@@ -571,7 +570,7 @@ function stubReturn(object, methodName, returnValue) {
  *     specified node name (case-insensitive match).
  */
 function withNodeName(name) {
-  var article = name.match(/^[aehiou]/) ? 'an' : 'a';
+  var article = name.match(/^[aeio]|^h[0-9]|^u[a-z]/) ? 'an' : 'a';
   return new gjstest.Matcher(
       'is ' + article + ' <' + name + '> element',
       'is not ' + article + ' <' + name + '> element',
@@ -620,15 +619,15 @@ function withAttr(name, value) {
 }
 
 /**
- * Creates a matcher that looks for an inner HTML.
+ * Creates a matcher that looks for a particular value of innerHTML.
  * @param {string} innerHtml The attribute innerHTML.
  * @return {gjstest.Matcher} A matcher that accepts any FakeElement that has
- *     the given innerHTML with exactly the given value.
+ *     innerHTML with exactly the given value.
  */
 function withInnerHtml(innerHtml) {
   return new gjstest.Matcher(
-      'has an innerHTML equal to "' + innerHtml + '"',
-      'doesn\'t have an innerHTML equal to "' + innerHtml + '"',
+      'has innerHTML equal to "' + innerHtml + '"',
+      'doesn\'t have innerHTML equal to "' + innerHtml + '"',
       function(x) { return x.innerHTML === innerHtml; });
 }
 
