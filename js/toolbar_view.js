@@ -19,7 +19,9 @@ goog.require('cm.MapModel');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.dom');
+goog.require('goog.format.JsonPrettyPrinter');
 goog.require('goog.json');
+goog.require('goog.string');
 
 /** @desc Label for a link that lets the user rearrange the layer
  *  order and hierarchy.
@@ -56,9 +58,12 @@ var MSG_UNSAVED_CHANGES = goog.getMsg(
  * @param {boolean} enableSave True to enable the "Save" function.
  * @param {boolean} devMode True to enable the "Show JSON" function.
  * @param {boolean} touch True if the map is being edited on a touch device.
+ * @param {string=} opt_mapId ID of this map, used in devMode to diff the
+ *     current maproot against the original maproot.
  * @constructor
  */
-cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch) {
+cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
+    opt_mapId) {
   // Initially, neither the undo nor the redo operation can be done.
   var undoLink = cm.ui.createLink('Undo');
   var redoLink = cm.ui.createLink('Redo');
@@ -149,17 +154,102 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch) {
   }
 
   if (devMode) {
-    var jsonLink = cm.ui.createLink('Show JSON');
-    cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, jsonLink);
-    cm.events.listen(jsonLink, 'click', function() {
-      var popup = cm.ui.create('div',
-          {'class': 'cm-popup', 'style': 'max-width: 1000px'},
-          goog.json.serialize(mapModel.toMapRoot()));
-      cm.ui.createCloseButton(
-          popup, function() { goog.dom.removeNode(popup); });
-      cm.ui.showPopup(popup);
-    });
+    var diffJsonLink = cm.ui.createLink(opt_mapId ? 'Diff' : 'Show JSON');
+    cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, diffJsonLink);
+    cm.events.listen(diffJsonLink, 'click', goog.bind(
+        this.handleDiffJsonClick_, this, mapModel, opt_mapId));
   }
 
   parentElem.appendChild(toolbarElem);
+};
+
+/**
+ * Displays a popup showing diffs between the MapRoot JSON of the most recently
+ * saved draft as well as any/all published versions of this map, against the
+ * current, unsaved draft. Will simply show the current, unsaved draft if no
+ * map ID is provided.
+ * @param {cm.MapModel} mapModel The map model.
+ * @param {string=} opt_mapId Map ID used to retrieve diff of currently saved
+ *     and published versions of this map.
+ * @private
+ */
+cm.ToolbarView.prototype.handleDiffJsonClick_ = function(mapModel, opt_mapId) {
+  var popup = cm.ui.create('div', {'class': 'cm-popup cm-diff'});
+  cm.ui.createCloseButton(
+      popup, function() { goog.dom.removeNode(popup); });
+  cm.ui.showPopup(popup);
+
+  // Define links and content element used by showJson and showDiff methods.
+  var showJsonLink, showDiffLink;
+  var contentElem = cm.ui.create('div');
+
+  // Method to show JSON. Used by JSON link, and when diffs cannot be
+  // loaded.
+  var showJson = function() {
+    contentElem.innerHTML = goog.string.htmlEscape(
+        new goog.format.JsonPrettyPrinter(
+            new goog.format.JsonPrettyPrinter.TextDelimiters()).
+            format(mapModel.toMapRoot())).
+        replace(/ /g, '&nbsp;').replace(/\n/g, '<br>');
+
+    showJsonLink && goog.style.showElement(showJsonLink, false);
+    showDiffLink && goog.style.showElement(showDiffLink, true);
+    cm.ui.showPopup(popup);
+  };
+
+  if (opt_mapId) {
+    // Request diffs and show them if there is a map ID.
+    var loading = cm.ui.create('span', {}, 'Loading diff...');
+    cm.ui.append(popup, loading);
+    goog.net.XhrIo.send('/crisismap/diff/' + opt_mapId, function(e) {
+      cm.ui.remove(loading);
+      if (e.target.isSuccess()) {
+        // Stored diffs, along with method to show one based on the select
+        // element's current selection. Used by select element, as well as
+        // diff link.
+        var htmlDiffs, diffSelectElem;
+        var showDiff = function() {
+          // TODO(joeysilva): Fix bug where line numbers are compacted.
+          contentElem.innerHTML = htmlDiffs[diffSelectElem.selectedIndex];
+          goog.style.showElement(showJsonLink, true);
+          goog.style.showElement(showDiffLink, false);
+          cm.ui.showPopup(popup);
+        };
+
+        cm.ui.append(popup,
+            'Diff against: ', diffSelectElem = cm.ui.create('select', {},
+                cm.ui.create('option', {}, 'Saved')),
+            cm.ui.SEPARATOR_DASH,
+            showJsonLink = cm.ui.createLink('Show JSON'),
+            showDiffLink = cm.ui.createLink('Show diff'),
+            cm.ui.create('br'), cm.ui.create('br'),
+            contentElem);
+
+        var response = e.target.getResponseJson();
+        htmlDiffs = [response['saved_diff']];
+        goog.array.forEach(response['catalog_diffs'], function(entry) {
+          cm.ui.append(diffSelectElem,
+              cm.ui.create('option', {}, entry['name']));
+          htmlDiffs.push(entry['diff']);
+        });
+
+        cm.events.listen(diffSelectElem, 'change', showDiff);
+        cm.events.listen(showDiffLink, 'click', showDiff);
+        showDiff();
+      } else {
+        cm.ui.append(popup, 'Failed to load diff',
+            cm.ui.SEPARATOR_DASH,
+            showJsonLink = cm.ui.createLink('Show JSON'),
+            cm.ui.create('br'), cm.ui.create('br'),
+            contentElem);
+      }
+      cm.events.listen(showJsonLink, 'click', showJson);
+
+    }, 'POST', 'new_json=' + encodeURIComponent(
+        goog.json.serialize(mapModel.toMapRoot())));
+  } else {
+    // No map ID; just show the JSON.
+    cm.ui.append(popup, contentElem);
+    showJson();
+  }
 };

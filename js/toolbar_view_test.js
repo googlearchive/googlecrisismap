@@ -84,19 +84,64 @@ ToolbarViewTest.prototype.testAddFolderLink = function() {
   expectTrue(eventEmitted);
 };
 
-/** Verifies that the 'Show JSON' link works properly. */
-ToolbarViewTest.prototype.testShowJsonLink = function() {
-  expectCall(this.mapModel_.toMapRoot)()
-      .willOnce(returnWith({'foo': 'bar'}));
-  var jsonPopup = null;
+/** Verifies that the 'Diff/Show JSON' link works properly. */
+ToolbarViewTest.prototype.testDiffJsonLink = function() {
+  var mapRoot = {'foo': 'bar'};
+  expectCall(this.mapModel_.toMapRoot)().willRepeatedly(returnWith(mapRoot));
+  var diffPopup = null;
   this.setForTest_('cm.ui.showPopup', function(popup) {
-    jsonPopup = popup;
+    diffPopup = popup;
   });
 
+  // Test the toolbar view with no map ID; should only offer JSON.
   var showJsonLink = expectDescendantOf(this.parent_, withText('Show JSON'));
   cm.events.emit(showJsonLink, 'click');
-  expectThat(goog.json.parse(cm.ui.getText(jsonPopup)),
-             recursivelyEquals({'foo': 'bar'}));
+  expectThat(goog.json.parse(cm.ui.getText(diffPopup.lastChild).
+      replace(/&nbsp;/g, '')), recursivelyEquals(mapRoot));
+
+  // Test the toolbar view with a map ID; should offer diffs and JSON.
+  encodeURIComponent = createMockFunction('encodeURIComponent');
+  expectCall(encodeURIComponent)(goog.json.serialize(mapRoot)).
+      willOnce(returnWith('encoded'));
+  goog.net.XhrIo.send = createMockFunction('goog.net.XhrIo.send');
+  expectCall(goog.net.XhrIo.send)('/crisismap/diff/map_id',
+      _, 'POST', 'new_json=encoded').willOnce(function(url, callback) {
+        callback({'target': {
+          'isSuccess': function() { return true; },
+          'getResponseJson': function() {
+            return {
+              'saved_diff': 'Saved diff',
+              'catalog_diffs': [{'name': 'Name 1', 'diff': 'Catalog diff'}]
+            };
+          }
+        }});
+      });
+  new cm.ToolbarView(this.parent_, this.mapModel_,
+      true, true, false, 'map_id');
+
+  // Test that the saved diff is displayed first.
+  var diffLink = expectDescendantOf(this.parent_, withText('Diff'));
+  cm.events.emit(diffLink, 'click');
+  expectDescendantOf(diffPopup, withText('Saved diff'));
+
+  // Test that the selected diffs are displayed.
+  var diffSelectElem = expectDescendantOf(diffPopup, isElement('select',
+      hasDescendant(withText('Saved')),
+      hasDescendant(withText('Name 1'))));
+  diffSelectElem.selectedIndex = 1;
+  cm.events.emit(diffSelectElem, 'change');
+  expectDescendantOf(diffPopup, withText('Catalog diff'));
+
+  // Test showing the pretty-printed JSON.
+  showJsonLink = expectDescendantOf(diffPopup, withText('Show JSON'));
+  cm.events.emit(showJsonLink, 'click');
+  expectThat(goog.json.parse(cm.ui.getText(diffPopup.lastChild).
+      replace(/&nbsp;/g, '')), recursivelyEquals(mapRoot));
+
+  // Test going back to the diff.
+  var showDiffLink = expectDescendantOf(diffPopup, withText('Show diff'));
+  cm.events.emit(showDiffLink, 'click');
+  expectDescendantOf(diffPopup, withText('Catalog diff'));
 };
 
 /** Verifies the beforeunload handler when there are no changes to be saved.*/

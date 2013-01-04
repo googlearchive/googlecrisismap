@@ -310,7 +310,8 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     // it the object that the module exported with the name 'cm.ToolbarView'.
     goog.module.require('edit', 'cm.ToolbarView', function(ToolbarView) {
       var toolbarView = new ToolbarView(
-          panelElem, mapModel, config['save_url'], config['dev_mode'], touch);
+          panelElem, mapModel, config['save_url'], config['dev_mode'], touch,
+          config['map_id']);
     });
     goog.module.require('edit', 'cm.EditPresenter', function(EditPresenter) {
       var edit_presenter = new EditPresenter(

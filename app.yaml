@@ -86,6 +86,9 @@ handlers:
   script: list.py
   login: required
 
+- url: /crisismap/diff/[\w-]+
+  script: diff.py
+
 - url: /crisismap/a/[\w.-]+
   script: catalog.py
   login: required

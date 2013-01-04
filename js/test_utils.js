@@ -152,6 +152,9 @@ FakeElement.prototype.removeAttribute = function(name) {
 FakeElement.prototype.removeChild = function(element) {
   expectTrue(goog.array.remove(this.childNodes, element));
   var n = this.childNodes.length;
+  if (this.nodeName == 'SELECT' && !n) {
+    this.selectedIndex = -1;
+  }
   this.firstChild = n ? this.childNodes[0] : null;
   this.lastChild = n ? this.childNodes[n - 1] : null;
   if (element.previousSibling) {
@@ -180,6 +183,9 @@ FakeElement.prototype.appendChild = function(element) {
     element.previousSibling = previous;
     previous.nextSibling = element;
   }
+  if (this.nodeName == 'SELECT' && this.selectedIndex == -1) {
+    this.selectedIndex = 0;
+  }
 };
 
  /**
@@ -206,6 +212,9 @@ FakeElement.prototype.insertBefore = function(element, referenceElement) {
   if (this.lastChild !== element) {
     element.nextSibling = referenceElement;
     referenceElement.previousSibling = element;
+  }
+  if (this.nodeName == 'SELECT' && this.selectedIndex == -1) {
+    this.selectedIndex = 0;
   }
 };
 
@@ -315,8 +324,12 @@ FakeUi.create = function(tag, opt_attrs, var_args) {
  */
 FakeUi.getText = function(element) {
   if (element.innerHTML) {
-    return goog.string.unescapeEntities(
+    var document = goog.global['document'];
+    delete goog.global['document'];
+    var text = goog.string.unescapeEntities(
         element.innerHTML.replace(/<[^>]*>/g, ''));
+    goog.global['document'] = document;
+    return text;
   } else if (element.childNodes.length > 0 &&
              element.childNodes[0].nodeName === '#text') {
     return element.childNodes[0].textContent || '';

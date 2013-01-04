@@ -68,9 +68,9 @@ class JsonEncoder(json.encoder.JSONEncoderForHTML):
   FLOAT_REPR = str
 
 
-def ToHtmlSafeJson(data):
+def ToHtmlSafeJson(data, **kwargs):
   """Serializes a JSON data structure to JSON that is safe for use in HTML."""
-  return json.dumps(data, cls=JsonEncoder)
+  return json.dumps(data, cls=JsonEncoder, **kwargs)
 
 
 def SanitizeUrl(url):

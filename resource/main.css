@@ -434,6 +434,14 @@ html, body {
   left:0;
 }
 
+/* Diff popup */
+.cm-popup.cm-diff {
+  max-width:90%;
+  max-height:90%;
+  word-break:break-all;
+  overflow:auto;
+}
+
 /* Share popup */
 .cm-share label {
   display:inline-block;
