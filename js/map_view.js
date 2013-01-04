@@ -490,7 +490,7 @@ cm.MapView.prototype.maybeAddCacheBuster_ = function(url) {
   }
   uri.removeParameter(ttlParam);
 
-  ttlSeconds = Math.max(/** @type number */ (ttlSeconds) - 0, 1);
+  ttlSeconds = Math.max(/** @type number */(ttlSeconds) - 0, 1);
   var cacheBuster = Math.floor(new Date().getTime() / (ttlSeconds * 1000));
   uri.setParameterValue('cm.cache_time', cacheBuster);
   return uri.toString();
