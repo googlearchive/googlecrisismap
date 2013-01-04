@@ -54,7 +54,7 @@ EditPresenterTest.prototype.testInspectEvent = function() {
         {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
          preview_class: 'cm-layer-description'})),
     contains(recursivelyEquals(
-        {key: 'legend', label: 'Legend', type: cm.editors.Type.HTML,
+        {key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
           preview_class: 'cm-layer-legend'})),
     contains(recursivelyEquals(
         {key: 'viewport', label: '"Zoom to area" viewport',

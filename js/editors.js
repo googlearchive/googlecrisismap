@@ -18,6 +18,7 @@ goog.provide('cm.editors');
 goog.require('cm.CheckboxEditor');
 goog.require('cm.HtmlEditor');
 goog.require('cm.LatLonBoxEditor');
+goog.require('cm.LegendEditor');
 goog.require('cm.MenuEditor');
 goog.require('cm.NumberEditor');
 goog.require('cm.RadioEditor');
@@ -40,6 +41,7 @@ cm.editors.Type = {
   CHECKBOX: 'CHECKBOX',
   HTML: 'HTML',
   LAT_LON_BOX: 'LAT_LON_BOX',
+  LEGEND: 'LEGEND',
   MENU: 'MENU',
   NUMBER: 'NUMBER',
   RADIO: 'RADIO',
@@ -48,14 +50,15 @@ cm.editors.Type = {
 
 /**
  * A table of editor constructors by editor type.
- * @type {Object.<cm.editors.Type,
- *                function(new:cm.Editor, Element, string, Object)>}
+ * @type {Object.<cm.editors.Type, function(
+ *     new:cm.Editor, Element, string, Object, google.maps.MVCObject)>}
  * @const
  */
 cm.editors.CONSTRUCTORS = goog.object.create(
   cm.editors.Type.CHECKBOX, cm.CheckboxEditor,
   cm.editors.Type.HTML, cm.HtmlEditor,
   cm.editors.Type.LAT_LON_BOX, cm.LatLonBoxEditor,
+  cm.editors.Type.LEGEND, cm.LegendEditor,
   cm.editors.Type.MENU, cm.MenuEditor,
   cm.editors.Type.NUMBER, cm.NumberEditor,
   cm.editors.Type.RADIO, cm.RadioEditor,
@@ -69,8 +72,9 @@ cm.editors.CONSTRUCTORS = goog.object.create(
  *     (suitable for use elsewhere as the "for" attribute of a <label>).
  * @param {Object} options Additional options for the editor (see the
  *     constructors of the individual cm.*Editor classes for details).
+ * @param {google.maps.MVCObject} draft Inspector's draft object.
  * @return {cm.Editor} A newly created editor of the requested type.
  */
-cm.editors.create = function(parentElem, type, id, options) {
-  return new (cm.editors.CONSTRUCTORS[type])(parentElem, id, options);
+cm.editors.create = function(parentElem, type, id, options, draft) {
+  return new (cm.editors.CONSTRUCTORS[type])(parentElem, id, options, draft);
 };

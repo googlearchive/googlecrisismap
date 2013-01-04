@@ -33,15 +33,21 @@ cm.HtmlEditor = function(parentElem, id, options) {
 
   /**
    * @type Element
-   * @private
+   * @protected
    */
-  this.textarea_ = null;
+  this.htmlEditorElem;
 
   /**
    * @type Element
-   * @private
+   * @protected
    */
-  this.preview_ = null;
+  this.textarea = null;
+
+  /**
+   * @type Element
+   * @protected
+   */
+  this.preview = null;
 
   /**
    * @type Element
@@ -55,13 +61,16 @@ cm.HtmlEditor = function(parentElem, id, options) {
    */
   this.previewShown_ = false;
 
-  this.textarea_ = cm.ui.create('textarea', {'id': id});
+  this.textarea = cm.ui.create('textarea', {'id': id});
   var previewLabel = cm.ui.create('div', {'class': 'cm-disclosure'},
       this.previewTriangle_ = cm.ui.create('span', {'class': 'cm-triangle'}),
       cm.ui.create('span', {'class': 'cm-label'}, 'Preview'));
   var previewClass = options && options.preview_class || '';
-  this.preview_ = cm.ui.create('div', {'class': 'cm-preview ' + previewClass});
-  cm.ui.append(parentElem, this.textarea_, previewLabel, this.preview_);
+  this.preview = cm.ui.create('div', {'class': 'cm-preview ' + previewClass});
+  cm.ui.append(parentElem, this.htmlEditorElem = cm.ui.create('div', {},
+      this.textarea,
+      previewLabel,
+      this.preview));
 
   // When the user clicks the "Preview" triangle, toggle the HTML preview.
   this.showPreview_(false);
@@ -70,22 +79,28 @@ cm.HtmlEditor = function(parentElem, id, options) {
   }, this);
 
   // When the user makes an edit in the UI, update the MVCObject property.
-  cm.events.listen(
-      this.textarea_, ['keyup', 'change', 'input', 'cut', 'paste'], function() {
-    var value = new cm.Html(this.textarea_.value);
-    this.setValid_(value);
-    value.pasteInto(this.preview_);
-  }, this);
+  cm.events.listen(this.textarea, ['keyup', 'change', 'input', 'cut', 'paste'],
+                   this.handleChange, this);
 };
 goog.inherits(cm.HtmlEditor, cm.Editor);
+
+/**
+ * Updates the value and preview based on the HTML present in the textarea.
+ * @protected
+ */
+cm.HtmlEditor.prototype.handleChange = function() {
+  var value = new cm.Html(this.textarea.value);
+  this.setValid_(value);
+  value.pasteInto(this.preview);
+};
 
 /** @override */
 cm.HtmlEditor.prototype.updateUi = function(value) {
   if (!value) {
     value = new cm.Html('');
   }
-  this.textarea_.value = value.getUnsanitizedHtml();
-  value.pasteInto(this.preview_);
+  this.textarea.value = value.getUnsanitizedHtml();
+  value.pasteInto(this.preview);
 };
 
 /**
@@ -99,6 +114,6 @@ cm.HtmlEditor.prototype.showPreview_ = function(show) {
   var TRIANGLE_DOWN = '\u25bc';
 
   cm.ui.setText(this.previewTriangle_, show ? TRIANGLE_DOWN : TRIANGLE_RIGHT);
-  this.preview_.style.display = show ? '' : 'none';
+  this.preview.style.display = show ? '' : 'none';
   this.previewShown_ = show;
 };

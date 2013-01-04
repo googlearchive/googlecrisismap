@@ -25,6 +25,7 @@ goog.provide('cm.Editor');
  * updateUi() to update the UI according to the 'value' property.
  * @constructor
  * @extends google.maps.MVCObject
+ * @implements {goog.disposable.IDisposable}
  */
 cm.Editor = function() {
   google.maps.MVCObject.call(this);
@@ -39,6 +40,8 @@ cm.Editor = function() {
 
   // A flag we use to temporarily prevent this.updateUi from being called.
   this.suppressUiUpdates_ = false;
+
+  this.disposed_ = false;
 
   cm.events.onChange(this, 'value', function() {
     if (!this.suppressUiUpdates_) {
@@ -84,4 +87,14 @@ cm.Editor.prototype.setInvalid_ = function(message) {
  * @protected
  */
 cm.Editor.prototype.updateUi = function(value) {
+};
+
+/** @override */
+cm.Editor.prototype.dispose = function() {
+  this.disposed_ = true;
+};
+
+/** @override */
+cm.Editor.prototype.isDisposed = function() {
+  return this.disposed_;
 };

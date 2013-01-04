@@ -572,8 +572,8 @@ span.cm-g-flag {
 /* Standard Google checkbox styles */
 input[type=checkbox] {
   -webkit-appearance:none;
-  width:13px;
-  height:13px;
+  width:15px;
+  height:15px;
   border:1px solid #DCDCDC;
   margin:0 3px -1px 0;
   border-radius:1px;
@@ -959,7 +959,8 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-inspector table.cm-editors tr {
   vertical-align:baseline;
 }
-.cm-inspector table.cm-editors th, .cm-inspector table.cm-editors td,
+.cm-inspector table.cm-editors > tr > th,
+.cm-inspector table.cm-editors > tr > td,
 .cm-share-emailer th, .cm-share-emailer td {
   padding-top:8px;
 }
@@ -970,6 +971,111 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
   color:#666;
   white-space:nowrap;
   width:1%;
+}
+
+/* Legend editor */
+tr.cm-legend-editor {
+  vertical-align:top !important;
+}
+div.cm-legend-items {
+  max-height:95px;
+  overflow:auto;
+  padding-top:3px;
+}
+.cm-legend-item {
+  width:100%;
+  display:table-row;
+}
+.cm-legend-item > * {
+  display:table-cell;
+  vertical-align:top;
+}
+.cm-legend-graphic {
+  display:inline-block;
+  width:11px;
+  height:11px;
+  margin:2px 7px 2px 2px;
+  float:left;
+}
+.cm-legend-graphic.cm-legend-icon {
+  width:15px;
+  height:15px;
+  margin:0 5px 0 0;
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-position:center;
+}
+.goog-palette .cm-legend-graphic.cm-legend-line,
+.cm-legend-editor .cm-legend-graphic.cm-legend-line {
+  height:6px;
+  border-bottom:2px;
+}
+.goog-palette .cm-legend-graphic.cm-legend-polygon,
+.cm-legend-editor .cm-legend-graphic.cm-legend-polygon {
+  border:1px solid;
+  width:11px;
+  height:11px;
+}
+.cm-layer-legend .cm-legend-graphic.cm-legend-line {
+  height:6px;
+  border-bottom:2px;
+}
+.cm-layer-legend .cm-legend-graphic.cm-legend-polygon {
+  border:1px solid;
+  width:10px;
+  height:10px;
+  margin:1px 7px 2px 1px;
+}
+.cm-legend-editor .cm-legend-graphic {
+  cursor:pointer;
+}
+.cm-legend-text {
+  display:inline-block;
+  margin-top:1px;
+}
+.cm-legend-editor .cm-legend-text {
+  width:100%;
+  cursor:pointer;
+  padding:1px 0 0 2px;
+  margin:0 0 3px -2px;
+  font-size:12px;
+  word-break:break-all;
+}
+.cm-legend-editor .cm-legend-text:last-child {
+  margin-bottom:6px;
+}
+textarea.cm-legend-text {
+  position:absolute;
+  top:0;
+  left:0;
+  font-family:arial;
+  border:none;
+  cursor:auto !important;
+}
+.cm-legend-text.cm-empty {
+  font-style:italic;
+  color:#999;
+}
+.goog-palette-table {
+  border:none !important;
+  margin:0 !important;
+  border-collapse:separate !important;
+  border-spacing:1px;
+}
+.goog-palette-cell {
+  padding-top:inherit !important;
+  border:none !important;
+}
+.goog-palette-cell-hover {
+  border:1px solid black;
+}
+.cm-legend-editor .cm-close-button {
+  display:inline-block;
+  position:static;
+  padding:0;
+  height:11px;
+  width:11px;
+  margin:0 6px 0 10px;
 }
 
 /* ShareEmailer dialog */
@@ -1035,6 +1141,9 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
   border-left:1px solid #c0c0c0;
   padding:0 4px;
   margin-top:2px;
+}
+.cm-html-editor .cm-validation-error {
+  display:inline;
 }
 
 .cm-number-editor input {

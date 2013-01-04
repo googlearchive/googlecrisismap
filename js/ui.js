@@ -64,8 +64,8 @@ cm.ui.showPopup = function(popup, opt_container) {
   var y = Math.max(0, (container.offsetHeight - size.height) / 2);
   popup.style.left = Math.round(x) + 'px';
   popup.style.top = Math.round(y) + 'px';
-  if (popup.parentNode !== cm.ui.document.body) {
-    cm.ui.document.body.appendChild(popup);
+  if (popup.parentNode !== container) {
+    container.appendChild(popup);
   }
 };
 
@@ -73,13 +73,21 @@ cm.ui.showPopup = function(popup, opt_container) {
  * Creates a DOM element.  This works just like goog.dom.createDom but also
  * fixes some of IE's bad behaviour.
  * @param {string} tag The tag name of the element to create.
- * @param {Object=} opt_attributes Attributes to set on the new element.
+ * @param {Object=} opt_attributes Attributes to set on the new element. 'style'
+ *     attributes may be strings or objects; the former will be applied as a DOM
+ *     attribute, while the latter will be applied as JavaScript properties.
  * @param {string|cm.Html|Element|Array.<Element>} var_args Text strings, Html
  *     objects, elements, or arrays of elements as children of the new element.
  * @return {!Element} The newly created element.
  */
 cm.ui.create = function(tag, opt_attributes, var_args) {
   var args = [];
+  var styleDict = null;
+  if (opt_attributes && opt_attributes['style'] &&
+      !goog.isString(opt_attributes['style'])) {
+    styleDict = opt_attributes['style'];
+    delete opt_attributes['style'];
+  }
   for (var a = 0; a < arguments.length; a++) {
     if (arguments[a] instanceof cm.Html) {  // Convert Html objects to elements.
       var span = goog.dom.createDom('span');
@@ -90,6 +98,9 @@ cm.ui.create = function(tag, opt_attributes, var_args) {
     }
   }
   var element = goog.dom.createDom.apply(null, args);
+  if (styleDict) {
+    goog.object.extend(element.style, styleDict);
+  }
   if (tag === 'input' && (opt_attributes || {})['checked']) {
     element.setAttribute('defaultChecked', true);  // Shakes fist at IE.
   }

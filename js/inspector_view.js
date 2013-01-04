@@ -77,6 +77,13 @@ cm.InspectorView = function() {
    */
   this.isNew_;
 
+  /**
+   * List of created editors, to dispose on close. Null if disposed.
+   * @type {?Array.<cm.Editor>}
+   * @private
+   */
+  this.editors_ = null;
+
   this.popup_ = cm.ui.create('div', {'class': 'cm-inspector cm-popup'},
       cm.ui.create('div', undefined,
           this.titleElem_ = cm.ui.create('h2'),
@@ -138,6 +145,10 @@ cm.InspectorView.prototype.inspect = function(title, editorSpecs, opt_object) {
   // the keys on which the visibility of other editors can depend).
   var triggerKeys = {};
 
+  if (this.editors_) {
+    this.dispose_();
+  }
+  this.editors_ = [];
   cm.ui.clear(this.tableElem_);
   for (var i = 0; i < editorSpecs.length; i++) {
     var spec = editorSpecs[i];
@@ -152,7 +163,8 @@ cm.InspectorView.prototype.inspect = function(title, editorSpecs, opt_object) {
         cm.ui.create('th', {},
             cm.ui.create('label', {'for': id}, spec.label)),
         cell = cm.ui.create('td')));
-    var editor = cm.editors.create(cell, spec.type, id, spec);
+    var editor = cm.editors.create(cell, spec.type, id, spec, this.draft_);
+    this.editors_.push(editor);
 
     // Add a validation error indicator next to each editor.
     // TODO(kpy): When we figure out the exact UX we want, we might want to
@@ -238,8 +250,7 @@ cm.InspectorView.prototype.handleOk_ = function() {
       layerId: object instanceof cm.LayerModel ? object.get('id') : null
     });
   }
-  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
-  cm.ui.remove(this.popup_);
+  this.dispose_(true);
 };
 
 /**
@@ -247,8 +258,24 @@ cm.InspectorView.prototype.handleOk_ = function() {
  * @private
  */
 cm.InspectorView.prototype.handleCancel_ = function() {
-  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
-  cm.ui.remove(this.popup_);
+  this.dispose_(true);
+};
+
+/**
+ * Dispose of the inspector's various editors, and optionally the inspector
+ * popup itself.
+ * @param {boolean=} opt_disposeInspector If true, dispose of the inspector.
+ * @private
+ */
+cm.InspectorView.prototype.dispose_ = function(opt_disposeInspector) {
+  goog.array.forEach(this.editors_, function(editor) {
+    editor.dispose();
+  });
+  this.editors_ = null;
+  if (opt_disposeInspector) {
+    cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
+    cm.ui.remove(this.popup_);
+  }
 };
 
 /**

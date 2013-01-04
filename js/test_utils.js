@@ -23,8 +23,12 @@ FakeElement = function(nodeName, opt_attrs) {
   this.className = '';
   this.value = '';  // For pretend input objects
   this.attrs_ = {};
+  this.style = {};
   if (opt_attrs) {
     for (var name in opt_attrs) {
+      if (name == 'style' && !goog.isString(opt_attrs['style'])) {
+        goog.object.extend(this.style, opt_attrs['style']);
+      }
       this.setAttribute(name, opt_attrs[name]);
     }
   }
@@ -35,7 +39,6 @@ FakeElement = function(nodeName, opt_attrs) {
   this.childNodes = [];
   this.selectedIndex = -1;
   this.options = this.childNodes; // For pretend select objects
-  this.style = {};
   this.ownerDocument = cm.ui.document;
   this.innerHTML = '';
   FakeElement.elementsById_[this.id] = this;
@@ -46,6 +49,22 @@ FakeElement = function(nodeName, opt_attrs) {
  * @private
  */
 FakeElement.elementsById_ = {};
+
+/**
+ * Creates and returns copy of this FakeElement.
+ * @param {boolean} deepCopy Whether or not to recursively copy this element's
+ *     descendants.
+ * @return {FakeElement} The copy.
+ */
+FakeElement.prototype.cloneNode = function(deepCopy) {
+  var el = new FakeElement(this.nodeName, this.attrs_);
+  if (deepCopy) {
+    goog.array.forEach(this.childNodes, function(child) {
+      el.appendChild(child.cloneNode(true));
+    });
+  }
+  return el;
+};
 
 /**
  * Displays the hierarchy under this element, for debugging.
@@ -75,7 +94,17 @@ FakeElement.prototype.toString = function() {
 
   var parts = [this.nodeName];
   for (var name in this.attrs_) {
-    parts.push(name + '="' + this.attrs_[name] + '"');
+    var value;
+    if (name == 'style' && !goog.isString(this.attrs_['style'])) {
+      value = '';
+      for (key in this.style) {
+        value += goog.string.format(
+            '%s: %s;', goog.string.toSelectorCase(key), this.style[key]);
+      }
+    } else {
+      value = this.attrs_[name];
+    }
+    parts.push(name + '="' + value + '"');
   }
   if (this.selectedIndex >= 0) {
     parts.push('selectedIndex="' + this.selectedIndex + '"');
@@ -692,6 +721,26 @@ function withText(text) {
 }
 
 /**
+ * Creates a matcher for the innerHTML content of an element.
+ * @param {string|gjstest.Matcher} html The expected HTML or a string matcher.
+ * @return {gjstest.Matcher} A matcher that accepts any FakeElement whose
+ *     innerHTML content exactly matches the given string.
+ */
+function withHtml(html) {
+  if (html instanceof gjstest.Matcher) {
+    var matcher = html;
+    return new gjstest.Matcher(
+        'has HTML that ' + matcher.description,
+        'doesn\'t have HTML that ' + matcher.description,
+        function(x) { return matcher.predicate(x.innerHTML); });
+  }
+  return new gjstest.Matcher(
+      'has HTML equal to "' + html + '"',
+      'doesn\'t have HTML equal to "' + html + '"',
+      function(x) { x.innerHTML == html; });
+}
+
+/**
  * Creates a matcher for elements that optionally satisfy a set of predicates.
  * For example, to match any div element that has the "exciting" class, say:
  * isElement('div', withClass('exciting')).
@@ -708,11 +757,27 @@ function isElement(var_args) {
       function(x) { return x !== null && x instanceof FakeElement; }
   )];
   for (var i = 0; i < arguments.length; i++) {
-    // allOf() will convert any FakeElement x to a matcher, equals(x).
     matchers.push(typeof(arguments[i]) === 'string' ?
-        withNodeName(arguments[i]) : arguments[i]);
+        withNodeName(arguments[i]) :
+        arguments[i] instanceof FakeElement ?
+            stringEquals(arguments[i]) : arguments[i]);
   }
   return allOf(matchers);
+}
+
+/**
+ * Equality matcher for elements which simply compares the string descriptions
+ * of elements, defined by toString().
+ * @param {FakeElement} element The element that other elements must equal.
+ * @return {gjstest.Matcher} A matcher that accepts a FakeElement that matches
+ *     the given FakeElement, by string value.
+ */
+function stringEquals(element) {
+  return new gjstest.Matcher(
+      'equals element ' + element, 'does not equal element ' + element,
+      function(obj) {
+        return obj === element || obj.toString() == element.toString();
+      });
 }
 
 /**
@@ -840,4 +905,13 @@ function expectCreate(name, type, opt_attrs, var_args) {
   expectCall(cm.ui.create).apply(null, args)
       .willOnce(returnWith(newElement));
   return newElement;
+}
+
+/**
+ * Matcher for whether or not an element is shown, based on its 'display' style.
+ * @return {gjstest.Matcher} The visibility matcher.
+ */
+function isShown() {
+  return new gjstest.Matcher('is shown', 'is not shown',
+                             not(withStyle('display', 'none')).predicate);
 }

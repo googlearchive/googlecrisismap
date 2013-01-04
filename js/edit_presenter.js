@@ -129,7 +129,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
     {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
      preview_class: 'cm-layer-description'},
-    {key: 'legend', label: 'Legend', type: cm.editors.Type.HTML,
+    {key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
      preview_class: 'cm-layer-legend'},
     {key: 'viewport', label: '"Zoom to area" viewport',
      type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
