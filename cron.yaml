@@ -18,3 +18,7 @@ cron:
   url: /crisismap/metadata_cleaner
   schedule: every 24 hours
 
+- description: clean up after any crashed tileworkers.
+  url: /crisismap/tileworker_cleanup
+  schedule: every 5 minutes
+

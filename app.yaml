@@ -24,6 +24,9 @@ handlers:
 - url: /crisismap/tileworker
   script: wmscache/tileworker.py
 
+- url: /crisismap/tileworker_cleanup
+  script: wmscache/tileworker.py
+
 - url: /crisismap/tilecache/.*
   script: wmscache/tilecache_main.py
 
