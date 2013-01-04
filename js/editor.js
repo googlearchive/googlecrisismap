@@ -53,7 +53,7 @@ goog.inherits(cm.Editor, google.maps.MVCObject);
  * Sets the 'value' property of the editor and marks it valid, without
  * triggering updateUi.  (The assumption is that this is being called due to
  * user input, and we don't want to mess up the UI while the user is using it.)
- * @param {*} value The new value for the editor's 'value' property.
+ * @param {*} value The new value.
  * @private
  */
 cm.Editor.prototype.setValid_ = function(value) {
@@ -79,8 +79,8 @@ cm.Editor.prototype.setInvalid_ = function(message) {
 
 /**
  * Updates the editor's UI with a new value.  Subclasses should implement this.
- * @param {string|number|boolean|Object|null} value The new value.  The caller
- *     should ensure this is never undefined.
+ * @param {*} value The new value.  The caller should ensure this is
+ *     never undefined.
  * @protected
  */
 cm.Editor.prototype.updateUi = function(value) {

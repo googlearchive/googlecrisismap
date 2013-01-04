@@ -26,10 +26,11 @@ goog.require('cm.ui');
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
  * @param {{choices: Array.<cm.InputChoice>, div_class: string,
- *          menu_class: string}} options
+ *          menu_class: string, multiple: boolean}} options
  *     options.choices: an array of the choices to offer, in display order.
  *     options.div_class: a CSS class for the div containing all the buttons.
  *     options.menu_class: a CSS class for the dropdown menu.
+ *     options.multiple: if true, create a multi-select menu.
  * @extends cm.Editor
  * @constructor
  */
@@ -48,9 +49,18 @@ cm.MenuEditor = function(parentElem, id, options) {
    */
   this.values_ = [];
 
+  /**
+   * @type boolean
+   * @private
+   */
+  this.isMultiSelect_ = options && options.multiple;
+
   var name = cm.ui.generateId('select');
   cm.ui.append(parentElem, this.select_ = cm.ui.create(
       'select', {'id': id, 'class': options && options.menu_class || null}));
+  if (this.isMultiSelect_) {
+    this.select_.setAttribute('multiple', true);
+  }
   for (var i = 0; i < options.choices.length; i++) {
     var choice = options.choices[i];
     cm.ui.append(this.select_, cm.ui.create(
@@ -60,8 +70,7 @@ cm.MenuEditor = function(parentElem, id, options) {
   cm.events.listen(this.select_, 'change', this.updateValue_, this);
 
   // Call updateUI to correct invalid values.
-  this.updateUi(/** @type {Object|boolean|number|string|null} */
-                (this.get('value')));
+  this.updateUi(this.get('value'));
 };
 goog.inherits(cm.MenuEditor, cm.Editor);
 
@@ -70,7 +79,14 @@ goog.inherits(cm.MenuEditor, cm.Editor);
  * @private
  */
 cm.MenuEditor.prototype.updateValue_ = function() {
-  this.setValid_(this.values_[this.select_.selectedIndex]);
+  var isSelected = goog.bind(function(v, index) {
+    return this.select_.options[index].selected;
+  }, this);
+  if (this.isMultiSelect_) {
+    this.setValid_(goog.array.filter(this.values_, isSelected));
+  } else {
+    this.setValid_(goog.array.find(this.values_, isSelected));
+  }
 };
 
 /**
@@ -80,22 +96,21 @@ cm.MenuEditor.prototype.updateValue_ = function() {
  * @override
  */
 cm.MenuEditor.prototype.updateUi = function(value) {
-  for (var i = 0; i < this.values_.length; i++) {
-    if (this.values_[i] === value) {
-      this.select_.selectedIndex = i;
-      return;
+  // If the value is null or undefined, prevent the editor's 'value'
+  // property (and any bound properties) from being set to undefined.
+  // Instead, select the menu's first option if it exists.
+  if (value === null || value == undefined) {
+    if (this.isMultiSelect_) {
+      value = [];
+    } else {
+      value = this.values_.length > 0 ? this.values_[0] : null;
     }
+    this.setValid_(value);
   }
 
-  // Value was not in the menu; set the editor's value back to the first one
-  // if the value is null or undefined. This has the effect of preventing this
-  // editor's 'value' property (and any bound properties) from being set to
-  // null or undefined.  If anyone calls .set(..., {null|undefined}) on this
-  // editor's 'value' property (or any property bound to it), and  this will
-  // immediately reset the 'value' property and all bound properties to the
-  // value of the first option.
-  if (value === null || value == undefined) {
-    this.select_.selectedIndex = 0;
-    this.setValid_(this.values_.length > 0 ? this.values_[0] : null);
-  }
+  var values = new goog.structs.Set(this.isMultiSelect_ ?
+      /** @type Array.<*> */(value) : [value]);
+  goog.array.forEach(this.values_, function(v, index) {
+    this.select_.options[index].selected = values.contains(v);
+  }, this);
 };
