@@ -997,6 +997,9 @@ div.cm-legend-items {
   margin:2px 7px 2px 2px;
   float:left;
 }
+.cm-legend-editor .cm-legend-graphic {
+  margin-top:3px;
+}
 .cm-legend-graphic.cm-legend-icon {
   width:15px;
   height:15px;
@@ -1005,20 +1008,15 @@ div.cm-legend-items {
   background-repeat:no-repeat;
   background-position:center;
 }
-.goog-palette .cm-legend-graphic.cm-legend-line,
-.cm-legend-editor .cm-legend-graphic.cm-legend-line {
-  height:6px;
-  border-bottom:2px;
+.cm-legend-graphic.cm-legend-line > * {
+  height:5px;
+  border-bottom:2px solid;
 }
 .goog-palette .cm-legend-graphic.cm-legend-polygon,
 .cm-legend-editor .cm-legend-graphic.cm-legend-polygon {
   border:1px solid;
   width:11px;
   height:11px;
-}
-.cm-layer-legend .cm-legend-graphic.cm-legend-line {
-  height:6px;
-  border-bottom:2px;
 }
 .cm-layer-legend .cm-legend-graphic.cm-legend-polygon {
   border:1px solid;
