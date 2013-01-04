@@ -19,6 +19,7 @@ import json
 
 # Allow relative imports within the app.  # pylint: disable=W0403
 import diff
+import jsonp
 import model
 import mox
 import test_utils
@@ -33,54 +34,35 @@ class DiffTest(test_utils.BaseTest):
   # pylint: disable-msg=C6409
   def testDiff(self):
     """Test that a map's versions are diffed against new maproot JSON."""
-
     saved_json = json.dumps({'a': 'b', 'c': 'd'})
     new_json = json.dumps({'a': 'b', 'x': 'y'})
     catalog_json = json.dumps({'x': 'y', 'c': 'd'})
 
+    # Create a saved map and a catalog entry to diff against.
     test_utils.BecomeAdmin()
     map_object = model.Map.Create(catalog_json)
     model.CatalogEntry.Create('google.com', 'Published', map_object)
     map_object.PutNewVersion(saved_json)
 
-    self.mox.StubOutWithMock(json, 'loads')
-    self.mox.StubOutWithMock(json, 'dumps')
-    catalog_maproot = {'a': '1'}
-    saved_maproot = {'b': '2'}
-    new_maproot = {'c': '3'}
-    formatted_catalog = '1\n2\n3'
-    formatted_saved = 'a\nb\nc'
-    formatted_new = 'x\ny\nz'
-
-    json.loads(saved_json).AndReturn(saved_maproot)
-    json.dumps(saved_maproot, cls=mox.IgnoreArg(),
-               indent=mox.IgnoreArg()).AndReturn(formatted_saved)
-
-    json.loads(new_json).AndReturn(new_maproot)
-    json.dumps(new_maproot, cls=mox.IgnoreArg(),
-               indent=mox.IgnoreArg()).AndReturn(formatted_new)
-
-    json.loads(catalog_json).AndReturn(catalog_maproot)
-    json.dumps(catalog_maproot, cls=mox.IgnoreArg(),
-               indent=mox.IgnoreArg()).AndReturn(formatted_catalog)
-
+    # Exercise the diff endpoint.
+    self.mox.StubOutWithMock(jsonp, 'ToHtmlSafeJson')
     saved_diff = 'saved diff'
     catalog_diff = 'catalog diff'
     html_diff = self.mox.CreateMock(difflib.HtmlDiff)
     self.mox.StubOutWithMock(difflib, 'HtmlDiff')
     difflib.HtmlDiff(wrapcolumn=mox.IgnoreArg()).AndReturn(html_diff)
-    html_diff.make_file(
-        formatted_saved.splitlines(), formatted_new.splitlines(),
-        fromdesc='Saved', todesc='Current', context=mox.IgnoreArg()).AndReturn(
-            saved_diff)
-    html_diff.make_file(
-        formatted_catalog.splitlines(), formatted_new.splitlines(),
-        fromdesc='google.com/Published', todesc='Current',
-        context=mox.IgnoreArg()).AndReturn(catalog_diff)
+    html_diff.make_file('{\n  "a": "b", \n  "c": "d"\n}'.splitlines(),
+                        '{\n  "a": "b", \n  "x": "y"\n}'.splitlines(),
+                        fromdesc='Saved', todesc='Current',
+                        context=mox.IgnoreArg()).AndReturn(saved_diff)
+    html_diff.make_file('{\n  "c": "d", \n  "x": "y"\n}'.splitlines(),
+                        '{\n  "a": "b", \n  "x": "y"\n}'.splitlines(),
+                        fromdesc='google.com/Published', todesc='Current',
+                        context=mox.IgnoreArg()).AndReturn(catalog_diff)
 
-    json.dumps({'saved_diff': saved_diff,
-                'catalog_diffs': [{'name': 'google.com/Published',
-                                   'diff': catalog_diff}]}, cls=mox.IgnoreArg())
+    jsonp.ToHtmlSafeJson({'saved_diff': saved_diff,
+                          'catalog_diffs': [{'name': 'google.com/Published',
+                                             'diff': catalog_diff}]})
 
     self.mox.ReplayAll()
     handler = test_utils.SetupHandler('/diff/%s' % map_object.id, diff.Diff(),

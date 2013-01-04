@@ -15,11 +15,10 @@
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import httplib
+import json
 import re
 import urlparse
 
-# Python2.7's json module doesn't have the HTML-safe encoder
-import simplejson
 import webapp2
 
 from google.appengine.api import memcache
@@ -56,21 +55,10 @@ class Error(Exception):
     self.status = status
 
 
-class JsonEncoder(simplejson.encoder.JSONEncoderForHTML):
-  """The Encoder class we use for serializing JSON.
-
-  We subclass JSONEncoderForHTML to ensure that the emitted JSON cannot break
-  out of a <script> tag or CDATA section, by preventing '<', '>', and '&' from
-  appearing in the output.
-  """
-  # simplejson normally uses repr for floats, which produces ugly numbers:
-  # repr(0.2) is '0.20000000000000001', but str(0.2) is '0.2'.  We like str.
-  FLOAT_REPR = str
-
-
 def ToHtmlSafeJson(data, **kwargs):
   """Serializes a JSON data structure to JSON that is safe for use in HTML."""
-  return simplejson.dumps(data, cls=JsonEncoder, **kwargs)
+  return json.dumps(data, **kwargs).replace(
+      '&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
 
 
 def SanitizeUrl(url):
@@ -97,7 +85,7 @@ def ParseJson(json_string):
   if match:
     json_string = match.group(1)  # remove the function call around the JSON
   try:
-    return simplejson.loads(json_string)
+    return json.loads(json_string)
   except (TypeError, ValueError):
     raise Error(httplib.FORBIDDEN, 'Invalid JSON.')
 

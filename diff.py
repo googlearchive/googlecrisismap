@@ -23,6 +23,11 @@ import jsonp
 import model
 
 
+def FormatJsonForDisplay(input_json):
+  """Formats JSON with indentation for readability, normalized for diffing."""
+  return json.dumps(json.loads(input_json), indent=2, sort_keys=True)
+
+
 class Diff(BaseHandler):
   """Handler to produce HTML diffs of formatted maproot JSON."""
 
@@ -37,24 +42,15 @@ class Diff(BaseHandler):
       self.error(404)
       self.response.out.write('Map %r not found.' % map_id)
     else:
-
-      class JSONFloatEncoder(json.encoder.JSONEncoder):
-        """JSON encoder which uses str() instead of repr() for floats."""
-        FLOAT_REPR = str
-
-      from_maproot = json.dumps(
-          json.loads(map_object.GetCurrentJson()),
-          cls=JSONFloatEncoder, indent=2)
-      to_maproot = json.dumps(json.loads(new_json),
-                              cls=JSONFloatEncoder, indent=2)
+      from_maproot = FormatJsonForDisplay(map_object.GetCurrentJson())
+      to_maproot = FormatJsonForDisplay(new_json)
       html_diff = difflib.HtmlDiff(wrapcolumn=60)
       saved_diff = html_diff.make_file(
           from_maproot.splitlines(), to_maproot.splitlines(), context=True,
           fromdesc='Saved', todesc='Current')
       catalog_diffs = []
       for entry in model.CatalogEntry.GetByMapId(map_id):
-        from_maproot = json.dumps(json.loads(entry.maproot_json),
-                                  cls=JSONFloatEncoder, indent=2)
+        from_maproot = FormatJsonForDisplay(entry.maproot_json)
         catalog_diffs.append({
             'name': entry.domain + '/' + entry.label,
             'diff': html_diff.make_file(

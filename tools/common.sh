@@ -55,14 +55,6 @@ fi
 
 # Find the Python binary.
 for python in \
-    $(which python2.5) \
-    /usr/local/bin/python2.5 \
-    /usr/bin/python2.5 \
-    /Library/Frameworks/Python.framework/Versions/2.5/bin/python \
-    $(which python2.6) \
-    /usr/local/bin/python2.6 \
-    /usr/bin/python2.6 \
-    /Library/Frameworks/Python.framework/Versions/2.6/bin/python \
     $(which python2.7) \
     /usr/local/bin/python2.7 \
     /usr/bin/python2.7 \
@@ -74,7 +66,7 @@ for python in \
 done
 
 if [ -z "$PYTHON" ]; then
-    echo "Could not find python2.5-2.7 executable.  Set PYTHON."
+    echo "Could not find python2.7 executable.  Set PYTHON."
     exit 1
 fi
 
@@ -82,11 +74,10 @@ export PYTHONPATH=\
 "$TOOLS_DIR":\
 "$APP_DIR":\
 "$APPENGINE_DIR":\
-"$APPENGINE_DIR/lib/django":\
+"$APPENGINE_DIR/lib/django_1_2":\
 "$APPENGINE_DIR/lib/fancy_urllib":\
-"$APPENGINE_DIR/lib/simplejson":\
-"$APPENGINE_DIR/lib/webob":\
-"$APPENGINE_DIR/lib/webob_0_9":\
+"$APPENGINE_DIR/lib/webapp2":\
+"$APPENGINE_DIR/lib/webob_1_1_1":\
 "$APPENGINE_DIR/lib/yaml/lib"
 
 # These environment variables simulate account login in tests.

@@ -27,17 +27,9 @@ import webapp2
 
 import jsonp
 
-
 LINE_DEFAULT_KML_COLOR = 'FFFF8C8C'
 LINE_DEFAULT_WIDTH = 2
 POLYGON_DEFAULT_KML_COLOR = 'FFFFD5BF'
-
-# Need to allow a conditional import.  # pylint: disable=C6204,C6409
-try:
-  XmlParseError = xml.etree.ElementTree.ParseError  # Python 2.7 and above
-except AttributeError:
-  import xml.parsers.expat
-  XmlParseError = xml.parsers.expat.ExpatError  # Python 2.6 and below
 
 
 def Extract(kml):
@@ -467,10 +459,8 @@ class GetLegendItems(webapp2.RequestHandler):
       document = xml.etree.ElementTree.fromstring(content)
       if document.tag.endswith('kml'):
         return content
-    except XmlParseError:
+    except xml.etree.ElementTree.ParseError:
       return None
 
 
-app = webapp2.WSGIApplication([
-    (r'/crisismap/legend/([^\s]+)', GetLegendItems)
-    ])
+app = webapp2.WSGIApplication([(r'/crisismap/legend/([^\s]+)', GetLegendItems)])

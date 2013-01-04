@@ -17,18 +17,21 @@
 
 pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
 
-# Remove old .pyc files to ensure that we are using Python 2.5 for tests.
+# Remove old .pyc files to ensure that we are using Python 2.7 for tests.
 find . -name '*.pyc' -exec rm -f {} ';'
 
-make languages.py
-if py.test-2.5 --version 2>/dev/null; then
+if py.test-2.7 --version 2>/dev/null; then
     # Use py.test if it's available (it's faster and produces a nicer report).
-    py.test-2.5 *_test.py
+    if [ -n "$1" ]; then
+        py.test-2.7 "$@"
+    else
+        py.test-2.7 *_test.py
+    fi
 else
     # Otherwise, just execute the tests one by one.
     for i in *_test.py; do
         echo
         echo ==== $i:
-        python2.5 $i
+        python2.7 $i
     done
 fi
