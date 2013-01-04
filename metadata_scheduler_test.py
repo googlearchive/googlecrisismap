@@ -32,57 +32,60 @@ class MetadataSchedulerTest(test_utils.BaseTest):
 
   def testGet(self):
     test_utils.BecomeAdmin()
-    handler = test_utils.SetupHandler('/crisismap/metadata_scheduler',
-                                      metadata_scheduler.MetadataScheduler())
-    # Not added to taskqueue because the map is not world readable, and
-    # there is no listed CatalogEntry.
+    # Should not be queued because the map is not world readable or published.
     m1 = model.Map.Create('{"layers": [{"type": "KML", '
                           '"source": {"kml": {"url": "j.com/k.kml"}}}]}')
     m1.SetWorldReadable(False)
 
-    # Added successfully to taskqueue, valid MapRoot and world readable map.
+    # Should be queued because the layer is valid and the map is world-readable.
     m2 = model.Map.Create('{"layers": [{"type": "KML", '
                           '"source": {"kml": {"url": "a.com/b.kml"}}}]}')
     m2.SetWorldReadable(True)
 
+    # Should not be queued because the layer has no type.
     m3 = model.Map.Create('{}')
     m3.SetWorldReadable(False)
-    # Not added to taskqueue because of invalid MapRoot(no address and type)
     model.CatalogEntry.Create('google.com', 'label1', m3, is_listed=True)
 
-    # Not added to taskqueue because of invalid MapRoot(no address)
+    # Should not be queued because the layer has no address.
     m3.PutNewVersion('{"layers": [{"type": "KML"}]}')
     model.CatalogEntry.Create('google.com', 'label2', m3, is_listed=True)
 
-    # Added to taskqueue, CatalogEntry is listed, MapRoot is valid.
+    # Listed map should be queued (map is published and the layer is valid).
     m3.PutNewVersion('{"layers": [{"type": "KML", '
                      '"source": {"kml": {"url": "x.com/y.kml"}}}]}')
     model.CatalogEntry.Create('google.com', 'label3', m3, is_listed=True)
 
-    # Not added to taskqueue because the CatalogEntry is not listed.
+    # Unlisted map should be queued (map is published and the layer is valid).
     m3.PutNewVersion('{"layers": [{"type": "KML", '
                      '"source": {"kml": {"url": "z.com/y.kml"}}}]}')
     model.CatalogEntry.Create('google.com', 'label4', m3, is_listed=False)
 
-    # Not added to taskqueue because the type is not supported.
+    # Should not be queued because the type is not supported.
     m3.PutNewVersion('{"layers": [{"type": "FUSION", '
                      '"source": {"georss": {"url": "x.com/n.xml"}}}]}')
     model.CatalogEntry.Create('google.com', 'label5', m3, is_listed=True)
 
-    # Not added to taskqueue because the address is already enqueued.
+    # Should not be queued because the address is a duplicate.
     m3.PutNewVersion('{"layers": [{"type": "KML", '
                      '"source": {"kml": {"url": "x.com/y.kml"}}}]}')
     model.CatalogEntry.Create('google.com', 'label36', m3, is_listed=True)
 
+    # Call the handler as a cron job (with user set to None).
+    test_utils.ClearUser()
+    handler = test_utils.SetupHandler('/crisismap/metadata_scheduler',
+                                      metadata_scheduler.MetadataScheduler())
     handler.get()
 
-    tasks = self.taskqueue_stub.GetTasks('metadata-queue')
-    self.assertEquals(2, len(tasks))
+    tasks = self.taskqueue_stub.GetTasks('metadata')
+    self.assertEquals(3, len(tasks))
 
     self.assertEquals({'type': ['KML'], 'address': ['a.com/b.kml']},
                       cgi.parse_qs(base64.b64decode(tasks[0]['body'])))
     self.assertEquals({'type': ['KML'], 'address': ['x.com/y.kml']},
                       cgi.parse_qs(base64.b64decode(tasks[1]['body'])))
+    self.assertEquals({'type': ['KML'], 'address': ['z.com/y.kml']},
+                      cgi.parse_qs(base64.b64decode(tasks[2]['body'])))
 
 
 if __name__ == '__main__':

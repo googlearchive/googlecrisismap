@@ -242,7 +242,7 @@ class MetadataRetrieverTest(test_utils.BaseTest):
 
     metadata = retriever.UpdateFromKml(url)
 
-    self.assertTrue(metadata.has_features)
+    self.assertFalse(metadata.has_no_features)
     self.assertFalse(metadata.has_unsupported_kml)
     self.mox.VerifyAll()
 
@@ -292,7 +292,7 @@ class MetadataRetrieverTest(test_utils.BaseTest):
 
     metadata = retriever.UpdateFromKml(url)
 
-    self.assertTrue(metadata.has_features)
+    self.assertFalse(metadata.has_no_features)
     self.assertFalse(metadata.has_unsupported_kml)
     self.mox.VerifyAll()
 
@@ -320,7 +320,7 @@ class MetadataRetrieverTest(test_utils.BaseTest):
 
     metadata = retriever.UpdateFromGeorss(url)
 
-    self.assertTrue(metadata.has_features)
+    self.assertFalse(metadata.has_no_features)
     self.mox.VerifyAll()
 
 if __name__ == '__main__':

@@ -15,63 +15,46 @@
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 
-class Struct(object):
-  """A simple bag of attributes."""
-
-  def __init__(self, **kwargs):
-    self.__dict__.update(kwargs)
-
-  def __get__(self, name, default=None):
-    return self.__dict__.get(name, default)
-
-  def __iter__(self):
-    return iter(self.__dict__)
+class LayerType(object):
+  """Allowed values for the 'type' property of a MapRoot layer."""
+  FOLDER = 'FOLDER'
+  KML = 'KML'
+  GEORSS = 'GEORSS'
+  TILE = 'TILE'
+  FUSION = 'FUSION'
+  MAP_DATA = 'MAP_DATA'
 
 
-LAYER_TYPE = Struct()
-# pylint: disable-msg=C6409
-LAYER_TYPE.FOLDER = 'FOLDER'
-LAYER_TYPE.KML = 'KML'
-LAYER_TYPE.GEORSS = 'GEORSS'
-LAYER_TYPE.TILE = 'TILE'
-LAYER_TYPE.FUSION = 'FUSION'
-LAYER_TYPE.MAP_DATA = 'MAP_DATA'
-
-
-def GetAllLayers(maproot_dict):
-  """Returns the list of all layers (i.e. data sources) in a MapRoot object.
-
-  This method flattens the tree structure by taking care of nested folders.
+def GetAllLayers(maproot):
+  """Gets a flat list of the layer objects in a MapRoot map object.
 
   Args:
-    maproot_dict: A dictionary wih MapRoot structure.
+    maproot: A MapRoot map object.
 
   Returns:
-    The list of all non-folder layers.
+    A list of all the layers in breadth-first order, not including folders.
   """
   layers = []
-  queue = maproot_dict.get('layers', [])
+  queue = maproot.get('layers', [])
   while queue:
     node = queue.pop()
-    if node['type'] != LAYER_TYPE.FOLDER:
+    if node['type'] != LayerType.FOLDER:
       layers.append(node)
     queue += node.get('sublayers', [])
   return layers
 
 
 def GetSourceAddress(layer):
-  """Returns a string identifier for the data source of a MapRoot layer.
+  """Gets a string identifier for the data source of a MapRoot layer.
 
   Args:
-    layer: A dictionary with the structure of a MapRoot layer object.
+    layer: A MapRoot layer object.
 
   Returns:
-    A string that describes the source address, or None if no source
-    address could be determined.
+    A string suitable as a key for the data source, or None if none
+    could be determined.
   """
   # TODO(cimamoglu): Add a prefix such as 'url:' before URL addresses.
   source = layer.get('source', {})
-  if source.get('georss', {}).get('url'):
-    return source.get('georss').get('url')
-  if source.get('kml', {}).get('url'):
-    return source.get('kml').get('url')
+  return (source.get('georss', {}).get('url') or
+          source.get('kml', {}).get('url') or None)

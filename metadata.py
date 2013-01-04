@@ -47,7 +47,7 @@ def GetIntrinsicPropertiesRecord(source):
     record = {}
     for prop in [
         'content_hash', 'content_last_modified', 'content_length',
-        'has_features', 'has_unsupported_kml', 'server_error_occurred'
+        'has_no_features', 'has_unsupported_kml', 'server_error_occurred'
     ]:
       value = getattr(metadata, prop, None)
       if value is not None:

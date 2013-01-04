@@ -11,7 +11,7 @@
 
 total_storage_limit: 10M
 queue:
-- name: metadata-queue
+- name: metadata
   rate: 1/s
 - name: servers
   rate: 5/s

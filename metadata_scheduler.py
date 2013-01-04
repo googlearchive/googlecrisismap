@@ -14,12 +14,11 @@
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
+from base_handler import BaseHandler
+
 import logging
 import simplejson as json
 
-from base_handler import BaseHandler
-# Enforce order for the rest of the imports.  enable-msg has to come just after
-# the first import, or pylint will complain.  # pylint: enable=C6203,C6204
 import maproot
 import model
 
@@ -27,57 +26,52 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
+SUPPORTED_LAYER_TYPES = [maproot.LayerType.KML, maproot.LayerType.GEORSS]
+
+
+# TODO(cimamoglu): At some point in the future, this request handler will
+# time out for listing all the maps. It should be adapted to task queue
+# infrastructure. Details at cr/32997607 comments by kpy@.
+def ScheduleTasks():
+  """Puts layers into a task queue to be processed by MetadataRetriever.
+
+  Only layers with a valid address and supported type are queued.
+  """
+  # This dictionary is used to ensure that duplicate addresses are not queued.
+  addresses = {}
+
+  maproots = [m.GetCurrent().maproot_json for m in model.Map.GetAll()
+              if m.world_readable
+             ] + [entry.maproot_json for entry in model.CatalogEntry.GetAll()]
+  for maproot_json in maproots:
+    for layer in maproot.GetAllLayers(json.loads(maproot_json)):
+      # Ensure that the layer type is supported.
+      layer_type = layer.get('type', '')
+      if layer_type not in SUPPORTED_LAYER_TYPES:
+        logging.info('Skipping %r; type %r not supported', layer, layer_type)
+        continue
+
+      # Ensure that the layer has a valid address.
+      address = maproot.GetSourceAddress(layer)
+      if not address:
+        logging.error('Skipping %r: no valid address', layer)
+        continue
+
+      # Make sure the same address isn't put into the task queue twice.
+      if address not in addresses:
+        addresses[address] = True
+        taskqueue.add(url='/crisismap/metadata_retriever', method='POST',
+                      queue_name='metadata',
+                      params={'type': layer_type, 'address': address})
+
 
 class MetadataScheduler(BaseHandler):
   """Puts metadata retrieval tasks into AppEngine task queue."""
 
   # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
   def get(self):
-    """HTTP GET request handler to schedule metadata updates retrieval tasks.
-
-    Layers of all world-readable maps are put into a AppEngine task queue to be
-    processed by Retriever. Only layers with valid address and supported type
-    are put into the task queue.
-    """
-    # TODO(cimamoglu): At some point in the future, this request handler will
-    # time out for listing all the maps. It should be adapted to task queue
-    # infrastructure. Details at cr/32997607 comments by kpy@.
-    # This dictionary ensures same addresses are not put as different tasks.
-    addresses = {}
-    maproots = [m.GetCurrent().maproot_json
-                for m in model.Map.GetAll() if m.world_readable]
-    maproots += [entry.maproot_json
-                 for entry in model.CatalogEntry.GetListed()]
-    for maproot_json in maproots:
-      json_object = json.loads(maproot_json)
-      layers = maproot.GetAllLayers(json_object)
-      for layer in layers:
-        # Make sure the MapRoot has a type field.
-        if 'type' not in layer:
-          logging.error('Layer does not have a type!: %r', layer)
-          continue
-        layer_type = layer['type']
-
-        address = maproot.GetSourceAddress(layer)
-        # Make sure the same address isn't put into the task queue twice.
-        if address in addresses:
-          continue
-        else:
-          addresses[address] = True
-
-        # Make sure the layer has a supported type.
-        SUPPORTED_LAYER_TYPES = (maproot.LAYER_TYPE.KML,
-                                 maproot.LAYER_TYPE.GEORSS)
-        if layer_type not in SUPPORTED_LAYER_TYPES:
-          continue
-
-        # Make sure the layer has valid address.
-        if not address:
-          logging.error('Layer does not have a valid address: %r', layer)
-          continue
-        taskqueue.add(url='/crisismap/metadata_retriever', method='POST',
-                      queue_name='metadata-queue',
-                      params={'address': address, 'type': layer_type})
+    """Schedules metadata retrieval tasks."""
+    model.DoAsAdmin(ScheduleTasks)  # need admin access to scan all maps
 
 
 def main():

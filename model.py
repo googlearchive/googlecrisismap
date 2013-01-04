@@ -15,6 +15,7 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import base64
+import os
 import random
 import simplejson as json
 
@@ -97,7 +98,7 @@ def ToCacheKey(key_or_list):
   """Converts an item or a list of items to a string suitable as a cache key.
 
   Args:
-    key_or_list: A string, an object with a __name__, or a list of such items.
+    key_or_list: A string, object with a __name__, None, or list of such items.
 
   Returns:
     A string serialization of the key.  If a list is given, its items are
@@ -106,9 +107,9 @@ def ToCacheKey(key_or_list):
   """
   if not isinstance(key_or_list, list):
     key_or_list = [key_or_list]
-  return '/'.join(
-      getattr(item, '__name__', item).replace('\\', '\\\\').replace('/', '\\/')
-      for item in key_or_list)
+  return '/'.join((getattr(item, '__name__', item) or '')
+                  .replace('\\', '\\\\').replace('/', '\\/')
+                  for item in key_or_list)
 
 
 def GetCachedItem(key_or_list, fetcher, ttl_seconds=DEFAULT_CACHE_TTL_SECONDS):
@@ -412,6 +413,24 @@ def AssertAccess(role, object=None, user=None, policy=None):
     raise AuthorizationError(
         '%s does not have %s access to %r' % (user, role, object),
         user, role, object)
+
+
+def DoAsAdmin(function, *args, **kwargs):
+  """Executes a function with admin privileges for the duration of the call."""
+  original_info = {
+      'USER_IS_ADMIN': os.environ.get('USER_IS_ADMIN', '0'),
+      'USER_EMAIL': os.environ.get('USER_EMAIL', ''),
+      'USER_ID': os.environ.get('USER_ID', '')
+  }
+  try:
+    os.environ.update({
+        'USER_IS_ADMIN': '1',
+        'USER_EMAIL': 'root@google.com',
+        'USER_ID': '0'
+    })
+    function(*args, **kwargs)
+  finally:
+    os.environ.update(original_info)
 
 
 class MapVersionModel(db.Model):

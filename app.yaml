@@ -55,6 +55,7 @@ handlers:
 
 - url: /crisismap/metadata_scheduler
   script: metadata_scheduler.py
+  login: admin
 
 - url: /crisismap/metadata_retriever
   script: metadata_retriever.py

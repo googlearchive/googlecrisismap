@@ -46,10 +46,9 @@ class SourceMetadataModel(db.Model):
   content_hash = db.StringProperty()
   # Size of the source data in bytes.
   content_length = db.IntegerProperty()
-  # Whether the data source has relevant features to display.
-  # For KML, this means existence of placemarks.
-  # For GeoRSS, this means existence of items.
-  has_features = db.BooleanProperty()
+  # Whether the data source is known to contain no displayable features
+  # (for KML, this means no placemarks; for GeoRSS, this means no items).
+  has_no_features = db.BooleanProperty()
   # Whether the KML file contains any features unsupported by the Maps API.
   has_unsupported_kml = db.BooleanProperty()
   # Entity tag from HTTP headers, in case last modified field does not exist.
@@ -280,8 +279,8 @@ def UpdateFromKml(address):
   """
   # Key name is URL for KML.
   metadata = SourceMetadataModel.get_by_key_name(address)
-
   if not metadata or metadata.NeedsUpdate():
+    logging.info('Layer needs update, fetching: %s', address)
     try:
       url_handle = CreateConnection(address, metadata)
       if url_handle:
@@ -290,8 +289,8 @@ def UpdateFromKml(address):
         url_handle.close()
         xml_tags = GetAllXmlTags(content)
         # TODO(cimamoglu): Look for placemarks within network links.
-        metadata.has_features = ('Placemark' in xml_tags or
-                                 'NetworkLink' in xml_tags)
+        metadata.has_no_features = ('Placemark' not in xml_tags and
+                                    'NetworkLink' not in xml_tags)
         metadata.has_unsupported_kml = HasUnsupportedKml(content)
     except urllib2.HTTPError:
       metadata = CreateErrorMetadata(address, metadata)
@@ -312,15 +311,15 @@ def UpdateFromGeorss(address):
   """
   # Key name is URL for GeoRSS.
   metadata = SourceMetadataModel.get_by_key_name(address)
-
   if not metadata or metadata.NeedsUpdate():
+    logging.info('Layer needs update, fetching: %s', address)
     try:
       url_handle = CreateConnection(address, metadata)
       if url_handle:
         content = url_handle.read(MAX_CONTENT_SIZE)
         metadata = CreateMetadata(address, url_handle, content, metadata)
         url_handle.close()
-        metadata.has_features = 'item' in GetAllXmlTags(content)
+        metadata.has_no_features = 'item' not in GetAllXmlTags(content)
     except urllib2.HTTPError:
       metadata = CreateErrorMetadata(address, metadata)
     except ExpatError:
@@ -336,9 +335,9 @@ def UpdateSourceMetadata(address, layer_type):
     address: Address of the data source, a string.
     layer_type: Type of the layer, a string.
   """
-  if layer_type == maproot.LAYER_TYPE.KML:
+  if layer_type == maproot.LayerType.KML:
     UpdateFromKml(address)
-  elif layer_type == maproot.LAYER_TYPE.GEORSS:
+  elif layer_type == maproot.LayerType.GEORSS:
     UpdateFromGeorss(address)
   else:
     pass

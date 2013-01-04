@@ -45,7 +45,7 @@ class MetadataTest(test_utils.BaseTest):
     test_utils.SetUser('admin@google.com', '1', is_admin=True)
     address1 = 'y.com/b.xml'
     date1 = datetime.datetime(2012, 4, 17, 9, 5, 34)
-    sm = retriever.SourceMetadataModel(key_name=address1, has_features=False,
+    sm = retriever.SourceMetadataModel(key_name=address1, has_no_features=True,
                                        content_last_modified=date1)
     sm.put()
     maproot1 = """{"layers": [{"type": "GEORSS",
@@ -56,7 +56,7 @@ class MetadataTest(test_utils.BaseTest):
 
     address2 = 'x.com/a.kml'
     sm = retriever.SourceMetadataModel(key_name=address2, content_length=7,
-                                       content_hash='a', has_features=True)
+                                       content_hash='a', has_no_features=False)
     sm.put()
     maproot2 = """{"layers": [{"type": "KML",
                                "source": {"kml": {"url": "x.com/a.kml"}}}
