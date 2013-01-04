@@ -25,10 +25,13 @@ class CreateTest(test_utils.BaseTest):
 
   # pylint: disable-msg=C6409
   def testCreate(self):
-    test_utils.SetUser('foo@google.com')
+    # Grant MAP_CREATOR permission to google.com.
     model.SetGlobalRoles('google.com', [model.ROLES.MAP_CREATOR])
+    # foo@google.com should be able to create a map.
+    test_utils.SetUser('foo@google.com')
     handler = test_utils.SetupHandler('/create', create.Create(), '')
     handler.post()
+    # Confirm that a map was created.
     location = handler.response.headers['Location']
     map_object = model.Map.Get(location.split('/')[-1])
     self.assertTrue(map_object is not None)
@@ -36,9 +39,39 @@ class CreateTest(test_utils.BaseTest):
 
   # pylint: disable-msg=C6409
   def testCreateWithoutPermission(self):
+    # Without MAP_CREATOR, foo@google.com shouldn't be able to create a map.
     test_utils.SetUser('foo@google.com')
     handler = test_utils.SetupHandler('/create', create.Create())
     self.assertRaises(model.AuthorizationError, handler.post)
+
+  # pylint: disable-msg=C6409
+  def testDomainRole(self):
+    # Grant MAP_CREATOR permission to foo@xyz.com.
+    model.SetGlobalRoles('foo@xyz.com', [model.ROLES.MAP_CREATOR])
+    # foo@xyz.com should be able to create a map.
+    test_utils.SetUser('foo@xyz.com')
+    handler = test_utils.SetupHandler('/create', create.Create(), '')
+    handler.post()
+    location = handler.response.headers['Location']
+    # Check the map; initial_domain_role is unset so domain_role should be None.
+    map_object = model.Map.Get(location.split('/')[-1])
+    self.assertTrue(map_object is not None)
+    # With no initial_domain_role set, domain_role should be None.
+    self.assertEquals(['xyz.com'], map_object.domains)
+    self.assertEquals(None, map_object.domain_role)
+
+    # Now set the initial_domain_role for xyz.com.
+    model.Config.Set('initial_domain_role:xyz.com', model.ROLES.MAP_EDITOR)
+    # Create another map.
+    test_utils.SetUser('foo@xyz.com')
+    handler = test_utils.SetupHandler('/create', create.Create(), '')
+    handler.post()
+    location = handler.response.headers['Location']
+    # Check the map; initial_domain_role is set so domain_role should be set.
+    map_object = model.Map.Get(location.split('/')[-1])
+    self.assertTrue(map_object is not None)
+    self.assertEquals(['xyz.com'], map_object.domains)
+    self.assertEquals(model.ROLES.MAP_EDITOR, map_object.domain_role)
 
 
 if __name__ == '__main__':

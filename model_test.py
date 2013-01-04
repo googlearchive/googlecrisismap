@@ -360,6 +360,10 @@ class MapTests(test_utils.BaseTest):
     model.Config.Set(key, [3, 4, {'a': 'b'}, None])
     self.assertEquals([3, 4, {'a': 'b'}, None], model.Config.Get(key))
     self.assertEquals('new value', model.Config.GetOrInsert('xy', 'new value'))
+    self.assertEquals(None, model.GetInitialDomainRole('xyz.com'))
+    model.SetInitialDomainRole('xyz.com', model.ROLES.MAP_VIEWER)
+    self.assertEquals(model.ROLES.MAP_VIEWER,
+                      model.GetInitialDomainRole('xyz.com'))
 
   def testGetAll(self):
     """Tests Maps.GetAll and Maps.GetViewable."""

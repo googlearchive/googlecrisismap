@@ -31,10 +31,10 @@ class Create(BaseHandler):
 
   # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
   def post(self):
+    domain = model.GetUserDomain(users.get_current_user())
+    domain_role = model.GetInitialDomainRole(domain)
     map_object = model.Map.Create(
-        '{"title": "Untitled map"}',
-        domains=[model.GetUserDomain(users.get_current_user())],
-        domain_role=model.ROLES.MAP_EDITOR)
+        '{"title": "Untitled map"}', domains=[domain], domain_role=domain_role)
     self.redirect('/crisismap/maps/%s' % map_object.id)
 
 

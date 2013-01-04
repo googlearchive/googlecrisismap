@@ -206,6 +206,28 @@ def GetUserDomain(user):
   return user and '@' in user.email() and user.email().split('@')[-1]
 
 
+def SetInitialDomainRole(domain, role):
+  """Sets the domain_role to apply to newly created maps for a given domain.
+
+  Args:
+    domain: A domain name.
+    role: One of the map access roles in ROLES, or None.
+  """
+  Config.Set('initial_domain_role:' + domain, role)
+
+
+def GetInitialDomainRole(domain):
+  """Gets the domain_role to apply to newly created maps for a given domain.
+
+  Args:
+    domain: A domain name.
+
+  Returns:
+    One of the map access roles in ROLES, or None.
+  """
+  return Config.Get('initial_domain_role:' + domain)
+
+
 def SetGlobalRoles(email_or_domain, roles):
   """Sets the access roles for a given user or domain that apply to all maps.
 
