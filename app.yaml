@@ -15,8 +15,11 @@ runtime: python
 api_version: 1
 
 handlers:
-- url: /crisismap/wms/.*
-  script: wmscache/wms.py
+- url: /crisismap/wms/query_layers
+  script: wmscache/wms_query.py
+
+- url: /crisismap/wms/configure_tileset
+  script: wmscache/tileset_config.py
 
 - url: /crisismap/tileworker
   script: wmscache/tileworker.py
