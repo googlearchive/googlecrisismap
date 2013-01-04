@@ -15,7 +15,9 @@ function TileOverlayTest() {
   cm.TestBase.call(this);
   this.map_ = this.expectNew_('google.maps.Map');
   this.layer_ = new google.maps.MVCObject();
+  this.layer_.set('id', 'layer0');
   this.appState_ = new google.maps.MVCObject();
+  this.metadataModel_ = new cm.MetadataModel();
 
   this.projection_ = createMockFunction();
   this.projection_.fromLatLngToPoint = createMockFunction('fromLatLngToPoint');
@@ -26,26 +28,39 @@ function TileOverlayTest() {
 TileOverlayTest.prototype = new cm.TestBase();
 registerTestSuite(TileOverlayTest);
 
-/** Tests the default constructor. */
-TileOverlayTest.prototype.testConstructorDefault = function() {
-  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
+/**
+ * Creates a cm.TileOverlay for testing.
+ * @return {cm.TileOverlay} A new cm.TileOverlay.
+ * @private
+ */
+TileOverlayTest.prototype.createTileOverlay_ = function() {
+  return new cm.TileOverlay(
+      this.layer_, this.map_, this.appState_, this.metadataModel_);
 };
 
-/** Tests the constructor for an indexed tile. */
+/** Tests the default constructor. */
+TileOverlayTest.prototype.testConstructorDefault = function() {
+  var tileOverlay = this.createTileOverlay_();
+};
+
+/** Tests the constructor for a tile index. */
 TileOverlayTest.prototype.testConstructorTileIndex = function() {
   this.layer_.set('url_is_tile_index', true);
-
   var tileIndexFetcher = this.expectNew_('goog.net.Jsonp', _);
-  expectCall(tileIndexFetcher.send)(null, _);
+  var jsonCallback = null;
+  tileIndexFetcher.send = function(_, callback) { jsonCallback = callback; };
+  var tileOverlay = this.createTileOverlay_();
 
-  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
+  // Simulate retrieval of the tile index JSON.
+  jsonCallback({'active_tileset': {'update_time': 1234567890}});
+  expectEq(1234567890, this.metadataModel_.getContentLastModified('layer0'));
 };
 
 /** Tests whether opacity changes according to the application state model. */
 TileOverlayTest.prototype.testOpacityChange = function() {
   this.layer_.set('id', 'layer0');
   this.appState_.set('layer_opacities', {'layer0': '77'});
-  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
+  var tileOverlay = this.createTileOverlay_();
 
   // Initialize this.mapType_.
   tileOverlay.tileUrlPattern_ = 'abc.com';
@@ -65,7 +80,7 @@ TileOverlayTest.prototype.redrawWhileLayerIsActiveOnly = function() {
   var tileIndexFetcher = this.expectNew_('goog.net.Jsonp', _);
   expectCall(tileIndexFetcher.send)(null, _);
 
-  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
+  var tileOverlay = this.createTileOverlay_();
   tileOverlay.tileUrlPattern_ = 'http://old.tileset.url';
   tileOverlay.nextTileUrlPattern_ = 'http://new.tileset.url';
   tileOverlay.lastTilesLoadedMs_ = 0;
@@ -88,12 +103,12 @@ TileOverlayTest.prototype.redrawWhileLayerIsActiveOnly = function() {
   expectTrue(setMapCalled);
 };
 
-/** Tests the tile fetcher when the 'url_is_tile_index' property of the
- *  layer is toggled.
+/**
+ * Tests the tile fetcher when the 'url_is_tile_index' property of the
+ * layer is toggled.
  */
 TileOverlayTest.prototype.toggleUrlIsTileIndex = function() {
-  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
-  expectThat(this.layer_.get('time'), isNull);
+  var tileOverlay = this.createTileOverlay_();
 
   // Turning on tile indexing should trigger the fetcher.
   var tileIndexFetcher = this.expectNew_('goog.net.Jsonp', _);
@@ -116,7 +131,7 @@ TileOverlayTest.prototype.toggleUrlIsTileIndex = function() {
 /** Tests addressing for Google tile coordinates. */
 TileOverlayTest.prototype.testGoogleTileAddressing = function() {
   this.layer_.set('url', 'http://google.tileset.url/{Z}/{X}/{Y}.png');
-  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
+  var tileOverlay = this.createTileOverlay_();
 
   var polyCoords = [
     new google.maps.LatLng(0, 0),
@@ -141,7 +156,7 @@ TileOverlayTest.prototype.testBingTileAddressing = function() {
   this.layer_.set('tile_coordinate_type',
                   cm.LayerModel.TileCoordinateType.BING);
   this.layer_.set('url', 'http://bing.tileset.url');
-  var tileOverlay = new cm.TileOverlay(this.layer_, this.map_, this.appState_);
+  var tileOverlay = this.createTileOverlay_();
 
   var polyCoords = [
     new google.maps.LatLng(0, 0),

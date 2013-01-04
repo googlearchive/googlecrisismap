@@ -227,8 +227,8 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   // Create all the views and UI elements.
   // The MapView must be created first because it replaces the contents of the
   // map <div> element, and other views add stuff within that <div> element.
-  var mapView = new cm.MapView(mapElem, mapModel, appState, touch, config,
-                               preview);
+  var mapView = new cm.MapView(mapElem, mapModel, appState, metadataModel,
+                               touch, config, preview);
   var searchbox = new cm.SearchBox(mapView.getMap());
   if (!preview) {
     new cm.LayersButton(mapView.getMap(), panelElem);

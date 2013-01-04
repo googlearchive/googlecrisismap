@@ -27,6 +27,7 @@ function MapViewTest() {
   this.elem_ = new FakeElement('div');
   this.mapModel_ = createMockInstance(cm.MapModel);
   this.appState_ = createMockInstance(cm.AppState);
+  this.metadataModel_ = createMockInstance(cm.MetadataModel);
   this.stubReturnVisibleLayerIds_([]);
 
   goog.dom.htmlToDocumentFragment = createMockFunction(
@@ -157,7 +158,8 @@ MapViewTest.prototype.addLayer_ = function(properties) {
 
 /** Tests map controls for non-touch browsers. */
 MapViewTest.prototype.controlPositionNotTouch = function() {
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests map controls for touch browsers. */
@@ -166,7 +168,8 @@ MapViewTest.prototype.controlPositionTouch = function() {
   this.expectedMapOptions_.streetViewControl = false;
   this.expectedMapOptions_.zoomControlOptions.style =
       google.maps.ZoomControlStyle.SMALL;
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, true);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                  this.metadataModel_, true);
 };
 
 /** Tests map controls when the panel is on the left of the map. */
@@ -175,8 +178,8 @@ MapViewTest.prototype.controlPositionLeftPanel = function() {
       google.maps.ControlPosition.RIGHT_BOTTOM;
   this.expectedMapOptions_.scaleControlOptions.position =
       google.maps.ControlPosition.LEFT_BOTTOM;
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false,
-                 {'panel_side': 'left'});
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                  this.metadataModel_, false, {'panel_side': 'left'});
 };
 
 /** Tests minimal map controls. */
@@ -185,8 +188,8 @@ MapViewTest.prototype.minimalControls = function() {
   this.expectedMapOptions_.streetViewControl = false;
   this.expectedMapOptions_.zoomControlOptions.style =
       google.maps.ZoomControlStyle.SMALL;
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false,
-                 {'minimal_map_controls': true});
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                  this.metadataModel_, false, {'minimal_map_controls': true});
 };
 
 /** Tests preview view. */
@@ -196,13 +199,14 @@ MapViewTest.prototype.previewView = function() {
   this.expectedMapOptions_.zoomControlOptions.style =
       google.maps.ZoomControlStyle.SMALL;
   this.expectedMapOptions_.mapTypeControl = false;
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false, undefined,
-                 true);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                  this.metadataModel_, false, undefined, true);
 };
 
 /** Tests that clicking on the map closes the open InfoWindow. */
 MapViewTest.prototype.mapClickClosesInfoWindow = function() {
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                  this.metadataModel_, false);
   expectCall(this.infoWindow_.close)();
   cm.events.emit(this.map_, 'click');
 };
@@ -212,7 +216,8 @@ MapViewTest.prototype.mapClickClosesInfoWindow = function() {
  * lat/long coordinates.
  */
 MapViewTest.prototype.mouseLatLonCoordinates = function() {
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                  this.metadataModel_, false);
   var latLonElem = expectDescendantOf(this.elem_, withClass('cm-lat-lng'));
   expectEq('none', latLonElem.style.display);
   cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: true});
@@ -231,7 +236,8 @@ MapViewTest.prototype.addOverlayKml = function() {
   var overlay = this.expectNew_('google.maps.KmlLayer', 'http://chocolate.com',
       recursivelyEquals({preserveViewport: true, suppressInfoWindows: true}));
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding a GeoRSS overlay. */
@@ -244,7 +250,8 @@ MapViewTest.prototype.addOverlayGeoRss = function() {
   var overlay = this.expectNew_('google.maps.KmlLayer', 'http://vanilla.com.au',
       recursivelyEquals({preserveViewport: true, suppressInfoWindows: true}));
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding a Fusion Tables overlay. */
@@ -261,7 +268,8 @@ MapViewTest.prototype.addOverlayFusionTables = function() {
         suppressInfoWindows: true
       }));
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding a Tile overlay. */
@@ -271,9 +279,10 @@ MapViewTest.prototype.addOverlayTile = function() {
   this.stubReturnVisibleLayerIds_(['choc-chip']);
 
   var overlay = this.expectNew_('cm.TileOverlay', layerModel, this.map_,
-                                this.appState_);
+                                this.appState_, this.metadataModel_);
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding a Traffic overlay. */
@@ -283,7 +292,8 @@ MapViewTest.prototype.addOverlayTraffic = function() {
 
   var overlay = this.expectNew_('google.maps.TrafficLayer');
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding a Transit overlay. */
@@ -293,7 +303,8 @@ MapViewTest.prototype.addOverlayTransit = function() {
 
   var overlay = this.expectNew_('google.maps.TransitLayer');
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding a Weather overlay. */
@@ -311,7 +322,8 @@ MapViewTest.prototype.addOverlayWeather = function() {
       })
   );
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding a Cloud overlay. */
@@ -321,7 +333,8 @@ MapViewTest.prototype.addOverlayCloud = function() {
 
   var overlay = this.expectNew_('google.maps.weather.CloudLayer');
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding a KML overlay with no URL. */
@@ -341,7 +354,8 @@ MapViewTest.prototype.addOverlayKmlWithoutUrl = function() {
   }
 
   // ...when a new cm.MapView is created.
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding an overlay of GEB layer using the public interface. */
@@ -363,7 +377,8 @@ MapViewTest.prototype.addOverlayMapDataExternal = function() {
       })
   );
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /**
@@ -389,7 +404,8 @@ MapViewTest.prototype.addOverlayMapDataExternalLegacyIdScheme = function() {
       })
   );
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests adding an overlay with no type. */
@@ -404,7 +420,8 @@ MapViewTest.prototype.addOverlayOther = function() {
   }
 
   // ...when a new cm.MapView is created.
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests that the cache buster is added properly. */
@@ -420,7 +437,8 @@ MapViewTest.prototype.addCacheBuster = function() {
       'google.maps.KmlLayer',
       'http://example.com?foo=bar&baz=123&cm.cache_time=5', _);
   expectCall(overlay.setMap)(null);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests that the cache buster is only added when cm.ttl is specified. */
@@ -435,7 +453,8 @@ MapViewTest.prototype.doNotAddCacheBuster = function() {
   var overlay = this.expectNew_('google.maps.KmlLayer',
                                 'http://example.com?foo=bar', _);
   expectCall(overlay.setMap)(null);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 };
 
 /** Tests that overlays are updated when layer properties change. */
@@ -444,7 +463,8 @@ MapViewTest.prototype.propertiesChanged = function() {
       {id: 'cotton-candy', type: cm.LayerModel.Type.KML, url: 'url'});
   var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
   expectCall(overlay.setMap)(null);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 
   // Change the URL
   expectCall(overlay.setMap)(null).times(2);
@@ -452,7 +472,7 @@ MapViewTest.prototype.propertiesChanged = function() {
 
   // Change the layer type to a tile
   expectCall(overlay.setMap)(null);
-  overlay = this.expectNew_('cm.TileOverlay', _, _, _);
+  overlay = this.expectNew_('cm.TileOverlay', _, _, _, _);
   expectCall(overlay.setMap)(null);
   model.set('type', cm.LayerModel.Type.TILE);
 
@@ -531,7 +551,8 @@ MapViewTest.prototype.propertiesChanged = function() {
  *  to the map.
  */
 MapViewTest.prototype.layersAddedEvent = function() {
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 
   // Emit a LAYERS_ADDED event with 2 layers
   var layer1 = this.addLayer_({id: 'mango',
@@ -540,7 +561,7 @@ MapViewTest.prototype.layersAddedEvent = function() {
   expectCall(overlay1.setMap)(this.map_);
   var layer2 = this.addLayer_({id: 'banana',
                               type: cm.LayerModel.Type.TILE});
-  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _);
+  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _);
   expectCall(overlay2.setMap)(this.map_);
   this.stubReturnVisibleLayerIds_(['banana', 'mango']);
 
@@ -559,11 +580,12 @@ MapViewTest.prototype.layersRemovedEvent = function() {
   expectCall(overlay1.setMap)(this.map_);
   var layer2 = this.addLayer_({id: 'banana',
                               type: cm.LayerModel.Type.TILE});
-  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _);
+  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _);
   expectCall(overlay2.setMap)(this.map_);
   this.stubReturnVisibleLayerIds_(['banana', 'mango']);
 
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 
   // Emit a LAYERS_REMOVED event
   expectCall(overlay1.setMap)(null);
@@ -579,7 +601,8 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
 
   var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 
   // featureData is defined in KML events.
   var kmlEvent = {
@@ -622,7 +645,8 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
 
   var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
   expectCall(overlay.setMap)(this.map_);
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 
   // Make sure a single empty element is ignored
   var kmlEvent = {
@@ -655,7 +679,8 @@ MapViewTest.prototype.updateVisibility = function() {
   expectCall(overlay2.setMap)(this.map_);
 
   // ...when a new cm.MapView is created.
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 
   // Then expect both layers to be removed from the map...
   expectCall(overlay1.setMap)(null);
@@ -680,12 +705,13 @@ MapViewTest.prototype.infoWindowClosesWhenLayerTurnedOff = function() {
 
   // ...expect two layers to be created and added to the map...
   var overlay1 = this.expectNew_('google.maps.TransitLayer');
-  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _);
+  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _);
   expectCall(overlay1.setMap)(this.map_);
   expectCall(overlay2.setMap)(this.map_);
 
   // ...when a new cm.MapView is created.
-  new cm.MapView(this.elem_, this.mapModel_, this.appState_, false);
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                 this.metadataModel_, false);
 
   // Then expect an InfoWindow to open...
   this.expectInfoWindowOpen_(_, _, _);
@@ -716,7 +742,7 @@ MapViewTest.prototype.infoWindowClosesWhenLayerTurnedOff = function() {
 /** Tests getMap(). */
 MapViewTest.prototype.getMap = function() {
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
   expectEq(this.map_, mapView.getMap());
 };
 
@@ -735,7 +761,7 @@ MapViewTest.prototype.zoomToKMLLayerModelViewport = function() {
       recursivelyEquals({preserveViewport: true, suppressInfoWindows: true}));
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // Define the 'viewport' property.
   this.mapModel_.getLayer('green-tea').set(
@@ -763,7 +789,7 @@ MapViewTest.prototype.zoomToGeoRSSLayerModelViewport = function() {
   var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // Define the 'viewport' property.
   this.mapModel_.getLayer('guava').set(
@@ -791,7 +817,7 @@ MapViewTest.prototype.zoomToLayerDefaultViewport = function() {
   var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // Return non-null defaultViewport for both layers and do not define
   // their 'viewport' properties.
@@ -822,7 +848,7 @@ MapViewTest.prototype.zoomToLayerDefaultViewportNotInitialized =
 
   // When a new cm.MapView is created.
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // If the viewport is undefined and getDefaultViewport returns null,
   // no call to fitBounds is made and a change listener for defaultViewport
@@ -852,7 +878,7 @@ MapViewTest.prototype.zoomToLayerModelViewport = function() {
   var overlay = this.expectNew_('google.maps.TrafficLayer');
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // This box just fits in a 800 x 800 window at zoom level 7.
   this.mapModel_.getLayer('chocolate').set(
@@ -885,7 +911,7 @@ MapViewTest.prototype.zoomToLayerFullExtent = function() {
   var overlay = this.expectNew_('google.maps.TrafficLayer');
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   var fullExtent = new cm.LatLonBox(42, 37, -106.5, -115);
   this.mapModel_.getLayer('chocolate').set('full_extent', fullExtent);
@@ -907,7 +933,7 @@ MapViewTest.prototype.layerMinMaxZoom = function() {
   expectCall(overlay.setMap)(null);
 
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // The layer should be visible at zoom level 5.
   expectCall(overlay.setMap)(this.map_);
@@ -929,7 +955,7 @@ MapViewTest.prototype.layerMinMaxZoom = function() {
 /** Tests setting the viewport for extreme north/south extents. */
 MapViewTest.prototype.matchViewportNorthSouthOutOfRange = function() {
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // +Infinity and -Infinity should average to zero.
   mapView.matchViewport(new cm.LatLonBox(90, -90, 180, -180));
@@ -943,7 +969,7 @@ MapViewTest.prototype.matchViewportNorthSouthOutOfRange = function() {
 /** Tests adjusting the viewport based on URI params. */
 MapViewTest.prototype.testAdjustViewportFromUri = function() {
   var mapView = new cm.MapView(
-      this.elem_, this.mapModel_, this.appState_, false);
+      this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // If lat is specified without a valid lng, the viewport should not be set.
   var uri = new goog.Uri('');
@@ -997,7 +1023,7 @@ MapViewTest.prototype.testAdjustViewportFromUri = function() {
 /** Test that changing the map's zoom level fires the relevant event. */
 MapViewTest.prototype.testZoomChanged = function() {
   var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
-                               false);
+                               this.metadataModel_, false);
   var eventFiredCorrectly = false;
   cm.events.listen(goog.global, cm.events.ZOOM_CHANGED, function(e) {
     eventFiredCorrectly = goog.isDefAndNotNull(e.zoom);
@@ -1011,7 +1037,7 @@ MapViewTest.prototype.testZoomChanged = function() {
  */
 MapViewTest.prototype.testUpdateMapStyle = function() {
   var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
-                               false);
+                               this.metadataModel_, false);
 
   // Custom map with wrongly formatted style JSON falls back to roadmap.
   expectCall(this.mapModel_.get)('map_type')

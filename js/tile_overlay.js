@@ -40,10 +40,13 @@ var MAX_TILE_LOAD_MS = 2000; // 2s
  * @param {cm.LayerModel} layer The layer model.
  * @param {google.maps.Map} map The map on which to display this tile layer.
  * @param {cm.AppState} appState The application state model.
+ * @param {cm.MetadataModel} metadataModel The metadata model.  If the layer is
+ *     specified with a tile index, the TileOverlay will update the metadata
+ *     content_last_modified field using the update_time in the tile index.
  * @constructor
  * @extends google.maps.MVCObject
  */
-cm.TileOverlay = function(layer, map, appState) {
+cm.TileOverlay = function(layer, map, appState, metadataModel) {
   google.maps.MVCObject.call(this);
 
   /**
@@ -51,6 +54,12 @@ cm.TileOverlay = function(layer, map, appState) {
    * @private
    */
   this.appState_ = appState;
+
+  /**
+   * @type {cm.MetadataModel}
+   * @private
+   */
+  this.metadataModel_ = metadataModel;
 
   /**
    * @type {google.maps.Map}
@@ -126,10 +135,10 @@ cm.TileOverlay = function(layer, map, appState) {
   this.requestDescriptor_ = null;
 
   /**
-   * @type {cm.LayerModel}
+   * @type {string}
    * @private
    */
-  this.layerModel_ = layer;
+  this.layerId_ = /** @type string */(layer.get('id'));
 
 
   /**
@@ -309,7 +318,7 @@ cm.TileOverlay.prototype.init_ = function(viewport, isHybrid) {
  */
 cm.TileOverlay.prototype.updateOpacity_ = function() {
   var opacities = this.appState_.get('layer_opacities') || {};
-  var id = this.layerModel_.get('id');
+  var id = this.layerId_;
   this.mapType_.set('opacity', id in opacities ? opacities[id] / 100 : 1.0);
 };
 
@@ -456,7 +465,7 @@ cm.TileOverlay.prototype.handleTileIndex_ = function(indexJson) {
   }
 
   var updateTime = activeTileset['update_time'];
-  this.layerModel_.set('time', updateTime);
+  this.metadataModel_.setContentLastModified(this.layerId_, updateTime);
 
   var newTilesetUrl = activeTileset['url'];
   if (!this.tileUrlPattern_) {
@@ -493,7 +502,7 @@ cm.TileOverlay.prototype.updateTileUrlPattern_ = function() {
     this.tileIndexFetcher_ = null;
     this.requestDescriptor_ = null;
     this.nextTileUrlPattern_ = null;
-    this.layerModel_.set('time', null);
+    this.metadataModel_.setContentLastModified(this.layerId_, null);
     this.tileUrlPattern_ = /** @type string */(this.get('url'));
   }
 };

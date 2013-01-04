@@ -325,7 +325,6 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
                      ['suppress_download_link', 'type', 'url', 'ft_from'],
                      this.updateDownloadLink_, this);
   cm.events.onChange(model, ['viewport', 'type'], this.updateZoomLink_, this);
-  cm.events.onChange(model, 'time', this.updateTime_, this);
   cm.events.onChange(model, 'locked', function() {
     this.updateFolderDecorator_();
     this.updateEnabled_();
@@ -535,11 +534,8 @@ cm.LayerEntryView.prototype.updateTime_ = function() {
   var id = /** @type string */(this.model_.get('id'));
   var metadata = this.metadataModel_.get(id);
   var lastUpdated = '';
-  var time = /** @type number */(this.model_.get('time'));
-  if (metadata && metadata['content_last_modified']) {
-    time = /** @type number */(metadata['content_last_modified']);
-  }
-  if (typeof time == 'number') {
+  var time = metadata && metadata['content_last_modified'];
+  if (time) {
     // Convert time in seconds to time in milliseconds.
     var d = new Date(time * 1000);
     // Format a string that displays Month Day, Year instead of the

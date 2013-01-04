@@ -279,29 +279,31 @@ LayerEntryViewTest.prototype.updateLegend = function() {
 LayerEntryViewTest.prototype.updateTime = function() {
   var parent = this.createView_();
   var timeElem = expectDescendantOf(parent, withClass('cm-timestamp'));
+  var now = new Date().valueOf() / 1000;
+  var metadata = this.metadataModel_;
 
   // Tests that the current time is formatted to say 0 minutes ago.
-  this.layerModel_.set('time', new Date().valueOf() / 1000);
+  metadata.set('layer0', {'content_last_modified': now});
   expectThat(cm.ui.getText(timeElem), containsRegExp(
       /Last updated: \d\d?:\d\d [AP]M \(0 minutes ago\)/));
 
   // Check 23 hours ago.
-  this.layerModel_.set('time', new Date().valueOf() / 1000 - 60 * 60 * 23);
+  metadata.set('layer0', {'content_last_modified': now - 3600 * 23});
   expectThat(cm.ui.getText(timeElem), containsRegExp(
       /Last updated: \d\d?:\d\d [AP]M \(23 hours ago\)/));
 
   // Check yesterday.
-  this.layerModel_.set('time', new Date().valueOf() / 1000 - 60 * 60 * 24);
+  metadata.set('layer0', {'content_last_modified': now - 3600 * 24});
   expectThat(cm.ui.getText(timeElem), containsRegExp(
       /Last updated: [A-Z][a-z]+ \d+, \d{4} \(1 day ago\)/));
 
   // Check 14 days ago.
-  this.layerModel_.set('time', new Date().valueOf() / 1000 - 60 * 60 * 24 * 14);
+  metadata.set('layer0', {'content_last_modified': now - 3600 * 24 * 14});
   expectThat(cm.ui.getText(timeElem), containsRegExp(
       /Last updated: [A-Z][a-z]+ \d+, \d{4}/));
 
   // Try a missing timestamp.
-  this.layerModel_.set('time', null);
+  this.metadataModel_.set('layer0', {});
   expectEq(cm.ui.getText(timeElem), '');
 };
 

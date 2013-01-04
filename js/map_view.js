@@ -29,6 +29,7 @@ goog.require('goog.json');
  * @param {Element} parentElem The DOM element in which to render the map.
  * @param {cm.MapModel} mapModel The map model.
  * @param {cm.AppState} appState The application state model.
+ * @param {cm.MetadataModel} metadataModel The layer metadata model.
  * @param {boolean} touchDevice True if the map is displayed on a touch device.
  * @param {?Object} opt_config The configuration settings. 2 fields are used:
  *     minimal_map_controls: Minimize controls (small zoom control, no scale
@@ -39,8 +40,8 @@ goog.require('goog.json');
  * @constructor
  * @extends google.maps.MVCObject
  */
-cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config,
-    opt_preview) {
+cm.MapView = function(parentElem, mapModel, appState, metadataModel,
+                      touchDevice, opt_config, opt_preview) {
   /**
    * @type cm.MapModel
    * @private
@@ -52,6 +53,12 @@ cm.MapView = function(parentElem, mapModel, appState, touchDevice, opt_config,
    * @private
    */
   this.appState_ = appState;
+
+  /**
+   * @type cm.MetadataModel
+   * @private
+   */
+  this.metadataModel_ = metadataModel;
 
   /**
    * @type !google.maps.Map
@@ -375,8 +382,8 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       break;
 
     case cm.LayerModel.Type.TILE:
-      this.overlays_[id] = new cm.TileOverlay(layer, this.map_,
-                                              this.appState_);
+      this.overlays_[id] = new cm.TileOverlay(
+        layer, this.map_, this.appState_, this.metadataModel_);
       break;
 
     case cm.LayerModel.Type.FUSION:

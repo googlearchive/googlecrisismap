@@ -53,7 +53,7 @@ cm.MetadataModel.prototype.hasUnsupportedFeatures = function(id) {
 
 /**
  * Whether a server error has occurred.
- * @param {string} id Id of the layer.
+ * @param {string} id ID of the layer.
  * @return {boolean} Whether a server error has occurred.
  */
 cm.MetadataModel.prototype.serverErrorOccurred = function(id) {
@@ -64,12 +64,35 @@ cm.MetadataModel.prototype.serverErrorOccurred = function(id) {
 
 /**
  * Returns the length of the content, i.e. the file size.
- * @param {string} id Id of the layer.
- * @return {number} The length of the content if it is known, undefined
- *     otherwise.
+ * @param {string} id ID of the layer.
+ * @return {number?} The content length if is known; otherwise null.
  */
 cm.MetadataModel.prototype.getContentLength = function(id) {
-  var metadata = this.get(id);
-  return metadata && metadata['content_length'] ? metadata['content_length'] :
-      undefined;
+  var metadata = this.get(id) || {};
+  return 'content_length' in metadata ? metadata['content_length'] : null;
+};
+
+
+/**
+ * Returns the last modification time of the layer content.
+ * @param {string} id ID of the layer.
+ * @return {number?} The last modification time in epoch seconds if known;
+ *     otherwise null.
+ */
+cm.MetadataModel.prototype.getContentLastModified = function(id) {
+  var metadata = this.get(id) || {};
+  return 'content_last_modified' in metadata ?
+      metadata['content_last_modified'] : null;
+};
+
+
+/**
+ * Sets the last modification time of the layer content.
+ * @param {string} id ID of the layer.
+ * @param {number?} time The last modification time in epoch seconds, or null.
+ */
+cm.MetadataModel.prototype.setContentLastModified = function(id, time) {
+  var metadata = this.get(id) || {};
+  metadata['content_last_modified'] = time;
+  this.set(id, metadata);
 };
