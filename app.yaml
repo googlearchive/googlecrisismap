@@ -98,6 +98,9 @@ handlers:
 - url: /crisismap/diff/[\w-]+
   script: diff.py
 
+- url: /crisismap/legend/[^\s]+
+  script: legend_item_extractor.py
+
 - url: /crisismap/a/[\w.-]+
   script: catalog.py
   login: required
