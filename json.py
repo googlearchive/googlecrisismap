@@ -9,12 +9,5 @@
 # OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 # specific language governing permissions and limitations under the License.
 
-total_storage_limit: 10M
-queue:
-- name: metadata-queue
-  rate: 1/s
-- name: servers
-  rate: 5/s
-- name: tiles
-  mode: pull
-
+"""TileStache expects the Python2.6 and later 'json', not simplejson."""
+from simplejson import *

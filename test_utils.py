@@ -17,6 +17,7 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 import datetime
 import os
 import unittest
+import urlparse
 
 import webob
 
@@ -97,6 +98,22 @@ class BaseTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.testbed.deactivate()
     ClearUser()
+
+  def assertUrlsEqual(self, expected, actual):
+    """Tests that URLs are equal, without caring about query arg order."""
+    e_scheme, e_netloc, e_path, e_query, e_frag = urlparse.urlsplit(expected)
+    a_scheme, a_netloc, a_path, a_query, a_frag = urlparse.urlsplit(actual)
+    self.assertEquals(e_scheme, a_scheme,
+                      'different scheme %s != %s' % (expected, actual))
+    self.assertEquals(e_netloc, a_netloc,
+                      'different netloc %s != %s' % (expected, actual))
+    self.assertEquals(e_path, a_path,
+                      'different path %s != %s' % (expected, actual))
+    self.assertEquals(e_frag, a_frag,
+                      'different fragment %s != %s' % (expected, actual))
+    self.assertEquals(sorted(urlparse.parse_qsl(e_query)),
+                      sorted(urlparse.parse_qsl(a_query)),
+                      'different query %s != %s' % (expected, actual))
 
 
 def main():

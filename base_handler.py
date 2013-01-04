@@ -21,7 +21,6 @@ use_library('django', '1.2')
 # "pylint: enable=...", pylint still complains. :(
 
 import os
-from django.conf import settings
 from django.utils import translation
 import model
 try:
@@ -39,10 +38,6 @@ def NormalizeLang(lang):
 
 DEFAULT_LANGUAGE = 'en'
 ALL_LANGUAGES = map(NormalizeLang, languages.ALL_LANGUAGES)
-
-# TODO(arb): django l10n no longer needed?
-settings.LOCALE_PATHS = ['locale']
-settings.LANGUAGES = ALL_LANGUAGES
 
 
 def SelectSupportedLanguage(language_codes):
