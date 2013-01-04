@@ -21,7 +21,6 @@ import re
 import StringIO
 import urllib
 import xml.etree.ElementTree
-import xml.parsers.expat
 import zipfile
 
 import jsonp
@@ -32,6 +31,13 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 LINE_DEFAULT_KML_COLOR = 'FFFF8C8C'
 LINE_DEFAULT_WIDTH = 2
 POLYGON_DEFAULT_KML_COLOR = 'FFFFD5BF'
+
+# Need to allow a conditional import.  # pylint: disable=C6204,C6409
+try:
+  XmlParseError = xml.etree.ElementTree.ParseError  # Python 2.7 and above
+except AttributeError:
+  import xml.parsers.expat
+  XmlParseError = xml.parsers.expat.ExpatError  # Python 2.6 and below
 
 
 def Extract(kml):
@@ -461,7 +467,7 @@ class GetLegendItems(webapp.RequestHandler):
       document = xml.etree.ElementTree.fromstring(content)
       if document.tag.endswith('kml'):
         return content
-    except xml.etree.ElementTree.ParseError:
+    except XmlParseError:
       return None
 
 
