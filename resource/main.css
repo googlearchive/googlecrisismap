@@ -549,14 +549,24 @@ span.cm-g-flag {
 /* Footer */
 .cm-footer {
   text-align:center;
-  padding:9px;
+  padding:6px;
   background-color:white;
   border-top:1px solid #ccc;
   color:#555;
-  font-size:13px;
+  font-size:12px;
 }
 .cm-embedded .cm-footer {
+  padding:4px 6px;
   text-align:left;
+  font-size:11px;
+}
+.cm-html-editor .cm-preview.cm-footer {
+  padding:6px;
+  min-height:0;
+}
+.cm-preview.cm-footer:after {
+  content:"Help"; /* imitate the content of the footer */
+  color:#1155cc;
 }
 
 /* Standard Google checkbox styles */
@@ -1019,7 +1029,8 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-html-editor .cm-preview {
   width:100%;
   max-width:391px;  /* total outside width 400px */
-  height:6em;
+  min-height:2em;
+  max-height:8em;
   overflow:auto;
   border-left:1px solid #c0c0c0;
   padding:0 4px;

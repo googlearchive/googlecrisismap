@@ -82,9 +82,9 @@ cm.ui.create = function(tag, opt_attributes, var_args) {
   var args = [];
   for (var a = 0; a < arguments.length; a++) {
     if (arguments[a] instanceof cm.Html) {  // Convert Html objects to elements.
-      var div = goog.dom.createDom('div');
-      arguments[a].pasteInto(div);
-      args.push(div);
+      var span = goog.dom.createDom('span');
+      arguments[a].pasteInto(span);
+      args.push(span);
     } else {
       args.push(arguments[a]);
     }

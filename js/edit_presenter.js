@@ -110,6 +110,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
    {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
    {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
     preview_class: 'cm-map-description'},
+   {key: 'footer', label: 'Footer', type: cm.editors.Type.HTML,
+    preview_class: 'cm-footer'},
    {key: 'viewport', label: 'Default viewport',
     type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
    {key: 'map_type', label: 'Default base map',
