@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -19,17 +19,16 @@ of relevant layers. Such updates are performed separately by retriever module.
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 import datetime
+import json
 import time
 import urllib2
 
-import simplejson as json
+import webapp2
 
 import map  # Allow use of the name 'map'.  # pylint: disable-msg=W0622
 import metadata_retriever as retriever
 
 from google.appengine.api import memcache
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
 def GetIntrinsicPropertiesRecord(source):
@@ -57,7 +56,7 @@ def GetIntrinsicPropertiesRecord(source):
     return None
 
 
-class Metadata(webapp.RequestHandler):
+class Metadata(webapp2.RequestHandler):
   def get(self):  # pylint: disable-msg=C6409
     """HTTP GET request handler for Metadata."""
     # Comma cannot be used as the separation character, since it can possibly
@@ -93,8 +92,4 @@ class Metadata(webapp.RequestHandler):
     self.response.out.write(json.dumps(result, default=Serializer))
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([(r'.*', Metadata)]))
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([(r'.*', Metadata)])

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -39,7 +39,7 @@ class RedirectTest(test_utils.BaseTest):
     handler = test_utils.SetupHandler(
         'http://google.org/crisismap/redirect/foo', redirect.Redirect())
     handler.get('foo')
-    self.assertEquals(302, handler.response.status)
+    self.assertEquals(302, handler.response.status_int)
     self.assertEquals('http://example.com/',
                       handler.response.headers['Location'])
 
@@ -49,7 +49,7 @@ class RedirectTest(test_utils.BaseTest):
     handler = test_utils.SetupHandler(
         'http://google.org/crisismap/redirect/xyz', redirect.Redirect())
     handler.get('xyz')
-    self.assertEquals(302, handler.response.status)
+    self.assertEquals(302, handler.response.status_int)
     self.assertEquals('http://google.org/',
                       handler.response.headers['Location'])
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -15,10 +15,9 @@
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 import datetime
+import json
 import time
 import urllib2
-
-import simplejson as json
 
 # Allow relative imports within the app.  # pylint: disable=W0403
 import map  # Allow use of the name 'map'.  # pylint: disable-msg=W0622
@@ -68,7 +67,7 @@ class MetadataTest(test_utils.BaseTest):
            '%24abc.com/aaa.xml%24')
     handler = test_utils.SetupHandler(url, metadata.Metadata())
     handler.get()
-    result = json.loads(handler.response.out.getvalue())
+    result = json.loads(handler.response.body)
 
     expected = {}
     expected[address1] = metadata.GetIntrinsicPropertiesRecord(address1)

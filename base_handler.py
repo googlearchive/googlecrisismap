@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,22 +14,19 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-# App Engine requires that this come first.  # pylint: disable-msg=C6203,C6204
-from google.appengine.dist import use_library
-use_library('django', '1.2')
 # We can't enforce order for the rest of the imports; no matter where we insert
 # "pylint: enable=...", pylint still complains. :(
-
+# pylint:disable=g-import-not-at-top
 import os
-from django.utils import translation
+import webapp2
 import model
 try:
   import languages
 except ImportError:
   languages = model.Struct(ALL_LANGUAGES=['en'])
 
+
 from google.appengine.api import users
-from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 
 
@@ -81,7 +78,6 @@ def ActivateLanguage(hl_param=None, accept_lang=None):
     lang = SelectSupportedLanguage(accept_lang)
   else:
     lang = DEFAULT_LANGUAGE
-  translation.activate(lang)
   return lang
 
 
@@ -90,7 +86,7 @@ class Error(Exception):
   pass
 
 
-class BaseHandler(webapp.RequestHandler):
+class BaseHandler(webapp2.RequestHandler):
   """Base class for operations that could through an AuthorizationError."""
 
   @staticmethod
@@ -108,6 +104,10 @@ class BaseHandler(webapp.RequestHandler):
 
   # initialize() is part of RequestHandler.  # pylint: disable=C6409
   def initialize(self, request, response):
+    # webapp2 __init__ calls initialize automatically - we call it again
+    # ourselves.
+    if request is None:
+      return
     super(BaseHandler, self).initialize(request, response)
     self.request.lang = ActivateLanguage(
         request.get('hl'), request.headers.get('accept-language'))

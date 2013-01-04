@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -15,14 +15,12 @@
 __author__ = 'joeysilva@google.com (Joey Silva)'
 
 import difflib
-import simplejson as json
+import json
+import webapp2
 
 from base_handler import BaseHandler
 import jsonp
 import model
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
 class Diff(BaseHandler):
@@ -69,10 +67,4 @@ class Diff(BaseHandler):
           {'saved_diff': saved_diff, 'catalog_diffs': catalog_diffs}))
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([
-      (r'/crisismap/diff/([\w]+)', Diff)]))
-
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([(r'/crisismap/diff/([\w]+)', Diff)])

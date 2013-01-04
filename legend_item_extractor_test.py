@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,6 +14,7 @@
 
 __author__ = 'joeysilva@google.com (Joey Silva)'
 
+import json
 import StringIO
 import urllib
 import xml.etree.ElementTree as ElementTree
@@ -22,7 +23,6 @@ import zipfile
 import legend_item_extractor
 from legend_item_extractor import GetLegendItems
 import mox
-import simplejson as json
 import test_utils
 
 
@@ -599,7 +599,7 @@ class LegendItemExtractorTest(test_utils.BaseTest):
                     'polygon_styles': items[2],
                     'static_icon_urls': list(items[3]),
                     'colors': list(items[4])}),
-        handler.response.out.getvalue())
+        handler.response.body)
 
   def testGetLegendItemsInvalidUrl(self):
     """Tests the GetLegendItems handler for invalid URLs."""
@@ -612,7 +612,7 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     handler = test_utils.SetupHandler(
         '/crisismap/legend/' + urllib.quote(kml_url), GetLegendItems())
     handler.get(urllib.quote(kml_url))
-    self.assertEquals(400, handler.response.status)
+    self.assertEquals(400, handler.response.status_int)
 
 
 if __name__ == '__main__':

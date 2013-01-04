@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,15 +14,14 @@
 
 __author__ = 'muzny@google.com (Grace Muzny)'
 
+import webapp2
 import model
 
 from google.appengine.api import mail
 from google.appengine.api import users
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
-class Share(webapp.RequestHandler):
+class Share(webapp2.RequestHandler):
   """An interface for sharing maps between users."""
 
   # pylint: disable-msg=C6409
@@ -79,9 +78,4 @@ Access the map at: %s
     mail.send_mail(user.email(), recipient_email, subject, body)
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([('/crisismap/share/([\w-]+)', Share)]))
-
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([('/crisismap/share/([\w-]+)', Share)])

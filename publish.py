@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,20 +14,12 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-# App Engine requires that this come first.  # pylint: disable-msg=C6203,C6204
-from google.appengine.dist import use_library
-use_library('django', '1.2')
-
-import re
-
+# base_handler must come first. pylint:disable=g-bad-import-order
 from base_handler import BaseHandler
-# Enforce order for the rest of the imports.  enable-msg has to come just after
-# the first import, or pylint will complain.  # pylint: enable-msg=C6203,C6204
+import re
+import webapp2
 import base_handler
 import model
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
 class Publish(BaseHandler):
@@ -53,9 +45,4 @@ class Publish(BaseHandler):
           ' "-", "_", and must not be empty.')
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([(r'.*', Publish)]))
-
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([(r'.*', Publish)])

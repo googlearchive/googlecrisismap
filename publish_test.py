@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,7 +14,7 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import simplejson as json
+import json
 
 # Allow relative imports within the app.  # pylint: disable=W0403
 import base_handler

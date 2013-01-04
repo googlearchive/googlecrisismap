@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -34,7 +34,7 @@ class CatalogTest(test_utils.BaseTest):
     model.CatalogEntry.Create('foo.com', 'label', self.map_object)
     handler = test_utils.SetupHandler('/crisismap/a/foo.com', catalog.Catalog())
     handler.get('foo.com')
-    result = handler.response.out.getvalue()
+    result = handler.response.body
     self.assertTrue('test map' in result, 'result: %s' % result)
     self.assertTrue('/crisismap/a/foo.com/label' in result, result)
 

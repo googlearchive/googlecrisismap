@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -18,12 +18,12 @@ import httplib
 import re
 import urlparse
 
-import simplejson as json
+# Python2.7's json module doesn't have the HTML-safe encoder
+import simplejson
+import webapp2
 
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import util
 
 URL_CACHE_KEY_PREFIX = 'url='  # memcache key prefix for URLs
 IP_CACHE_KEY_PREFIX = 'ip='  # memcache key prefix for client IP addresses
@@ -56,7 +56,7 @@ class Error(Exception):
     self.status = status
 
 
-class JsonEncoder(json.encoder.JSONEncoderForHTML):
+class JsonEncoder(simplejson.encoder.JSONEncoderForHTML):
   """The Encoder class we use for serializing JSON.
 
   We subclass JSONEncoderForHTML to ensure that the emitted JSON cannot break
@@ -70,7 +70,7 @@ class JsonEncoder(json.encoder.JSONEncoderForHTML):
 
 def ToHtmlSafeJson(data, **kwargs):
   """Serializes a JSON data structure to JSON that is safe for use in HTML."""
-  return json.dumps(data, cls=JsonEncoder, **kwargs)
+  return simplejson.dumps(data, cls=JsonEncoder, **kwargs)
 
 
 def SanitizeUrl(url):
@@ -97,7 +97,7 @@ def ParseJson(json_string):
   if match:
     json_string = match.group(1)  # remove the function call around the JSON
   try:
-    return json.loads(json_string)
+    return simplejson.loads(json_string)
   except (TypeError, ValueError):
     raise Error(httplib.FORBIDDEN, 'Invalid JSON.')
 
@@ -191,7 +191,7 @@ def LocalizeMapRoot(map_root, lang):
     LocalizeLayer(layer, lang)
 
 
-class Jsonp(webapp.RequestHandler):
+class Jsonp(webapp2.RequestHandler):
   """A proxy that validates JSON, localizes it, and returns JSON or JSONP.
 
   Accepts these query parameters:
@@ -228,5 +228,4 @@ class Jsonp(webapp.RequestHandler):
       self.error(e.status)
       self.response.out.write(e.message)
 
-if __name__ == '__main__':
-  util.run_wsgi_app(webapp.WSGIApplication([('.*', Jsonp)]))
+app = webapp2.WSGIApplication([('.*', Jsonp)])

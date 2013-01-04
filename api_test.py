@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,8 +14,7 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-import simplejson as json
-
+import json
 # Allow relative imports within the app.  # pylint: disable=W0403
 import api
 import model
@@ -40,7 +39,7 @@ class ApiTest(test_utils.BaseTest):
     self.map.PutNewVersion(maproot_json)
     handler = test_utils.SetupHandler('/api/maps/%s' % self.map.id, api.Maps())
     handler.get(self.map.id)
-    result_dict = json.loads(handler.response.out.getvalue())
+    result_dict = json.loads(handler.response.body)
     expect_dict = {'json': json_dict}
     self.assertEquals(expect_dict, result_dict)
 
@@ -50,7 +49,7 @@ class ApiTest(test_utils.BaseTest):
     handler = test_utils.SetupHandler('/api/maps/%s' % nonexistent_id,
                                       api.Maps())
     handler.get(nonexistent_id)
-    self.assertEquals(404, handler.response.status)
+    self.assertEquals(404, handler.response.status_int)
 
   def testMapsPost(self):
     """Posts a new version of a map."""
@@ -60,7 +59,7 @@ class ApiTest(test_utils.BaseTest):
                                       'json=%s' % maproot_json)
     handler.post(self.map.id)
     # response 201 indicates Location was set.
-    self.assertEquals(201, handler.response.status)
+    self.assertEquals(201, handler.response.status_int)
     # Now we refetch the map because the object changed underneath us.
     map_object = model.Map.Get(self.map.id)
     # verify that the pieces were saved properly
@@ -95,7 +94,7 @@ class ApiTest(test_utils.BaseTest):
     test_utils.ClearUser()
     handler = test_utils.SetupHandler('/api/maps', api.PublishedMaps())
     handler.get()
-    maps = json.loads(handler.response.out.getvalue())
+    maps = json.loads(handler.response.body)
     self.assertEquals([{'label': 'Map2', 'maproot': map2},
                        {'label': 'Map1', 'maproot': map1}], maps)
 

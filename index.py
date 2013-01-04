@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -15,11 +15,8 @@
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import urllib
-
+import webapp2
 import model
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
 def GetDestination(request):
@@ -36,7 +33,7 @@ def GetDestination(request):
   return url + (params and '?' + urllib.urlencode(params) or '')
 
 
-class Index(webapp.RequestHandler):
+class Index(webapp2.RequestHandler):
   """Redirector from '/' or '/crisismap' to the appropriate map page."""
 
   # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
@@ -44,8 +41,4 @@ class Index(webapp.RequestHandler):
     self.redirect(GetDestination(self.request))
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([('.*', Index)]))
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([('.*', Index)])

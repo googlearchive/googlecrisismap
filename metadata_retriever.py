@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -23,12 +23,11 @@ import urllib2
 from xml.etree import ElementTree
 from xml.parsers.expat import ExpatError
 import zipfile
+import webapp2
 
 import maproot
 
 from google.appengine.ext import db
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
 # The maximum size of the downloaded content from a data source, in bytes.
@@ -343,7 +342,7 @@ def UpdateSourceMetadata(address, layer_type):
     pass
 
 
-class MetadataRetriever(webapp.RequestHandler):
+class MetadataRetriever(webapp2.RequestHandler):
   """Updates intrinsic properties of a layer."""
 
   def post(self):  # pylint: disable-msg=C6409
@@ -353,14 +352,6 @@ class MetadataRetriever(webapp.RequestHandler):
     UpdateSourceMetadata(address, layer_type)
 
 
-application = webapp.WSGIApplication([
+app = webapp2.WSGIApplication([
     ('/crisismap/metadata_retriever', MetadataRetriever),
 ], debug=True)
-
-
-def main():
-  run_wsgi_app(application)
-
-
-if __name__ == '__main__':
-  main()

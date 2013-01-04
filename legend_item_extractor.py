@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -23,10 +23,10 @@ import urllib
 import xml.etree.ElementTree
 import zipfile
 
+import webapp2
+
 import jsonp
 
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 LINE_DEFAULT_KML_COLOR = 'FFFF8C8C'
 LINE_DEFAULT_WIDTH = 2
@@ -400,7 +400,7 @@ def FindLastText(element, xpath, default=None):
   return getattr(FindLast(element, xpath), 'text', default)
 
 
-class GetLegendItems(webapp.RequestHandler):
+class GetLegendItems(webapp2.RequestHandler):
   """Handler for retrieving legend items from KML URLs."""
 
   KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
@@ -471,11 +471,6 @@ class GetLegendItems(webapp.RequestHandler):
       return None
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([
-      (r'/crisismap/legend/([^\s]+)', GetLegendItems)
-  ]))
-
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([
+    (r'/crisismap/legend/([^\s]+)', GetLegendItems)
+    ])

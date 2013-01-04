@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -15,9 +15,9 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import base64
+import json
 import os
 import random
-import simplejson as json
 
 from google.appengine.api import memcache
 from google.appengine.api import users
@@ -57,6 +57,8 @@ class Error(Exception):
 
 class AuthorizationError(Error):
   """User not authorized to perform operation."""
+
+  # pylint:disable=redefined-builtin
   def __init__(self, message, user=None, role=None, object=None):
     Error.__init__(self, message)
     self.user = user
@@ -139,7 +141,8 @@ class Config(db.Model):
 
   Each configuration setting has a string key and a value that can be anything
   representable in JSON (string, number, boolean, None, or arbitrarily nested
-  lists or dictionaries thereof).  The value is stored internally using JSON."""
+  lists or dictionaries thereof).  The value is stored internally using JSON.
+  """
 
   # The value of the configuration item, serialized to JSON.
   value_json = db.TextProperty()
@@ -156,6 +159,7 @@ class Config(db.Model):
       The configuration value, or the given default value if not found, or
       None if no default value is supplied.
     """
+
     def fetcher():
       config = Config.get_by_key_name(key)
       if config:

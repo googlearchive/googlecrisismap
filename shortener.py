@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -17,13 +17,12 @@ __author__ = 'arb@google.com (Anthony Baxter)'
 import logging
 import sys
 import urllib2
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
+import webapp2
 
 SHORTENER_URL = 'https://www.googleapis.com/urlshortener/v1/url'
 
 
-class ShortenUrlHandler(webapp.RequestHandler):
+class ShortenUrlHandler(webapp2.RequestHandler):
   def post(self):  # pylint: disable-msg=C6409
     try:
       req = urllib2.Request(SHORTENER_URL, self.request.body,
@@ -36,14 +35,6 @@ class ShortenUrlHandler(webapp.RequestHandler):
     else:
       self.response.out.write(fp.read())
 
-application = webapp.WSGIApplication([
+app = webapp2.WSGIApplication([
     ('/crisismap/shorturl', ShortenUrlHandler),
 ], debug=True)
-
-
-def main():
-  run_wsgi_app(application)
-
-
-if __name__ == '__main__':
-  main()

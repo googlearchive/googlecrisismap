@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -15,6 +15,7 @@
 __author__ = 'giencke@google.com (Pete Giencke)'
 
 # App Engine requires that we put this first.  # pylint: disable=C6203,C6204
+# pylint:disable=g-bad-import-order
 import base_handler
 
 import base64
@@ -26,7 +27,7 @@ import os
 import urllib
 import urlparse
 
-import simplejson as json
+import json
 
 import jsonp
 import maproot
@@ -35,8 +36,7 @@ import model
 from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
+import webapp2
 
 MAPS_API_BASE_URL = '//maps.google.com/maps/api/js'
 
@@ -256,7 +256,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
   the crisismap.js library.
 
   Args:
-    request: The webapp Request object.
+    request: The webapp2 Request object.
     map_object: The optional Map object to display.
     catalog_entry: The optional CatalogEntry pointing at the map to display.
         The caller should specify either map_object or catalog_entry; if
@@ -390,12 +390,8 @@ class MapById(base_handler.BaseHandler):
       }))
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([
-      (r'/crisismap/()([\w-]+)', MapByLabel),  # default domain
-      (r'/crisismap/a/([\w.-]+)/([\w-]+)', MapByLabel),  # specified domain
-      (r'/crisismap/maps/([\w-]+)', MapById)
-  ]))
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([
+    (r'/crisismap/()([\w-]+)', MapByLabel),  # default domain
+    (r'/crisismap/a/([\w.-]+)/([\w-]+)', MapByLabel),  # specified domain
+    (r'/crisismap/maps/([\w-]+)', MapById)
+    ])

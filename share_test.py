@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -106,7 +106,7 @@ Access the map at: %s
       # Refetch map because the object changed underneath.
       map_object = model.Map.Get(self.map.id)
       map_object.AssertAccess(role, user, access_policy)
-      self.assertEquals(201, handler.response.status)
+      self.assertEquals(201, handler.response.status_int)
 
   def testSharePostFailureInvalidId(self):
     """Shares the map with another person-fails from invalid map id."""
@@ -117,7 +117,7 @@ Access the map at: %s
                                       % ('MAP_VIEWER', 'user@gmail.com',
                                          'hello'))
     handler.post(invalid_map_id)
-    self.assertEquals(404, handler.response.status)
+    self.assertEquals(404, handler.response.status_int)
 
   def testSharePostFailureInvalidRole(self):
     """Shares the map with another person-fails from invalid role type."""
@@ -126,7 +126,7 @@ Access the map at: %s
                                       'role=%s&recipient=%s&message=%s'
                                       % ('other', 'user@gmail.com', 'hello'))
     handler.post(self.map.id)
-    self.assertEquals(404, handler.response.status)
+    self.assertEquals(404, handler.response.status_int)
 
   def testSharePostFailureMissingParameter(self):
     """Shares the map with another person-fails from missing parameter."""
@@ -140,7 +140,7 @@ Access the map at: %s
                                       'role=%s&message=%s'
                                       % (role, message))
     handler.post(self.map.id)
-    self.assertEquals(404, handler.response.status)
+    self.assertEquals(404, handler.response.status_int)
 
     # Try with missing role.
     handler = test_utils.SetupHandler('/share/%s' % self.map.id,
@@ -148,7 +148,7 @@ Access the map at: %s
                                       'recipient=%s&message=%s'
                                       % (email, message))
     handler.post(self.map.id)
-    self.assertEquals(404, handler.response.status)
+    self.assertEquals(404, handler.response.status_int)
 
 
 if __name__ == '__main__':

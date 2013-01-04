@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -15,7 +15,6 @@
 __author__ = 'shakusa@google.com (Steve Hakusa)'
 
 # Allow relative imports within the app.  # pylint: disable=W0403
-import base_handler
 import map  # Allow use of the name 'map'.  # pylint: disable=W0622
 import model
 import test_utils
@@ -26,12 +25,6 @@ from google.appengine.ext import db
 
 class MapTest(test_utils.BaseTest):
   """Tests for the map.py request handlers."""
-
-  def setUp(self):
-    super(MapTest, self).setUp()
-    # Use of django.utils.translation.activate is tested in base_handler_test,
-    # so we don't need to make mocks for it here.
-    self.mox.stubs.Set(base_handler.translation, 'activate', lambda lang: None)
 
   def testGetClientConfig(self):
     """Confirms that GetClientConfig sets up the correct JS parameters."""

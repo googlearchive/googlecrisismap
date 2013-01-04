@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,16 +14,15 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
+import webapp2
 from google.appengine.ext import db
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
 class Redirection(db.Model):
   url = db.StringProperty()
 
 
-class Redirect(webapp.RequestHandler):
+class Redirect(webapp2.RequestHandler):
   """Configurable redirection service."""
 
   # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
@@ -32,10 +31,6 @@ class Redirect(webapp.RequestHandler):
     self.redirect(redirection and redirection.url or '/')
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([
-      (r'/crisismap/redirect/([\w.-]+)', Redirect)
-  ]))
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([
+    (r'/crisismap/redirect/([\w.-]+)', Redirect)
+    ])

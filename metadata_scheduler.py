@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -16,15 +16,14 @@ __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 from base_handler import BaseHandler
 
+import json
 import logging
-import simplejson as json
+import webapp2
 
 import maproot
 import model
 
 from google.appengine.api import taskqueue
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 SUPPORTED_LAYER_TYPES = [maproot.LayerType.KML, maproot.LayerType.GEORSS]
 
@@ -74,9 +73,4 @@ class MetadataScheduler(BaseHandler):
     model.DoAsAdmin(ScheduleTasks)  # need admin access to scan all maps
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([(r'.*', MetadataScheduler)]))
-
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([(r'.*', MetadataScheduler)])

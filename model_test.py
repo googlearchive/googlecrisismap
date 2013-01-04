@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -291,7 +291,7 @@ class MapTests(test_utils.BaseTest):
       self.assertEquals(expected_users, permissions[role])
 
       # Make sure the user doesn't have any of the other permissions.
-      for other_role in permissions.keys():
+      for other_role in permissions:
         if other_role != role:
           self.assertFalse(user.email() in permissions[other_role])
 

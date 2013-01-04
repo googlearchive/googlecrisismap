@@ -11,27 +11,33 @@
 
 application: crisislanding-hr
 version: 1
-runtime: python
+runtime: python27
+threadsafe: true
 api_version: 1
+libraries:
+- name: django
+  version: "1.3"
+- name: PIL
+  version: "latest"
 
 handlers:
 - url: /crisismap/wms/query_layers
-  script: wmscache/wms_query.py
+  script: wmscache.wms_query.app
 
 - url: /crisismap/wms/configure_tileset
-  script: wmscache/tileset_config.py
+  script: wmscache.tileset_config.app
 
 - url: /crisismap/tileworker
-  script: wmscache/tileworker.py
+  script: wmscache.tileworker.app
 
 - url: /crisismap/tileworker_cleanup
-  script: wmscache/tileworker.py
+  script: wmscache.tileworker.app
 
 - url: /crisismap/tilecache/.*
-  script: wmscache/tilecache_main.py
+  script: wmscache.tilecache_main.app
 
 - url: .*/remote_api
-  script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
+  script: google.appengine.ext.remote_api.handler.application
   login: admin
 
 - url: /favicon.ico
@@ -54,70 +60,70 @@ handlers:
 # should have login: admin for security. This is a temporary solution until we
 # find out why cron jobs return with HTTP 403.
 - url: /crisismap/metadata_cleaner
-  script: metadata_cleaner.py
+  script: metadata_cleaner.app
 
 - url: /crisismap/metadata_scheduler
-  script: metadata_scheduler.py
+  script: metadata_scheduler.app
   login: admin
 
 - url: /crisismap/metadata_retriever
-  script: metadata_retriever.py
+  script: metadata_retriever.app
 
 - url: /crisismap/metadata
-  script: metadata.py
+  script: metadata.app
 
 - url: /crisismap/shorturl
-  script: shortener.py
+  script: shortener.app
 
 - url: /crisismap/jsonp
-  script: jsonp.py
+  script: jsonp.app
 
 - url: /crisismap/api/.*
-  script: api.py
+  script: api.app
 
 - url: /crisismap/delete
-  script: delete.py
+  script: delete.app
   login: required
 
 - url: /crisismap/create
-  script: create.py
+  script: create.app
   login: required
 
 - url: /crisismap/publish
-  script: publish.py
+  script: publish.app
   login: required
 
 - url: /crisismap/unpublish
-  script: unpublish.py
+  script: unpublish.app
   login: required
 
 - url: /crisismap/redirect/[\w.-]+
-  script: redirect.py
+  script: redirect.app
 
 - url: /crisismap/share/.*
-  script: share.py
+  script: share.app
   login: required
 
 - url: /crisismap/maps
-  script: list.py
+  script: list.app
   login: required
 
 - url: /crisismap/diff/[\w-]+
-  script: diff.py
+  script: diff.app
 
 - url: /crisismap/legend/[^\s]+
-  script: legend_item_extractor.py
+  script: legend_item_extractor.app
 
 - url: /crisismap/a/[\w.-]+
-  script: catalog.py
+  script: catalog.app
   login: required
 
 - url: /crisismap/maps/[\w-]+
-  script: map.py
+  script: map.app
 
 - url: /crisismap/(a/[\w.-]+/)?[\w-]+
-  script: map.py
+  script: map.app
 
 - url: (/crisismap)?/*
-  script: index.py
+  script: index.app
 

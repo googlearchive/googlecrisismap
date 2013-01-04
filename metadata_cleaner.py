@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -15,12 +15,10 @@
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 import datetime
+import webapp2
 
 from base_handler import BaseHandler
 import metadata_retriever
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 # Number of minutes after which unchecked SourceMetadataModel entries are
 # removed.
@@ -41,9 +39,5 @@ class MetadataCleaner(BaseHandler):
       metadata.delete()
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([(r'.*', MetadataCleaner)]))
+app = webapp2.WSGIApplication([(r'.*', MetadataCleaner)])
 
-
-if __name__ == '__main__':
-  main()

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,17 +14,11 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-# App Engine requires that this come first.  # pylint: disable-msg=C6203,C6204
-from google.appengine.dist import use_library
-use_library('django', '1.2')
-
+# base_handler must come first. pylint:disable=g-bad-import-order
 from base_handler import BaseHandler
-# Enforce order for the rest of the imports.  enable-msg has to come just after
-# the first import, or pylint will complain.  # pylint: enable-msg=C6203,C6204
+import webapp2
 import model
 from google.appengine.api import users
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
 class List(BaseHandler):
@@ -39,8 +33,8 @@ class List(BaseHandler):
     published = {}
     for entry in entries:
       published.setdefault(entry.map_id, []).append(entry)
-    for map in maps:
-      map.catalog_entries = published.get(map.id, [])
+    for map_ in maps:
+      map_.catalog_entries = published.get(map_.id, [])
 
     self.response.out.write(self.RenderTemplate('list.html', {
         'maps': maps,
@@ -49,8 +43,4 @@ class List(BaseHandler):
     }))
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([(r'.*', List)]))
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([(r'.*', List)])

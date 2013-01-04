@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -26,11 +26,11 @@ import mox
 
 from google.appengine.api import users
 from google.appengine.ext import testbed
-from google.appengine.ext import webapp
+import webapp2
 
 
 def SetupRequest(url, post_data=None):
-  """Sets up a webapp.Request object for testing."""
+  """Sets up a webapp2.Request object for testing."""
   handler = base_handler.BaseHandler()
   return SetupHandler(url, handler, post_data).request
 
@@ -57,8 +57,8 @@ def ClearUser():
 
 def SetupHandler(url, handler, post_data=None):
   """Sets up a RequestHandler object for testing."""
-  request = webapp.Request(webob.Request.blank(url).environ)
-  response = webapp.Response()
+  request = webapp2.Request(webob.Request.blank(url).environ)
+  response = webapp2.Response()
   if post_data is not None:
     request.method = 'POST'
     request.body = post_data

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,15 +14,9 @@
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
-# App Engine requires that this come first.  # pylint: disable-msg=C6203,C6204
-from google.appengine.dist import use_library
-use_library('django', '1.2')
-
-import model
+import webapp2
 from base_handler import BaseHandler
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
+import model
 
 
 class Delete(BaseHandler):
@@ -46,8 +40,4 @@ class Delete(BaseHandler):
     map_object.Delete()
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([(r'.*', Delete)]))
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([(r'.*', Delete)])

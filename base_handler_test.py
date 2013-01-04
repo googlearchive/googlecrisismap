@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -24,39 +24,18 @@ class BaseHandlerTest(test_utils.BaseTest):
 
   def testActivateLanguage(self):
     """Tests the selection of the UI language."""
-    self.mox.StubOutWithMock(base_handler.translation, 'activate')
-    base_handler.translation.activate('en')
-    self.mox.ReplayAll()
     self.assertEquals('en', base_handler.ActivateLanguage(None, None))
-    self.mox.VerifyAll()
-    self.mox.ResetAll()
 
     # "ja" is a supported language.
-    base_handler.translation.activate('ja')
-    self.mox.ReplayAll()
     self.assertEquals('ja', base_handler.ActivateLanguage('ja', None))
-    self.mox.VerifyAll()
-    self.mox.ResetAll()
 
-    base_handler.translation.activate('ja')
-    self.mox.ReplayAll()
     self.assertEquals('ja', base_handler.ActivateLanguage(None, 'ja'))
-    self.mox.VerifyAll()
-    self.mox.ResetAll()
 
     # "zz" is not a supported language.
-    base_handler.translation.activate('en')
-    self.mox.ReplayAll()
     self.assertEquals('en', base_handler.ActivateLanguage('zz', None))
-    self.mox.VerifyAll()
-    self.mox.ResetAll()
 
     # The hl parameter takes precedence over the Accept-Language header.
-    base_handler.translation.activate('tr')
-    self.mox.ReplayAll()
     self.assertEquals('tr', base_handler.ActivateLanguage('tr', 'th'))
-    self.mox.VerifyAll()
-    self.mox.ResetAll()
 
 if __name__ == '__main__':
   test_utils.main()

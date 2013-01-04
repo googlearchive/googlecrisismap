@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -14,17 +14,11 @@
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
-# App Engine requires that this come first.  # pylint: disable-msg=C6203,C6204
-from google.appengine.dist import use_library
-use_library('django', '1.2')
-
+# base_handler has to come first.
+# pylint:disable=g-bad-import-order
 from base_handler import BaseHandler
-# Enforce order for the rest of the imports.  enable-msg has to come just after
-# the first import, or pylint will complain.  # pylint: enable-msg=C6203,C6204
+import webapp2
 import model
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 
 
 class Unpublish(BaseHandler):
@@ -38,9 +32,4 @@ class Unpublish(BaseHandler):
     self.redirect('/crisismap/maps')
 
 
-def main():
-  run_wsgi_app(webapp.WSGIApplication([(r'.*', Unpublish)]))
-
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication([(r'.*', Unpublish)])
