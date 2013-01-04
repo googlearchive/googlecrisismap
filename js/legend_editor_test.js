@@ -30,6 +30,7 @@ function LegendEditorTest() {
 
   this.parent_ = cm.ui.create('div', {'class': 'cm-legend-editor'});
   this.draft_ = new google.maps.MVCObject();
+  this.draft_.set('type', cm.LayerModel.Type.KML);
 
   this.setForTest_('encodeURIComponent',
                    createMockFunction('encodeURIComponent'));
@@ -55,7 +56,8 @@ LegendEditorTest.prototype.createEditor_ = function() {
   expectCall(this.colorPalette_.render)(isElement('div'));
 
   var url = this.draft_.get('url');
-  if (url && !goog.string.isEmpty(url)) {
+  if (url && !goog.string.isEmpty(url) && goog.array.contains(
+      cm.LegendEditor.SUPPORTED_LAYER_TYPES_, this.draft_.get('type'))) {
     // Expect the request and palette update. The callback is called after the
     // LegendEditor is created.
     this.expectExtractRequest_(url);
@@ -393,6 +395,12 @@ LegendEditorTest.prototype.testExtractRequest = function() {
   this.expectExtractRequest_('queued', EXTRACTED_LEGEND_ITEMS);
   this.expectPaletteUpdates_(EXTRACTED_LEGEND_ITEMS); // for initial request
   this.requestCallback_(response);
+};
+
+/** Tests that no extract requests are made for non-supported layer types. */
+LegendEditorTest.prototype.testNonSupportedLayerType = function() {
+  this.draft_.set('type', 'not-supported');
+  this.createEditor_();
 };
 
 /** Tests switching to and using the HTML editor. */

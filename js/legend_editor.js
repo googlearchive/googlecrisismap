@@ -18,6 +18,7 @@ goog.provide('cm.LegendEditor');
 goog.require('cm.Editor');
 goog.require('cm.Html');
 goog.require('cm.HtmlEditor');
+goog.require('cm.LayerModel');
 goog.require('cm.ui');
 goog.require('goog.ui.ColorPalette');
 goog.require('goog.ui.ColorPicker');
@@ -319,6 +320,16 @@ cm.LegendEditor.GRAPHIC_MARGIN_RIGHT_ = 5;
  * @private
  */
 cm.LegendEditor.DEFAULT_COLORS_ = goog.ui.ColorPicker.SIMPLE_GRID_COLORS;
+
+/**
+ * List of supported layer types for making legend item extraction requests. All
+ * other layer types will only have a color palette available.
+ * @type {Array.<cm.LayerModel.Type>}
+ * @private
+ */
+cm.LegendEditor.SUPPORTED_LAYER_TYPES_ = [
+    cm.LayerModel.Type.KML
+];
 
 /** @override */
 cm.LegendEditor.prototype.updateUi = function(value) {
@@ -631,7 +642,8 @@ cm.LegendEditor.prototype.showPaletteDialog_ = function(underElem, callback) {
  */
 cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
   var url = /** @type {string} */(draft.get('url'));
-  if (url && !goog.string.isEmpty(url)) {
+  if (url && !goog.string.isEmpty(url) && goog.array.contains(
+      cm.LegendEditor.SUPPORTED_LAYER_TYPES_, draft.get('type'))) {
     if (!this.extractRequestSent_) {
       goog.style.showElement(this.loadingElem_, true);
       goog.style.showElement(this.featurePaletteElem_, false);
