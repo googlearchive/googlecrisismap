@@ -49,7 +49,7 @@ TileOverlayTest.prototype.testOpacityChange = function() {
 
   // Initialize this.mapType_.
   tileOverlay.tileUrlPattern_ = 'abc.com';
-  var imageMap = this.expectNew_('google.maps.ImageMapType', _);
+  var imageMap = this.expectNew_('cm.ProxyTileMapType', _);
   expectCall(imageMap.set)('opacity', 0.77);
   cm.events.emit(this.map_, 'projection_changed');
 };

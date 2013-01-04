@@ -146,12 +146,13 @@ function getPolyPoints(projection, path) {
 }
 
 /**
- * @param {google.maps.Point} tileCoord The tile coordinates.
+ * @param {number} x The tile x coordinate.
+ * @param {number} y The tile y coordinate.
  * @param {number} zoom The zoom level.
  * @return {Array.<google.maps.Point>} The minimum and maximum (x, y) corners
  *     of the rectangular region covered by the specified tile.
  */
-function getTileRange(tileCoord, zoom) {
+function getTileRange(x, y, zoom) {
   var z = Math.pow(2, zoom);
 
   /**
@@ -160,8 +161,8 @@ function getTileRange(tileCoord, zoom) {
    * @return {google.maps.Point} The point at the given tile coordinates.
    */
   function p(dx, dy) {
-    return new google.maps.Point((tileCoord.x + dx) * 256 / z,
-                                 (tileCoord.y + dy) * 256 / z);
+    return new google.maps.Point((x + dx) * 256 / z,
+                                 (y + dy) * 256 / z);
   }
 
   return [p(0, 0), p(1, 1)];

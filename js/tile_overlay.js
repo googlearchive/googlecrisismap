@@ -20,6 +20,7 @@ goog.require('cm');
 goog.require('cm.AppState');
 goog.require('cm.LatLonBox');
 goog.require('cm.LayerModel');
+goog.require('cm.ProxyTileMapType');
 goog.require('cm.events');
 goog.require('cm.geometry');
 goog.require('goog.Uri');
@@ -58,7 +59,7 @@ cm.TileOverlay = function(layer, map, appState) {
   this.map_ = map;
 
   /**
-   * @type {google.maps.ImageMapType}
+   * @type {cm.ProxyTileMapType}
    * @private
    */
   this.mapType_ = null;
@@ -178,9 +179,18 @@ cm.TileOverlay = function(layer, map, appState) {
       cm.LatLonBox.ENTIRE_MAP;
 
   // To be populated if bounds are specified
-  var bounds = null;
-  var minZoom = NaN;
-  var maxZoom = NaN;
+  /**
+   * @type {?string}
+   */
+  this.bounds_string = null;
+  /**
+   * @type {number}
+   */
+  this.minZoom = NaN;
+  /**
+   * @type {number}
+   */
+  this.maxZoom = NaN;
 
   var layerBounds = layer.get('bounds');
   if (layerBounds) {
@@ -330,7 +340,7 @@ cm.TileOverlay.normalizeCoords = function(coordString) {
  * @param {boolean} isHybrid If true, the file extension for Google tiles is
  *     replaced with .png along the edge and .jpg inside so that the border
  *     tiles are transparent and the inside tiles are compressed.
- * @return {google.maps.ImageMapType} The image map type object.
+ * @return {cm.ProxyTileMapType} The image map type object.
  * @private
  */
 cm.TileOverlay.prototype.initializeImageMapType_ = function(
@@ -340,7 +350,8 @@ cm.TileOverlay.prototype.initializeImageMapType_ = function(
     getTileUrl: goog.bind(this.getTileUrl, this, polyCoords, isHybrid),
     tileSize: new google.maps.Size(256, 256)
   };
-  return new google.maps.ImageMapType(mapTypeOptions);
+
+  return new cm.ProxyTileMapType(mapTypeOptions);
 };
 
 /**
@@ -375,7 +386,7 @@ cm.TileOverlay.prototype.getTileUrl = function(polyCoords, isHybrid,
   var y = coord.y;
   coord.x = x;
 
-  var corners = getTileRange(coord, zoom);
+  var corners = getTileRange(x, y, zoom);
   var low = corners[0];
   var high = corners[1];
   var polyVertices = getPolyPoints(this.projection_, polyCoords);
@@ -522,7 +533,12 @@ cm.TileOverlay.prototype.updateIndexedTileUrlPattern_ = function() {
 cm.TileOverlay.prototype.setMap = function(map) {
   var mapType = this.mapType_;
   if (map && !this.onMap_) {
-    this.map_.overlayMapTypes.push(mapType);
+    var canFinish = !!this.projection_ && !!this.tileUrlPattern_;
+    if (canFinish) {
+      // If the layer isn't ready yet, don't push it.
+      // It will be fixed in finishInitialization_
+      this.map_.overlayMapTypes.push(mapType);
+    }
   } else if (!map && this.onMap_) {
     var index = null;
     this.map_.overlayMapTypes.forEach(function(overlay, i) {

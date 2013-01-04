@@ -128,8 +128,7 @@ GeometryTest.prototype.testGetPolyPoints = function() {
 
 /** Tests the getTileRange() function. */
 GeometryTest.prototype.testGetTileRange = function() {
-  var tileCoord = new google.maps.Point(0, 1);
-  var range = getTileRange(tileCoord, 4);
+  var range = getTileRange(0, 1, 4);
   var expectedRange = [new google.maps.Point(0, 16),
                        new google.maps.Point(16, 32)];
   expectThat(range, elementsAre(expectedRange));
