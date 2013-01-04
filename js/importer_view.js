@@ -532,9 +532,9 @@ cm.ImporterView.prototype.handlePreviewClick_ = function(previewLink, href,
 
   cm.ui.createCloseButton(
       this.layerPreview_, goog.bind(this.closePreview_, this));
-  this.closePreviewListeners_ = /** @type {Array.<cm.events.ListenerToken>} */
+  this.closePreviewListeners_ = /** @type {Array.<cm.events.ListenerToken>} */ (
       cm.events.listen(container, ['click', 'mousedown'],
-                       this.closePreview_, this);
+                       this.closePreview_, this));
 };
 
 /**
