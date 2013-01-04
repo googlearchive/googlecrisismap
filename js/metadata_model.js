@@ -13,7 +13,6 @@
  * @fileoverview Model for layer metadata.
  * @author cimamoglu@google.com (Cihat Imamoglu)
  */
-
 goog.provide('cm.MetadataModel');
 
 /**
@@ -28,68 +27,65 @@ goog.inherits(cm.MetadataModel, google.maps.MVCObject);
 
 
 /**
- * Whether the data does not contain any features or has a file size zero.
- * @param {string} id Id of the layer.
- * @return {boolean} Whether the data does not contain any features or has a
- *     file size zero.
+ * Returns true if the specified layer has no displayable content.
+ * @param {string} id The layer ID.
+ * @return {boolean} True if the source data has no features or has size zero.
  */
-cm.MetadataModel.prototype.hasNoFeatures = function(id) {
-  var metadata = this.get(id);
-  return !!(metadata && (metadata['has_features'] === false ||
-                         metadata['content_length'] === 0));
+cm.MetadataModel.prototype.isEmpty = function(id) {
+  var metadata = this.get(id) || {};
+  return !!metadata['has_no_features'] || metadata['content_length'] === 0;
 };
 
 
 /**
- * Whether the data has features that are unsupported by the viewer.
- * @param {string} id Id of the layer.
- * @return {boolean} Whether the data contains unsupported features.
+ * Returns true if the specified layer has features unsupported by the viewer.
+ * @param {string} id The layer ID.
+ * @return {boolean} True if the source data contains unsupported features.
  */
 cm.MetadataModel.prototype.hasUnsupportedFeatures = function(id) {
-  var metadata = this.get(id);
-  return !!(metadata && metadata['has_unsupported_kml']);
+  var metadata = this.get(id) || {};
+  return !!metadata['has_unsupported_kml'];
 };
 
 
 /**
- * Whether a server error has occurred.
- * @param {string} id ID of the layer.
- * @return {boolean} Whether a server error has occurred.
+ * Returns true if fetching the specified layer's source data gave an error.
+ * @param {string} id The layer ID.
+ * @return {boolean} True if the attempt to fetch the data gave a server error.
  */
 cm.MetadataModel.prototype.serverErrorOccurred = function(id) {
-  var metadata = this.get(id);
-  return !!(metadata && metadata['server_error_occurred']);
+  var metadata = this.get(id) || {};
+  return !!metadata['server_error_occurred'];
 };
 
 
 /**
- * Returns the length of the content, i.e. the file size.
- * @param {string} id ID of the layer.
- * @return {number?} The content length if is known; otherwise null.
+ * Returns the size of the specified layer's source data in bytes.
+ * @param {string} id The layer ID.
+ * @return {number?} The content length in bytes if known, or null.
  */
 cm.MetadataModel.prototype.getContentLength = function(id) {
   var metadata = this.get(id) || {};
-  return 'content_length' in metadata ? metadata['content_length'] : null;
+  var value = metadata['content_length'];
+  return typeof value === 'number' ? value : null;
 };
 
 
 /**
- * Returns the last modification time of the layer content.
- * @param {string} id ID of the layer.
- * @return {number?} The last modification time in epoch seconds if known;
- *     otherwise null.
+ * Returns the last modification time of the specified layer's source data.
+ * @param {string} id The layer ID.
+ * @return {number?} The modification time in epoch seconds if known, or null.
  */
 cm.MetadataModel.prototype.getContentLastModified = function(id) {
   var metadata = this.get(id) || {};
-  return 'content_last_modified' in metadata ?
-      metadata['content_last_modified'] : null;
+  return metadata['content_last_modified'] || null;
 };
 
 
 /**
- * Sets the last modification time of the layer content.
- * @param {string} id ID of the layer.
- * @param {number?} time The last modification time in epoch seconds, or null.
+ * Sets the last modification time of the specified layer's source data.
+ * @param {string} id The layer ID.
+ * @param {number?} time The modification time in epoch seconds, or null.
  */
 cm.MetadataModel.prototype.setContentLastModified = function(id, time) {
   var metadata = this.get(id) || {};

@@ -461,49 +461,40 @@ cm.LayerEntryView.prototype.updateLegend_ = function() {
       !legend || goog.string.isEmpty(legend.getHtml()));
 };
 
-/** @private Updates the warning based on metadata changes. */
+/** @private Updates the warning and fade state based on the layer metadata. */
 cm.LayerEntryView.prototype.updateWarning_ = function() {
   var id = /** @type string */(this.model_.get('id'));
-  var metadata = this.metadataModel_.get(id);
-  var dataMissing = this.metadataModel_.hasNoFeatures(id);
+  var isEmpty = this.metadataModel_.isEmpty(id);
   var hasUnsupportedFeatures = this.metadataModel_.hasUnsupportedFeatures(id);
-
-  if (dataMissing) {
-    cm.ui.setText(this.warningElem_, MSG_NO_DATA_WARNING);
-    // If the data is missing, fade out the view.
-    this.setFade_(true, MSG_NO_DATA_WARNING);
-  } else {
-    this.setFade_(false);
-    if (hasUnsupportedFeatures) {
-      cm.ui.setText(this.warningElem_, MSG_UNSUPPORTED_KML_WARNING);
-    }
-  }
-  // If the data does not contain any relevant data or contains
-  // unsupported KML features, show warnings.
-  goog.dom.classes.enable(this.warningElem_, 'cm-hidden',
-      !(dataMissing || hasUnsupportedFeatures));
+  var warning = isEmpty ? MSG_NO_DATA_WARNING :
+      hasUnsupportedFeatures ? MSG_UNSUPPORTED_KML_WARNING : '';
+  // TODO(kpy): Both handleZoomChange_ and updateWarning_ affect the fade
+  // state, so for example, zooming from out-of-range to in-range will cause
+  // the layer entry to go black even when there is no data (the entry should
+  // stay grey).  These bits should be merged into a single updateFade_ method.
+  this.setFade_(isEmpty, warning);
+  cm.ui.setText(this.warningElem_, warning);
+  goog.dom.classes.enable(this.warningElem_, 'cm-hidden', !warning);
 };
 
 /** @private Updates the panel entry to match the model. */
 cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
   var id = /** @type string */(this.model_.get('id'));
   var isFolder = this.model_.get('type') === cm.LayerModel.Type.FOLDER;
-  goog.dom.classes.enable(this.downloadElem_, 'cm-hidden', isFolder);
+  var tip = '';
+  cm.ui.clear(this.downloadElem_);
   if (!isFolder) {
-    cm.ui.clear(this.downloadElem_);
     var type = /** @type cm.LayerModel.Type */(this.model_.get('type'));
     var hideLink = this.metadataModel_.serverErrorOccurred(id) ||
-        /** @type boolean */(this.model_.get('suppress_download_link'));
+        this.model_.get('suppress_download_link');
     if (!hideLink) {
-      var url = null;
+      var url = /** @type string */(this.model_.get('url'));
       var linkText = null;
       switch (type) {
         case cm.LayerModel.Type.KML:
-          url = /** @type string */(this.model_.get('url'));
           linkText = MSG_DOWNLOAD_KML_LINK;
           break;
         case cm.LayerModel.Type.GEORSS:
-          url = /** @type string */(this.model_.get('url'));
           linkText = MSG_DOWNLOAD_GEORSS_LINK;
           break;
         case cm.LayerModel.Type.FUSION:
@@ -519,22 +510,18 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
         cm.ui.append(this.downloadElem_, cm.ui.SEPARATOR_DOT,
                      cm.ui.createLink(linkText, url));
       }
-      // Show file size in human readable form as tooltip.
-      var size = this.metadataModel_.getContentLength(id);
-      this.downloadElem_.title = goog.isNumber(size) ?
-          goog.format.fileSize(size) : '';
-    } else {
-      this.downloadElem_.title = '';
+      // Show the file size in human-readable form in a tooltip.
+      tip = cm.util.formatFileSize(this.metadataModel_.getContentLength(id));
     }
   }
+  this.downloadElem_.title = tip;
 };
 
-/** @private Updates the time-stamp of this layer entry. */
+/** @private Updates the timestamp of this layer entry. */
 cm.LayerEntryView.prototype.updateTime_ = function() {
+  var message = '';
   var id = /** @type string */(this.model_.get('id'));
-  var metadata = this.metadataModel_.get(id);
-  var lastUpdated = '';
-  var time = metadata && metadata['content_last_modified'];
+  var time = this.metadataModel_.getContentLastModified(id);
   if (time) {
     // Convert time in seconds to time in milliseconds.
     var d = new Date(time * 1000);
@@ -545,9 +532,9 @@ cm.LayerEntryView.prototype.updateTime_ = function() {
     var MSG_LAST_UPDATED = goog.getMsg('Last updated: {$formattedTime}', {
       formattedTime: goog.date.relative.getDateString(d, undefined, dateMsg)
     });
-    lastUpdated = MSG_LAST_UPDATED;
+    message = MSG_LAST_UPDATED;
   }
-  cm.ui.setText(this.timeElem_, lastUpdated);
+  cm.ui.setText(this.timeElem_, message);
 };
 
 /**
@@ -577,18 +564,13 @@ cm.LayerEntryView.prototype.handleZoomChange_ = function(e) {
  */
 cm.LayerEntryView.prototype.setFade_ = function(faded, opt_fadeReason) {
   var opacity = !faded ? 1.0 : 0.5;
-
   var elements = [this.headerElem_, this.warningElem_, this.descriptionElem_,
       this.legendElem_, this.timeElem_, this.sliderDiv_, this.sublayersElem_];
   for (var key in elements) {
-    if (elements[key]) {
-      goog.style.setOpacity(elements[key], opacity);
-    }
+    elements[key] && goog.style.setOpacity(elements[key], opacity);
   }
-
   if (this.headerElem_) {
-    opt_fadeReason = opt_fadeReason || '';
-    this.headerElem_.title = !faded ? '' : opt_fadeReason;
+    this.headerElem_.title = faded && opt_fadeReason || '';
   }
 };
 
@@ -602,13 +584,10 @@ cm.LayerEntryView.prototype.updateZoomLink_ = function() {
   // also display folder zoomto links once a folder's viewport can be computed
   // from its descendants' viewports.
   var id = /** @type string */(this.model_.get('id'));
-  var showZoomLink =
+  var showZoomLink = !this.metadataModel_.isEmpty(id) && (
       this.model_.get('viewport') ||
       this.model_.get('type') === cm.LayerModel.Type.KML ||
-      this.model_.get('type') === cm.LayerModel.Type.GEORSS;
-  if (showZoomLink && this.metadataModel_.hasNoFeatures(id)) {
-    showZoomLink = false;
-  }
+      this.model_.get('type') === cm.LayerModel.Type.GEORSS);
   goog.dom.classes.enable(this.zoomElem_, 'cm-hidden', !showZoomLink);
   // Include a separator dot iff the zoom element has a previous sibling.
   cm.ui.setText(/** @type Element */(this.zoomElem_.firstChild),

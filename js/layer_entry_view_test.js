@@ -685,7 +685,7 @@ LayerEntryViewTest.prototype.testMetadataUpdates = function() {
   this.metadataModel_.set('layer0', {
     'content_last_modified': 1344989642.0,
     'content_length': 25000,
-    'has_features': true,
+    'has_no_features': false,
     'has_unsupported_kml': true
   });
 
@@ -697,14 +697,14 @@ LayerEntryViewTest.prototype.testMetadataUpdates = function() {
   var downloadElem = expectDescendantOf(parent, 'a', withText('Download KML'),
                                         withHref('http://monsters.com.au'),
                                         not(withClass('cm-hidden')));
-  expectEq(goog.format.fileSize(25000), downloadElem.parentNode.title);
+  expectEq('25 k', downloadElem.parentNode.title);
   var zoomLink = expectDescendantOf(parent, 'a',
                                     withText(containsRegExp(/Zoom/)));
 
   // Remove content_length to clear file-size tooltip.
   this.metadataModel_.set('layer0', {
     'content_last_modified': 1344989642.0,
-    'has_features': true,
+    'has_no_features': false,
     'has_unsupported_kml': true
   });
   downloadElem = expectDescendantOf(parent, 'a', withText('Download KML'));

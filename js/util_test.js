@@ -179,3 +179,34 @@ UtilTest.prototype.testRemoveNulls = function() {
   expectTrue('a' in f);
   expectEq(null, f.a);
 };
+
+/** Tests cm.util.formatFileSize. */
+UtilTest.prototype.testFormatFileSize = function() {
+  // Except for sizes below 10 bytes or above 999 M, the result should always
+  // be formatted to two or three digits of precision.
+  expectEq('0 bytes', cm.util.formatFileSize(0));
+  expectEq('1 byte', cm.util.formatFileSize(1));
+  expectEq('2 bytes', cm.util.formatFileSize(2));
+  expectEq('74 bytes', cm.util.formatFileSize(74));
+  expectEq('949 bytes', cm.util.formatFileSize(949));
+  expectEq('1.0 k', cm.util.formatFileSize(950));
+  expectEq('1.3 k', cm.util.formatFileSize(1250));
+  expectEq('9.5 k', cm.util.formatFileSize(9499));
+  expectEq('10 k', cm.util.formatFileSize(9500));
+  expectEq('57 k', cm.util.formatFileSize(56982));
+  expectEq('950 k', cm.util.formatFileSize(949999));
+  expectEq('1.0 M', cm.util.formatFileSize(950000));
+  expectEq('9.5 M', cm.util.formatFileSize(9499999));
+  expectEq('10 M', cm.util.formatFileSize(9500000));
+  expectEq('721 M', cm.util.formatFileSize(721499999));
+  expectEq('999 M', cm.util.formatFileSize(999499999));
+  expectEq('1000 M', cm.util.formatFileSize(999500000));
+
+  // All non-numeric inputs should yield ''.
+  expectEq('', cm.util.formatFileSize('x'));
+  expectEq('', cm.util.formatFileSize(''));
+  expectEq('', cm.util.formatFileSize({}));
+  expectEq('', cm.util.formatFileSize([]));
+  expectEq('', cm.util.formatFileSize(null));
+  expectEq('', cm.util.formatFileSize(undefined));
+};

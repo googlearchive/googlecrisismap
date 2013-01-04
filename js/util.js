@@ -146,3 +146,26 @@ cm.util.removeNulls = function(thing) {
   }
   return thing;
 };
+
+/**
+ * Formats a file size as a friendly readable string.  We use this instead of
+ * goog.format.fileSize because: (a) we want to display 34 as '34 bytes' but
+ * goog.format.fileSize returns just '34', which is confusing; (b) we prefer
+ * humane multipliers like 1000, whereas goog.format.fileSize pretends mortals
+ * can multiply by 1024 and 1048576 in their heads; (c) goog.format.fileSize
+ * uses inconsistent precision, formatting '123.45M' with five digits but '2K'
+ * with just one; (d) goog.format.fileSize pulls in lots of other functions,
+ * weighing in at 566 bytes whereas this is only 131.
+ * @param {number?} size A number in bytes, or null.
+ * @return {string} E.g. '2.3 M' or '157 k' or '8 bytes', or '' if size is null.
+ */
+cm.util.formatFileSize = function(size) {
+  // We format the significand to two or three digits of precision; 9.5 is the
+  // boundary for advancing to the next order of magnitude because it rounds
+  // up to 10.  Adding 1e-9 before rounding avoids decimal rounding error (e.g.
+  // (0.95).toFixed(1) gives '0.9' but we really want '1.0').
+  return typeof(size) != 'number' ? '' :
+      size >= 9.5e5 ? (size / 1e6 + 1e-9).toFixed(size < 9.5e6) + ' M' :
+      size >= 9.5e2 ? (size / 1e3 + 1e-9).toFixed(size < 9.5e3) + ' k' :
+      size + ' byte' + (size == 1 ? '' : 's');
+};
