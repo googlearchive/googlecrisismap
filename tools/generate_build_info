@@ -27,7 +27,6 @@ window['cm_build_info'] = {
   "release": false,
   "version": "$version",
   "user": "$(whoami)",
-  "path": "$APP_DIR",
-  "build_time": $(date +%s)
+  "path": "$APP_DIR"
 };
 EOF

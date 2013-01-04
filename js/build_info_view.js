@@ -59,10 +59,9 @@ cm.BuildInfoView.formatTime = function(timestamp) {
 cm.BuildInfoView.formatBuildInfo = function(info) {
   var release = info['release'];
   var version = info['version'];
-  var buildTime = info['build_time'];
   var submitTime = info['submit_time'];
   var path = info['path'];
-  return (release ? 'release' : 'dev') + ' build at ' + version +
-      (submitTime ? ', submitted ' + cm.BuildInfoView.formatTime(submitTime) :
-          ', built ' + cm.BuildInfoView.formatTime(buildTime) + ' in ' + path);
+  return (release ? 'release' : 'dev') + ' build at ' + version + (submitTime ?
+      ', submitted ' + cm.BuildInfoView.formatTime(submitTime) : '');
+
 };
