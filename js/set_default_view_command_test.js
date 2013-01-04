@@ -9,6 +9,7 @@
 // OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 // specific language governing permissions and limitations under the License.
 
+// Author: joeysilva@google.com (Joey Silva)
 
 function SetDefaultViewCommandTest() {
   this.mapModel_ = cm.MapModel.newFromMapRoot({

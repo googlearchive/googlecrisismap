@@ -11,6 +11,7 @@
 
 /**
  * @fileoverview [MODULE: edit] Sets the default view of the map model.
+ * @author joeysilva@google.com (Joey Silva)
  */
 goog.provide('cm.SetDefaultViewCommand');
 

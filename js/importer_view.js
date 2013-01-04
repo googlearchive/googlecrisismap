@@ -11,6 +11,7 @@
 
 /**
  * @fileoverview [MODULE: edit] An import layer dialog.
+ * @author joeysilva@google.com (Joey Silva)
  */
 goog.provide('cm.ImporterView');
 
@@ -19,7 +20,7 @@ goog.require('cm.MapModel');
 goog.require('cm.events');
 goog.require('cm.ui');
 
-// TODO(user): These messages will be moved (see b/7232521)
+// TODO(joeysilva): These messages will be moved (see b/7232521)
 /** @desc Label for the OK button on a dialog with OK and Cancel buttons. */
 var MSG_IMPORTER_OK = goog.getMsg('OK');
 
@@ -40,7 +41,7 @@ cm.ImporterView = function() {
   /**
    * Array of JSON maps loaded from the server. Cached and used until time equal
    * to cm.ImporterView.MAPS_CACHE_TTL_MS_ has passed.
-   * TODO(user): Add refresh button to importer.
+   * TODO(joeysilva): Add refresh button to importer.
    * @type {Array.<cm.MapModel>|undefined}
    * @private
    */

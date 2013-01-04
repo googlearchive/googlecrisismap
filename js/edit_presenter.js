@@ -208,7 +208,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   // The user has asked us to bring up an inspector.
   // The INSPECT event contains an object for editing existing objects, or
   // no object for a new layer.
-  // TODO(user): Use a type field to specify new layers or new folders.
+  // TODO(joeysilva): Use a type field to specify new layers or new folders.
   cm.events.listen(goog.global, cm.events.INSPECT, function(e) {
     if (!e.object) {
       // New layer

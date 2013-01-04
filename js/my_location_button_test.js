@@ -15,7 +15,7 @@ function MyLocationButtonTest() {
   cm.ui.create = createMockFunction('ui.create');
 
   this.button_ = expectCreate(
-      'BUTTON', 'div', {'class': 'cm-mapbutton cm-mylocation-button',
+      'BUTTON', 'div', {'class': 'cm-mapbutton cm-my-location-button',
                         'index': -1});
 
   this.map_ = gjstest.createMockInstance(google.maps.Map);

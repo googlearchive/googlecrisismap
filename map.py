@@ -69,7 +69,7 @@ class ClientConfig(db.Model):
   hide_share_button = db.BooleanProperty(default=False)
 
   # Whether or not to hide the "My Location" button in the UI
-  hide_mylocation_button = db.BooleanProperty(default=False)
+  hide_my_location_button = db.BooleanProperty(default=False)
 
   # Allow a callback parameter so an embedding page can receive and control
   # the map

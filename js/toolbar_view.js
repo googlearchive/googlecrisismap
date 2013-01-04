@@ -90,7 +90,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch) {
       cm.events.IMPORT);
   cm.ui.append(toolbarElem, addNewLayerLink, cm.ui.SEPARATOR_DOT);
 
-  // TODO(user): Use INSPECT event to create new folders by using a type
+  // TODO(joeysilva): Use INSPECT event to create new folders by using a type
   // FOLDER argument.
   var addNewFolderLink = cm.ui.createLink(MSG_ADD_NEW_FOLDER);
   cm.events.forward(

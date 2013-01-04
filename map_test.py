@@ -42,7 +42,7 @@ class MapTest(test_utils.BaseTest):
         allowed_referer_domains=['google.org', 'cr.appspot.com'],
         hide_footer=True,
         hide_share_button=True,
-        hide_mylocation_button=True,
+        hide_my_location_button=True,
         allow_embed_map_callback=True,
         show_login=True,
         analytics_id=analytics_id,
@@ -50,7 +50,7 @@ class MapTest(test_utils.BaseTest):
     db.put(config)
 
     self.assertEquals({'hide_share_button': True,
-                       'hide_mylocation_button': True,
+                       'hide_my_location_button': True,
                        'hide_footer': True,
                        'allow_embed_map_callback': True,
                        'show_login': True,

@@ -30,7 +30,7 @@ cm.MyLocationButton = function(map) {
   // default controls. See
   // developers.google.com/maps/documentation/javascript/controls#CustomPositioning
   var button = cm.ui.create('div',
-                            {'class': 'cm-mapbutton cm-mylocation-button',
+                            {'class': 'cm-mapbutton cm-my-location-button',
                              'index': -1});
 
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(button);
