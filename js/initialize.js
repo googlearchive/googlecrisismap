@@ -272,7 +272,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   });
 
   // If allowed, pass the google.maps.Map element to the parent frame.
-  if (embedded && config['allow_embed_map_callback']) {
+  if (window != window.parent && config['allow_embed_map_callback']) {
     var callback = uri.getParameterValue('callback');
     if (callback && typeof window.parent[callback] === 'function') {
       window.parent[callback](google.maps, mapView.getMap());
