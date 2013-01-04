@@ -234,7 +234,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
                        !config['hide_google_plus_button'],
                        !config['hide_twitter_button']);
   }
-  if (!config['hide_mylocation_button']) {
+  if (!config['hide_my_location_button']) {
     new cm.MyLocationButton(mapView.getMap());
   }
 
