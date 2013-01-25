@@ -20,7 +20,6 @@ var EXTRACTED_LEGEND_ITEMS = {
 
 function LegendEditorTest() {
   cm.TestBase.call(this);
-  this.setGjstestEquals_('cm.Html');
   this.setForTest_('cm.Html.sanitize_', function(x) { return '*' + x + '*'; });
 
   this.featurePalette_ = this.expectNew_('goog.ui.Palette');

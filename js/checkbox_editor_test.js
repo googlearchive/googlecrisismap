@@ -33,14 +33,14 @@ CheckboxEditorTest.prototype.createEditor_ = function(opt_options) {
 /** Tests constructor with no options. */
 CheckboxEditorTest.prototype.testConstructor = function() {
   var parent = this.createEditor_();
-  expectTrue(!this.checkbox_.checked);
-  expectTrue(!this.editor_.get('value'));
+  expectFalse(this.checkbox_.checked);
+  expectFalse(this.editor_.get('value'));
 };
 
 /** Tests that the checkbox state propagates to the 'value' property. */
 CheckboxEditorTest.prototype.checkboxUpdatesProperty = function() {
   var parent = this.createEditor_();
-  expectTrue(!this.editor_.get('value'));
+  expectFalse(this.editor_.get('value'));
   this.checkbox_.checked = true;
   cm.events.emit(this.checkbox_, 'click');
   expectTrue(this.editor_.get('value'));
@@ -49,7 +49,7 @@ CheckboxEditorTest.prototype.checkboxUpdatesProperty = function() {
 /** Tests that the 'value' property propagates to the checkbox state. */
 CheckboxEditorTest.prototype.propertyUpdatesCheckbox = function() {
   var parent = this.createEditor_();
-  expectTrue(!this.checkbox_.checked);
+  expectFalse(this.checkbox_.checked);
   this.editor_.set('value', true);
   expectTrue(this.checkbox_.checked);
 };
@@ -59,7 +59,7 @@ CheckboxEditorTest.prototype.checkboxUpdatesPropertyOptions = function() {
   var parent = this.createEditor_(
       {checked_value: false, unchecked_value: true});
   this.editor_.set('value', true);
-  expectTrue(!this.checkbox_.checked);
+  expectFalse(this.checkbox_.checked);
   this.editor_.set('value', false);
   expectTrue(this.checkbox_.checked);
 };
@@ -69,7 +69,7 @@ CheckboxEditorTest.prototype.propertyUpdatesCheckboxOptions = function() {
   var parent = this.createEditor_(
       {checked_value: false, unchecked_value: true});
   this.editor_.set('value', true);
-  expectTrue(!this.checkbox_.checked);
+  expectFalse(this.checkbox_.checked);
   this.editor_.set('value', false);
   expectTrue(this.checkbox_.checked);
 };

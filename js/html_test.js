@@ -13,7 +13,6 @@
 
 function HtmlTest() {
   cm.TestBase.call(this);
-  this.setGjstestEquals_('cm.Html');
 }
 HtmlTest.prototype = new cm.TestBase();
 registerTestSuite(HtmlTest);
@@ -54,27 +53,28 @@ HtmlTest.prototype.isEmpty = function() {
 
 /** Verifies that .equals() works correctly. */
 HtmlTest.prototype.equals = function() {
-  // expectEq and expectNe call .gjsTestEquals(), which is actually .equals().
-  expectEq(new cm.Html('a'), new cm.Html('a'));
-  expectNe(new cm.Html('a'), new cm.Html('b'));
-  expectNe(new cm.Html('a'), cm.Html.EMPTY);
-  expectNe(new cm.Html('a'), null);
+  expectTrue(new cm.Html('a').equals(new cm.Html('a')));
+  expectFalse(new cm.Html('a').equals(new cm.Html('b')));
+  expectFalse(new cm.Html('a').equals(cm.Html.EMPTY));
+  expectFalse(new cm.Html('a').equals(null));
 
   // equals() should detect when fromSanitizedHtml() constructs something
   // that doesn't match the actual sanitizer output.
-  expectNe(cm.Html.fromSanitizedHtml('<script>'), new cm.Html('<script>'));
-  expectNe(new cm.Html('<script>'), cm.Html.fromSanitizedHtml('<script>'));
+  var trusted = cm.Html.fromSanitizedHtml('<script>');
+  var untrusted = new cm.Html('<script>');
+  expectFalse(trusted.equals(untrusted));
+  expectFalse(untrusted.equals(trusted));
 
   // equals() should be compatible with lazy sanitization.
   var sanitizerPending = new cm.Html('a');
   var sanitizerDone = new cm.Html('a');
   sanitizerDone.getHtml();
-  expectEq(sanitizerPending, sanitizerDone);
+  expectTrue(sanitizerPending.equals(sanitizerDone));
 
   sanitizerPending = new cm.Html('a');
   sanitizerDone = new cm.Html('a');
   sanitizerDone.getHtml();
-  expectEq(sanitizerDone, sanitizerPending);
+  expectTrue(sanitizerDone.equals(sanitizerPending));
 };
 
 /** Verifies that toString protects us from leakage of unsafe HTML. */

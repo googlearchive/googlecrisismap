@@ -19,7 +19,7 @@ function SearchboxTest() {
       google.maps.ControlPosition.TOP_LEFT, []);
 
   this.autocomplete_ = this.expectNew_('google.maps.places.Autocomplete',
-      isElement('input'), recursivelyEquals({'types': ['geocode']}));
+      isElement('input'), {'types': ['geocode']});
   expectCall(this.autocomplete_.bindTo)('bounds', this.map_);
 
   this.geocoder_ = this.expectNew_('google.maps.Geocoder');
@@ -63,7 +63,7 @@ SearchboxTest.prototype.autocompletePlaceChangedLocation = function() {
   expectCall(this.map_.setCenter)(location);
   expectCall(this.map_.setZoom)(15);
   expectCall(this.marker_.setOptions)(
-      recursivelyEquals({'position': location, 'map': this.map_}));
+      {'position': location, 'map': this.map_});
 
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };
@@ -84,11 +84,10 @@ SearchboxTest.prototype.autocompleteNoGeometryViewport = function() {
   expectCall(this.marker_.setMap)(null);
   expectCall(this.autocomplete_.getPlace)()
       .willOnce(returnWith(place));
-  expectCall(this.geocoder_.geocode)(
-      recursivelyEquals({address: name, bounds: bounds}), _)
-          .willOnce(function(request, callback) {
-              callback([geocode], google.maps.GeocoderStatus.OK);
-          });
+  expectCall(this.geocoder_.geocode)({address: name, bounds: bounds}, _)
+      .willOnce(function(request, callback) {
+          callback([geocode], google.maps.GeocoderStatus.OK);
+      });
   expectCall(this.map_.fitBounds)(viewport);
 
   cm.events.emit(this.autocomplete_, 'place_changed', place);
@@ -111,15 +110,13 @@ SearchboxTest.prototype.autocompleteNoGeometryLocation = function() {
   expectCall(this.marker_.setMap)(null);
   expectCall(this.autocomplete_.getPlace)()
       .willOnce(returnWith(place));
-  expectCall(this.geocoder_.geocode)(
-      recursivelyEquals({address: name, bounds: bounds}), _)
-          .willOnce(function(request, callback) {
-            callback([geocode], google.maps.GeocoderStatus.OK);
-          });
+  expectCall(this.geocoder_.geocode)({address: name, bounds: bounds}, _)
+      .willOnce(function(request, callback) {
+        callback([geocode], google.maps.GeocoderStatus.OK);
+      });
   expectCall(this.map_.setCenter)(location);
   expectCall(this.map_.setZoom)(15);
-  expectCall(this.marker_.setOptions)(
-      recursivelyEquals({position: location, map: this.map_}));
+  expectCall(this.marker_.setOptions)({position: location, map: this.map_});
 
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };

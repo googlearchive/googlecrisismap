@@ -103,10 +103,10 @@ SharePopupTest.prototype.shortenUrl = function() {
 
   // Set up a mock for the JSONP request.
   var jsonp = this.expectNew_('goog.net.Jsonp', cm.ShareBox.JSON_PROXY_URL);
-  expectCall(jsonp.send)(recursivelyEquals({
+  expectCall(jsonp.send)({
     'url': cm.ShareBox.GOOGL_API_URL,
     'post_json': goog.json.serialize({'longUrl': APPSTATE_URL})
-  }), _).willOnce(function(_, callback) { callback({'id': SHORTENED_URL}); });
+  }, _).willOnce(function(_, callback) { callback({'id': SHORTENED_URL}); });
 
   // Confirm that checking the box puts the shortened URL in the text field...
   var checkbox = expectDescendantOf(parent, withClass('cm-shorten-checkbox'));

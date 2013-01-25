@@ -21,8 +21,6 @@ DEFAULT_MAP_TYPE_IDS = [google.maps.MapTypeId.ROADMAP,
 
 function MapViewTest() {
   cm.TestBase.call(this);
-  this.setGjstestEquals_('google.maps.LatLng');
-  this.setGjstestEquals_('google.maps.LatLngBounds');
 
   this.elem_ = new FakeElement('div');
   this.mapModel_ = createMockInstance(cm.MapModel);
@@ -56,16 +54,16 @@ function MapViewTest() {
     },
     mapTypeControl: true
   };
-  this.map_ = this.expectNew_('google.maps.Map', this.elem_,
-                              recursivelyEquals(this.expectedMapOptions_));
+  this.map_ = this.expectNew_(
+      'google.maps.Map', this.elem_, this.expectedMapOptions_);
   stubReturn(this.map_, 'getDiv', {offsetWidth: 600, offsetHeight: 600});
   expectCall(this.map_.bindTo)('mapTypeId', this.appState_, 'map_type_id');
   expectCall(this.map_.bindTo)('center', _);
   expectCall(this.map_.bindTo)('zoom', _);
-  expectCall(this.map_.setOptions)(recursivelyEquals({mapTypeControlOptions: {
+  expectCall(this.map_.setOptions)({mapTypeControlOptions: {
     mapTypeIds: DEFAULT_MAP_TYPE_IDS,
     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-  }}));
+  }});
   expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.ROADMAP);
 
   this.map_.mapTypes = createMockInstance(google.maps.MapTypeRegistry);
@@ -126,9 +124,9 @@ MapViewTest.prototype.expectInfoWindowOpen_ = function(
   expectCall(this.infoWindow_.close)();
   expectCall(goog.dom.htmlToDocumentFragment)(content)
       .willOnce(returnWith({childNodes: ['stuff']}));
-  expectCall(this.infoWindow_.setOptions)(recursivelyEquals({
+  expectCall(this.infoWindow_.setOptions)({
     position: position, pixelOffset: pixelOffset, content: content
-  }));
+  });
   expectCall(this.infoWindow_.open)(this.map_);
 };
 
@@ -233,7 +231,7 @@ MapViewTest.prototype.addOverlayKml = function() {
   this.stubReturnVisibleLayerIds_(['chocolate']);
 
   var overlay = this.expectNew_('google.maps.KmlLayer', 'http://chocolate.com',
-      recursivelyEquals({preserveViewport: true, suppressInfoWindows: true}));
+      {preserveViewport: true, suppressInfoWindows: true});
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -247,7 +245,7 @@ MapViewTest.prototype.addOverlayGeoRss = function() {
   this.stubReturnVisibleLayerIds_(['vanilla']);
 
   var overlay = this.expectNew_('google.maps.KmlLayer', 'http://vanilla.com.au',
-      recursivelyEquals({preserveViewport: true, suppressInfoWindows: true}));
+      {preserveViewport: true, suppressInfoWindows: true});
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -261,11 +259,10 @@ MapViewTest.prototype.addOverlayFusionTables = function() {
   });
   this.stubReturnVisibleLayerIds_(['mint-chip']);
 
-  var overlay = this.expectNew_('google.maps.FusionTablesLayer',
-      recursivelyEquals({
-        query: {select: 'icecream', from: 123, where: ''},
-        suppressInfoWindows: true
-      }));
+  var overlay = this.expectNew_('google.maps.FusionTablesLayer', {
+    query: {select: 'icecream', from: 123, where: ''},
+    suppressInfoWindows: true
+  });
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -311,15 +308,12 @@ MapViewTest.prototype.addOverlayWeather = function() {
   this.addLayer_({id: 'x', type: cm.LayerModel.Type.WEATHER});
   this.stubReturnVisibleLayerIds_(['x']);
 
-  var overlay = this.expectNew_(
-      'google.maps.weather.WeatherLayer',
-      recursivelyEquals({
-          'labelColor': 'black',
-          'suppressInfoWindows': true,
-          'temperatureUnits': 'c',
-          'windSpeedUnits': 'kph'
-      })
-  );
+  var overlay = this.expectNew_('google.maps.weather.WeatherLayer', {
+    'labelColor': 'black',
+    'suppressInfoWindows': true,
+    'temperatureUnits': 'c',
+    'windSpeedUnits': 'kph'
+  });
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -368,13 +362,11 @@ MapViewTest.prototype.addOverlayMapDataExternal = function() {
   });
   this.stubReturnVisibleLayerIds_(['rockyroad']);
 
-  var overlay = this.expectNew_(
-      'google.maps.visualization.MapDataLayer', recursivelyEquals({
-        mapId: 'frotz',
-        layerId: 'igram',
-        suppressInfoWindows: true
-      })
-  );
+  var overlay = this.expectNew_('google.maps.visualization.MapDataLayer', {
+    mapId: 'frotz',
+    layerId: 'igram',
+    suppressInfoWindows: true
+  });
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -395,13 +387,11 @@ MapViewTest.prototype.addOverlayMapDataExternalLegacyIdScheme = function() {
   });
   this.stubReturnVisibleLayerIds_(['rockyroad']);
 
-  var overlay = this.expectNew_(
-      'google.maps.visualization.MapDataLayer', recursivelyEquals({
-        mapId: 'frotz',
-        layerId: 'word',
-        suppressInfoWindows: true
-      })
-  );
+  var overlay = this.expectNew_('google.maps.visualization.MapDataLayer', {
+    mapId: 'frotz',
+    layerId: 'word',
+    suppressInfoWindows: true
+  });
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -491,57 +481,45 @@ MapViewTest.prototype.propertiesChanged = function() {
 
   // Change the layer type to WEATHER.
   expectCall(overlay.setMap)(null);
-  overlay = this.expectNew_(
-      'google.maps.weather.WeatherLayer',
-      recursivelyEquals({
-          'labelColor': 'black',
-          'suppressInfoWindows': true,
-          'temperatureUnits': 'c',
-          'windSpeedUnits': 'kph'
-      })
-  );
+  overlay = this.expectNew_('google.maps.weather.WeatherLayer', {
+    'labelColor': 'black',
+    'suppressInfoWindows': true,
+    'temperatureUnits': 'c',
+    'windSpeedUnits': 'kph'
+  });
   expectCall(overlay.setMap)(null);
   model.set('type', cm.LayerModel.Type.WEATHER);
 
   // Change the label color.
   expectCall(overlay.setMap)(null);
-  overlay = this.expectNew_(
-      'google.maps.weather.WeatherLayer',
-      recursivelyEquals({
-          'labelColor': 'white',
-          'suppressInfoWindows': true,
-          'temperatureUnits': 'c',
-          'windSpeedUnits': 'kph'
-      })
-  );
+  overlay = this.expectNew_('google.maps.weather.WeatherLayer', {
+    'labelColor': 'white',
+    'suppressInfoWindows': true,
+    'temperatureUnits': 'c',
+    'windSpeedUnits': 'kph'
+  });
   expectCall(overlay.setMap)(null);
   model.set('label_color', cm.LayerModel.LabelColor.WHITE);
 
   // Change the temperature unit.
   expectCall(overlay.setMap)(null);
-  overlay = this.expectNew_(
-      'google.maps.weather.WeatherLayer',
-      recursivelyEquals({
-          'labelColor': 'white',
-          'suppressInfoWindows': true,
-          'temperatureUnits': 'f',
-          'windSpeedUnits': 'kph'
-      })
-  );
+  overlay = this.expectNew_('google.maps.weather.WeatherLayer', {
+    'labelColor': 'white',
+    'suppressInfoWindows': true,
+    'temperatureUnits': 'f',
+    'windSpeedUnits': 'kph'
+  });
   expectCall(overlay.setMap)(null);
   model.set('temperature_unit', cm.LayerModel.TemperatureUnit.FAHRENHEIT);
 
   // Change the wind speed unit.
   expectCall(overlay.setMap)(null);
-  overlay = this.expectNew_(
-      'google.maps.weather.WeatherLayer',
-      recursivelyEquals({
-          'labelColor': 'white',
-          'suppressInfoWindows': true,
-          'temperatureUnits': 'f',
-          'windSpeedUnits': 'ms'
-      })
-  );
+  overlay = this.expectNew_('google.maps.weather.WeatherLayer', {
+    'labelColor': 'white',
+    'suppressInfoWindows': true,
+    'temperatureUnits': 'f',
+    'windSpeedUnits': 'ms'
+  });
   expectCall(overlay.setMap)(null);
   model.set('wind_speed_unit', cm.LayerModel.WindSpeedUnit.METERS_PER_SECOND);
 };
@@ -757,7 +735,7 @@ MapViewTest.prototype.zoomToKMLLayerModelViewport = function() {
   this.stubReturnVisibleLayerIds_(['green-tea']);
 
   var overlay = this.expectNew_('google.maps.KmlLayer', 'http://green-tea.com',
-      recursivelyEquals({preserveViewport: true, suppressInfoWindows: true}));
+      {preserveViewport: true, suppressInfoWindows: true});
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -1043,10 +1021,10 @@ MapViewTest.prototype.testUpdateMapStyle = function() {
       .willRepeatedly(returnWith(cm.MapModel.Type.CUSTOM));
   expectCall(this.mapModel_.get)('base_map_style')
       .willRepeatedly(returnWith('{\"invalid\": \"json'));
-  expectCall(this.map_.setOptions)(recursivelyEquals({mapTypeControlOptions: {
+  expectCall(this.map_.setOptions)({mapTypeControlOptions: {
     mapTypeIds: DEFAULT_MAP_TYPE_IDS,
     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-  }}));
+  }});
   expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.ROADMAP);
   cm.events.emit(this.mapModel_, 'base_map_style_changed');
 
@@ -1060,16 +1038,16 @@ MapViewTest.prototype.testUpdateMapStyle = function() {
   expectCall(this.mapModel_.get)('base_map_style_name')
       .willRepeatedly(returnWith('foostylea'));
   var styledMap = this.expectNew_('google.maps.StyledMapType',
-      recursivelyEquals([{featureType: 'all', stylers: [{saturation: 10}]}]),
-      recursivelyEquals({name: 'foostylea'}));
+      [{featureType: 'all', stylers: [{saturation: 10}]}],
+      {name: 'foostylea'});
   expectCall(this.map_.mapTypes.set)(cm.MapModel.Type.CUSTOM, styledMap);
   expectCall(this.map_.setMapTypeId)(cm.MapModel.Type.CUSTOM)
       .willRepeatedly(returnWith(undefined));
   // Custom map is added at the end.
-  expectCall(this.map_.setOptions)(recursivelyEquals({mapTypeControlOptions: {
+  expectCall(this.map_.setOptions)({mapTypeControlOptions: {
       mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat([cm.MapModel.Type.CUSTOM]),
       style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-  }})).willRepeatedly(returnWith(undefined));
+  }}).willRepeatedly(returnWith(undefined));
   cm.events.emit(this.mapModel_, 'map_type_changed');
 
   // If the map's type is not custom, even though it has a valid style, use the
@@ -1077,10 +1055,10 @@ MapViewTest.prototype.testUpdateMapStyle = function() {
   expectEq('foostylea', this.mapModel_.get('base_map_style_name'));
   expectCall(this.mapModel_.get)('map_type')
       .willRepeatedly(returnWith(cm.MapModel.Type.SATELLITE));
-  expectCall(this.map_.setOptions)(recursivelyEquals({mapTypeControlOptions: {
+  expectCall(this.map_.setOptions)({mapTypeControlOptions: {
     mapTypeIds: DEFAULT_MAP_TYPE_IDS,
     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-  }}));
+  }});
   expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.SATELLITE);
   cm.events.emit(this.mapModel_, 'map_type_changed');
 };

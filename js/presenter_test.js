@@ -13,7 +13,6 @@
 
 function PresenterTest() {
   cm.TestBase.call(this);
-  this.setGjstestEquals_('google.maps.LatLng');
 
   this.mapModel_ = cm.MapModel.newFromMapRoot({
     title: 'title',
@@ -49,15 +48,11 @@ registerTestSuite(PresenterTest);
 /** Tests that opening/closing the panel logs the correct Analytics events. */
 PresenterTest.prototype.openClosePanel = function() {
   cm.events.emit(this.panelElem_, 'panelopen');
-  expectThat(this.events_, recursivelyEquals([
-    ['panel', 'open', 'map1', 1]
-  ]));
+  expectEq([['panel', 'open', 'map1', 1]], this.events_);
 
   this.events_.splice(0, this.events_.length);  // clear the array in place
   cm.events.emit(this.panelElem_, 'panelclose');
-  expectThat(this.events_, recursivelyEquals([
-    ['panel', 'close', 'map1', 0]
-  ]));
+  expectEq([['panel', 'close', 'map1', 0]], this.events_);
 };
 
 /** Tests that the resetView method sends the correct Analytics events. */
@@ -65,9 +60,7 @@ PresenterTest.prototype.resetView = function() {
   expectCall(this.mapView_.matchViewport)(_);
   expectCall(this.mapView_.updateMapType)();
   this.presenter_.resetView(this.mapModel_);
-  expectThat(this.events_, recursivelyEquals([
-    ['layer', 'reset_on', 'map1.layer1', 1]
-  ]));
+  expectEq([['layer', 'reset_on', 'map1.layer1', 1]], this.events_);
 
   this.events_.splice(0, this.events_.length);  // clear the array in place
   this.appState_.setLayerEnabled('layer1', false);
@@ -75,18 +68,14 @@ PresenterTest.prototype.resetView = function() {
   expectCall(this.mapView_.matchViewport)(_);
   expectCall(this.mapView_.updateMapType)();
   this.presenter_.resetView(this.mapModel_);
-  expectThat(this.events_, recursivelyEquals([
-    ['layer', 'reset_on', 'map1.layer1', 1],
-    ['layer', 'reset_off', 'map1.layer2', 0]
-  ]));
+  expectEq([['layer', 'reset_on', 'map1.layer1', 1],
+            ['layer', 'reset_off', 'map1.layer2', 0]], this.events_);
 
   this.events_.splice(0, this.events_.length);  // clear the array in place
   expectCall(this.mapView_.matchViewport)(_);
   expectCall(this.mapView_.updateMapType)();
   this.presenter_.resetView(this.mapModel_, '', true);
-  expectThat(this.events_, recursivelyEquals([
-    ['layer', 'load_on', 'map1.layer1', 1]
-  ]));
+  expectEq([['layer', 'load_on', 'map1.layer1', 1]], this.events_);
 };
 
 /** Tests that zoomToUserLocation sets the map view correctly. */

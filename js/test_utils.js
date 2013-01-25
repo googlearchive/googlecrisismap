@@ -387,6 +387,17 @@ FakeUi.setText = function(element, text) {
 cm.TestBase = function() {
   this.originalValues_ = {};
 
+  // Install cm.TestBase.equals as the default matcher, so that expectEq,
+  // expectCall, etc. use our matcher instead of gjstest.equals for comparison.
+  this.setForTest_('gjstest.equals', cm.TestBase.equals);
+  this.setForTest_('equals', cm.TestBase.equals);
+
+  // Install cm.TestBase.expectTrue and cm.TestBase.expectFalse, so that
+  // expectTrue and expectFalse check whether things are true or false.
+  // To check whether something is equal to true, use expectEq(true, ...).
+  this.setForTest_('expectTrue', cm.TestBase.expectTrue);
+  this.setForTest_('expectFalse', cm.TestBase.expectFalse);
+
   FakeElement.elementsById_ = {};
   this.setForTest_('cm.ui.create', FakeUi.create);
   this.setForTest_('cm.ui.get', FakeUi.get);
@@ -425,6 +436,52 @@ cm.TestBase = function() {
   this.setForTest_('document', fakeDocument);
   this.setForTest_('goog.global', fakeWindow);
   this.setForTest_('window', fakeWindow);
+};
+
+/**
+ * A saner "equals" matcher for test arguments and return values.  Unlike the
+ * standard gjstest.equals matcher, which sometimes compares by value and
+ * sometimes compares by reference, this matcher compares by value whenever
+ * possible.  It compares plain Objects and Arrays recursively, compares
+ * objects with an equals() method by calling equals(), compares other objects
+ * by reference identity, and compares primitive values using === equality.
+ * @param {*} expected The expected value.
+ * @return {Matcher} A matcher for the expected value.
+ */
+cm.TestBase.equals = function(expected) {
+  return new gjstest.Matcher('equals ' + gjstest.stringify(expected),
+                             'does not equal ' + gjstest.stringify(expected),
+                             function(actual) {
+    if (expected && actual && typeof expected === 'object') {
+      if (expected.constructor === {}.constructor ||
+          expected.constructor === [].constructor) {
+        return gjstest.internal.compareRecursively_(expected, actual) || true;
+      } else if (expected.constructor === actual.constructor) {
+        return expected.equals ? expected.equals(actual) :
+            expected === actual || 'which is a reference to a different object';
+      } else {
+        return 'which is an object with a different constructor';
+      }
+    } else {
+      return expected === actual;
+    }
+  });
+};
+
+/**
+ * Asserts that something has a true value.
+ * @param {*} actual The value.
+ */
+cm.TestBase.expectTrue = function(actual) {
+  expectThat(actual, evalsToTrue);
+};
+
+/**
+ * Asserts that something has a false value.
+ * @param {*} actual The value.
+ */
+cm.TestBase.expectFalse = function(actual) {
+  expectThat(actual, evalsToFalse);
 };
 
 // The cm.TestBase method definitions below are all enclosed in a private scope
@@ -529,6 +586,28 @@ cm.TestBase = function() {
     }
   };
 })();
+
+/**
+ * Returns a matcher that compares objects by reference.
+ * @param {Object|Array} expected A reference to the expected object.
+ * @return {gjstest.Matcher} A matcher requiring a reference to the same object.
+ */
+function equalsRef(expected) {
+  return new gjstest.Matcher(
+      'refers to the same object as ' + gjstest.stringify(expected),
+      'does not refer to the same object as ' + gjstest.stringify(expected),
+      function(actual) { return expected === actual; }
+  );
+}
+
+/**
+ * Asserts that 'actual' refers to the same object as 'expected'.
+ * @param {Object|Array} expected A reference to the expected object.
+ * @param {Object|Array} actual A reference to the actual object.
+ */
+function expectRef(expected, actual) {
+  gjstest.expectThat(actual, equalsRef(expected));
+}
 
 /**
  * Creates a mock instance of a class with some of its methods stubbed out

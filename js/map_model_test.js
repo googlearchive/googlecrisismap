@@ -43,7 +43,6 @@ var DRACULA_MAPROOT = {
 
 function MapModelTest() {
   cm.TestBase.call(this);
-  this.setGjstestEquals_('cm.LatLonBox');
   this.setForTest_('cm.LayerModel.newFromMapRoot', createMockFunction());
   this.expectedLayers_ = [];
 }
@@ -84,7 +83,7 @@ MapModelTest.prototype.recursivelyExpectLayer_ = function(json, useMockLayers) {
   json.sublayers && goog.array.forEach(json.sublayers, function(layerMapRoot) {
     this.recursivelyExpectLayer_(layerMapRoot, useMockLayers);
   }, this);
-  expectCall(cm.LayerModel.newFromMapRoot)(json)
+  expectCall(cm.LayerModel.newFromMapRoot)(equalsRef(json))
       .willOnce(returnWith(model));
   this.expectedLayers_.push(model);
 };
@@ -135,7 +134,7 @@ MapModelTest.prototype.newFromMapRoot = function() {
 /** Tests that the MapModel enforces uniqueness of layer IDs on construction. */
 MapModelTest.prototype.newFromMapRootWithInvalidIds = function() {
   var mapModel = this.mapModelFromMapRoot_({
-    layers: [{id: 'a'}, {id: 'b'}, {id: 'b'}, {}]
+    layers: [{id: 'a'}, {id: 'b'}, {id: '1'}, {id: '2'}]
   });
   var layers = mapModel.get('layers');
   expectEq('a', layers.getAt(0).get('id'));
@@ -148,8 +147,8 @@ MapModelTest.prototype.newFromMapRootWithInvalidIds = function() {
   expectEq(layers.getAt(3), mapModel.getLayer('2'));
 
   var mapModel = this.mapModelFromMapRoot_({
-    layers: [{id: '1'}, {id: '1'}, {id: '1'}
-  ]});
+    layers: [{id: '1'}, {id: '1'}, {id: '1'}]
+  });
   var layers = mapModel.get('layers');
   expectEq('1', layers.getAt(0).get('id'));
   expectEq('2', layers.getAt(1).get('id'));  // changed to avoid '1'
@@ -185,7 +184,7 @@ MapModelTest.prototype.toMapRoot = function() {
   expectCall(this.expectedLayers_[1].toMapRoot)()
       .willOnce(returnWith(DRACULA_MAPROOT.layers[1]));
 
-  expectThat(mapModel.toMapRoot(), recursivelyEquals(DRACULA_MAPROOT));
+  expectEq(DRACULA_MAPROOT, mapModel.toMapRoot());
 };
 
 /**
@@ -377,7 +376,7 @@ MapModelSystemTest.prototype.verifyTestMapRoot = function() {
     expectEq(expectedTypes[i], layer.get('type'));
   });
 
-  expectThat(mapModel.toMapRoot(), recursivelyEquals(json));
+  expectEq(json, mapModel.toMapRoot());
 };
 
 /**

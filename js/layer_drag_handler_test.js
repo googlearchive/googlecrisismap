@@ -14,7 +14,7 @@
 function LayerDragHandlerTest() {
   cm.TestBase.call(this);
 
-  this.setForTest_('goog.math.Rect.prototype.gjstestEquals', function(other) {
+  this.setForTest_('goog.math.Rect.prototype.equals', function(other) {
     return other && other.x === this.x && other.y === this.y &&
         other.h === this.h && other.w === this.w;
   });

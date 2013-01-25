@@ -135,14 +135,10 @@ ArrangeViewTest.prototype.testOKHandler = function() {
   expectNoDescendantOf(layerListElem, 'div', withClass('cm-draggable-layer'));
 
   // Verify the event fired properly.
-  expectThat(oldOrdering[0], recursivelyEquals(
-      { id: 'layer1', sublayerIds: []}));
-  expectThat(oldOrdering[1], recursivelyEquals(
-      { id: 'layer2', sublayerIds: []}));
-  expectThat(newOrdering[0], recursivelyEquals(
-      { id: 'layer2', sublayerIds: []}));
-  expectThat(newOrdering[1], recursivelyEquals(
-      { id: 'layer1', sublayerIds: []}));
+  expectEq([{id: 'layer1', sublayerIds: []}, {id: 'layer2', sublayerIds: []}],
+           oldOrdering);
+  expectEq([{id: 'layer2', sublayerIds: []}, {id: 'layer1', sublayerIds: []}],
+           newOrdering);
 };
 
 /**
@@ -235,10 +231,8 @@ ArrangeViewTest.prototype.testOKHandlerNestedFolders = function() {
                                   withText(MSG_OK));
   cm.events.emit(button, 'click');
 
-  expectThat(oldOrdering[0], recursivelyEquals(
-      { id: 'layer1', sublayerIds: [{ id: 'layer2', sublayerIds: []}]}));
-  expectThat(newOrdering[0], recursivelyEquals(
-      { id: 'layer1', sublayerIds: []}));
-  expectThat(newOrdering[1], recursivelyEquals(
-      { id: 'layer2', sublayerIds: []}));
+  expectEq([{id: 'layer1', sublayerIds: [{id: 'layer2', sublayerIds: []}]}],
+           oldOrdering);
+  expectEq([{id: 'layer1', sublayerIds: []}, {id: 'layer2', sublayerIds: []}],
+           newOrdering);
 };

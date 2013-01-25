@@ -250,20 +250,19 @@ LatLonBoxTest.prototype.testToLatLngBounds = function() {
 LatLonBoxTest.prototype.testToMapRoot = function() {
   // A less-than-360-degree box whose MapRoot representation uses the same
   // extent values as the LatLonBox representation.
-  expectThat((new cm.LatLonBox(4, 3, 2, 1)).toMapRoot(), recursivelyEquals(
-      {'north': 4, 'south': 3, 'east': 2, 'west': 1}));
+  expectEq({'north': 4, 'south': 3, 'east': 2, 'west': 1},
+           (new cm.LatLonBox(4, 3, 2, 1)).toMapRoot());
 
   // A less-than-360-degree box whose MapRoot representation uses different
   // extent values from the LatLonBox representation.
-  expectThat((new cm.LatLonBox(0, 0, 181, 179)).toMapRoot(), recursivelyEquals(
-      {'north': 0, 'south': 0, 'east': -179, 'west': 179}));
+  expectEq({'north': 0, 'south': 0, 'east': -179, 'west': 179},
+           (new cm.LatLonBox(0, 0, 181, 179)).toMapRoot());
 
   // MapRoot cannot represent a box of zero width; toMapRoot approximates.
   // The east extent should be the smallest representable longitude greater
   // than 30 in IEEE 754 double-precision floating-point numbers.
   var box = (new cm.LatLonBox(0, 0, 30, 30, true)).toMapRoot();
-  expectThat(box, recursivelyEquals(
-      {'north': 0, 'south': 0, 'east': 30 + 4e-15, 'west': 30}));
+  expectEq({'north': 0, 'south': 0, 'east': 30 + 4e-15, 'west': 30}, box);
 
   // Check that there's no smaller value for east that's still greater than 30.
   var east = box['east'];
@@ -272,15 +271,15 @@ LatLonBoxTest.prototype.testToMapRoot = function() {
   expectTrue(between === 30 || between === east);
 
   // When east equals west in MapRoot, the box is 360 degrees wide.
-  expectThat((new cm.LatLonBox(0, 0, 30, 30)).toMapRoot(), recursivelyEquals(
-      {'north': 0, 'south': 0, 'east': 30, 'west': 30}));
-  expectThat((new cm.LatLonBox(0, 0, 30, 390)).toMapRoot(), recursivelyEquals(
-      {'north': 0, 'south': 0, 'east': 30, 'west': 30}));
+  expectEq({'north': 0, 'south': 0, 'east': 30, 'west': 30},
+           (new cm.LatLonBox(0, 0, 30, 30)).toMapRoot());
+  expectEq({'north': 0, 'south': 0, 'east': 30, 'west': 30},
+           (new cm.LatLonBox(0, 0, 30, 390)).toMapRoot());
 
   // A 360-degree box whose MapRoot representation uses the same extent values
   // as the LatLonBox representation.
-  expectThat((new cm.LatLonBox(0, 0, 180, -180)).toMapRoot(), recursivelyEquals(
-      {'north': 0, 'south': 0, 'east': 180, 'west': -180}));
+  expectEq({'north': 0, 'south': 0, 'east': 180, 'west': -180},
+           (new cm.LatLonBox(0, 0, 180, -180)).toMapRoot());
 };
 
 /** Tests the getMercatorCenter() method. */

@@ -136,7 +136,7 @@ InspectorViewTest.prototype.testOkForNew = function() {
 
   // Confirm that the NEW_LAYER event was emitted with the right maproot
   expectTrue(layersCreated);
-  expectThat(properties, recursivelyEquals({a: 'x'}));
+  expectEq({a: 'x'}, properties);
 
   // Confirm that the popup disappeared.
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
@@ -165,7 +165,7 @@ InspectorViewTest.prototype.testConditionalsForNew = function() {
   button = expectDescendantOf(this.popup_, 'button', withText('OK'));
   cm.events.emit(button, 'click');
   expectTrue(layersCreated);
-  expectThat(properties, recursivelyEquals({a: 'yes', b: 5}));
+  expectEq({a: 'yes', b: 5}, properties);
 };
 
 /** Tests that clicking the Cancel button discards the user's edits. */
@@ -232,9 +232,8 @@ InspectorViewTest.prototype.testConditionalHidden = function() {
   // The 'b' property should be undefined because its editor was
   // disabled.
   expectTrue(this.objectEdited_);
-  expectThat(this.oldValues_, recursivelyEquals({a: 'x', b: 5}));
-  expectThat(this.newValues_, recursivelyEquals(
-      {a: 'no', b: undefined}));
+  expectEq({a: 'x', b: 5}, this.oldValues_);
+  expectEq({a: 'no', b: undefined}, this.newValues_);
 };
 
 /** Tests a conditional editor under conditions when it should be shown. */
@@ -267,9 +266,8 @@ InspectorViewTest.prototype.testConditionalShown = function() {
   // Confirm that the OBJECT_EDITED event was emitted with the right parameters.
   // The 'b' property should be present because its editor was enabled
   expectTrue(this.objectEdited_);
-  expectThat(this.oldValues_, recursivelyEquals({a: 'x', b: 5}));
-  expectThat(this.newValues_, recursivelyEquals(
-      {a: 'yes', b: 6}));
+  expectEq({a: 'x', b: 5}, this.oldValues_);
+  expectEq({a: 'yes', b: 6}, this.newValues_);
 };
 
 /** Tests that validation error messages are shown in the inspector. */

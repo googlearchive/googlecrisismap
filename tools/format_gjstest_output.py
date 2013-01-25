@@ -17,7 +17,7 @@
 
 import sys
 
-failures = 0
+passed = failed = 0
 for line in sys.stdin:
   if line.rstrip() in ['[----------]', '[  PASSED  ]', '[  FAILED  ]']:
     pass  # omit overall summary messages.
@@ -25,10 +25,12 @@ for line in sys.stdin:
     name = line[12:].strip()
   elif line[:12] == '[       OK ]':
     print '\x1b[32m' + line.rstrip() + '\x1b[0m'  # show success in green
+    passed += 1
   elif line[:12] == '[  FAILED  ]' and line[12:].strip():
     print '\x1b[31m' + line.rstrip() + '\x1b[0m'  # show failure in red
-    failures += 1
+    failed += 1
   else:
     print line.rstrip()
 
-sys.exit(failures > 0)
+print '%d passed, %d failed.' % (passed, failed)
+sys.exit(passed == 0 or failed > 0)

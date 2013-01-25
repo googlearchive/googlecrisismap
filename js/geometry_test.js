@@ -18,10 +18,6 @@
 function GeometryTest() {
   cm.TestBase.call(this);
 
-  this.setGjstestEquals_('google.maps.LatLng');
-  this.setGjstestEquals_('google.maps.LatLngBounds');
-  this.setGjstestEquals_('google.maps.Point');
-
   // This is intended to mock the google.maps.Projection interface, but there
   // is no google.maps.Projection class so we just use a mock function.
   this.projection_ = createMockFunction();

@@ -34,37 +34,31 @@ EditPresenterTest.prototype.testInspectEvent = function() {
 
   // Emitting an INSPECT event on a map should open an inspector on the map.
   expectCall(inspector.inspect)('Edit map details', allOf([
-    contains(recursivelyEquals(
-        {key: 'title', label: 'Title', type: cm.editors.Type.TEXT})),
-    contains(recursivelyEquals(
-        {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
-         preview_class: 'cm-map-description'})),
-    contains(recursivelyEquals(
-        {key: 'viewport', label: 'Default viewport',
-         type: cm.editors.Type.LAT_LON_BOX, app_state: null}))
+    contains({key: 'title', label: 'Title', type: cm.editors.Type.TEXT}),
+    contains({key: 'description', label: 'Description',
+              type: cm.editors.Type.HTML, preview_class: 'cm-map-description'}),
+    contains({key: 'viewport', label: 'Default viewport',
+              type: cm.editors.Type.LAT_LON_BOX, app_state: null})
   ]), null, map);
   cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
 
   // Emitting an INSPECT event on a layer should open an inspector on the layer.
   var layer = new cm.LayerModel();
   var layerSpecExpect = allOf([
-    contains(recursivelyEquals(
-        {key: 'title', label: 'Title', type: cm.editors.Type.TEXT})),
-    contains(recursivelyEquals(
-        {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
-         preview_class: 'cm-layer-description'})),
-    contains(recursivelyEquals(
-        {key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
-          preview_class: 'cm-layer-legend'})),
-    contains(recursivelyEquals(
-        {key: 'viewport', label: '"Zoom to area" viewport',
-         type: cm.editors.Type.LAT_LON_BOX, app_state: null})),
-    contains(recursivelyEquals(
-        {key: 'min_zoom', type: cm.editors.Type.NUMBER, require_integer: true,
-         label: 'Minimum zoom level', minimum: 0, maximum: 20})),
-    contains(recursivelyEquals(
-        {key: 'max_zoom', type: cm.editors.Type.NUMBER, require_integer: true,
-         label: 'Maximum zoom level', minimum: 0, maximum: 20}))
+    contains({key: 'title', label: 'Title', type: cm.editors.Type.TEXT}),
+    contains({key: 'description', label: 'Description',
+              type: cm.editors.Type.HTML,
+              preview_class: 'cm-layer-description'}),
+    contains({key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
+              preview_class: 'cm-layer-legend'}),
+    contains({key: 'viewport', label: '"Zoom to area" viewport',
+              type: cm.editors.Type.LAT_LON_BOX, app_state: null}),
+    contains({key: 'min_zoom', type: cm.editors.Type.NUMBER,
+              require_integer: true, label: 'Minimum zoom level',
+              minimum: 0, maximum: 20}),
+    contains({key: 'max_zoom', type: cm.editors.Type.NUMBER,
+              require_integer: true, label: 'Maximum zoom level',
+              minimum: 0, maximum: 20})
   ]);
   expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, null,
                                 layer);

@@ -96,8 +96,8 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
   // Test the toolbar view with no map ID; should only offer JSON.
   var showJsonLink = expectDescendantOf(this.parent_, withText('Show JSON'));
   cm.events.emit(showJsonLink, 'click');
-  expectThat(goog.json.parse(cm.ui.getText(diffPopup.lastChild).
-      replace(/&nbsp;/g, '')), recursivelyEquals(mapRoot));
+  expectEq(mapRoot, goog.json.parse(
+      cm.ui.getText(diffPopup.lastChild).replace(/&nbsp;/g, '')));
 
   // Test the toolbar view with a map ID; should offer diffs and JSON.
   encodeURIComponent = createMockFunction('encodeURIComponent');
@@ -135,8 +135,8 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
   // Test showing the pretty-printed JSON.
   showJsonLink = expectDescendantOf(diffPopup, withText('Show JSON'));
   cm.events.emit(showJsonLink, 'click');
-  expectThat(goog.json.parse(cm.ui.getText(diffPopup.lastChild).
-      replace(/&nbsp;/g, '')), recursivelyEquals(mapRoot));
+  expectEq(mapRoot, goog.json.parse(
+      cm.ui.getText(diffPopup.lastChild).replace(/&nbsp;/g, '')));
 
   // Test going back to the diff.
   var showDiffLink = expectDescendantOf(diffPopup, withText('Show diff'));

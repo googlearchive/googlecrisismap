@@ -12,7 +12,9 @@
 // Author: romano@google.com (Raquel Romano)
 
 function UtilTest() {
+  cm.TestBase.call(this);
 }
+UtilTest.prototype = new cm.TestBase();
 registerTestSuite(UtilTest);
 
 /**
@@ -157,25 +159,22 @@ UtilTest.prototype.testRound = function() {
 /** Tests cm.util.removeNulls. */
 UtilTest.prototype.testRemoveNulls = function() {
   // Nulls should be removed from plain Objects and Arrays.
-  expectThat(cm.util.removeNulls([3, 4, null, 5]),
-             recursivelyEquals([3, 4, 5]));
-  expectThat(cm.util.removeNulls([3, 4, [6, 7, null, 8], {a: null, b: 1}, 5]),
-             recursivelyEquals([3, 4, [6, 7, 8], {b: 1}, 5]));
-  expectThat(cm.util.removeNulls({a: 3, b: null, c: 5}),
-             recursivelyEquals({a: 3, c: 5}));
-  expectThat(cm.util.removeNulls({a: 3, b: {x: null, y: 4}, c: [null, 5]}),
-             recursivelyEquals({a: 3, b: {y: 4}, c: [5]}));
+  expectEq([3, 4, 5], cm.util.removeNulls([3, 4, null, 5]));
+  expectEq([3, 4, [6, 7, 8], {b: 1}, 5],
+           cm.util.removeNulls([3, 4, [6, 7, null, 8], {a: null, b: 1}, 5]));
+  expectEq({a: 3, c: 5}, cm.util.removeNulls({a: 3, b: null, c: 5}));
+  expectEq({a: 3, b: {y: 4}, c: [5]},
+           cm.util.removeNulls({a: 3, b: {x: null, y: 4}, c: [null, 5]}));
 
   // Anything that isn't a plain Object or Array should be unaffected.
-  expectThat(cm.util.removeNulls(3), equals(3));
-  expectThat(cm.util.removeNulls('abc'), equals('abc'));
-  expectThat(cm.util.removeNulls('abc'), equals('abc'));
+  expectEq(3, cm.util.removeNulls(3));
+  expectEq('abc', cm.util.removeNulls('abc'));
 
   // Properties of other objects shouldn't be affected, even if they are null.
   function Foo() { }
   var f = new Foo();
   f.a = null;
-  expectThat(cm.util.removeNulls(f), equals(f));
+  expectEq(f, cm.util.removeNulls(f));
   expectTrue('a' in f);
   expectEq(null, f.a);
 };

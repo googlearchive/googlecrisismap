@@ -11,11 +11,13 @@
 
 
 function EventsTest() {
+  cm.TestBase.call(this);
   this.source_ = {me: 'SOURCE'};
   this.closureTarget_ = new goog.events.EventTarget();
   this.mvcObject_ = new google.maps.MVCObject();
-  this.handler_ = gjstest.createMockFunction('handler');
+  this.handler_ = createMockFunction('handler');
 }
+EventsTest.prototype = new cm.TestBase();
 registerTestSuite(EventsTest);
 
 /**
@@ -32,8 +34,7 @@ EventsTest.prototype.listenMapsEvent = function() {
  * Tests cm.events.listen using the maps event system for a non-IE DOM element.
  */
 EventsTest.prototype.listenMapsDomEvent = function() {
-  this.source_.addEventListener =
-      gjstest.createMockFunction('addEventListener');
+  this.source_.addEventListener = createMockFunction('addEventListener');
 
   expectCall(this.source_.addEventListener)('click', this.handler_, undefined);
   cm.events.listen(this.source_, 'click', this.handler_);
@@ -46,7 +47,7 @@ EventsTest.prototype.listenMapsDomEvent = function() {
  * Tests cm.events.listen using the maps event system for an IE DOM element.
  */
 EventsTest.prototype.listenMapsDomEventIE = function() {
-  this.source_.attachEvent = gjstest.createMockFunction('attachEvent');
+  this.source_.attachEvent = createMockFunction('attachEvent');
 
   // The argument to attachEvent is a wrapped function. Just checking that
   // this.handler_ is called on trigger.
@@ -57,9 +58,7 @@ EventsTest.prototype.listenMapsDomEventIE = function() {
   google.maps.event.trigger(this.source_, 'click', 'arg1', 'arg2');
 };
 
-/**
- * Tests cm.events.listen using the closure event system.
- */
+/** Tests cm.events.listen using the Closure event system. */
 EventsTest.prototype.listenClosureEvent = function() {
   cm.events.listen(this.closureTarget_, 'click', this.handler_);
 
@@ -111,9 +110,7 @@ EventsTest.prototype.listenObject = function() {
   cm.events.listen(this.source_, 'click', this.handler_, obj);
 
   expectCall(this.handler_)()
-      .willOnce(function() {
-    expectEq(obj, this);
-  });
+      .willOnce(function() { expectRef(obj, this); });
   google.maps.event.trigger(this.source_, 'click');
 };
 
@@ -251,7 +248,7 @@ EventsTest.prototype.onChangeObject = function() {
   cm.events.onChange(this.mvcObject_, 'x', this.handler_, obj);
 
   expectCall(this.handler_)('x')
-      .willOnce(function() { expectEq(obj, this); });
+      .willOnce(function() { expectRef(obj, this); });
   this.mvcObject_.set('x', 'foo');
 };
 
@@ -262,7 +259,7 @@ EventsTest.prototype.onChangeObject = function() {
 EventsTest.prototype.emitMapsEvent = function() {
   google.maps.event.addListener(this.source_, 'click', this.handler_);
 
-  expectCall(this.handler_)(recursivelyEquals({type: 'click'}));
+  expectCall(this.handler_)({type: 'click'});
   cm.events.emit(this.source_, 'click');
 };
 
@@ -287,11 +284,7 @@ EventsTest.prototype.emitClosureEvent = function() {
 EventsTest.prototype.emitMapsEventWithProperties = function() {
   google.maps.event.addListener(this.source_, 'mousemove', this.handler_);
 
-  expectCall(this.handler_)(recursivelyEquals({
-    type: 'mousemove',
-    prop1: 'dog',
-    prop2: 'cat'
-  }));
+  expectCall(this.handler_)({type: 'mousemove', prop1: 'dog', prop2: 'cat'});
   cm.events.emit(this.source_, 'mousemove', {prop1: 'dog', prop2: 'cat'});
 };
 
@@ -321,7 +314,7 @@ EventsTest.prototype.forwardMapsEvent = function() {
   var originalSource = {me: 'ORIGINAL'};
   cm.events.forward(originalSource, 'mousemove', this.source_);
 
-  expectCall(this.handler_)(recursivelyEquals({type: 'mousemove'}));
+  expectCall(this.handler_)({type: 'mousemove'});
   cm.events.emit(originalSource, 'mousemove');
 };
 
@@ -362,18 +355,18 @@ EventsTest.prototype.forwardClosureToMapsEvent = function() {
  * specified.
  */
 EventsTest.prototype.forwardArray = function() {
-  var handler1 = gjstest.createMockFunction('handler1');
-  var handler2 = gjstest.createMockFunction('handler2');
+  var handler1 = createMockFunction('handler1');
+  var handler2 = createMockFunction('handler2');
   cm.events.listen(this.source_, 'mouseover', handler1);
   cm.events.listen(this.source_, 'mouseout', handler2);
 
   var originalSource = {me: 'ORIGINAL'};
   cm.events.forward(originalSource, ['mouseover', 'mouseout'], this.source_);
 
-  expectCall(handler1)(recursivelyEquals({type: 'mouseover'}));
+  expectCall(handler1)({type: 'mouseover'});
   cm.events.emit(originalSource, 'mouseover');
 
-  expectCall(handler2)(recursivelyEquals({type: 'mouseout'}));
+  expectCall(handler2)({type: 'mouseout'});
   cm.events.emit(originalSource, 'mouseout');
 };
 
@@ -386,7 +379,7 @@ EventsTest.prototype.forwardNewType = function() {
   var originalSource = {me: 'ORIGINAL'};
   cm.events.forward(originalSource, 'type', this.source_, 'newType');
 
-  expectCall(this.handler_)(recursivelyEquals({type: 'newType'}));
+  expectCall(this.handler_)({type: 'newType'});
   cm.events.emit(originalSource, 'type');
 };
 
@@ -399,7 +392,7 @@ EventsTest.prototype.forwardNewProperties = function() {
   var originalSource = {me: 'ORIGINAL'};
   cm.events.forward(originalSource, 'type', this.source_, null, {prop1: 'dog'});
 
-  expectCall(this.handler_)(recursivelyEquals({prop1: 'dog', type: 'type'}));
+  expectCall(this.handler_)({prop1: 'dog', type: 'type'});
   cm.events.emit(originalSource, 'type');
 };
 

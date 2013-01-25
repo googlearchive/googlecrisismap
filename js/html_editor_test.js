@@ -13,7 +13,6 @@
 
 function HtmlEditorTest() {
   cm.TestBase.call(this);
-  this.setGjstestEquals_('cm.Html');
   this.setForTest_('cm.Html.sanitize_', function(x) { return '*' + x + '*'; });
 }
 HtmlEditorTest.prototype = new cm.TestBase();

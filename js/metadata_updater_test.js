@@ -56,10 +56,8 @@ MetadataUpdaterTest.prototype.testTimeTick = function() {
   }, this));
 
   cm.events.emit(this.timer_, goog.Timer.TICK);
-  expectThat({'content_hash': 'xyz'},
-             recursivelyEquals(this.metadataModel_.get('lyr1')));
-  expectThat({'content_length': 123},
-             recursivelyEquals(this.metadataModel_.get('lyr5')));
+  expectEq({'content_hash': 'xyz'}, this.metadataModel_.get('lyr1'));
+  expectEq({'content_length': 123}, this.metadataModel_.get('lyr5'));
 };
 
 

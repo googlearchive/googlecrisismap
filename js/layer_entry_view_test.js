@@ -656,23 +656,21 @@ LayerEntryViewTest.prototype.clickCheckbox = function() {
   var parent = this.createView_();
   var checkbox = expectDescendantOf(parent, inputType('checkbox'));
 
-  var toggleEvent = null;
+  var event = null;
   cm.events.listen(this.view_, cm.events.TOGGLE_LAYER, function(e) {
-    toggleEvent = e;
+    event = e;
   });
 
   // Simulate checking the checkbox.
   checkbox.checked = true;
   cm.events.emit(checkbox, 'click');
-  expectThat(toggleEvent, recursivelyEquals(
-      {id: 'layer0', value: true, type: cm.events.TOGGLE_LAYER}));
+  expectEq({id: 'layer0', value: true, type: cm.events.TOGGLE_LAYER}, event);
 
   // Simulate unchecking the checkbox.
-  toggleEvent = null;
+  event = null;
   checkbox.checked = false;
   cm.events.emit(checkbox, 'click');
-  expectThat(toggleEvent, recursivelyEquals(
-      {id: 'layer0', value: false, type: cm.events.TOGGLE_LAYER}));
+  expectEq({id: 'layer0', value: false, type: cm.events.TOGGLE_LAYER}, event);
 };
 
 /**

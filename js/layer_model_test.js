@@ -59,7 +59,6 @@ var MAPTILE_MAP_ROOT_JSON = {
 
 function LayerModelTest() {
   cm.TestBase.call(this);
-  this.setGjstestEquals_('cm.LatLonBox');
   this.setForTest_('cm.LayerModel.nextId_', 0);
 }
 LayerModelTest.prototype = new cm.TestBase();
@@ -309,7 +308,7 @@ LayerModelTest.prototype.newFromMapRootLayerIds = function() {
  */
 LayerModelTest.prototype.toMapRoot = function() {
   var layerModel = cm.LayerModel.newFromMapRoot(KML_MAP_ROOT_JSON);
-  expectThat(layerModel.toMapRoot(), recursivelyEquals(KML_MAP_ROOT_JSON));
+  expectEq(KML_MAP_ROOT_JSON, layerModel.toMapRoot());
 };
 
 /** Tests that toMapRoot constructs a hierarchy of nested folders. */
@@ -357,7 +356,7 @@ LayerModelTest.prototype.toMapRootFolders = function() {
   ]};
 
   var layerModel = cm.LayerModel.newFromMapRoot(json);
-  expectThat(layerModel.toMapRoot(), recursivelyEquals(json));
+  expectEq(json, layerModel.toMapRoot());
 };
 
 /** Tests the getSublayerIds() method. */

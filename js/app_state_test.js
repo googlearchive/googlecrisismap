@@ -12,8 +12,6 @@
 
 function AppStateTest() {
   cm.TestBase.call(this);
-  this.setGjstestEquals_('cm.LatLonBox');
-  this.setGjstestEquals_('google.maps.LatLng');
   this.viewport_ = cm.LatLonBox.ENTIRE_MAP;
   this.appState_ = new cm.AppState('fr');
 }
@@ -40,14 +38,14 @@ AppStateTest.prototype.testFromAppState = function() {
   // Check that all the properties are equal.
   var newAppState = cm.AppState.fromAppState(this.appState_);
   expectEq(this.appState_.get('language'), newAppState.get('language'));
-  expectTrue(this.appState_.get('enabled_layer_ids').equals(
-      newAppState.get('enabled_layer_ids')));
-  expectTrue(this.appState_.get('promoted_layer_ids').equals(
-      newAppState.get('promoted_layer_ids')));
-  expectThat(newAppState.get('layer_opacities'), recursivelyEquals(
-      this.appState_.get('layer_opacities')));
-  expectTrue(this.appState_.get('viewport').equals(
-      newAppState.get('viewport')));
+  expectEq(this.appState_.get('enabled_layer_ids'),
+           newAppState.get('enabled_layer_ids'));
+  expectEq(this.appState_.get('promoted_layer_ids'),
+           newAppState.get('promoted_layer_ids'));
+  expectEq(this.appState_.get('layer_opacities'),
+           newAppState.get('layer_opacities'));
+  expectEq(this.appState_.get('viewport'),
+           newAppState.get('viewport'));
   expectEq(this.appState_.get('map_type_id'), newAppState.get('map_type_id'));
 
   // Check that object references are not the same.
@@ -339,10 +337,9 @@ AppStateTest.prototype.testSetFromMapModel = function() {
 
   expectEq(cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapModel.get('map_type')],
       this.appState_.get('map_type_id'));
-  expectTrue(this.appState_.get('viewport').equals(viewport));
+  expectEq(viewport, this.appState_.get('viewport'));
 
-  expectThat(this.appState_.get('promoted_layer_ids').getValues(),
-      recursivelyEquals(['promoted']));
+  expectEq(['promoted'], this.appState_.get('promoted_layer_ids').getValues());
   var opacities = this.appState_.get('layer_opacities');
   var enabledLayerIds = this.appState_.get('enabled_layer_ids');
   cm.util.forLayersInMap(mapModel, function(layer) {
