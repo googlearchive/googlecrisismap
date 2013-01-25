@@ -56,7 +56,7 @@ opt: languages.py static/mapviewer.css $(OUT_OPT)
 # Generate the list of all necessary files in dependency-sorted order.
 list: $(LIST)
 
-# Run all the JS and Python tests.
+# Run all the JS and Python tests (we need languages.py for Python tests).
 test: languages.py $(LIST) static/json_files.js
 	@gjstest --js_files=js/test_bootstrap.js,external/maps_api.js,$$(tr '\n' ',' < $(LIST)),static/json_files.js,js/test_utils.js,$$(echo js/*_test.js | tr ' ' ',') | python tools/format_gjstest_output.py && echo "All JS tests passed.\n" && tools/pytests && echo "\nAll JS and Python tests passed."
 
