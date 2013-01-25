@@ -432,6 +432,8 @@ cm.TestBase = function() {
     clearInterval: function() { }
   };
 
+  fakeDocument.defaultView = fakeWindow;
+
   this.setForTest_('cm.ui.document', fakeDocument);
   this.setForTest_('document', fakeDocument);
   this.setForTest_('goog.global', fakeWindow);
