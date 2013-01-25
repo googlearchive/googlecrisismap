@@ -20,6 +20,12 @@ libraries:
 - name: PIL
   version: "latest"
 
+# Enabling warmup requests gives us the option to configure idle instances,
+# if we need to prepare for traffic spikes ahead of time.  For details, see:
+# https://developers.google.com/appengine/docs/adminconsole/performancesettings
+inbound_services:
+- warmup
+
 handlers:
 - url: /crisismap/wms/query_layers
   script: wmscache.wms_query.app
