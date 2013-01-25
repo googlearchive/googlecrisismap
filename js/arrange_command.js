@@ -42,13 +42,27 @@ cm.ArrangeCommand = function(oldOrdering, newOrdering) {
   this.newOrdering_ = newOrdering;
 };
 
-/** @override */
+/**
+ * @override
+ * @suppress {checkTypes} actual parameter 1 of
+ * cm.ArrangeCommand.prototype.arrange_ does not match formal parameter
+ * found   : (Array.<string>|null)
+ * required: (Array.<(Object|null)>|null)
+ *   this.arrange_(this.newOrdering_, mapModel);
+ */
 cm.ArrangeCommand.prototype.execute = function(appState, mapModel) {
   this.arrange_(this.newOrdering_, mapModel);
   return true;
 };
 
-/** @override */
+/**
+ * @override
+ * @suppress {checkTypes} actual parameter 1 of
+ * cm.ArrangeCommand.prototype.arrange_ does not match formal parameter
+ * found   : (Array.<string>|null)
+ * required: (Array.<(Object|null)>|null)
+ *   this.arrange_(this.oldOrdering_, mapModel);
+ */
 cm.ArrangeCommand.prototype.undo = function(appState, mapModel) {
   this.arrange_(this.oldOrdering_, mapModel);
   return true;

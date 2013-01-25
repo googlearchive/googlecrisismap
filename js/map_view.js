@@ -617,7 +617,7 @@ cm.MapView.prototype.zoomToLayer = function(id) {
     this.map_.fitBounds(fullExtentBox.toLatLngBounds());
   } else if (overlay && overlay.getDefaultViewport) {
     /** @return {boolean} True iff the map viewport was set. */
-    function applyDefaultViewport() {
+    var applyDefaultViewport = function() {
       var bounds = overlay.getDefaultViewport();
       if (bounds) {
         mapView.map_.fitBounds(bounds);
@@ -625,7 +625,7 @@ cm.MapView.prototype.zoomToLayer = function(id) {
       } else {
         return false;
       }
-    }
+    };
     // Try to apply the default viewport. If unsuccessful, set up a listener
     // to apply it once it becomes available.
     if (!applyDefaultViewport()) {

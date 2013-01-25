@@ -192,7 +192,7 @@ cm.LatLonBoxEditor.prototype.updateSizeLabels_ = function() {
      * @param {number} meters A distance in meters.
      * @return {string} A friendly string like "2.1 km" or "34 m".
      */
-    function displayMeters(meters) {
+    var displayMeters = function(meters) {
       var magnitude = Math.floor(Math.log(meters) / Math.log(10));
       return meters >= 1000 ?
           cm.util.round(meters / 1000, 4 - magnitude) + ' km' :
