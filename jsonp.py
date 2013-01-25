@@ -198,10 +198,9 @@ class Jsonp(webapp2.RequestHandler):
       treated as MapRoot and localized to the specified language, and the
       localizations for other languages are discarded.
   """
-  # This class needs no __init__ method.  # pylint: disable-msg=W0232
+  # This class needs no __init__ method.  # pylint: disable=no-init
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self):
+  def get(self):  # pylint: disable=g-bad-name
     url = self.request.get('url', '')
     post_json = self.request.get('post_json', '')
     use_cache = not self.request.get('no_cache')

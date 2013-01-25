@@ -14,18 +14,18 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-# base_handler must come first. pylint:disable=g-bad-import-order
-from base_handler import BaseHandler
 import webapp2
+
+import base_handler
 import model
+
 from google.appengine.api import users
 
 
-class List(BaseHandler):
+class List(base_handler.BaseHandler):
   """Handler for the user's list of maps."""
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self):
+  def get(self):  # pylint: disable=g-bad-name
     # Attach to each Map a 'catalog_entries' attribute containing the
     # CatalogEntry entities that link to it.
     entries = model.CatalogEntry.GetAll()

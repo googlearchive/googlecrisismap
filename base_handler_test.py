@@ -14,7 +14,6 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import base_handler
 import test_utils
 
@@ -28,7 +27,6 @@ class BaseHandlerTest(test_utils.BaseTest):
 
     # "ja" is a supported language.
     self.assertEquals('ja', base_handler.ActivateLanguage('ja', None))
-
     self.assertEquals('ja', base_handler.ActivateLanguage(None, 'ja'))
 
     # "zz" is not a supported language.

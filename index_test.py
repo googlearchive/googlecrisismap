@@ -16,7 +16,6 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import os
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import index
 import model
 import test_utils

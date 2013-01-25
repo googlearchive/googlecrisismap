@@ -14,9 +14,6 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import json
-
-# Allow relative imports within the app.  # pylint: disable=W0403
 import base_handler
 import model
 import publish

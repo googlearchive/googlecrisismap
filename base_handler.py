@@ -14,17 +14,16 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-# We can't enforce order for the rest of the imports; no matter where we insert
-# "pylint: enable=...", pylint still complains. :(
-# pylint:disable=g-import-not-at-top
 import os
+
 import webapp2
+
 import model
+# pylint: disable=g-import-not-at-top
 try:
   import languages
 except ImportError:
   languages = model.Struct(ALL_LANGUAGES=['en'])
-
 
 from google.appengine.api import users
 from google.appengine.ext.webapp import template
@@ -102,8 +101,7 @@ class BaseHandler(webapp2.RequestHandler):
     path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
     return template.render(path, context or {})
 
-  # initialize() is part of RequestHandler.  # pylint: disable=C6409
-  def initialize(self, request, response):
+  def initialize(self, request, response):  # pylint: disable=g-bad-name
     # webapp2 __init__ calls initialize automatically - we call it again
     # ourselves.
     if request is None:
@@ -112,8 +110,7 @@ class BaseHandler(webapp2.RequestHandler):
     self.request.lang = ActivateLanguage(
         request.get('hl'), request.headers.get('accept-language'))
 
-  # handle_exception() is part of RequestHandler.  # pylint: disable=C6409
-  def handle_exception(self, exception, debug_mode):
+  def handle_exception(self, exception, debug):  # pylint: disable=g-bad-name
     """Render a basic error template on failure to access protected content."""
     self.response.set_status(403, message=exception.message)
     if isinstance(exception, model.AuthorizationError):
@@ -126,4 +123,4 @@ class BaseHandler(webapp2.RequestHandler):
           'exception': exception
       }))
     else:
-      super(BaseHandler, self).handle_exception(exception, debug_mode)
+      super(BaseHandler, self).handle_exception(exception, debug)

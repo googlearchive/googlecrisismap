@@ -398,8 +398,7 @@ class GetLegendItems(webapp2.RequestHandler):
   KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
   KMZ_CONTENT_TYPE = 'application/vnd.google-earth.kmz'
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self, kml_url=None):
+  def get(self, kml_url=None):  # pylint: disable=g-bad-name
     """Returns legend items extracted from kml at given URL.
 
     Args:

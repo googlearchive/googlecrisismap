@@ -14,7 +14,6 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import create
 import model
 import test_utils
@@ -23,10 +22,9 @@ import test_utils
 class CreateTest(test_utils.BaseTest):
   """Tests for create.py."""
 
-  # pylint: disable-msg=C6409
   def testCreate(self):
     # Grant MAP_CREATOR permission to google.com.
-    model.SetGlobalRoles('google.com', [model.ROLES.MAP_CREATOR])
+    model.SetGlobalRoles('google.com', [model.Role.MAP_CREATOR])
     # foo@google.com should be able to create a map.
     test_utils.SetUser('foo@google.com')
     handler = test_utils.SetupHandler('/create', create.Create(), '')
@@ -37,17 +35,15 @@ class CreateTest(test_utils.BaseTest):
     self.assertTrue(map_object is not None)
     self.assertTrue('Untitled' in map_object.GetCurrentJson())
 
-  # pylint: disable-msg=C6409
   def testCreateWithoutPermission(self):
     # Without MAP_CREATOR, foo@google.com shouldn't be able to create a map.
     test_utils.SetUser('foo@google.com')
     handler = test_utils.SetupHandler('/create', create.Create())
     self.assertRaises(model.AuthorizationError, handler.post)
 
-  # pylint: disable-msg=C6409
   def testDomainRole(self):
     # Grant MAP_CREATOR permission to foo@xyz.com.
-    model.SetGlobalRoles('foo@xyz.com', [model.ROLES.MAP_CREATOR])
+    model.SetGlobalRoles('foo@xyz.com', [model.Role.MAP_CREATOR])
     # foo@xyz.com should be able to create a map.
     test_utils.SetUser('foo@xyz.com')
     handler = test_utils.SetupHandler('/create', create.Create(), '')
@@ -61,7 +57,7 @@ class CreateTest(test_utils.BaseTest):
     self.assertEquals(None, map_object.domain_role)
 
     # Now set the initial_domain_role for xyz.com.
-    model.Config.Set('initial_domain_role:xyz.com', model.ROLES.MAP_EDITOR)
+    model.Config.Set('initial_domain_role:xyz.com', model.Role.MAP_EDITOR)
     # Create another map.
     test_utils.SetUser('foo@xyz.com')
     handler = test_utils.SetupHandler('/create', create.Create(), '')
@@ -71,7 +67,7 @@ class CreateTest(test_utils.BaseTest):
     map_object = model.Map.Get(location.split('/')[-1])
     self.assertTrue(map_object is not None)
     self.assertEquals(['xyz.com'], map_object.domains)
-    self.assertEquals(model.ROLES.MAP_EDITOR, map_object.domain_role)
+    self.assertEquals(model.Role.MAP_EDITOR, map_object.domain_role)
 
 
 if __name__ == '__main__':

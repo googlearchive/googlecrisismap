@@ -20,7 +20,6 @@ import StringIO
 import urllib2
 import zipfile
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import metadata_retriever as retriever
 import mox
 import test_utils
@@ -185,15 +184,11 @@ class MetadataRetrieverTest(test_utils.BaseTest):
         server_last_modified=last_modified_string,
         server_etag=etag)
 
-    self.mox.StubOutWithMock(urllib2.Request, '__init__')
-    self.mox.StubOutWithMock(urllib2.Request, 'add_header')
+    self.mox.StubOutClassWithMocks(urllib2, 'Request')
+    req = urllib2.Request(url)
+    req.add_header('If-Modified-Since', last_modified_string)
+    req.add_header('If-None-Match', 'abcde')
     self.mox.StubOutWithMock(urllib2, 'build_opener')
-    self.mox.StubOutWithMock(urllib2.OpenerDirector, 'open')
-    self.mox.StubOutWithMock(logging, 'error')
-
-    urllib2.Request.__init__(url)
-    urllib2.Request.add_header('If-Modified-Since', last_modified_string)
-    urllib2.Request.add_header('If-None-Match', 'abcde')
     opener = self.mox.CreateMock(urllib2.OpenerDirector)
     urllib2.build_opener().AndReturn(opener)
     opener.open(mox.IgnoreArg()).AndRaise(urllib2.HTTPError

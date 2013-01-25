@@ -17,7 +17,6 @@ __author__ = 'joeysilva@google.com (Joey Silva)'
 import difflib
 import json
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import diff
 import jsonp
 import model
@@ -31,7 +30,6 @@ class DiffTest(test_utils.BaseTest):
   def setUp(self):
     super(DiffTest, self).setUp()
 
-  # pylint: disable-msg=C6409
   def testDiff(self):
     """Test that a map's versions are diffed against new maproot JSON."""
     saved_json = json.dumps({'a': 'b', 'c': 'd'})

@@ -14,7 +14,6 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import catalog
 import model
 import test_utils

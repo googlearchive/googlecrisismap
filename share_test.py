@@ -41,17 +41,11 @@ class ShareTest(test_utils.BaseTest):
     """Tests just the sending of the email to the recipient."""
     user = users.User('user@gmail.com')
     message = 'hello'
-    roles = {model.ROLES.MAP_VIEWER: 'MAP_VIEWER',
-             model.ROLES.MAP_EDITOR: 'MAP_EDITOR',
-             model.ROLES.MAP_OWNER: 'MAP_OWNER'}
-    user = users.User('user@gmail.com')
 
-    for role in roles:
-      handler = test_utils.SetupHandler('/share/%s' % self.map.id,
-                                        share.Share(),
-                                        'role=%s&recipient=%s&message=%s'
-                                        % (roles[role],
-                                           user.email(), message))
+    for role in ['MAP_VIEWER', 'MAP_EDITOR', 'MAP_OWNER']:
+      handler = test_utils.SetupHandler(
+          '/share/%s' % self.map.id, share.Share(),
+          'role=%s&recipient=%s&message=%s' % (role, user.email(), message))
       subject = ('%s has shared "%s" with you' %
                  (users.get_current_user().email(), self.map.title))
       url = handler.request.host_url + '/crisismap/maps/' + self.map.id
@@ -59,32 +53,25 @@ class ShareTest(test_utils.BaseTest):
 Your permission level for %s has changed to %s.
 Access the map at: %s
 
-%s""" % (self.map.title, roles[role], url, message)
+%s""" % (self.map.title, role, url, message)
 
       self.mox.StubOutWithMock(mail, 'send_mail')
-      mail.send_mail('admin@google.com',
-                     user.email(), subject, body)
+      mail.send_mail('admin@google.com', user.email(), subject, body)
 
       # Put in replay mode.
       self.mox.ReplayAll()
-      handler.SendPermissionChangeEmail(user.email(), self.map,
-                                        roles[role], message)
+      handler.SendPermissionChangeEmail(user.email(), self.map, role, message)
       self.mox.UnsetStubs()
 
   def testSharePostSuccess(self):
     """Shares the map with another person successfully."""
-    roles = {model.ROLES.MAP_VIEWER: 'MAP_VIEWER',
-             model.ROLES.MAP_EDITOR: 'MAP_EDITOR',
-             model.ROLES.MAP_OWNER: 'MAP_OWNER'}
     user = users.User('user@gmail.com')
     access_policy = model.AccessPolicy()
     message = 'hello'
-    for role in roles:
-      handler = test_utils.SetupHandler('/share/%s' % self.map.id,
-                                        share.Share(),
-                                        'role=%s&recipient=%s&message=%s'
-                                        % (roles[role],
-                                           user.email(), message))
+    for role in ['MAP_VIEWER', 'MAP_EDITOR', 'MAP_OWNER']:
+      handler = test_utils.SetupHandler(
+          '/share/%s' % self.map.id, share.Share(),
+          'role=%s&recipient=%s&message=%s' % (role, user.email(), message))
 
       subject = ('%s has shared "%s" with you' %
                  (users.get_current_user().email(), self.map.title))
@@ -93,7 +80,7 @@ Access the map at: %s
 Your permission level for %s has changed to %s.
 Access the map at: %s
 
-%s""" % (self.map.title, roles[role], url, message)
+%s""" % (self.map.title, role, url, message)
 
       self.mox.StubOutWithMock(mail, 'send_mail')
       mail.send_mail(users.get_current_user().email(),
@@ -135,18 +122,16 @@ Access the map at: %s
     message = 'hello'
 
     # Try with missing recipient email.
-    handler = test_utils.SetupHandler('/share/%s' % self.map.id,
-                                      share.Share(),
-                                      'role=%s&message=%s'
-                                      % (role, message))
+    handler = test_utils.SetupHandler(
+        '/share/%s' % self.map.id, share.Share(),
+        'role=%s&message=%s' % (role, message))
     handler.post(self.map.id)
     self.assertEquals(404, handler.response.status_int)
 
     # Try with missing role.
-    handler = test_utils.SetupHandler('/share/%s' % self.map.id,
-                                      share.Share(),
-                                      'recipient=%s&message=%s'
-                                      % (email, message))
+    handler = test_utils.SetupHandler(
+        '/share/%s' % self.map.id, share.Share(),
+        'recipient=%s&message=%s' % (email, message))
     handler.post(self.map.id)
     self.assertEquals(404, handler.response.status_int)
 

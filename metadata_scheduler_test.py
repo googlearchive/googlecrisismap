@@ -15,9 +15,8 @@
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 import base64
-import cgi
+import urlparse
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import metadata_scheduler
 import model
 import test_utils
@@ -81,12 +80,11 @@ class MetadataSchedulerTest(test_utils.BaseTest):
     self.assertEquals(3, len(tasks))
 
     self.assertEquals({'type': ['KML'], 'address': ['a.com/b.kml']},
-                      cgi.parse_qs(base64.b64decode(tasks[0]['body'])))
+                      urlparse.parse_qs(base64.b64decode(tasks[0]['body'])))
     self.assertEquals({'type': ['KML'], 'address': ['x.com/y.kml']},
-                      cgi.parse_qs(base64.b64decode(tasks[1]['body'])))
+                      urlparse.parse_qs(base64.b64decode(tasks[1]['body'])))
     self.assertEquals({'type': ['KML'], 'address': ['z.com/y.kml']},
-                      cgi.parse_qs(base64.b64decode(tasks[2]['body'])))
-
+                      urlparse.parse_qs(base64.b64decode(tasks[2]['body'])))
 
 if __name__ == '__main__':
   test_utils.main()

@@ -15,7 +15,9 @@
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import urllib
+
 import webapp2
+
 import model
 
 
@@ -36,8 +38,7 @@ def GetDestination(request):
 class Index(webapp2.RequestHandler):
   """Redirector from '/' or '/crisismap' to the appropriate map page."""
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self):
+  def get(self):  # pylint: disable=g-bad-name
     self.redirect(str(GetDestination(self.request)))  # non-Unicode is required
 
 

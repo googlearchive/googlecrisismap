@@ -14,21 +14,17 @@
 
 __author__ = 'giencke@google.com (Pete Giencke)'
 
-# App Engine requires that we put this first.  # pylint: disable=C6203,C6204
-# pylint:disable=g-bad-import-order
-import base_handler
-
 import base64
-# Enforce order for the rest of the imports.  This has to come just after the
-# first import, or pylint will complain.  # pylint: enable=C6203,C6204
 import hmac
+import json
 import logging
 import os
 import urllib
 import urlparse
 
-import json
+import webapp2
 
+import base_handler
 import jsonp
 import maproot
 import model
@@ -36,7 +32,6 @@ import model
 from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
-import webapp2
 
 MAPS_API_BASE_URL = '//maps.google.com/maps/api/js'
 
@@ -320,7 +315,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
     config['map_id'] = map_object.id
     config['save_url'] = '/crisismap/api/maps/%s' % map_object.id
     config['share_url'] = '/crisismap/share/%s' % map_object.id
-    config['enable_editing'] = map_object.CheckAccess(model.ROLES.MAP_EDITOR)
+    config['enable_editing'] = map_object.CheckAccess(model.Role.MAP_EDITOR)
     config['draft_mode'] = True
   if map_object or catalog_entry:
     config['metadata_url'] = ('/crisismap/metadata?token=%s' %
@@ -351,8 +346,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
 class MapByLabel(base_handler.BaseHandler):
   """Handler for displaying a published map by its domain and label."""
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self, domain, label):
+  def get(self, domain, label):  # pylint: disable=g-bad-name
     domain = domain or model.Config.Get('default_publisher_domain', '')
     config = GetConfig(
         self.request, None, model.CatalogEntry.Get(domain, label))
@@ -371,8 +365,7 @@ class MapByLabel(base_handler.BaseHandler):
 class MapById(base_handler.BaseHandler):
   """Handler for displaying a map by its map ID."""
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self, map_id):
+  def get(self, map_id):  # pylint: disable=g-bad-name
     map_object = model.Map.Get(map_id)
     if not map_object:
       self.error(404)
@@ -389,9 +382,8 @@ class MapById(base_handler.BaseHandler):
           'embedded': self.request.get('embedded', False)
       }))
 
-
 app = webapp2.WSGIApplication([
     (r'/crisismap/()([\w-]+)', MapByLabel),  # default domain
     (r'/crisismap/a/([\w.-]+)/([\w-]+)', MapByLabel),  # specified domain
     (r'/crisismap/maps/([\w-]+)', MapById)
-    ])
+])

@@ -14,22 +14,19 @@
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
-# base_handler has to come first.
-# pylint:disable=g-bad-import-order
-from base_handler import BaseHandler
 import webapp2
+
+import base_handler
 import model
 
 
-class Unpublish(BaseHandler):
+class Unpublish(base_handler.BaseHandler):
   """Handler for deletion of a CatalogEntry."""
 
-  # "post" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def post(self):
+  def post(self):  # pylint: disable=g-bad-name
     domain = self.request.get('domain')
     label = self.request.get('label')
     model.CatalogEntry.Delete(domain, label)
     self.redirect('/crisismap/maps')
-
 
 app = webapp2.WSGIApplication([(r'.*', Unpublish)])

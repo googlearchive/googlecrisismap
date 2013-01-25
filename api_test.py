@@ -15,7 +15,7 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import json
-# Allow relative imports within the app.  # pylint: disable=W0403
+
 import api
 import model
 import test_utils
@@ -31,7 +31,6 @@ class ApiTest(test_utils.BaseTest):
                                 editors=['editor@gmail.com'],
                                 viewers=['viewer@gmail.com'])
 
-  # pylint: disable-msg=C6409
   def testMapsGet(self):
     """Fetches a map through the API."""
     json_dict = {'json': True, 'stuff': [0, 1]}

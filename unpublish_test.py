@@ -14,7 +14,6 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import model
 import test_utils
 import unpublish
@@ -38,7 +37,6 @@ class UnpublishTest(test_utils.BaseTest):
         'domain=foo.com&label=abc')
     handler.post()
     self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'abc'))
-
 
 if __name__ == '__main__':
   test_utils.main()

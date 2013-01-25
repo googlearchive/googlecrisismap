@@ -14,7 +14,6 @@
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import maproot
 import test_utils
 

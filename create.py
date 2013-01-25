@@ -15,17 +15,17 @@
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import webapp2
-from base_handler import BaseHandler
+
+import base_handler
 import model
 
 from google.appengine.api import users
 
 
-class Create(BaseHandler):
+class Create(base_handler.BaseHandler):
   """Handler that creates a new map."""
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def post(self):
+  def post(self):  # pylint: disable=g-bad-name
     domain = model.GetUserDomain(users.get_current_user())
     domain_role = model.GetInitialDomainRole(domain)
     map_object = model.Map.Create(

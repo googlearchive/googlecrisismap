@@ -316,7 +316,7 @@ class LegendItemExtractorTest(test_utils.BaseTest):
 
     self.assertEquals(
         # Icons
-        # Map lambda is not too long. pylint: disable-msg=C6402
+        # pylint: disable=g-long-lambda
         (mox.SameElementsAs(map(self.CreateIconFromString,
                                 [no_href, colored_icon, href_icon])),
          # Lines

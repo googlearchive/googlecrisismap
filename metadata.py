@@ -25,7 +25,7 @@ import urllib2
 
 import webapp2
 
-import map  # Allow use of the name 'map'.  # pylint: disable-msg=W0622
+import map  # pylint: disable=redefined-builtin
 import metadata_retriever as retriever
 
 from google.appengine.api import memcache
@@ -57,7 +57,7 @@ def GetIntrinsicPropertiesRecord(source):
 
 
 class Metadata(webapp2.RequestHandler):
-  def get(self):  # pylint: disable-msg=C6409
+  def get(self):  # pylint: disable=g-bad-name
     """HTTP GET request handler for Metadata."""
     # Comma cannot be used as the separation character, since it can possibly
     # already exist in the layer address, since an adress is a JSON.
@@ -67,14 +67,12 @@ class Metadata(webapp2.RequestHandler):
     token = self.request.get('token')
 
     sources = []
-
     map_layer_addresses = memcache.get(token)
     if map_layer_addresses:
       sources += map_layer_addresses
       # Keep the memcache entry fresh to avoid expiration.
       memcache.set(token, map_layer_addresses,
                    map.DEFAULT_LAYER_ADDRESS_CACHE_SECONDS)
-
     if layer_addresses:
       sources += layer_addresses
 
@@ -90,6 +88,5 @@ class Metadata(webapp2.RequestHandler):
       if isinstance(o, datetime.datetime):
         return round(time.mktime(o.timetuple()))
     self.response.out.write(json.dumps(result, default=Serializer))
-
 
 app = webapp2.WSGIApplication([(r'.*', Metadata)])

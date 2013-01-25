@@ -14,8 +14,7 @@
 
 __author__ = 'shakusa@google.com (Steve Hakusa)'
 
-# Allow relative imports within the app.  # pylint: disable=W0403
-import map  # Allow use of the name 'map'.  # pylint: disable=W0622
+import map  # pylint: disable=redefined-builtin
 import model
 import test_utils
 

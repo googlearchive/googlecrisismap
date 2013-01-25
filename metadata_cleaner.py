@@ -15,21 +15,20 @@
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 import datetime
+
 import webapp2
 
-from base_handler import BaseHandler
+import base_handler
 import metadata_retriever
 
-# Number of minutes after which unchecked SourceMetadataModel entries are
-# removed.
+# Number of minutes after which unchecked SourceMetadataModel entries expire.
 SOURCE_METADATA_TTL_MINUTES = 24 * 60
 
 
-class MetadataCleaner(BaseHandler):
+class MetadataCleaner(base_handler.BaseHandler):
   """Handler for deletion of a CatalogEntry."""
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self):
+  def get(self):  # pylint: disable=g-bad-name
     # If a data source is last checked before date_limit, it can be deleted.
     date_limit = (datetime.datetime.utcnow() -
                   datetime.timedelta(seconds=60 * SOURCE_METADATA_TTL_MINUTES))
@@ -38,6 +37,4 @@ class MetadataCleaner(BaseHandler):
     for metadata in entries:
       metadata.delete()
 
-
 app = webapp2.WSGIApplication([(r'.*', MetadataCleaner)])
-

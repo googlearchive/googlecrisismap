@@ -14,7 +14,6 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import model
 import test_utils
 
@@ -24,9 +23,9 @@ from google.appengine.api import users
 
 def GetRolesForMap(map_object):
   """Gets the set of all roles that the current user has for a MapModel."""
-  map_roles = set(model.ROLES) - set(['CATALOG_EDITOR'])
+  map_roles = set(model.Role) - set(['CATALOG_EDITOR'])
   return set([role for role in map_roles
-              if model.CheckAccess(role, object=map_object)])
+              if model.CheckAccess(role, target=map_object)])
 
 
 class MapTests(test_utils.BaseTest):
@@ -125,42 +124,39 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals(set(['MAP_OWNER', 'MAP_EDITOR', 'MAP_VIEWER']),
                       GetRolesForMap(m))
 
-    m.model.domain_role = model.ROLES.MAP_EDITOR
-    self.assertEquals(set(['MAP_EDITOR', 'MAP_VIEWER']),
-                      GetRolesForMap(m))
+    m.model.domain_role = model.Role.MAP_EDITOR
+    self.assertEquals(set(['MAP_EDITOR', 'MAP_VIEWER']), GetRolesForMap(m))
 
-    m.model.domain_role = model.ROLES.MAP_VIEWER
+    m.model.domain_role = model.Role.MAP_VIEWER
     self.assertEquals(set(['MAP_VIEWER']), GetRolesForMap(m))
 
     # Verify that ADMIN doesn't apply to domains.
-    m.model.domain_role = model.ROLES.ADMIN
+    m.model.domain_role = model.Role.ADMIN
     self.assertEquals(set(), GetRolesForMap(m))
 
   def testMapCreatorDomains(self):
     """Verifies that the map_creator_domains setting is respected."""
     test_utils.BecomeAdmin()
-    model.SetGlobalRoles('foo.com', [model.ROLES.MAP_CREATOR])
+    model.SetGlobalRoles('foo.com', [model.Role.MAP_CREATOR])
 
     # bar@foo.com has the CREATOR role.
     current_user = test_utils.SetUser('bar@foo.com')
     access_policy = model.AccessPolicy()
     self.assertTrue(
-        access_policy.HasGlobalRole(current_user, model.ROLES.MAP_CREATOR))
-    self.assertTrue(model.CheckAccess(model.ROLES.MAP_CREATOR),
+        access_policy.HasGlobalRole(current_user, model.Role.MAP_CREATOR))
+    self.assertTrue(model.CheckAccess(model.Role.MAP_CREATOR),
                     'user %s in domain %s failed CheckAccess for %s' % (
                         current_user, model.GetUserDomain(current_user),
-                        model.ROLES.MAP_CREATOR))
-    self.assertFalse(model.CheckAccess(model.ROLES.ADMIN))
+                        model.Role.MAP_CREATOR))
+    self.assertFalse(model.CheckAccess(model.Role.ADMIN))
     model.Map.Create('{}')
 
     # foo@bar.com doesn't have the CREATOR role.
     test_utils.SetUser('foo@bar.com')
-    self.assertFalse(model.CheckAccess(model.ROLES.MAP_CREATOR))
+    self.assertFalse(model.CheckAccess(model.Role.MAP_CREATOR))
     self.assertRaises(model.AuthorizationError, model.Map.Create, '{}')
 
   def testVersions(self):
-    # pylint is unable to verify the members of Structs
-    # pylint: disable-msg=E1101
     """Verifies that creating and setting versions works properly."""
     test_utils.BecomeAdmin()
 
@@ -216,9 +212,9 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([], m.model.editors)
     self.assertEquals([admin.email()], m.model.owners)
 
-    permissions = {model.ROLES.MAP_VIEWER: m.model.viewers,
-                   model.ROLES.MAP_EDITOR: m.model.editors,
-                   model.ROLES.MAP_OWNER: m.model.owners}
+    permissions = {model.Role.MAP_VIEWER: m.model.viewers,
+                   model.Role.MAP_EDITOR: m.model.editors,
+                   model.Role.MAP_OWNER: m.model.owners}
     for role in permissions:
       # Local copy is manually updated to reflect proper state of model list.
       expected_users = list(permissions[role])
@@ -252,9 +248,9 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([admin.email()], m.model.owners)
 
     # Should do nothing: only viewer, editor, owner revokable.
-    m.AssertAccess(model.ROLES.MAP_CREATOR, admin)
-    m.RevokePermission(model.ROLES.MAP_CREATOR, user)
-    m.AssertAccess(model.ROLES.MAP_CREATOR, admin)
+    m.AssertAccess(model.Role.MAP_CREATOR, admin)
+    m.RevokePermission(model.Role.MAP_CREATOR, user)
+    m.AssertAccess(model.Role.MAP_CREATOR, admin)
 
     self.assertEquals([], m.model.viewers)
     self.assertEquals([], m.model.editors)
@@ -277,9 +273,9 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([], m.model.editors)
     self.assertEquals([admin.email()], m.model.owners)
 
-    permissions = {model.ROLES.MAP_VIEWER: m.model.viewers,
-                   model.ROLES.MAP_EDITOR: m.model.editors,
-                   model.ROLES.MAP_OWNER: m.model.owners}
+    permissions = {model.Role.MAP_VIEWER: m.model.viewers,
+                   model.Role.MAP_EDITOR: m.model.editors,
+                   model.Role.MAP_OWNER: m.model.owners}
     for role in permissions:
       expected_users = list(permissions[role])
       m.ChangePermissionLevel(role, user)  # Grant permission.
@@ -297,8 +293,8 @@ class MapTests(test_utils.BaseTest):
 
     # Should do nothing: only viewer, editor, owner roles
     # changeable permissions.
-    m.ChangePermissionLevel(model.ROLES.MAP_CREATOR, user)
-    self.assertFalse(m.CheckAccess(model.ROLES.MAP_CREATOR, user,
+    m.ChangePermissionLevel(model.Role.MAP_CREATOR, user)
+    self.assertFalse(m.CheckAccess(model.Role.MAP_CREATOR, user,
                                    access_policy))
 
   def testCreate(self):
@@ -361,8 +357,8 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([3, 4, {'a': 'b'}, None], model.Config.Get(key))
     self.assertEquals('new value', model.Config.GetOrInsert('xy', 'new value'))
     self.assertEquals(None, model.GetInitialDomainRole('xyz.com'))
-    model.SetInitialDomainRole('xyz.com', model.ROLES.MAP_VIEWER)
-    self.assertEquals(model.ROLES.MAP_VIEWER,
+    model.SetInitialDomainRole('xyz.com', model.Role.MAP_VIEWER)
+    self.assertEquals(model.Role.MAP_VIEWER,
                       model.GetInitialDomainRole('xyz.com'))
 
   def testGetAll(self):
@@ -402,7 +398,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertRaises(model.AuthorizationError, model.CatalogEntry.Create,
                       'foo.com', 'label', mm, is_listed=True)
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Create should work.
-    model.SetGlobalRoles('random_user@gmail.com', [model.ROLES.CATALOG_EDITOR])
+    model.SetGlobalRoles('random_user@gmail.com', [model.Role.CATALOG_EDITOR])
     mc = model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
 
     self.assertEquals('foo.com', mc.domain)
@@ -427,7 +423,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertRaises(model.AuthorizationError, model.CatalogEntry.Delete,
                       'foo.com', 'label')
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Delete should work.
-    model.SetGlobalRoles('random_user@gmail.com', [model.ROLES.CATALOG_EDITOR])
+    model.SetGlobalRoles('random_user@gmail.com', [model.Role.CATALOG_EDITOR])
     model.CatalogEntry.Delete('foo.com', 'label')
 
     # Assert that the entry is successfully deleted.
@@ -453,7 +449,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     test_utils.SetUser('random_user@gmail.com')
     self.assertRaises(model.AuthorizationError, mc.Put)
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Put should work.
-    model.SetGlobalRoles('random_user@gmail.com', [model.ROLES.CATALOG_EDITOR])
+    model.SetGlobalRoles('random_user@gmail.com', [model.Role.CATALOG_EDITOR])
     mc.Put()
 
     # The CatalogEntry should now point at the new MapVersion.

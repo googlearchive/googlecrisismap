@@ -16,7 +16,6 @@ __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 import datetime
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import metadata_cleaner
 import metadata_retriever
 import test_utils
@@ -37,19 +36,16 @@ class MetadataCleanerTest(test_utils.BaseTest):
 
     # We don't use test_utils.MyDateTime here because MetadataCleaner uses
     # Datastore filters and custom types cannot be used for filters.
-    sm1_last_checked = (datetime.datetime.utcnow() -
-                        datetime.timedelta(days=5))
+    sm1_last_checked = datetime.datetime.utcnow() - datetime.timedelta(days=5)
     sm1 = metadata_retriever.SourceMetadataModel(last_checked=sm1_last_checked)
     key1 = db.put(sm1)
-    sm2_last_checked = (datetime.datetime.utcnow() -
-                        datetime.timedelta(seconds=20))
+    sm2_last_checked = datetime.datetime.utcnow() - datetime.timedelta(0, 20)
     sm2 = metadata_retriever.SourceMetadataModel(last_checked=sm2_last_checked)
     key2 = db.put(sm2)
 
     handler.get()
     self.assertFalse(db.get(key1))
     self.assertEquals(sm2_last_checked, db.get(key2).last_checked)
-
 
 if __name__ == '__main__':
   test_utils.main()

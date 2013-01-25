@@ -19,6 +19,7 @@ import os
 import unittest
 import urlparse
 
+import webapp2
 import webob
 
 import base_handler
@@ -26,7 +27,6 @@ import mox
 
 from google.appengine.api import users
 from google.appengine.ext import testbed
-import webapp2
 
 
 def SetupRequest(url, post_data=None):
@@ -83,7 +83,7 @@ class MyDateTime(datetime.datetime):
   default_datetime = datetime.datetime(2012, 4, 17, 20, 30, 40)
 
   @classmethod
-  def utcnow(cls):  # pylint: disable=C6409
+  def utcnow(cls):  # pylint: disable=g-bad-name
     return MyDateTime.default_datetime
 
 
@@ -100,27 +100,18 @@ class BaseTest(unittest.TestCase):
     self.testbed.init_taskqueue_stub(root_path=root)
     self.mox = mox.Mox()
 
-  # pylint: disable-msg=C6409
   def tearDown(self):
     self.mox.UnsetStubs()
     self.testbed.deactivate()
     ClearUser()
 
-  def assertUrlsEqual(self, expected, actual):
-    """Tests that URLs are equal, without caring about query arg order."""
-    e_scheme, e_netloc, e_path, e_query, e_frag = urlparse.urlsplit(expected)
-    a_scheme, a_netloc, a_path, a_query, a_frag = urlparse.urlsplit(actual)
-    self.assertEquals(e_scheme, a_scheme,
-                      'different scheme %s != %s' % (expected, actual))
-    self.assertEquals(e_netloc, a_netloc,
-                      'different netloc %s != %s' % (expected, actual))
-    self.assertEquals(e_path, a_path,
-                      'different path %s != %s' % (expected, actual))
-    self.assertEquals(e_frag, a_frag,
-                      'different fragment %s != %s' % (expected, actual))
-    self.assertEquals(sorted(urlparse.parse_qsl(e_query)),
-                      sorted(urlparse.parse_qsl(a_query)),
-                      'different query %s != %s' % (expected, actual))
+  def assertEqualsUrlWithUnorderedParams(self, expected, actual):
+    """Checks for an expected URL, ignoring the order of query params."""
+    e_scheme, e_host, e_path, e_query, e_frag = urlparse.urlsplit(expected)
+    a_scheme, a_host, a_path, a_query, a_frag = urlparse.urlsplit(actual)
+    self.assertEquals(
+        (e_scheme, e_host, e_path, sorted(urlparse.parse_qsl(e_query)), e_frag),
+        (a_scheme, a_host, a_path, sorted(urlparse.parse_qsl(a_query)), a_frag))
 
 
 def main():

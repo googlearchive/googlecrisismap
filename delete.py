@@ -15,15 +15,15 @@
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 import webapp2
-from base_handler import BaseHandler
+
+import base_handler
 import model
 
 
-class Delete(BaseHandler):
+class Delete(base_handler.BaseHandler):
   """Handler for deleting a map and its related entities."""
 
-  # "post" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def post(self):
+  def post(self):  # pylint: disable=g-bad-name
     map_id = self.request.get('map_id')
     self.DeleteMap(map_id)
     self.redirect('/crisismap/maps')

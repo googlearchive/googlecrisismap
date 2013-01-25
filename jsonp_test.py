@@ -27,10 +27,7 @@ class JsonpTest(test_utils.BaseTest):
     try:
       callable_obj(*args)
     except jsonp.Error, exception:
-      self.assert_(expected_status == exception.status,
-                   'Status code does not match.\n'
-                   'Expected status: %r\n'
-                   'Actual status: %r' % (expected_status, exception.status))
+      self.assertEquals(expected_status, exception.status)
     else:
       self.fail('jsonp.Error not raised')
 

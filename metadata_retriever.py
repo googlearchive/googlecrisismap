@@ -20,18 +20,18 @@ import hashlib
 import logging
 import StringIO
 import urllib2
-from xml.etree import ElementTree
-from xml.parsers.expat import ExpatError
+import xml.etree.ElementTree
+import xml.parsers.expat
 import zipfile
+
 import webapp2
 
 import maproot
 
 from google.appengine.ext import db
 
-
 # The maximum size of the downloaded content from a data source, in bytes.
-MAX_CONTENT_SIZE = 10 * 1024 * 1024
+MAX_CONTENT_LENGTH = 10 * 1024 * 1024
 
 
 class SourceMetadataModel(db.Model):
@@ -153,7 +153,7 @@ def GetKml(url_handle):
   Returns:
     The content of KML file, if it exists and is not empty. None otherwise.
   """
-  content = url_handle.read(MAX_CONTENT_SIZE)
+  content = url_handle.read(MAX_CONTENT_LENGTH)
   try:
     z = zipfile.ZipFile(StringIO.StringIO(content))
   except zipfile.BadZipfile:
@@ -174,7 +174,7 @@ def GetKml(url_handle):
 def GetAllXmlTags(content):
   """Returns the list of tags of all elements in a string of XML.
 
-  Strips all namespaces. This list loses the tree structure of XML.
+  Strips all XML namespaces. This list loses the tree structure of XML.
 
   Args:
     content: A string with valid XML structure.
@@ -182,12 +182,9 @@ def GetAllXmlTags(content):
   Returns:
     A list of strings of all elements tags with their namespaces stripped.
   """
-  xml = ElementTree.XML(content)
-  tags = []
   # Remove all the namespace prefixes from the tags.
-  for elem in xml.getiterator():
-    tags.append(elem.tag.split('}')[-1])
-  return tags
+  return [element.tag.split('}')[-1]
+          for element in xml.etree.ElementTree.XML(content).getiterator()]
 
 
 def HasUnsupportedKml(content):
@@ -205,24 +202,24 @@ def HasUnsupportedKml(content):
   Returns:
     True if there are any unsupported aspects of the KML file.
   """
-  # Use capital letters for constants.  # pylint: disable=C6409
+  # Use capital letters for constants.  # pylint: disable=g-bad-name
   MAX_FEATURES = 1000
   MAX_NETWORK_LINKS = 10
-  SUPPORTED_ELEMENTS = set(
-      ['atom:author', 'atom:link', 'atom:name', 'coordinates', 'Data',
-       'description', 'east', 'expires', 'fill', 'Folder', 'GroundOverlay',
-       'h', 'heading', 'hint', 'hotSpot', 'href', 'Icon', 'IconStyle',
-       'innerBoundaryIs', 'kml', 'latitude', 'LatLonAltBox', 'LatLonBox',
-       'LinearRing', 'LineString', 'LineStyle', 'Link', 'Lod', 'longitude',
-       'maxAltitude', 'maxFadeExtent', 'maxLodPixels', 'minAltitude',
-       'minFadeExtent', 'minLodPixels', 'name', 'NetworkLink', 'north', 'open',
-       'outerBoundaryIs', 'outline', 'Placemark', 'Point', 'Polygon',
-       'PolyStyle', 'range', 'refreshMode', 'ScreenOverlay', 'size', 'Snippet',
-       'south', 'Style', 'text', 'Url', 'value', 'viewRefreshTime', 'w',
-       'west', 'width', 'x', 'y', 'Document', 'ExtendedData', 'BalloonStyle',
-       'Change', 'color', 'MultiGeometry', 'NetworkLinkControl',
-       'refreshInterval', 'targetHref', 'Update', 'viewRefreshMode',
-       'visibility'])
+  SUPPORTED_ELEMENTS = set([
+      'atom:author', 'atom:link', 'atom:name', 'coordinates', 'Data',
+      'description', 'east', 'expires', 'fill', 'Folder', 'GroundOverlay',
+      'h', 'heading', 'hint', 'hotSpot', 'href', 'Icon', 'IconStyle',
+      'innerBoundaryIs', 'kml', 'latitude', 'LatLonAltBox', 'LatLonBox',
+      'LinearRing', 'LineString', 'LineStyle', 'Link', 'Lod', 'longitude',
+      'maxAltitude', 'maxFadeExtent', 'maxLodPixels', 'minAltitude',
+      'minFadeExtent', 'minLodPixels', 'name', 'NetworkLink', 'north', 'open',
+      'outerBoundaryIs', 'outline', 'Placemark', 'Point', 'Polygon',
+      'PolyStyle', 'range', 'refreshMode', 'ScreenOverlay', 'size', 'Snippet',
+      'south', 'Style', 'text', 'Url', 'value', 'viewRefreshTime', 'w', 'west',
+      'width', 'x', 'y', 'Document', 'ExtendedData', 'BalloonStyle', 'Change',
+      'color', 'MultiGeometry', 'NetworkLinkControl', 'refreshInterval',
+      'targetHref', 'Update', 'viewRefreshMode', 'visibility'
+  ])
 
   tags = GetAllXmlTags(content)
   if tags.count('Placemark') > MAX_FEATURES:
@@ -293,7 +290,7 @@ def UpdateFromKml(address):
         metadata.has_unsupported_kml = HasUnsupportedKml(content)
     except urllib2.HTTPError:
       metadata = CreateErrorMetadata(address, metadata)
-    except ExpatError:
+    except xml.parsers.expat.ExpatError:
       logging.error('Error in parsing XML at address: %s', address)
     metadata.put()
   return metadata
@@ -315,13 +312,13 @@ def UpdateFromGeorss(address):
     try:
       url_handle = CreateConnection(address, metadata)
       if url_handle:
-        content = url_handle.read(MAX_CONTENT_SIZE)
+        content = url_handle.read(MAX_CONTENT_LENGTH)
         metadata = CreateMetadata(address, url_handle, content, metadata)
         url_handle.close()
         metadata.has_no_features = 'item' not in GetAllXmlTags(content)
     except urllib2.HTTPError:
       metadata = CreateErrorMetadata(address, metadata)
-    except ExpatError:
+    except xml.parsers.expat.ExpatError:
       logging.error('Error in parsing GeoRSS at address: %s', address)
     metadata.put()
   return metadata
@@ -345,13 +342,10 @@ def UpdateSourceMetadata(address, layer_type):
 class MetadataRetriever(webapp2.RequestHandler):
   """Updates intrinsic properties of a layer."""
 
-  def post(self):  # pylint: disable-msg=C6409
+  def post(self):  # pylint: disable=g-bad-name
     """Updates intrinsic properties of a layer."""
     address = self.request.get('address')
     layer_type = self.request.get('type')
     UpdateSourceMetadata(address, layer_type)
 
-
-app = webapp2.WSGIApplication([
-    ('/crisismap/metadata_retriever', MetadataRetriever),
-], debug=True)
+app = webapp2.WSGIApplication([('.*', MetadataRetriever)])

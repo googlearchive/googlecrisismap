@@ -14,19 +14,18 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-# base_handler must come first. pylint:disable=g-bad-import-order
-from base_handler import BaseHandler
 import re
+
 import webapp2
+
 import base_handler
 import model
 
 
-class Publish(BaseHandler):
+class Publish(base_handler.BaseHandler):
   """Handler for creating or updating a CatalogEntry."""
 
-  # "post" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def post(self):
+  def post(self):  # pylint: disable=g-bad-name
     """Adds or updates a catalog entry."""
     domain = self.request.get('domain')
     label = self.request.get('label').strip()
@@ -43,6 +42,5 @@ class Publish(BaseHandler):
       raise base_handler.Error(
           'The label of the map must contain only alphanumeric characters,'
           ' "-", "_", and must not be empty.')
-
 
 app = webapp2.WSGIApplication([(r'.*', Publish)])

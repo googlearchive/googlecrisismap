@@ -19,14 +19,11 @@ import json
 import time
 import urllib2
 
-# Allow relative imports within the app.  # pylint: disable=W0403
-import map  # Allow use of the name 'map'.  # pylint: disable-msg=W0622
+import map  # pylint: disable=redefined-builtin
 import metadata
 import metadata_retriever as retriever
 import model
 import test_utils
-
-from google.appengine.ext import db
 
 
 class MetadataTest(test_utils.BaseTest):

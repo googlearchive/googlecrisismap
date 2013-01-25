@@ -14,12 +14,12 @@
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
-from base_handler import BaseHandler
-
 import json
 import logging
+
 import webapp2
 
+import base_handler
 import maproot
 import model
 
@@ -64,11 +64,10 @@ def ScheduleTasks():
                       params={'type': layer_type, 'address': address})
 
 
-class MetadataScheduler(BaseHandler):
+class MetadataScheduler(base_handler.BaseHandler):
   """Puts metadata retrieval tasks into AppEngine task queue."""
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self):
+  def get(self):  # pylint: disable=g-bad-name
     """Schedules metadata retrieval tasks."""
     model.DoAsAdmin(ScheduleTasks)  # need admin access to scan all maps
 

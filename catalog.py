@@ -14,18 +14,18 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-# base_handler must come first. pylint:disable=g-bad-import-order
-from base_handler import BaseHandler
 import webapp2
+
+import base_handler
 import model
+
 from google.appengine.api import users
 
 
-class Catalog(BaseHandler):
+class Catalog(base_handler.BaseHandler):
   """Handler for the list of published maps for a given domain."""
 
-  # "get" is part of the RequestHandler interface.  # pylint: disable-msg=C6409
-  def get(self, domain):
+  def get(self, domain):  # pylint: disable=g-bad-name
     """Displays the list of catalog entries."""
     entries = model.CatalogEntry.GetAllInDomain(domain)
     self.response.out.write(self.RenderTemplate('catalog.html', {
@@ -34,7 +34,7 @@ class Catalog(BaseHandler):
         'user_domain': model.GetUserDomain(users.get_current_user())
     }))
 
-  def post(self, domain):
+  def post(self, domain):  # pylint: disable=g-bad-name
     """Changes the visibility of catalog entries in Map Picker."""
     entries = model.CatalogEntry.GetAllInDomain(domain)
     for entry in entries:

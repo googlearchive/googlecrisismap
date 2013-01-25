@@ -16,7 +16,6 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import os
 
-# Allow relative imports within the app.  # pylint: disable=W0403
 import redirect
 import test_utils
 
@@ -52,7 +51,6 @@ class RedirectTest(test_utils.BaseTest):
     self.assertEquals(302, handler.response.status_int)
     self.assertEquals('http://google.org/',
                       handler.response.headers['Location'])
-
 
 if __name__ == '__main__':
   test_utils.main()
