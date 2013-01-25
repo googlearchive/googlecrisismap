@@ -26,7 +26,7 @@ FakeElement = function(nodeName, opt_attrs) {
   this.style = {};
   if (opt_attrs) {
     for (var name in opt_attrs) {
-      if (name == 'style' && !goog.isString(opt_attrs['style'])) {
+      if (name === 'style' && !goog.isString(opt_attrs['style'])) {
         goog.object.extend(this.style, opt_attrs['style']);
       }
       this.setAttribute(name, opt_attrs[name]);
@@ -95,7 +95,7 @@ FakeElement.prototype.toString = function() {
   var parts = [this.nodeName];
   for (var name in this.attrs_) {
     var value;
-    if (name == 'style' && !goog.isString(this.attrs_['style'])) {
+    if (name === 'style' && !goog.isString(this.attrs_['style'])) {
       value = '';
       for (key in this.style) {
         value += goog.string.format(
@@ -181,7 +181,7 @@ FakeElement.prototype.removeAttribute = function(name) {
 FakeElement.prototype.removeChild = function(element) {
   expectTrue(goog.array.remove(this.childNodes, element));
   var n = this.childNodes.length;
-  if (this.nodeName == 'SELECT' && !n) {
+  if (this.nodeName === 'SELECT' && !n) {
     this.selectedIndex = -1;
   }
   this.firstChild = n ? this.childNodes[0] : null;
@@ -212,7 +212,7 @@ FakeElement.prototype.appendChild = function(element) {
     element.previousSibling = previous;
     previous.nextSibling = element;
   }
-  if (this.nodeName == 'SELECT' && this.selectedIndex == -1) {
+  if (this.nodeName === 'SELECT' && this.selectedIndex === -1) {
     this.selectedIndex = 0;
   }
 };
@@ -242,7 +242,7 @@ FakeElement.prototype.insertBefore = function(element, referenceElement) {
     element.nextSibling = referenceElement;
     referenceElement.previousSibling = element;
   }
-  if (this.nodeName == 'SELECT' && this.selectedIndex == -1) {
+  if (this.nodeName === 'SELECT' && this.selectedIndex === -1) {
     this.selectedIndex = 0;
   }
 };
@@ -615,40 +615,50 @@ function withAttr(name, value) {
   return new gjstest.Matcher(
       'has a "' + name + '" attribute equal to "' + value + '"',
       'doesn\'t have a "' + name + '" attribute equal to "' + value + '"',
-      function(x) { return x.attrs_[name] === value; });
+      function(x) {
+        if (name === 'href' || name === 'src' || name === 'value') {
+          x.attrs_[name] = x[name];
+        }
+        return x.attrs_[name] === value;
+      }
+  );
 }
 
 /**
- * Creates a matcher that looks for a particular value of innerHTML.
- * @param {string} innerHtml The attribute innerHTML.
+ * Shorthand for withAttr('href', value).
+ * @param {string} value The expected value of the "href" attribute.
  * @return {gjstest.Matcher} A matcher that accepts any FakeElement that has
- *     innerHTML with exactly the given value.
+ *     an "href" attribute or property with exactly the given value.
  */
-function withInnerHtml(innerHtml) {
-  return new gjstest.Matcher(
-      'has innerHTML equal to "' + innerHtml + '"',
-      'doesn\'t have innerHTML equal to "' + innerHtml + '"',
-      function(x) { return x.innerHTML === innerHtml; });
+function withHref(value) {
+  return withAttr('href', value);
 }
 
 /**
- * Creates a matcher that looks for a value.
- * @param {string} value The attribute value.
+ * Shorthand for withAttr('src', value).
+ * @param {string} value The expected value of the "src" attribute.
  * @return {gjstest.Matcher} A matcher that accepts any FakeElement that has
- *     the given value with exactly the given value.
+ *     a "src" attribute or property with exactly the given value.
+ */
+function withSrc(value) {
+  return withAttr('src', value);
+}
+
+/**
+ * Shorthand for withAttr('value', value).
+ * @param {string} value The expected value of the "value" attribute.
+ * @return {gjstest.Matcher} A matcher that accepts any FakeElement that has
+ *     a "value" attribute or property with exactly the given value.
  */
 function withValue(value) {
-  return new gjstest.Matcher(
-      'has a value equal to "' + value + '"',
-      'doesn\'t have a value equal to "' + value + '"',
-      function(x) { return x.value === value; });
+  return withAttr('value', value);
 }
 
 /**
  * Creates a matcher that looks for a selectedIndex.
  * @param {string} selectedIndex The attribute selectedIndex.
  * @return {gjstest.Matcher} A matcher that accepts any FakeElement that has
- *     the given selectedIndex with exactly the given selectedIndex.
+ *     exactly the given selectedIndex.
  */
 function withSelectedIndex(selectedIndex) {
   return new gjstest.Matcher(
@@ -658,27 +668,17 @@ function withSelectedIndex(selectedIndex) {
 }
 
 /**
- * Creates a matcher that looks for a style attribute.
- * @param {string} name The style attribute name.
- * @param {string} value The style attribute value.
- * @return {gjstest.Matcher} A matcher that accepts any FakeElement that has
- *     the given style attribute with exactly the given value.
+ * Creates a matcher that looks for a property on the style object.
+ * @param {string} name The style property name.
+ * @param {string} value The style property value.
+ * @return {gjstest.Matcher} A matcher that accepts any FakeElement whose
+ *     style object has a property with the given name and value.
  */
 function withStyle(name, value) {
   return new gjstest.Matcher(
       'has a "' + name + '" style attribute equal to "' + value + '"',
       'doesn\'t have a "' + name + '" style attribute equal to "' + value + '"',
       function(x) { return x.style[name] === value; });
-}
-
-/**
- * Shorthand for withAttr('href', value).
- * @param {string} value The expected value of the "href" attribute.
- * @return {gjstest.Matcher} A matcher that accepts any FakeElement that has
- *     an "href" attribute with exactly the given value.
- */
-function withHref(value) {
-  return withAttr('href', value);
 }
 
 /**
@@ -700,43 +700,41 @@ function inputType(type) {
 
 /**
  * Creates a matcher for the text content of an element.
- * @param {string|gjstest.Matcher} text The expected text or a string matcher.
- * @return {gjstest.Matcher} A matcher that accepts any FakeElement whose
- *     text content exactly matches the given string.  See FakeUi.getText
- *     for what we consider to be the text content of a FakeElement.
+ * @param {string|gjstest.Matcher} expected The expected text, or a matcher.
+ * @return {gjstest.Matcher} A matcher that accepts any FakeElement whose text
+ *     content exactly equals the given string or matches the matcher.  See
+ *     FakeUi.getText for what we consider the text content of a FakeElement.
  */
-function withText(text) {
-  if (text instanceof gjstest.Matcher) {
-    var matcher = text;
+function withText(expected) {
+  if (expected instanceof gjstest.Matcher) {
     return new gjstest.Matcher(
-        'has text that ' + matcher.description,
-        'doesn\'t have text that ' + matcher.description,
-        function(x) { return matcher.predicate(FakeUi.getText(x)); });
+        'has text that ' + expected.description,
+        'doesn\'t have text that ' + expected.description,
+        function(x) { return expected.predicate(FakeUi.getText(x)); });
   }
   return new gjstest.Matcher(
-      'has text equal to "' + text + '"',
-      'doesn\'t have text equal to "' + text + '"',
-      function(x) { return FakeUi.getText(x) == text; });
+      'has text equal to "' + expected + '"',
+      'doesn\'t have text equal to "' + expected + '"',
+      function(x) { return FakeUi.getText(x) === expected; });
 }
 
 /**
  * Creates a matcher for the innerHTML content of an element.
- * @param {string|gjstest.Matcher} html The expected HTML or a string matcher.
+ * @param {string|gjstest.Matcher} expected The expected HTML, or a matcher.
  * @return {gjstest.Matcher} A matcher that accepts any FakeElement whose
- *     innerHTML content exactly matches the given string.
+ *     innerHTML content exactly equals the given string or matches the matcher.
  */
-function withHtml(html) {
-  if (html instanceof gjstest.Matcher) {
-    var matcher = html;
+function withInnerHtml(expected) {
+  if (expected instanceof gjstest.Matcher) {
     return new gjstest.Matcher(
-        'has HTML that ' + matcher.description,
-        'doesn\'t have HTML that ' + matcher.description,
-        function(x) { return matcher.predicate(x.innerHTML); });
+        'has innerHTML that ' + expected.description,
+        'doesn\'t have innerHTML that ' + expected.description,
+        function(x) { return expected.predicate(x.innerHTML); });
   }
   return new gjstest.Matcher(
-      'has HTML equal to "' + html + '"',
-      'doesn\'t have HTML equal to "' + html + '"',
-      function(x) { x.innerHTML == html; });
+      'has innerHTML equal to "' + expected + '"',
+      'doesn\'t have innerHTML equal to "' + expected + '"',
+      function(x) { return x.innerHTML === expected; });
 }
 
 /**
@@ -776,7 +774,7 @@ function stringEquals(element) {
   return new gjstest.Matcher(
       'equals element ' + element, 'does not equal element ' + element,
       function(obj) {
-        return obj === element || obj.toString() == element.toString();
+        return obj === element || obj.toString() === element.toString();
       });
 }
 

@@ -145,7 +145,7 @@ LegendEditorTest.prototype.setGraphic_ = function(graphic, opt_legendItem) {
  *     string, will accept with a legend item with empty text (found in the
  *     preview), or one with the 'cm-empty' class (found in the editor).
  * @param {gjstest.Matcher=} opt_graphicMatcher Matcher to match the graphic
- *    element. Otherwise simply looks for the 'cm-legend-graphic' class.
+ *     element. Otherwise simply looks for the 'cm-legend-graphic' class.
  *     'cm-legend-graphic' class matcher is added by this method.
  * @return {Element} The matched editor legend item element.
  * @private
@@ -160,17 +160,19 @@ LegendEditorTest.prototype.expectLegendItem_ = function(opt_text,
     var trimmed = cm.LegendEditor.trimTrailingWhitespace_(opt_text);
     var previewHtml = cm.LegendEditor.convertWhitespaceToHtml_(trimmed);
     var editorHtml = cm.LegendEditor.convertWhitespaceToHtml_(opt_text);
-    previewTextMatchers.push(withHtml(previewHtml));
+    editorHtml = editorHtml.replace(/<br>[ ]?$/, '<br>&nbsp;');
+
+    previewTextMatchers.push(withInnerHtml(previewHtml));
     editorTextMatchers.push(goog.string.isEmpty(opt_text) ?
-        withClass('cm-empty') : withHtml(editorHtml));
+        withClass('cm-empty') : withInnerHtml(editorHtml));
   }
   var withGraphic = hasDescendant(
       opt_graphicMatcher || withClass('cm-legend-graphic'));
 
   expectDescendantOf(this.previewElem_, withClass('cm-legend-item'),
-      withGraphic, hasDescendant(isElement.apply(this, previewTextMatchers)));
+      withGraphic, hasDescendant.apply(this, previewTextMatchers));
   return expectDescendantOf(this.itemsElem_, withClass('cm-legend-item'),
-      withGraphic, hasDescendant(isElement.apply(this, editorTextMatchers)));
+      withGraphic, hasDescendant.apply(this, editorTextMatchers));
 };
 
 /**

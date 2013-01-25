@@ -11,11 +11,14 @@
 
 // Author: arb@google.com (Anthony Baxter)
 
-// The URL returned by the mock AppState's getUri() method.
-var APPSTATE_URL = new goog.Uri('http://appstate.url/');
+// The URI object returned by the mock AppState's getUri() method.
+var APPSTATE_URI_OBJECT = new goog.Uri('http://appstate.url/');
+
+// The AppState URL as a string.
+var APPSTATE_URL = APPSTATE_URI_OBJECT.toString();
 
 // The APPSTATE_URL encoded as a query parameter.
-var APPSTATE_URL_ENCODED = encodeURIComponent(APPSTATE_URL.toString());
+var APPSTATE_URL_ENCODED = encodeURIComponent(APPSTATE_URL);
 
 // The URL returned by the mock URL shortener.
 var SHORTENED_URL = 'http://shortened.url/';
@@ -51,7 +54,7 @@ SharePopupTest.prototype.createPopup_ = function(
 
   // Create the cm.SharePopup.
   stubReturn(goog.style, 'showElement', null);
-  var appState = stubInstance(cm.AppState, {'getUri': APPSTATE_URL});
+  var appState = stubInstance(cm.AppState, {'getUri': APPSTATE_URI_OBJECT});
   expectCall(appState.get)('language')
       .willRepeatedly(returnWith('en'));
   this.sharePopup_ = new cm.SharePopup(
@@ -77,7 +80,7 @@ SharePopupTest.prototype.nonShortenedLinks = function() {
 
   // Check that the URL field is populated correctly.
   var urlField = expectDescendantOf(parent, withId('cm-share-url'));
-  expectEq(APPSTATE_URL.toString(), urlField.value);
+  expectEq(APPSTATE_URL, urlField.value);
 
   var link = expectDescendantOf(parent, withClass('cm-gplus-share-button'));
   expectEq('//plus.google.com/share?hl=en&url=' + APPSTATE_URL_ENCODED,
@@ -98,45 +101,39 @@ SharePopupTest.prototype.nonShortenedLinks = function() {
 SharePopupTest.prototype.shortenUrl = function() {
   var parent = this.createPopup_(true, true, true);
 
-  // Note that gjsmock's willOnce action can take a function that will allow
-  // you to act on the arguments. Neat. Not very clear from the gjsdocs.
-  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
-  expectCall(goog.net.XhrIo.send)(cm.ShareBox.GOOG_SHORTENER_URI_, _, 'POST', _)
-      .willOnce(function(url, callback, method, data) {
-        callback({'target': {
-          'getResponseJson': function() {
-            return {'id': SHORTENED_URL};
-          }
-        }});
-      });
+  // Set up a mock for the JSONP request.
+  var jsonp = this.expectNew_('goog.net.Jsonp', cm.ShareBox.JSON_PROXY_URL);
+  expectCall(jsonp.send)(recursivelyEquals({
+    'url': cm.ShareBox.GOOGL_API_URL,
+    'post_json': goog.json.serialize({'longUrl': APPSTATE_URL})
+  }), _).willOnce(function(_, callback) { callback({'id': SHORTENED_URL}); });
 
+  // Confirm that checking the box puts the shortened URL in the text field...
   var checkbox = expectDescendantOf(parent, withClass('cm-shorten-checkbox'));
   checkbox.checked = true;
   cm.events.emit(checkbox, 'click');
+  expectDescendantOf(parent, withId('cm-share-url'), withValue(SHORTENED_URL));
 
-  // Now check that the fields are set correctly.
-  var urlField = expectDescendantOf(parent, withId('cm-share-url'));
-  expectEq(SHORTENED_URL, urlField.value);
+  // ...and in the Twitter button...
+  expectDescendantOf(parent, withClass('cm-twitter-share-button'), withSrc(
+      '//platform.twitter.com/widgets/tweet_button.html' +
+      '?lang=en&count=none&counturl=http%3A%2F%2Fgoogle.org%2Fcrisismap' +
+      '&url=' + SHORTENED_URL_ENCODED));
 
-  // GPlus isn't shortened or else it fails whitelisting.
-  var link = expectDescendantOf(parent, withClass('cm-gplus-share-button'));
-  expectEq('//plus.google.com/share?hl=en&url=' + APPSTATE_URL_ENCODED,
-           link.href);
+  // ...and in the Facebook button...
+  expectDescendantOf(parent, withClass('cm-facebook-like-button'), withSrc(
+      '//www.facebook.com/plugins/like.php?layout=button_count' +
+      '&width=90&show_faces=false&action=like&colorscheme=light' +
+      '&font=arial&height=21&href=' + SHORTENED_URL_ENCODED));
 
-  var iframe = expectDescendantOf(parent, withClass('cm-twitter-share-button'));
-  expectEq('//platform.twitter.com/widgets/tweet_button.html' +
-           '?lang=en&count=none&counturl=http%3A%2F%2Fgoogle.org%2Fcrisismap' +
-           '&url=' + SHORTENED_URL_ENCODED, iframe.src);
+  // ...but Google+ doesn't use the shortened URL because it fails whitelisting.
+  expectDescendantOf(parent, withClass('cm-gplus-share-button'), withHref(
+      '//plus.google.com/share?hl=en&url=' + APPSTATE_URL_ENCODED));
 
-  iframe = expectDescendantOf(parent, withClass('cm-facebook-like-button'));
-  expectEq('//www.facebook.com/plugins/like.php?layout=button_count' +
-           '&width=90&show_faces=false&action=like&colorscheme=light' +
-           '&font=arial&height=21&href=' + SHORTENED_URL_ENCODED, iframe.src);
-
-  // And check that unchecking the field does the right thing.
+  // Confirm that unchecking the box restores the unshortened URL.
   checkbox.checked = false;
   cm.events.emit(checkbox, 'click');
-  expectEq(APPSTATE_URL.toString(), urlField.value);
+  expectDescendantOf(parent, withId('cm-share-url'), withValue(APPSTATE_URL));
 };
 
 /** Tests that the popup can be made to show only the Facebook button. */

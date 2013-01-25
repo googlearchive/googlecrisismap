@@ -22,10 +22,9 @@ goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.Disposable');
 goog.require('goog.Uri');
-goog.require('goog.dom.DomHelper');
 goog.require('goog.dom.classes');
 goog.require('goog.json');
-goog.require('goog.net.XhrIo');
+goog.require('goog.net.Jsonp');
 goog.require('goog.ui.BidiInput');
 goog.require('goog.ui.Popup');
 
@@ -378,17 +377,15 @@ cm.ShareBox.createTwitterButton_ = function(language, touch) {
 
 /** Updates the relevant links in the share popup according to the AppState. */
 cm.ShareBox.prototype.updateLinks = function() {
-  var url = this.appState_.getUri();
+  var url = this.appState_.getUri().toString();
+  this.setShareUrl_(url);  // update immediately (shortening can take a moment)
 
-  // Update immediately so the link isn't wrong while we await shortening.
-  this.setShareUrl_(url);
   if (this.shortenCheckbox_.checked) {
-    goog.net.XhrIo.send(cm.ShareBox.GOOG_SHORTENER_URI_, goog.bind(function(e) {
-      try {
-        var shortUrl = e.target.getResponseJson()['id'];
-      } catch (error) { }  // invalid JSON or empty response
-      this.setShareUrl_(url, shortUrl);
-    }, this), 'POST', goog.json.serialize({'longUrl': url.toString()}));
+    var that = this;
+    new goog.net.Jsonp(cm.ShareBox.JSON_PROXY_URL).send({
+      'url': cm.ShareBox.GOOGL_API_URL,
+      'post_json': goog.json.serialize({'longUrl': url})
+    }, function(result) { that.setShareUrl_(url, result['id']); });
   }
 };
 
@@ -438,13 +435,11 @@ cm.ShareBox.prototype.setShareUrl_ = function(url, opt_shortUrl) {
  */
 cm.ShareButton.MSG_SHARE_BUTTON_ = goog.getMsg('Share');
 
-/**
- * The URL for the shortener API.
- * TODO(arb): will need to be configurable for CW &c.
- * @private
- * @const
- */
-cm.ShareBox.GOOG_SHORTENER_URI_ = '/crisismap/shorturl';
+/** URL for the goo.gl URL Shortener API. */
+cm.ShareBox.GOOGL_API_URL = 'https://www.googleapis.com/urlshortener/v1/url';
+
+/** URL for the JSON proxy. TODO(kpy): make this configurable for CW &c. */
+cm.ShareBox.JSON_PROXY_URL = '/crisismap/jsonp';
 
 /**
  * @desc Title for the share box.

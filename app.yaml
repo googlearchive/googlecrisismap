@@ -72,9 +72,6 @@ handlers:
 - url: /crisismap/metadata
   script: metadata.app
 
-- url: /crisismap/shorturl
-  script: shortener.app
-
 - url: /crisismap/jsonp
   script: jsonp.app
 
