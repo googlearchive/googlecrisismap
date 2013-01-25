@@ -32,6 +32,9 @@ class BaseHandlerTest(test_utils.BaseTest):
     # "zz" is not a supported language.
     self.assertEquals('en', base_handler.ActivateLanguage('zz', None))
 
+    # "in" is a deprecated code for Indonesian; the proper code is "id".
+    self.assertEquals('id', base_handler.ActivateLanguage('in', None))
+
     # The hl parameter takes precedence over the Accept-Language header.
     self.assertEquals('tr', base_handler.ActivateLanguage('tr', 'th'))
 

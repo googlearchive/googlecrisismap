@@ -28,9 +28,13 @@ except ImportError:
 from google.appengine.api import users
 from google.appengine.ext.webapp import template
 
+# A mapping from deprecated ISO language codes to valid ones.
+LANGUAGE_SYNONYMS = {'he': 'iw', 'in': 'id', 'mo': 'ro', 'jw': 'jv', 'ji': 'yi'}
+
 
 def NormalizeLang(lang):
-  return lang.lower().replace('-', '_')
+  lang = lang.lower()
+  return LANGUAGE_SYNONYMS.get(lang, lang).replace('-', '_')
 
 DEFAULT_LANGUAGE = 'en'
 ALL_LANGUAGES = map(NormalizeLang, languages.ALL_LANGUAGES)
