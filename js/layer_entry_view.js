@@ -69,6 +69,9 @@ var MSG_NO_DATA_WARNING = goog.getMsg(
 var MSG_OUT_OF_ZOOM_RANGE_TOOLTIP =
     goog.getMsg('Data not available at current zoom level.');
 
+/** @desc Section heading for the map legend. */
+var MSG_LEGEND = goog.getMsg('Legend');
+
 /**
  * A layer view.
  * @param {Element} parentElem The DOM element in which to add a panel entry.
@@ -283,7 +286,7 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
           this.legendBoxElem_ = cm.ui.create('div',
               {'class': 'cm-layer-legend-box'},
               cm.ui.create('fieldset', undefined,
-                  cm.ui.create('legend', undefined, 'Legend'),
+                  cm.ui.create('legend', undefined, MSG_LEGEND),
                   this.legendElem_ = cm.ui.create('div',
                       {'class': 'cm-layer-legend'}))),
           this.descriptionElem_ = cm.ui.create('div',
