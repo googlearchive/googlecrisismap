@@ -19,8 +19,6 @@ import webapp2
 import base_handler
 import model
 
-from google.appengine.api import users
-
 
 class List(base_handler.BaseHandler):
   """Handler for the user's list of maps."""
@@ -38,8 +36,8 @@ class List(base_handler.BaseHandler):
 
     self.response.out.write(self.RenderTemplate('list.html', {
         'maps': maps,
-        'publishing_domains': model.GetCatalogDomains(),
-        'user_domain': model.GetUserDomain(users.get_current_user())
+        'creator_domains': model.GetDomainsWithRole(model.Role.MAP_CREATOR),
+        'catalog_domains': model.GetDomainsWithRole(model.Role.CATALOG_EDITOR)
     }))
 
 

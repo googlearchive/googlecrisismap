@@ -201,23 +201,24 @@ def GetGlobalRoles(email_or_domain):
   return Config.Get('global_roles:' + email_or_domain, [])
 
 
-def GetCatalogDomains(user=None):
-  """Gets the domains for which the given user has CATALOG_EDITOR access.
+def GetDomainsWithRole(role, user=None):
+  """Gets the domains for which the given user has the given type of access.
 
   Args:
+    role: A Role constant.
     user: A google.appengine.api.users.User object, or None.
 
   Returns:
     A list of strings (domain names).  Note that users with ADMIN access will
-    actually have CATALOG_EDITOR access for all domains, but the returned list
-    will only include the domains that are specifically granted.
+    actually have access for all domains, but the result will only include the
+    domains that are specifically granted to the user or the user's domain.
   """
   user = user or users.get_current_user()
   email, domain = user.email(), GetUserDomain(user)
   domains = set()
-  for role in GetGlobalRoles(email) + GetGlobalRoles(domain):
-    if isinstance(role, list) and role[0] == Role.CATALOG_EDITOR:
-      domains.add(role[1])
+  for item in GetGlobalRoles(email) + GetGlobalRoles(domain):
+    if isinstance(item, list) and item[0] == role:
+      domains.add(item[1])
   return sorted(domains)
 
 

@@ -16,6 +16,7 @@ specific language governing permissions and limitations under the License.
 {% block navbar %}
   <div class="cm-button-area">
     <form method="post" action="/crisismap/create">
+      <input type="hidden" name="domain" value="{{domain}}">
       <input type="submit" class="cm-create cm-button"
           title="Create a new map" value="Create map">
     </form>
