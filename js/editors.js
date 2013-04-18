@@ -45,7 +45,8 @@ cm.editors.Type = {
   MENU: 'MENU',
   NUMBER: 'NUMBER',
   RADIO: 'RADIO',
-  TEXT: 'TEXT'
+  TEXT: 'TEXT',
+  WMS_MENU: 'WMS_MENU'
 };
 
 /**
@@ -62,7 +63,8 @@ cm.editors.CONSTRUCTORS = goog.object.create(
   cm.editors.Type.MENU, cm.MenuEditor,
   cm.editors.Type.NUMBER, cm.NumberEditor,
   cm.editors.Type.RADIO, cm.RadioEditor,
-  cm.editors.Type.TEXT, cm.TextEditor
+  cm.editors.Type.TEXT, cm.TextEditor,
+  cm.editors.Type.WMS_MENU, cm.WmsMenuEditor
 );
 
 /**

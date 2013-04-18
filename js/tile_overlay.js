@@ -25,6 +25,7 @@ goog.require('cm.events');
 goog.require('cm.geometry');
 goog.require('goog.Uri');
 goog.require('goog.net.Jsonp');
+goog.require('goog.net.XhrIo');
 
 var JSON_PROXY_URL = '/crisismap/jsonp';
 
@@ -33,6 +34,10 @@ var INDEX_REFRESH_PERIOD_MS = 180000; // 3 min
 
 // Period to wait for tiles to load before swapping in a new tile url.
 var MAX_TILE_LOAD_MS = 2000; // 2s
+
+var TILESET_CONFIGURE_URL = '/crisismap/wms/configure_tileset';
+
+var TILECACHE_URL = '/crisismap/tilecache';
 
 /**
  * A map overlay which displays tiles and a bounding box.  It wraps an
@@ -95,9 +100,15 @@ cm.TileOverlay = function(layer, map, appState, metadataModel) {
   this.bounds_ = new google.maps.LatLngBounds();
 
   /**
-   * The URL pattern for requesting tiles.
-   * Convention is for a URL like http://foo/{X}_{Y}_{Z}.jpg
-   * where {X}, {Y}, and {Z} are replaced dynamically.
+   * The URL pattern for requesting tiles, using either Google or Bing tile
+   * coordinates.
+   * Google tile coordinates are indexed by X,Y,Z and require a
+   *   pattern like http://foo/{X}_{Y}_{Z}.jpg, where {X}, {Y}, and {Z} are
+   *   replaced dynamically. See
+   *   https://developers.google.com/maps/documentation/javascript/
+   *     maptypes#TileCoordinates
+   * Bing tile coordinates are indexed by quadkeys. See
+   *   http://msdn.microsoft.com/en-us/library/bb259689.aspx
    * @type {?string}
    * @private
    */
@@ -180,11 +191,20 @@ cm.TileOverlay = function(layer, map, appState, metadataModel) {
   this.tileCoordinateType_ = /** @type cm.LayerModel.TileCoordinateType */(
       layer.get('tile_coordinate_type'));
 
-  var isHybrid = /** @type boolean */(layer.get('is_hybrid'));
-  this.bindTo('url', layer);
-  this.bindTo('url_is_tile_index', layer);
+  /**
+   * Whether to replace replace all Google-style tiles that are not on the
+   * edge of the layer's bounding box with .jpg tiles so that the border
+   * tiles are transparent and the inside tiles are compressed.
+   * @type {boolean}
+   * @private
+   */
+  this.isHybrid_ = /** @type boolean */(layer.get('is_hybrid'));
 
-  var viewport = /** @type cm.LatLonBox */(layer.get('viewport')) ||
+  /**
+   * @type {cm.LatLonBox}
+   * @private
+   */
+  this.viewport_ = /** @type cm.LatLonBox */(layer.get('viewport')) ||
       cm.LatLonBox.ENTIRE_MAP;
 
   // To be populated if bounds are specified
@@ -192,14 +212,27 @@ cm.TileOverlay = function(layer, map, appState, metadataModel) {
    * @type {?string}
    */
   this.bounds_string = null;
+
   /**
    * @type {number}
    */
   this.minZoom = NaN;
+
   /**
    * @type {number}
    */
   this.maxZoom = NaN;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.initDone_ = false;
+
+  this.bindTo('type', layer);
+  this.bindTo('url', layer);
+  this.bindTo('url_is_tile_index', layer);
+  this.bindTo('wms_layers', layer);
 
   var layerBounds = layer.get('bounds');
   if (layerBounds) {
@@ -224,43 +257,25 @@ cm.TileOverlay = function(layer, map, appState, metadataModel) {
     }
   }
 
-  cm.events.onChange(this, 'url_is_tile_index', this.updateTileUrlPattern_);
+  cm.events.onChange(this, ['url', 'wms_layers'],
+                     this.updateWmsTilesetId_, this);
+  this.updateWmsTilesetId_();
+  cm.events.onChange(this, ['url_is_tile_index', 'wms_tileset_id'],
+                     this.updateTileUrlPattern_, this);
   this.updateTileUrlPattern_();
 
-  var me = this;
-  // Wait for the map's projection object to be ready and then finish
-  // initialization.
-  /**
-   * @return {boolean} Returns true if initialization was completed.
-   * @this {cm.TileOverlay}
-   * @private
-   */
-  this.finishInitialization_ = function() {
-    // NOTE(user): We only support the initial map's projection.  If the map's
-    // projection changes, we would need to refresh everything - including the
-    // imagery.
-    this.projection_ = map.getProjection();
-    // We can finish init if we have a both a projection and a tile url pattern.
-    // We may not have a tile url pattern if we have a url index not yet loaded.
-    var canFinish = !!this.projection_ && !!this.tileUrlPattern_;
-    if (canFinish) {
-       me.init_(viewport, isHybrid);
-      // Check if setMap(map) has been called before initialization, and add the
-      // map type to the map at this time.
-      if (me.onMap_) {
-        me.map_.overlayMapTypes.push(me.mapType_);
-      }
-    }
-    return canFinish;
-  };
-
-  if (!this.finishInitialization_()) {
+  // Try to initialize the layer, and if unsuccessful, set up a listener to
+  // retry until the projection is valid.
+  this.initialize_();
+  if (!this.initDone_) {
     var token = cm.events.listen(map, 'projection_changed', function() {
-      // We may still not be able to finish at this point if we don't
-      // have a tile url, but in that case we can stop listening for projection
-      // changes and finish init in refreshTileIndex_.
-      if (this.finishInitialization_() || !this.tileUrlPattern_) {
-        cm.events.unlisten(token, this);
+      this.initialize_();
+      if (this.projection_) {
+        // Once we have a valid projection, stop listening for changes even
+        // if the initialization wasn't successful due to an invalid
+        // tile URL pattern. initialize_() will be called again when
+        // this.tileUrlPattern_ is set.
+        cm.events.unlisten(token);
       }
     }, this);
   }
@@ -268,47 +283,63 @@ cm.TileOverlay = function(layer, map, appState, metadataModel) {
 goog.inherits(cm.TileOverlay, google.maps.MVCObject);
 
 /**
- * @param {cm.LatLonBox} viewport The layer's viewport.
- * @param {boolean} isHybrid If true, transparent tiles should be loaded around
- *     the border of this tile layer.
+ * If the map's projection object and the tile URL pattern are ready, finish
+ * initializing the overlay.
+ * @this {cm.TileOverlay}
  * @private
  */
-cm.TileOverlay.prototype.init_ = function(viewport, isHybrid) {
-  // The polygon coordinates that define the default viewport to zoom to,
-  // the optional outline to draw on the map for discoverability, and
-  // the region to intersect with the tile coordinates when determining
-  // what tiles to fetch.
-  var polyCoords;
-  if (this.boundsString_) {
-    polyCoords = cm.TileOverlay.normalizeCoords(this.boundsString_);
-    for (var i = 0; i < polyCoords.length; ++i) {
-      this.bounds_.extend(polyCoords[i]);
-    }
-  } else {
-    // Until MapRoot layers include something akin to a 'bounds' field,
-    // use the viewport as a poor approximation for avoiding unnecessary
-    // tile requests. Since we still use the intersect functions in
-    // geometry.js, the polygon coordinates must be provided in
-    // counter-clockwise order.
-    polyCoords = [
-      new google.maps.LatLng(viewport.getSouth(), viewport.getWest()),
-      new google.maps.LatLng(viewport.getSouth(), viewport.getEast()),
-      new google.maps.LatLng(viewport.getNorth(), viewport.getEast()),
-      new google.maps.LatLng(viewport.getNorth(), viewport.getWest()),
-      new google.maps.LatLng(viewport.getSouth(), viewport.getWest())
-    ];
-    // For tile layers with no explicit bounds, set this to null so
-    // that getDefaultViewport() returns null.
-    this.bounds_ = null;
+cm.TileOverlay.prototype.initialize_ = function() {
+  if (this.initDone_) {
+    return;
   }
+  // We only support the map's initial projection.  If the map's projection
+  // changes, we would need to refresh everything - including the imagery.
+  if (!this.projection_ && this.map_) {
+    this.projection_ = this.map_.getProjection();
+  }
+  // We can only finish initializing if we have both a projection and a tile url
+  // pattern.
+  if (this.projection_ && this.tileUrlPattern_) {
+    // Define the bounding box to intersect with requested tile coordinates
+    // when determining whether to fetch tiles. Also optionally drawn on
+    // the map for content discoverability.
+    var boundingBox;
+    if (this.boundsString_) {
+      boundingBox = cm.TileOverlay.normalizeCoords(this.boundsString_);
+      for (var i = 0; i < boundingBox.length; ++i) {
+        this.bounds_.extend(boundingBox[i]);
+      }
+    } else {
+      // Until MapRoot layers include something akin to a 'bounds' field,
+      // use the viewport as a poor approximation for avoiding unnecessary
+      // tile requests. Since we still use the intersect functions in
+      // geometry.js, the polygon coordinates must be provided in
+      // counter-clockwise order.
+      var n = this.viewport_.getNorth();
+      var s = this.viewport_.getSouth();
+      var e = this.viewport_.getEast();
+      var w = this.viewport_.getWest();
+      boundingBox = [new google.maps.LatLng(s, w), new google.maps.LatLng(s, e),
+                     new google.maps.LatLng(n, e), new google.maps.LatLng(n, w),
+                     new google.maps.LatLng(s, w)];
+      // For tile layers with no explicit bounds, set this to null so
+      // that getDefaultViewport() returns null.
+      this.bounds_ = null;
+    }
 
-  this.mapType_ = this.initializeImageMapType_(polyCoords, isHybrid);
+    this.mapType_ = this.initializeImageMapType_(boundingBox);
+    if (this.outline_) {
+      this.outline_.setPath(boundingBox);
+    }
 
-  cm.events.onChange(this.appState_, 'layer_opacities', this.updateOpacity_,
-                     this);
-  this.updateOpacity_();
-  if (this.outline_) {
-    this.outline_.setPath(polyCoords);
+    cm.events.onChange(this.appState_, 'layer_opacities', this.updateOpacity_,
+                       this);
+    this.updateOpacity_();
+
+    if (this.onMap_) {
+      this.map_.overlayMapTypes.push(this.mapType_);
+    }
+    this.initDone_ = true;
   }
 };
 
@@ -344,19 +375,14 @@ cm.TileOverlay.normalizeCoords = function(coordString) {
 };
 
 /**
- * @param {Array.<google.maps.LatLng>} polyCoords The coordinates of the
- *     viewport polygon, for detecting whether it intersects with the imagery.
- * @param {boolean} isHybrid If true, the file extension for Google tiles is
- *     replaced with .png along the edge and .jpg inside so that the border
- *     tiles are transparent and the inside tiles are compressed.
+ * @param {Array.<google.maps.LatLng>} boundingBox The box used to determine
+ *     whether or not to request a tile.
  * @return {cm.ProxyTileMapType} The image map type object.
  * @private
  */
-cm.TileOverlay.prototype.initializeImageMapType_ = function(
-    polyCoords, isHybrid) {
-  var me = this;
+cm.TileOverlay.prototype.initializeImageMapType_ = function(boundingBox) {
   var mapTypeOptions = {
-    getTileUrl: goog.bind(this.getTileUrl, this, polyCoords, isHybrid),
+    getTileUrl: goog.bind(this.getTileUrl_, this, boundingBox, this.isHybrid_),
     tileSize: new google.maps.Size(256, 256)
   };
 
@@ -364,17 +390,18 @@ cm.TileOverlay.prototype.initializeImageMapType_ = function(
 };
 
 /**
- * @param {Array.<google.maps.LatLng>} polyCoords The coordinates of the
- *     viewport polygon, for detecting whether it intersects with the imagery.
+ * @param {Array.<google.maps.LatLng>} boundingBox The box used to determine
+ *     whether or not to request a tile.
  * @param {boolean} isHybrid If true, the file extension for Google tiles is
  *     replaced with .png along the edge and .jpg inside so that the border
  *     tiles are transparent and the inside tiles are compressed.
  * @param {google.maps.Point} coord The tile coordinates.
  * @param {number} zoom The map zoom level.
  * @return {?string} The URL of the tile to fetch.
+ * @private
  */
-cm.TileOverlay.prototype.getTileUrl = function(polyCoords, isHybrid,
-                                               coord, zoom) {
+cm.TileOverlay.prototype.getTileUrl_ = function(boundingBox, isHybrid,
+                                                coord, zoom) {
   this.lastTilesLoadedMs_ = new Date().getTime();
   var tileUrl = this.tileUrlPattern_;
   if (!tileUrl) return null;
@@ -395,42 +422,40 @@ cm.TileOverlay.prototype.getTileUrl = function(polyCoords, isHybrid,
   var y = coord.y;
   coord.x = x;
 
-  var corners = getTileRange(x, y, zoom);
-  var low = corners[0];
-  var high = corners[1];
-  var polyVertices = getPolyPoints(this.projection_, polyCoords);
-  var intersect = intersectQuadAndTile(polyVertices, low, high);
-  if (intersect == Overlap.OUTSIDE) {
-    // Returning null will cause no tile to be displayed.
+  // Do not make any tile requests outside of the bounding box.
+  var tileCorners = getTileRange(x, y, zoom);
+  var boundaryOverlap = quadTileOverlap(applyProjection(
+      this.projection_, boundingBox), tileCorners[0], tileCorners[1]);
+  if (boundaryOverlap === Overlap.OUTSIDE) {
     return null;
   }
-
   if (this.tileCoordinateType_ === cm.LayerModel.TileCoordinateType.BING) {
     // Reference: http://msdn.microsoft.com/en-us/library/bb259689.aspx
-    var quad = '';
+    var quadKey = '';
     for (var i = zoom, mask = (1 << (zoom - 1)); i > 0; i--, mask >>= 1) {
       var cell = 0;   // the digit for this level
       if ((x & mask) != 0) cell++;
       if ((y & mask) != 0) cell += 2;
-      quad += cell;
+      quadKey += cell;
     }
-    return tileUrl + '/' + quad;
+    return tileUrl + '/' + quadKey;
   } else {
-    var newUrl = tileUrl;
+    // Google-style tile coordinates
+    var url = tileUrl;
     // Replace parameters in Google tile URL, e.g. http://foo/{X}_{Y}_{Z}.jpg
-    newUrl = newUrl.replace(/{X}/, x.toString()).
-                    replace(/{Y}/, y.toString()).
-                    replace(/{Z}/, zoom.toString());
+    url = url.replace(/{X}/, x.toString()).
+              replace(/{Y}/, y.toString()).
+              replace(/{Z}/, zoom.toString());
     if (isHybrid) {
-      newUrl = newUrl.replace(
-          /\.\w*$/, intersect == Overlap.INTERSECTING ? '.png' : '.jpg');
+      url = url.replace(/\.\w*$/, boundaryOverlap === Overlap.INTERSECTING ?
+                        '.png' : '.jpg');
     }
     // If loading from google static tile service, round robin between
     // mw1 and mw2 - browser will open 4 parallel connections to each.
     if (coord.x % 2 == 1) {
-      newUrl = newUrl.replace('mw1.gstatic.com', 'mw2.gstatic.com');
+      url = url.replace('mw1.gstatic.com', 'mw2.gstatic.com');
     }
-    return newUrl;
+    return url;
   }
 };
 
@@ -469,31 +494,33 @@ cm.TileOverlay.prototype.handleTileIndex_ = function(indexJson) {
 
   var newTilesetUrl = activeTileset['url'];
   if (!this.tileUrlPattern_) {
-    // First time loading, check if we need to finish init
     this.tileUrlPattern_ = newTilesetUrl;
-    this.finishInitialization_();
   } else {
     this.nextTileUrlPattern_ = newTilesetUrl;
     this.updateIndexedTileUrlPattern_();
   }
+  this.initialize_();
 };
 
 /**
- * Updates tileUrlPattern_ depending on whether the URL is a tile index.
+ * Updates tileUrlPattern_ depending on whether or not the URL is a tile
+ * index, in which case the tile index fetcher handler updates will update
+ * it, and whether the layer type is WMS, in which case the pattern is
+ * computed from the WMS tileset ID.
  * @private
  */
 cm.TileOverlay.prototype.updateTileUrlPattern_ = function() {
   if (this.get('url_is_tile_index')) {
     var uri = new goog.Uri(JSON_PROXY_URL);
     uri.setParameterValue('url', this.get('url'));
-   this.tileIndexFetcher_ = new goog.net.Jsonp(uri);
-
+    this.tileIndexFetcher_ = new goog.net.Jsonp(uri);
     // Refresh the tile index every so often to pick up changes
     this.intervalId_ = goog.global.setInterval(
         goog.bind(this.refreshTileIndex_, this), INDEX_REFRESH_PERIOD_MS);
     // Refresh the first time
     this.refreshTileIndex_();
   } else {
+    // Clear the tile index fetcher.
     goog.global.clearInterval(this.intervalId_);
     this.intervalId_ = null;
     if (this.requestDescriptor_) {
@@ -503,7 +530,21 @@ cm.TileOverlay.prototype.updateTileUrlPattern_ = function() {
     this.requestDescriptor_ = null;
     this.nextTileUrlPattern_ = null;
     this.metadataModel_.setContentLastModified(this.layerId_, null);
-    this.tileUrlPattern_ = /** @type string */(this.get('url'));
+    if (this.get('type') !== cm.LayerModel.Type.WMS) {
+      this.tileUrlPattern_ = /** @type string */(this.get('url'));
+    } else {
+      var tilesetId = /** @type string */(this.get('wms_tileset_id'));
+      if (tilesetId) {
+        this.tileUrlPattern_ = TILECACHE_URL + '/' + tilesetId +
+            '/{Z}/{X}/{Y}.png';
+        this.initialize_();
+        // Display the tiles if the layer is enabled.
+        if (this.onMap_) {
+          this.setMap(null);
+          this.setMap(this.map_);
+        }
+      }
+    }
   }
 };
 
@@ -535,17 +576,50 @@ cm.TileOverlay.prototype.updateIndexedTileUrlPattern_ = function() {
 };
 
 /**
- * @param {google.maps.Map} map The map to show this tile layer on.  This
- *     parameter is actually ignored, as a TileOverlay can only be shown on the
+ * Update the tileset ID needed to construct the URL from which to fetch tiles.
+ * @private
+ */
+cm.TileOverlay.prototype.updateWmsTilesetId_ = function() {
+  if (this.get('type') === cm.LayerModel.Type.WMS) {
+    var wmsUrl = /** @type string */(this.get('url'));
+    if (wmsUrl) {
+      wmsUrl = wmsUrl.replace(/^\s+|\s+$/g, '');
+    }
+    var wmsLayers = /** @type Array.<string> */(this.get('wms_layers'));
+    var wmsProjection = 'EPSG:3857';
+
+    // TODO(romano): if there is significant latency due to waiting for the
+    // config response, consider precomputing the tilesetId so that tile
+    // requests can begin immediately.
+    if (wmsUrl && wmsLayers && wmsLayers.length && wmsProjection) {
+      // Query the server for this tileset ID and configure an entry
+      // if it doesn't already exist.
+      var postArgs = 'server_url=' + encodeURIComponent(wmsUrl) +
+                     '&projection=' + encodeURIComponent(wmsProjection) +
+                     '&layers=' + encodeURIComponent(wmsLayers.join(','));
+      goog.net.XhrIo.send(TILESET_CONFIGURE_URL, goog.bind(function(e) {
+        if (e.target.isSuccess()) {
+          var tilesetId = e.target.getResponseJson();
+          this.set('wms_tileset_id', tilesetId);
+        }
+      }, this), 'POST', postArgs);
+    }
+  }
+};
+
+/**
+ * Add or remove this layer from this object's map overlay list, depending on
+ * the value of the 'map' parameter.
+ * @param {google.maps.Map} map The map to show this tile layer on, or null
+ *     if the layer should be removed from this object's map. This parameter is
+ *     actually ignored by Maps API, as a TileOverlay can only be shown on the
  *     map on which it was initialized.
  */
 cm.TileOverlay.prototype.setMap = function(map) {
   var mapType = this.mapType_;
   if (map && !this.onMap_) {
-    var canFinish = !!this.projection_ && !!this.tileUrlPattern_;
-    if (canFinish) {
-      // If the layer isn't ready yet, don't push it.
-      // It will be fixed in finishInitialization_
+    // Only push the overlay if initialize_() succeeded.
+    if (this.initDone_) {
       this.map_.overlayMapTypes.push(mapType);
     }
   } else if (!map && this.onMap_) {

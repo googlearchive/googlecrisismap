@@ -45,7 +45,8 @@ cm.LayerModel.Type = {
   TRAFFIC: 'TRAFFIC',
   TRANSIT: 'TRANSIT',
   WEATHER: 'WEATHER',
-  CLOUD: 'CLOUD'
+  CLOUD: 'CLOUD',
+  WMS: 'WMS'
 };
 
 /** @type Object.<cm.LayerModel.Type> */
@@ -59,7 +60,8 @@ cm.LayerModel.LAYER_TYPES_BY_SOURCE_TYPE = {
   'GOOGLE_TRAFFIC': cm.LayerModel.Type.TRAFFIC,
   'GOOGLE_TRANSIT': cm.LayerModel.Type.TRANSIT,
   'GOOGLE_WEATHER': cm.LayerModel.Type.WEATHER,
-  'GOOGLE_CLOUD_IMAGERY': cm.LayerModel.Type.CLOUD
+  'GOOGLE_CLOUD_IMAGERY': cm.LayerModel.Type.CLOUD,
+  'WMS': cm.LayerModel.Type.WMS
 };
 
 /** @type Object.<string> */
@@ -73,7 +75,8 @@ cm.LayerModel.SOURCE_TYPES_BY_LAYER_TYPE = goog.object.create(
   cm.LayerModel.Type.TRAFFIC, 'GOOGLE_TRAFFIC',
   cm.LayerModel.Type.TRANSIT, 'GOOGLE_TRANSIT',
   cm.LayerModel.Type.WEATHER, 'GOOGLE_WEATHER',
-  cm.LayerModel.Type.CLOUD, 'GOOGLE_CLOUD_IMAGERY'
+  cm.LayerModel.Type.CLOUD, 'GOOGLE_CLOUD_IMAGERY',
+  cm.LayerModel.Type.WMS, 'WMS'
 );
 
 /** @enum {string} */
@@ -233,6 +236,11 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
     case cm.LayerModel.Type.FOLDER:
       model.set('locked', maproot['list_item_type'] === 'CHECK_HIDE_CHILDREN');
       break;
+    case cm.LayerModel.Type.WMS:
+      var wms = source['wms'] || {};
+      model.set('url', wms['url']);
+      model.set('wms_layers', wms['wms_layers']);
+      break;
   }
 
   // Construct sublayer models.
@@ -327,6 +335,15 @@ cm.LayerModel.prototype.toMapRoot = function() {
     case cm.LayerModel.Type.FOLDER:
       this.get('sublayers').forEach(
           function(sublayer) { sublayers.push(sublayer.toMapRoot()); });
+      break;
+    case cm.LayerModel.Type.WMS:
+      // The layer model represents WMS layers as objects, but the
+      // maproot only stores the stirngs.
+      var layers = /** @type Array.<string> */(this.get('wms_layers')) || [];
+      source['wms'] = {
+        'url': this.get('url'),
+        'wms_layers': layers
+      };
       break;
   }
 

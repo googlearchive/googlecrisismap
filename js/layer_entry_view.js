@@ -245,6 +245,9 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
 
   // Figure out whether to enable editing.
   var enableEditing = this.config_['enable_editing'];
+  if (layerType === cm.LayerModel.Type.WMS) {
+    enableEditing = enableEditing && this.config_['enable_wms_layer_editing'];
+  }
 
   // These links will be replaced by icons (e.g. pencil, rubbish bin). Mocks:
   // http://folder/nsavio/dotorg/crisis_response/crisis_maps/20120424&s
@@ -673,8 +676,10 @@ cm.LayerEntryView.prototype.updateEnabled_ = function() {
  * @private
  */
 cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
-  var isTilesLayer = this.model_.get('type') === cm.LayerModel.Type.TILE;
-  if (isTilesLayer && !this.slider_) {
+  var type = this.model_.get('type');
+  var enableOpacitySlider = type === cm.LayerModel.Type.TILE ||
+      type === cm.LayerModel.Type.WMS;
+  if (enableOpacitySlider && !this.slider_) {
     // Add an opacity slider (by default, a goog.ui.Slider goes from 0 to 100).
     this.slider_ = new goog.ui.Slider();
     this.slider_.setMoveToPointEnabled(true);
@@ -695,7 +700,7 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
       cm.events.onChange(this.appState_, 'layer_opacities',
                          this.updateSliderValue_, this)
     ];
-  } else if (!isTilesLayer && this.slider_) {
+  } else if (!enableOpacitySlider && this.slider_) {
     this.slider_.dispose();
     this.slider_ = null;
     cm.events.unlisten(this.sliderListeners_);

@@ -128,23 +128,24 @@ TileOverlayTest.prototype.toggleUrlIsTileIndex = function() {
   this.layer_.set('url_is_tile_index', false);
 };
 
-/** Tests addressing for Google tile coordinates. */
+/**
+ * Tests addressing for Google tile coordinates.
+ * Reference: https://developers.google.com/maps/documentation/javascript/
+ *     maptypes#TileCoordinates
+ */
 TileOverlayTest.prototype.testGoogleTileAddressing = function() {
   this.layer_.set('url', 'http://google.tileset.url/{Z}/{X}/{Y}.png');
   var tileOverlay = this.createTileOverlay_();
 
-  var polyCoords = [
-    new google.maps.LatLng(0, 0),
-    new google.maps.LatLng(0, 0),
-    new google.maps.LatLng(0, 0),
-    new google.maps.LatLng(0, 0),
-    new google.maps.LatLng(0, 0)];
+  var boundingBox = [new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0)];
   expectCall(this.projection_.fromLatLngToPoint)(_)
       .willRepeatedly(returnWith({}));
-  this.setForTest_('intersectQuadAndTile', function() {
-    return Overlap.INTERSECTING; });
-  var url = tileOverlay.getTileUrl(polyCoords, false,
-                                   new google.maps.Point(3, 6), 4);
+  var url = tileOverlay.getTileUrl_(boundingBox, false,
+                                    new google.maps.Point(3, 6), 4);
   expectEq('http://google.tileset.url/4/3/6.png', url);
 };
 
@@ -158,18 +159,69 @@ TileOverlayTest.prototype.testBingTileAddressing = function() {
   this.layer_.set('url', 'http://bing.tileset.url');
   var tileOverlay = this.createTileOverlay_();
 
-  var polyCoords = [
-    new google.maps.LatLng(0, 0),
-    new google.maps.LatLng(0, 0),
-    new google.maps.LatLng(0, 0),
-    new google.maps.LatLng(0, 0),
-    new google.maps.LatLng(0, 0)];
+  var boundingBox = [new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0)];
   expectCall(this.projection_.fromLatLngToPoint)(_)
       .willRepeatedly(returnWith({}));
-  this.setForTest_('intersectQuadAndTile', function() {
-    return Overlap.INTERSECTING; });
 
-  var url = tileOverlay.getTileUrl(polyCoords, false,
-                                   new google.maps.Point(3, 6), 4);
+  var url = tileOverlay.getTileUrl_(boundingBox, false,
+                                    new google.maps.Point(3, 6), 4);
   expectEq('http://bing.tileset.url/0231', url);
+};
+
+/** Tests WMS tile url pattern updates. */
+TileOverlayTest.prototype.updateWmsTileUrlPattern = function() {
+  this.layer_.set('url', 'http://wms.service.url');
+  this.layer_.set('type', cm.LayerModel.Type.WMS);
+  var tileOverlay = this.createTileOverlay_();
+
+  var newTilesetId = 'afd4b44574318c291c30160c9249ae99';
+  tileOverlay.set('wms_tileset_id', newTilesetId);
+  expectEq(TILECACHE_URL + '/' + newTilesetId + '/{Z}/{X}/{Y}.png',
+           tileOverlay.tileUrlPattern_);
+};
+
+/**
+ * Sets up expectations for querying the WMS cache server.
+ * @param {string} postArgs The POST arguments.
+ * @param {string} tilesetId The unique tileset ID.
+ * @private
+ */
+TileOverlayTest.prototype.expectWmsQuery_ = function(postArgs, tilesetId) {
+  expectCall(goog.net.XhrIo.send)(_, _, 'POST', postArgs)
+      .willOnce(function(url, callback) {
+          callback({'target': {
+            'isSuccess': function() { return true; },
+            'getResponseJson': function() { return tilesetId; }
+          }});
+      });
+};
+
+/** Tests WMS tileset ID updates. */
+TileOverlayTest.prototype.updateWmsTilesetId = function() {
+  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
+  this.layer_.set('url', 'http://wms.service.url');
+  this.layer_.set('wms_layers', ['wms_layer_1', 'wms_layer_2']);
+  this.layer_.set('type', cm.LayerModel.Type.WMS);
+
+  // When the TileOverlay is constructed, the server is queried to
+  // ensure it is configured with the tilesetId.
+  this.expectWmsQuery_('server_url=http%3A%2F%2Fwms.service.url' +
+      '&projection=EPSG%3A3857&layers=wms_layer_1%2Cwms_layer_2',
+      'c6df7a8fab3e8e170f92dec4b306780c');
+  var tileOverlay = this.createTileOverlay_();
+  expectEq('c6df7a8fab3e8e170f92dec4b306780c',
+           tileOverlay.get('wms_tileset_id'));
+
+  // When the WMS layers change, the server is configured with the new
+  // tileset ID.
+  this.expectWmsQuery_('server_url=http%3A%2F%2Fwms.service.url' +
+      '&projection=EPSG%3A3857&layers=wms_layer_3%2Cwms_layer_4',
+      '6bfc119f4a743a349dca77d684d34349');
+  this.layer_.set('wms_layers', ['wms_layer_3', 'wms_layer_4']);
+  expectEq('6bfc119f4a743a349dca77d684d34349',
+           tileOverlay.get('wms_tileset_id'));
 };

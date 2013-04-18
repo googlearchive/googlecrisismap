@@ -55,6 +55,7 @@ class MapTest(test_utils.BaseTest):
                        'enable_editing': True,
                        'enable_metadata_pipeline': False,
                        'enable_osm_map_type': False,
+                       'enable_wms_layer_editing': False,
                        'minimal_map_controls': False,
                        'hide_panel_header': False},
                       config.AsDict())

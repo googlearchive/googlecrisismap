@@ -1085,6 +1085,12 @@ textarea.cm-legend-text {
   margin:0 6px 0 10px;
 }
 
+/* WMS layer editor */
+/* TODO(romano): Improve UI of WMS layer editor. */
+.cm-wms-menu-editor {
+  width:100%;
+}
+
 /* ShareEmailer dialog */
 .cm-share-emailer {
   width:400px;

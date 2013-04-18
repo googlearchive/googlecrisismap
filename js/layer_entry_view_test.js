@@ -103,6 +103,18 @@ LayerEntryViewTest.prototype.testEnableEditingFlags = function() {
   expectDescendantOf(parent, 'a', withText('Edit'));
   expectDescendantOf(parent, 'a', withText('Delete'));
 
+
+  // Test the enable_wms_layer_editing client config variable.
+  var slider = this.expectNew_('goog.ui.Slider');
+  slider.setMoveToPointEnabled = slider.render = slider.getValue =
+      slider.setValue = slider.dispose = function() {};
+  slider.getValueThumb = function() { return new FakeElement('div'); };
+  this.layerModel_.set('type', cm.LayerModel.Type.WMS);
+  parent = this.createView_({enable_editing: true});
+  expectNoDescendantOf(parent, 'a', withText('Edit'));
+  parent = this.createView_(
+      {enable_editing: true, enable_wms_layer_editing: true});
+  expectDescendantOf(parent, 'a', withText('Edit'));
 };
 
 /**
@@ -139,15 +151,15 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   this.createView_();
 
   // Change the layer to TILE, and verify the slider is created.
-  this.slider_ = this.expectNew_('goog.ui.Slider');
+  var slider = this.expectNew_('goog.ui.Slider');
   this.fakeThumb_ = cm.ui.create('div');
-  expectCall(this.slider_.setMoveToPointEnabled)(true);
-  expectCall(this.slider_.render)(_);
-  expectCall(this.slider_.getValueThumb)().
+  expectCall(slider.setMoveToPointEnabled)(true);
+  expectCall(slider.render)(_);
+  expectCall(slider.getValueThumb)().
       willOnce(returnWith(this.fakeThumb_));
   expectCall(this.appState_.get)('layer_opacities').
       willOnce(returnWith({}));
-  expectCall(this.slider_.setValue)(100);
+  expectCall(slider.setValue)(100);
 
   this.layerModel_.set('type', cm.LayerModel.Type.TILE);
   var sliderDot = expectDescendantOf(
@@ -156,21 +168,21 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
 
   // Test that the slider's 'change' event fires a CHANGE_OPACITY event with the
   // correct opacity.
-  expectCall(this.slider_.getValue)().willOnce(returnWith(50));
+  expectCall(slider.getValue)().willOnce(returnWith(50));
   var changeOpacityEmitted = false;
   var opacity;
   cm.events.listen(goog.global, cm.events.CHANGE_OPACITY, function(e) {
     changeOpacityEmitted = true;
     opacity = e.opacity;
   });
-  cm.events.emit(this.slider_, 'change');
+  cm.events.emit(slider, 'change');
   expectTrue(changeOpacityEmitted);
   expectEq(50, opacity);
 
   // Test whether changes in the app state are reflected upon the slider.
   expectCall(this.appState_.get)('layer_opacities')
       .willRepeatedly(returnWith({'layer0': 40}));
-  expectCall(this.slider_.setValue)(40);
+  expectCall(slider.setValue)(40);
   cm.events.emit(this.appState_, 'layer_opacities_changed');
   expectEq(0.4, sliderDot.style.opacity);
 
@@ -180,7 +192,7 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   expectDescendantOf(circle, withClass('cm-slider-dot'));
 
   // Change the layer to non-TILE to verify that the slider is destroyed.
-  expectCall(this.slider_.dispose)();
+  expectCall(slider.dispose)();
   this.layerModel_.set('type', cm.LayerModel.Type.KML);
 };
 

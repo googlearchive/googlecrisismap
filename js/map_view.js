@@ -391,7 +391,7 @@ cm.MapView.prototype.addOverlay_ = function(layer) {
   var properties = ['type', 'url', 'url_is_tile_index', 'ft_select', 'ft_from',
                     'ft_where', 'maps_engine_map_id', 'maps_engine_layer_key',
                     'layer_id', 'temperature_unit', 'wind_speed_unit',
-                    'label_color'];
+                    'label_color', 'wms_layers'];
   this.listenerTokens_[layer.get('id')] =
       /** @type Array.<cm.events.ListenerToken> */(cm.events.onChange(
           layer, properties, function() {
@@ -431,6 +431,11 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       break;
 
     case cm.LayerModel.Type.TILE:
+      this.overlays_[id] = new cm.TileOverlay(
+        layer, this.map_, this.appState_, this.metadataModel_);
+      break;
+
+    case cm.LayerModel.Type.WMS:
       this.overlays_[id] = new cm.TileOverlay(
         layer, this.map_, this.appState_, this.metadataModel_);
       break;

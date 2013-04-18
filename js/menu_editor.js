@@ -19,10 +19,11 @@ goog.require('cm.Editor');
 goog.require('cm.ui');
 
 /**
- * A select list of options. This editor's value will default to the first
- * option in the given list whenever its value is set to null or undefined, and
- * that value isn't in the choices array. When no choices are given, it will
- * default to null.
+ * A select list of options. The editor's 'value' will default to the first
+ * option (for single-select menus) or the empty array (for multi-select menus)
+ * when the value is set to null or undefined. When no layer choices
+ * exist, 'value' defaults to null for a single-select menu or the empty array
+ * for a multi-select menu.
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
  * @param {{choices: Array.<cm.InputChoice>, div_class: string,
@@ -55,7 +56,12 @@ cm.MenuEditor = function(parentElem, id, options) {
    */
   this.isMultiSelect_ = options && options.multiple;
 
-  var name = cm.ui.generateId('select');
+  /**
+   * @type string
+   * @private
+   */
+  this.elementId_ = cm.ui.generateId('select');
+
   cm.ui.append(parentElem, this.select_ = cm.ui.create(
       'select', {'id': id, 'class': options && options.menu_class || null}));
   if (this.isMultiSelect_) {
@@ -64,7 +70,7 @@ cm.MenuEditor = function(parentElem, id, options) {
   for (var i = 0; i < options.choices.length; i++) {
     var choice = options.choices[i];
     cm.ui.append(this.select_, cm.ui.create(
-        'option', {'name': name}, choice.label));
+        'option', {'name': this.elementId_}, choice.label));
     this.values_.push(choice.value);
   }
   cm.events.listen(this.select_, 'change', this.updateValue_, this);
@@ -90,9 +96,10 @@ cm.MenuEditor.prototype.updateValue_ = function() {
 };
 
 /**
- * Update the UI to select the given value. If the given value is not one of
- * this list's option, and was null or undefined, sets the editor's value back
- * to its first option (or null if there are no options).
+ * Update the UI to select the given value. If the value is null or undefined,
+ * set the editor's 'value' property to a valid value: for a multiselect, the
+ * empty list, and for a single select, either the first available option
+ * or null if there are no options.
  * @override
  */
 cm.MenuEditor.prototype.updateUi = function(value) {
@@ -108,9 +115,13 @@ cm.MenuEditor.prototype.updateUi = function(value) {
     this.setValid_(value);
   }
 
-  var values = new goog.structs.Set(this.isMultiSelect_ ?
+  // Update the selected options. Note that this may not properly
+  // handle object value types since 1) closure mutates objects with
+  // goog.getUid() (e.g., when constructing a set), and 2) the
+  // closure set contains() method will not perform deep comparison.
+  var valueSet = new goog.structs.Set(this.isMultiSelect_ ?
       /** @type Array.<*> */(value) : [value]);
   goog.array.forEach(this.values_, function(v, index) {
-    this.select_.options[index].selected = values.contains(v);
+    this.select_.options[index].selected = valueSet.contains(v);
   }, this);
 };

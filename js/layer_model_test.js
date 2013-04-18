@@ -150,6 +150,9 @@ LayerModelTest.prototype.newFromMapRootLayerTypes = function() {
   layerModel = cm.LayerModel.newFromMapRoot({type: 'FOLDER'});
   expectEq(cm.LayerModel.Type.FOLDER, layerModel.get('type'));
 
+  layerModel = cm.LayerModel.newFromMapRoot({type: 'WMS'});
+  expectEq(cm.LayerModel.Type.WMS, layerModel.get('type'));
+
   expectThat(cm.LayerModel.newFromMapRoot({type: 'other'}), isNull);
 };
 
@@ -414,6 +417,27 @@ LayerModelTest.prototype.testGetSourceAddress = function() {
 
   layerModel = cm.LayerModel.newFromMapRoot(MAPTILE_MAP_ROOT_JSON);
   expectEq('', layerModel.getSourceAddress());
+};
+
+/** Tests creation of a WMS layer. */
+LayerModelTest.prototype.newWmsLayerFromMapRoot = function() {
+  var layerJson = {
+    'id': 'wms',
+    'title': 'Wms',
+    'type': 'WMS',
+    'source': {
+      'wms': {
+        'url': 'http://wms.service.url',
+        'wms_layers': ['wms_1', 'wms_2']
+      }
+    }
+  };
+
+  var layerModel = cm.LayerModel.newFromMapRoot(layerJson);
+  expectEq(cm.LayerModel.Type.WMS, layerModel.get('type'));
+  expectEq(layerModel.get('url'), layerJson['source']['wms']['url']);
+  expectThat(layerJson['source']['wms']['wms_layers'],
+             elementsAre(layerModel.get('wms_layers')));
 };
 
 

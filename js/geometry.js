@@ -11,8 +11,9 @@
 
 /**
  * @fileoverview Geometry functions for managing polygons and tile bounds.
- *     NOTE(kpy): There are known bugs in intersectQuadAndTile, and nothing
- *     in this file is in the 'cm' namespace.  This file needs an overhaul.
+ *     TODO(romano): Replace this file since there are known bugs in
+ *     quadTileOverlap, and nothing in this file is in the 'cm' namespace
+ *     (b/7979024).
  * @author giencke@google.com (Pete Giencke)
  * @author sraub@google.com (Susannah Raub)
  */
@@ -21,6 +22,7 @@ goog.provide('cm.geometry');
 
 goog.require('cm');
 goog.require('cm.ui');
+goog.require('goog.array');
 
 /**
  * @enum {number}
@@ -78,7 +80,7 @@ function boundingBoxesOverlap(quad, low, high) {
  * @param {google.maps.Point} high MAximum (x, y) corner of the rectangle.
  * @return {Overlap} The overlap status (INSIDE, OUTSIDE, or INTERSECTING).
  */
-function intersectEdgeAndTile(a, b, low, high) {
+function edgeTileOverlap(a, b, low, high) {
   var nx = b.y - a.y;
   var ny = a.x - b.x;
   var d = nx * a.x + ny * a.y;
@@ -102,23 +104,23 @@ function intersectEdgeAndTile(a, b, low, high) {
 }
 
 /**
- * Intersects the given quad with the rectangle given by low, high.
- * quad must be a convex, counter-clockwise quadrilateral.
- * Returns OUTSIDE, INSIDE, or INTERSECTING, which specifies the
- * quad's relationship to the bounding box.
- * @param {Array.<google.maps.Point>} quad The 4 vertices of the quadrilateral.
- * @param {google.maps.Point} low Minimum (x, y) corner of the rectangle.
- * @param {google.maps.Point} high Maximum (x, y) corner of the rectangle.
- * @return {Overlap} The overlap status (INSIDE, OUTSIDE, or INTERSECTING).
+ * Returns the type of overlap between the quadrilateral and the box defined by
+ * the given points. The quadrilateral must be convex and its points must be
+ * specified in counter-clockwise order.
+ * @param {Array.<google.maps.Point>} quad The quadrilateral with which to
+ *     intersect the box.
+ * @param {google.maps.Point} upperLeft The upper-left box corner.
+ * @param {google.maps.Point} lowerRight The lower-right box corner.
+ * @return {Overlap} The type of overlap.
  */
-function intersectQuadAndTile(quad, low, high) {
-  if (!boundingBoxesOverlap(quad, low, high)) {
+function quadTileOverlap(quad, upperLeft, lowerRight) {
+  if (!boundingBoxesOverlap(quad, upperLeft, lowerRight)) {
     return Overlap.OUTSIDE;
   }
-  var a = intersectEdgeAndTile(quad[0], quad[1], low, high);
-  var b = intersectEdgeAndTile(quad[1], quad[2], low, high);
-  var c = intersectEdgeAndTile(quad[2], quad[3], low, high);
-  var d = intersectEdgeAndTile(quad[3], quad[0], low, high);
+  var a = edgeTileOverlap(quad[0], quad[1], upperLeft, lowerRight);
+  var b = edgeTileOverlap(quad[1], quad[2], upperLeft, lowerRight);
+  var c = edgeTileOverlap(quad[2], quad[3], upperLeft, lowerRight);
+  var d = edgeTileOverlap(quad[3], quad[0], upperLeft, lowerRight);
   if (a == Overlap.OUTSIDE || b == Overlap.OUTSIDE || c == Overlap.OUTSIDE ||
       d == Overlap.OUTSIDE) {
     return Overlap.OUTSIDE;
@@ -131,26 +133,26 @@ function intersectQuadAndTile(quad, low, high) {
 }
 
 /**
- * @param {google.maps.Projection} projection The projection to convert these
- *     LatLngs to points.
- * @param {Array.<google.maps.LatLng>} path An array of four LatLngs.
- * @return {Array.<google.maps.Point>} The four projected points.
+ * Applies the projection to the array of lat-lng coordinates.
+ * @param {google.maps.Projection} projection The map projection.
+ * @param {Array.<google.maps.LatLng>} latlngs An array of lat/lng
+ *     coordinates to project.
+ * @return {Array.<google.maps.Point>} The projected points.
  */
-function getPolyPoints(projection, path) {
-  return [
-    projection.fromLatLngToPoint(path[0]),
-    projection.fromLatLngToPoint(path[1]),
-    projection.fromLatLngToPoint(path[2]),
-    projection.fromLatLngToPoint(path[3])
-  ];
+function applyProjection(projection, latlngs) {
+  return goog.array.map(latlngs, function(latlng) {
+    return projection.fromLatLngToPoint(latlng);
+  });
 }
 
 /**
- * @param {number} x The tile x coordinate.
- * @param {number} y The tile y coordinate.
- * @param {number} zoom The zoom level.
- * @return {Array.<google.maps.Point>} The minimum and maximum (x, y) corners
- *     of the rectangular region covered by the specified tile.
+ * Return the world coordinates of the upper-left and lower-right corners of
+ * the given tile.
+ * @param {number} x The tile's x-coordinate.
+ * @param {number} y The tile's y-coordinate.
+ * @param {number} zoom The tile's zoom level.
+ * @return {Array.<google.maps.Point>} The tile's upper-left and
+ *     lower-right coordinates.
  */
 function getTileRange(x, y, zoom) {
   var z = Math.pow(2, zoom);
@@ -197,21 +199,4 @@ function getBoundingBox(projection, latLng, zoom) {
       new google.maps.LatLng(ll.lat(), ll.lng())
   ];
   return polyCoords;
-}
-
-/**
- * @param {google.maps.Polygon} poly A polygon.
- * @return {google.maps.LatLngBounds} A set of bounds enclosing the polygon.
- */
-function getPolyBounds(poly) {
-  var bounds = new google.maps.LatLngBounds();
-  var paths = poly.getPaths();
-  var path;
-  for (var p = 0; p < paths.getLength(); p++) {
-    path = paths.getAt(p);
-    for (var i = 0; i < path.getLength(); i++) {
-      bounds.extend(path.getAt(i));
-    }
-  }
-  return bounds;
 }

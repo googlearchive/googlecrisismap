@@ -99,6 +99,9 @@ class ClientConfig(db.Model):
   hide_twitter_button = db.BooleanProperty(default=False)
 
 
+  # Whether to allow adding WMS layers in the map editor
+  enable_wms_layer_editing = db.BooleanProperty(default=False)
+
   # Whether to display minimal map controls (small zoom control, no
   # scale control, no pegman).
   minimal_map_controls = db.BooleanProperty(default=False)

@@ -40,6 +40,7 @@ goog.require('cm.events');
  *     share_url: The URL to which to POST to share the map.
  *     save_url: The URL to which to POST to save the edited map data.
  *     enable_osm_map_type: Show OSM as a base map option in the editor.
+ *     enable_wms_layer_editing: Allow WMS in the layer type menu?
  * @constructor
  */
 cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
@@ -69,7 +70,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   function usesUrlField(type) {
     return type === cm.LayerModel.Type.KML ||
         type === cm.LayerModel.Type.GEORSS ||
-        type === cm.LayerModel.Type.TILE;
+        type === cm.LayerModel.Type.TILE ||
+        type === cm.LayerModel.Type.WMS;
   }
 
   function downloadable(type) {
@@ -97,6 +99,12 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.LayerModel.Type.MAP_DATA, label: 'Google Maps Engine'}
   ];
 
+
+  // TODO(romano): remove this check once WMS is production-ready.
+  if (config['enable_wms_layer_editing']) {
+    layerTypeChoices.push({value: cm.LayerModel.Type.WMS, label: 'WMS'});
+  }
+
   var mapTypeChoices = [
     {value: cm.MapModel.Type.ROADMAP, label: 'Road map'},
     {value: cm.MapModel.Type.SATELLITE,
@@ -105,10 +113,10 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.MapModel.Type.TERRAIN, label: 'Terrain'},
     {value: cm.MapModel.Type.CUSTOM, label: 'Custom'}
   ];
+
   if (config['enable_osm_map_type']) {
     mapTypeChoices.push({value: cm.MapModel.Type.OSM, label: 'OpenStreetMap'});
   }
-
 
   var mapFields = [
    {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
@@ -197,6 +205,12 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'maps_engine_layer_key', label: 'Layer ID',
      type: cm.editors.Type.TEXT,
      conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)}},
+    {key: 'wms_layers', label: 'Layers',
+     type: cm.editors.Type.WMS_MENU,
+     conditions: {'type': isType(cm.LayerModel.Type.WMS)},
+     multiple: true,
+     choices: [],
+     menu_class: 'cm-wms-menu-editor'},
     {key: 'locked', label: 'Locked?',
      type: cm.editors.Type.CHECKBOX, checked_value: true,
      unchecked_value: false,
