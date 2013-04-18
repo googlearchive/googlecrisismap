@@ -396,6 +396,15 @@ html, body {
 .cm-map {
   height:100%;
 }
+.cm-map-copyright {
+  font-size:10px;
+  background-image:-webkit-linear-gradient(right,rgba(255,255,255,0) 0px,rgba(255,255,255,0.5) 40px,rgba(255,255,255,0.5) 140px,rgba(255,255,255,0));
+  padding:4px 4px 4px 30px;
+  margin-right:-50px;
+}
+.cm-map-copyright, .cm-map-copyright a {
+  color: #444;
+}
 
 /* Popups and dialogs */
 .cm-popup {

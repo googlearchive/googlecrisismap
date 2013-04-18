@@ -23,7 +23,7 @@ AppStateTest.prototype.testConstruction = function() {
   expectEq(0, this.appState_.get('enabled_layer_ids').getCount());
   expectEq(0, this.appState_.get('promoted_layer_ids').getCount());
   expectEq(this.viewport_, this.appState_.get('viewport'));
-  expectEq(google.maps.MapTypeId.ROADMAP, this.appState_.get('map_type_id'));
+  expectEq(cm.MapModel.Type.ROADMAP, this.appState_.get('map_type'));
 };
 
 /** Test the AppState fromAppState copy method. */
@@ -33,7 +33,7 @@ AppStateTest.prototype.testFromAppState = function() {
   this.appState_.get('promoted_layer_ids').add('y');
   this.appState_.set('layer_opacities', {a: 50});
   this.appState_.set('viewport', new cm.LatLonBox(10, -10, 20, -20));
-  this.appState_.set('map_type_id', google.maps.MapTypeId.SATELLITE);
+  this.appState_.set('map_type', cm.MapModel.Type.SATELLITE);
 
   // Check that all the properties are equal.
   var newAppState = cm.AppState.fromAppState(this.appState_);
@@ -46,7 +46,7 @@ AppStateTest.prototype.testFromAppState = function() {
            newAppState.get('layer_opacities'));
   expectEq(this.appState_.get('viewport'),
            newAppState.get('viewport'));
-  expectEq(this.appState_.get('map_type_id'), newAppState.get('map_type_id'));
+  expectEq(this.appState_.get('map_type'), newAppState.get('map_type'));
 
   // Check that object references are not the same.
   var keys = ['enabled_layer_ids', 'promoted_layer_ids', 'layer_opacities'];
@@ -76,7 +76,7 @@ AppStateTest.prototype.createLayer_ = function(id, opt_parent, opt_sublayers) {
   return layer;
 };
 
-/** Test the setLayerEnabled and getLayerEnabled methods. */
+/** Tests the setLayerEnabled and getLayerEnabled methods. */
 AppStateTest.prototype.testLayerEnabledPlainLayer = function() {
   var layera = this.createLayer_('a');
   var layerb = this.createLayer_('b');
@@ -110,6 +110,7 @@ AppStateTest.prototype.testLayerEnabledPlainLayer = function() {
   expectEq(3, notified);
 };
 
+/** Tests setLayerEnabled and getLayerEnabled with nested folders. */
 AppStateTest.prototype.testLayerEnabledFolders = function() {
   // a contains b contains c
   var layera = this.createLayer_('a');
@@ -234,7 +235,7 @@ AppStateTest.prototype.testGetUri = function() {
           '?lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9'});
 
   // Add state to the app state.
-  this.appState_.set('map_type_id', google.maps.MapTypeId.SATELLITE);
+  this.appState_.set('map_type', cm.MapModel.Type.SATELLITE);
 
   var layera = this.createLayer_('a');
   var layerb = this.createLayer_('b');
@@ -250,7 +251,7 @@ AppStateTest.prototype.testGetUri = function() {
   expectEq('http://google.org/crisismap/foo' +
            '?hl=fr' +
            '&llbox=12%2C11%2C-33%2C-34.123' +
-           '&t=satellite' +
+           '&t=SATELLITE' +
            '&layers=a%3A1%2Cb%3A34%2Cd' +
            '&promoted=c',
            this.appState_.getUri().toString());
@@ -264,7 +265,7 @@ AppStateTest.prototype.testGetUri = function() {
   expectEq('http://elsewhere.org/whatever' +
            '?hl=fr' +
            '&llbox=12%2C11%2C-33%2C-34.123' +
-           '&t=satellite' +
+           '&t=SATELLITE' +
            '&layers=a%3A1%2Cb%3A34%2Cd' +
            '&promoted=c',
            this.appState_.getUri().toString());
@@ -273,10 +274,10 @@ AppStateTest.prototype.testGetUri = function() {
 /** Verifies that the AppState is set according to the 't' param. */
 AppStateTest.prototype.testSetFromUriMapType = function() {
   var uri = new goog.Uri('');
-  uri.setParameterValue('t', 'hybrid');
+  uri.setParameterValue('t', cm.MapModel.Type.HYBRID);
 
   this.appState_.setFromUri(uri);
-  expectEq(google.maps.MapTypeId.HYBRID, this.appState_.get('map_type_id'));
+  expectEq(cm.MapModel.Type.HYBRID, this.appState_.get('map_type'));
 };
 
 /** Verifies that the AppState is set according to the 'layers' param. */
@@ -335,8 +336,7 @@ AppStateTest.prototype.testSetFromMapModel = function() {
   });
   this.appState_.setFromMapModel(mapModel);
 
-  expectEq(cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapModel.get('map_type')],
-      this.appState_.get('map_type_id'));
+  expectEq(mapModel.get('map_type'), this.appState_.get('map_type'));
   expectEq(viewport, this.appState_.get('viewport'));
 
   expectEq(['promoted'], this.appState_.get('promoted_layer_ids').getValues());
@@ -361,7 +361,7 @@ AppStateTest.prototype.testWriteToMapModel = function() {
   this.appState_.set('enabled_layer_ids', new goog.structs.Set(['a', 'c']));
   this.appState_.set('layer_opacities', {a: 0, b: 50, c: 100});
   this.appState_.set('viewport', new cm.LatLonBox(10, -10, 20, 20));
-  this.appState_.set('map_type_id', google.maps.MapTypeId.SATELLITE);
+  this.appState_.set('map_type', cm.MapModel.Type.SATELLITE);
 
   var mapModel = cm.MapModel.newFromMapRoot({
     id: 'map', layers: [
@@ -373,8 +373,7 @@ AppStateTest.prototype.testWriteToMapModel = function() {
   this.appState_.writeToMapModel(mapModel);
 
   expectEq(this.appState_.get('viewport'), mapModel.get('viewport'));
-  expectEq(this.appState_.get('map_type_id'),
-      cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapModel.get('map_type')]);
+  expectEq(this.appState_.get('map_type'), mapModel.get('map_type'));
   var opacities = this.appState_.get('layer_opacities');
   var enabledLayerIds = this.appState_.get('enabled_layer_ids');
   cm.util.forLayersInMap(mapModel, function(layer) {

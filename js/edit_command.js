@@ -62,6 +62,12 @@ cm.EditCommand.prototype.execute = function(appState, mapModel) {
       object.set(key, this.newValues_[key]);
     }
   }
+  // When the user edits the map's default type, also update the currently
+  // visible map type to reflect the change.  This is a special case of a
+  // model update that should also result in an AppState update.
+  if (object === mapModel) {
+    appState.set('map_type', mapModel.get('map_type'));
+  }
   return true;
 };
 
@@ -72,6 +78,12 @@ cm.EditCommand.prototype.undo = function(appState, mapModel) {
     if (this.oldValues_[key] !== undefined) {
       object.set(key, this.oldValues_[key]);
     }
+  }
+  // When the user edits the map's default type, also update the currently
+  // visible map type to reflect the change.  This is a special case of a
+  // model update that should also result in an AppState update.
+  if (object === mapModel) {
+    appState.set('map_type', mapModel.get('map_type'));
   }
   return true;
 };

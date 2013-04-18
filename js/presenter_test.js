@@ -58,7 +58,6 @@ PresenterTest.prototype.openClosePanel = function() {
 /** Tests that the resetView method sends the correct Analytics events. */
 PresenterTest.prototype.resetView = function() {
   expectCall(this.mapView_.matchViewport)(_);
-  expectCall(this.mapView_.updateMapType)();
   this.presenter_.resetView(this.mapModel_);
   expectEq([['layer', 'reset_on', 'map1.layer1', 1]], this.events_);
 
@@ -66,14 +65,12 @@ PresenterTest.prototype.resetView = function() {
   this.appState_.setLayerEnabled('layer1', false);
   this.appState_.setLayerEnabled('layer2', true);
   expectCall(this.mapView_.matchViewport)(_);
-  expectCall(this.mapView_.updateMapType)();
   this.presenter_.resetView(this.mapModel_);
   expectEq([['layer', 'reset_on', 'map1.layer1', 1],
             ['layer', 'reset_off', 'map1.layer2', 0]], this.events_);
 
   this.events_.splice(0, this.events_.length);  // clear the array in place
   expectCall(this.mapView_.matchViewport)(_);
-  expectCall(this.mapView_.updateMapType)();
   this.presenter_.resetView(this.mapModel_, '', true);
   expectEq([['layer', 'load_on', 'map1.layer1', 1]], this.events_);
 };

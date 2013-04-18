@@ -71,12 +71,8 @@ cm.AppState = function(opt_language) {
    */
   this.set('viewport', cm.LatLonBox.ENTIRE_MAP);
 
-  /**
-   * The Maps API MapTypeId of the currently selected base map (road,
-   * satellite, terrain, etc.).
-   * type google.maps.MapTypeId
-   */
-  this.set('map_type_id', google.maps.MapTypeId.ROADMAP);
+  /** The currently selected base map type, as a cm.MapModel.Type. */
+  this.set('map_type', cm.MapModel.Type.ROADMAP);
 };
 goog.inherits(cm.AppState, google.maps.MVCObject);
 
@@ -95,7 +91,7 @@ cm.AppState.fromAppState = function(appState) {
   newAppState.set('layer_opacities', goog.object.clone(
       /** @type {Object} */ (appState.get('layer_opacities'))));
   newAppState.set('viewport', appState.get('viewport'));
-  newAppState.set('map_type_id', appState.get('map_type_id'));
+  newAppState.set('map_type', appState.get('map_type'));
   return newAppState;
 };
 
@@ -222,12 +218,7 @@ cm.AppState.prototype.getVisibleLayerIds = function(mapModel) {
  */
 cm.AppState.prototype.writeToMapModel = function(mapModel) {
   mapModel.set('viewport', this.get('viewport'));
-  var mapType = this.get('map_type_id');
-  if (mapType) {
-    mapModel.set('map_type',
-        goog.object.transpose(cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES)[mapType]);
-  }
-
+  mapModel.set('map_type', this.get('map_type') || cm.MapModel.Type.ROADMAP);
   var enabledLayers = this.get('enabled_layer_ids');
   var opacities = this.get('layer_opacities');
   cm.util.forLayersInMap(mapModel, function(layer) {
@@ -263,10 +254,7 @@ cm.AppState.prototype.setFromMapModel = function(mapModel) {
       this.demoteSublayers(layer);
     }
   }, null, this);
-  if (!mapModel.get('base_map_style')) {
-    this.set('map_type_id',
-             cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapModel.get('map_type')]);
-  }
+  this.set('map_type', mapModel.get('map_type') || cm.MapModel.Type.ROADMAP);
   this.set('layer_opacities', opacities);
   this.set('viewport', mapModel.get('viewport'));
 };
@@ -291,7 +279,7 @@ cm.AppState.prototype.getUri = function() {
   uri.setParameterValue('hl', this.get('language'));
   // Add query parameters to encode the view state.
   uri.setParameterValue('llbox', viewport.round(4).toString());
-  uri.setParameterValue('t', this.get('map_type_id'));
+  uri.setParameterValue('t', this.get('map_type'));
   uri.setParameterValue('layers', this.getLayersParameter_());
   uri.setParameterValue('promoted', promotedIds.getValues().join(','));
   return uri;
@@ -307,9 +295,9 @@ cm.AppState.prototype.getUri = function() {
 cm.AppState.prototype.setFromUri = function(uri) {
   uri = new goog.Uri(uri);
 
-  var mapTypeId = uri.getParameterValue('t');
-  if (mapTypeId) {
-    this.set('map_type_id', mapTypeId);
+  var mapType = uri.getParameterValue('t');
+  if (mapType) {
+    this.set('map_type', mapType);
   }
   // TODO(romano): Needs error-checking to verify that the layer
   // ID lists in the 'layers' and 'promoted' parameters are valid,

@@ -54,23 +54,28 @@ function MapViewTest() {
     },
     mapTypeControl: true
   };
+  // Tests can adjust expectedMapTypeControlOptions_ for different expectations.
+  this.expectedMapTypeControlOptions_ = {
+    mapTypeControlOptions: {
+      mapTypeIds: DEFAULT_MAP_TYPE_IDS,
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
+    }
+  };
+
   this.map_ = this.expectNew_(
       'google.maps.Map', this.elem_, this.expectedMapOptions_);
   stubReturn(this.map_, 'getDiv', {offsetWidth: 600, offsetHeight: 600});
-  expectCall(this.map_.bindTo)('mapTypeId', this.appState_, 'map_type_id');
+  expectCall(this.map_.bindTo)('mapTypeId', _);
   expectCall(this.map_.bindTo)('center', _);
   expectCall(this.map_.bindTo)('zoom', _);
-  expectCall(this.map_.setOptions)({mapTypeControlOptions: {
-    mapTypeIds: DEFAULT_MAP_TYPE_IDS,
-    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-  }});
-  expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.ROADMAP);
+  expectCall(this.map_.setOptions)(this.expectedMapTypeControlOptions_);
 
+  this.map_.controls = [[], [], [], [], [], [], [], [], [], [], [], [], []];
   this.map_.mapTypes = createMockInstance(google.maps.MapTypeRegistry);
 
   this.infoWindow_ = this.expectNew_('google.maps.InfoWindow');
 
-  // Re-define this.layers_ per test to check different expectations.
+  // Individual tests should modify this.layers_ to set up their expectations.
   this.layers_ = new google.maps.MVCArray();
   expectCall(this.mapModel_.get)('layers')
       .willRepeatedly(returnWith(this.layers_));
@@ -80,6 +85,8 @@ function MapViewTest() {
   // Default base map type is roadmap.
   expectCall(this.mapModel_.get)('map_type')
       .willRepeatedly(returnWith(cm.MapModel.Type.ROADMAP));
+  expectCall(this.map_.get)('mapTypeId')
+      .willRepeatedly(returnWith(google.maps.MapTypeId.ROADMAP));
 }
 MapViewTest.prototype = new cm.TestBase();
 registerTestSuite(MapViewTest);
@@ -221,6 +228,27 @@ MapViewTest.prototype.mouseLatLonCoordinates = function() {
   expectEq('', latLonElem.style.display);
   cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
   expectEq('none', latLonElem.style.display);
+};
+
+/** Tests that the AppState's map_type and Map's mapTypeId are kept in sync. */
+MapViewTest.prototype.appStateMapType = function() {
+  var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                               this.metadataModel_, false);
+
+  // AppState should get map_type TERRAIN...
+  expectCall(this.appState_.set)('map_type', cm.MapModel.Type.TERRAIN);
+
+  // ...when the map is switched to TERRAIN.
+  mapView.set('mapTypeId', google.maps.MapTypeId.TERRAIN);
+  cm.events.emit(this.map_, 'maptypeid_changed');
+
+  // When the AppState map_type is switched to SATELLITE...
+  expectCall(this.appState_.get)('map_type')
+      .willRepeatedly(returnWith(cm.MapModel.Type.SATELLITE));
+  cm.events.emit(this.appState_, 'map_type_changed');
+
+  // ...the map should switch to SATELLITE.
+  expectEq(google.maps.MapTypeId.SATELLITE, mapView.get('mapTypeId'));
 };
 
 /** Tests adding a KML overlay. */
@@ -1009,49 +1037,45 @@ MapViewTest.prototype.testZoomChanged = function() {
   expectTrue(eventFiredCorrectly);
 };
 
-/**
- * Tests that default map type and map style updates are performed correctly.
- */
-MapViewTest.prototype.testUpdateMapStyle = function() {
+/** Tests that custom base map styles are applied correctly. */
+MapViewTest.prototype.testCustomMapType = function() {
   var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                                this.metadataModel_, false);
+  expectCall(this.mapModel_.get)('base_map_style_name')
+      .willRepeatedly(returnWith('foostylea'));
 
-  // Custom map with wrongly formatted style JSON falls back to roadmap.
+  // Custom map with wrongly formatted style JSON falls back to empty style.
   expectCall(this.mapModel_.get)('map_type')
       .willRepeatedly(returnWith(cm.MapModel.Type.CUSTOM));
   expectCall(this.mapModel_.get)('base_map_style')
       .willRepeatedly(returnWith('{\"invalid\": \"json'));
   expectCall(this.map_.setOptions)({mapTypeControlOptions: {
-    mapTypeIds: DEFAULT_MAP_TYPE_IDS,
+      mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat(['cm.custom']),
     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
   }});
-  expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.ROADMAP);
+  var styledMap = this.expectNew_('google.maps.StyledMapType',
+      [], {name: 'foostylea'});
+  expectCall(this.map_.mapTypes.set)('cm.custom', styledMap);
   cm.events.emit(this.mapModel_, 'base_map_style_changed');
 
-  // Custom map with correctly formatted style JSON sets the map style.
+  // Custom map with correctly formatted style JSON activates the custom style.
   expectCall(this.mapModel_.get)('map_type')
       .willRepeatedly(returnWith(cm.MapModel.Type.CUSTOM));
   expectCall(this.mapModel_.get)('base_map_style')
       .willRepeatedly(returnWith(
           '[{"featureType": "all", "stylers": [{"saturation": 10}]}]'
   ));
-  expectCall(this.mapModel_.get)('base_map_style_name')
-      .willRepeatedly(returnWith('foostylea'));
   var styledMap = this.expectNew_('google.maps.StyledMapType',
       [{featureType: 'all', stylers: [{saturation: 10}]}],
       {name: 'foostylea'});
-  expectCall(this.map_.mapTypes.set)(cm.MapModel.Type.CUSTOM, styledMap);
-  expectCall(this.map_.setMapTypeId)(cm.MapModel.Type.CUSTOM)
-      .willRepeatedly(returnWith(undefined));
-  // Custom map is added at the end.
+  expectCall(this.map_.mapTypes.set)('cm.custom', styledMap);
   expectCall(this.map_.setOptions)({mapTypeControlOptions: {
-      mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat([cm.MapModel.Type.CUSTOM]),
-      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-  }}).willRepeatedly(returnWith(undefined));
+      mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat(['cm.custom']),
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU}});
   cm.events.emit(this.mapModel_, 'map_type_changed');
 
-  // If the map's type is not custom, even though it has a valid style, use the
-  // specified map type and ignore the custom styling.
+  // If the map's type is not custom, even if it has a valid style, cm.MapView
+  // should use the specified map type and ignore the custom styling.
   expectEq('foostylea', this.mapModel_.get('base_map_style_name'));
   expectCall(this.mapModel_.get)('map_type')
       .willRepeatedly(returnWith(cm.MapModel.Type.SATELLITE));
@@ -1059,8 +1083,45 @@ MapViewTest.prototype.testUpdateMapStyle = function() {
     mapTypeIds: DEFAULT_MAP_TYPE_IDS,
     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
   }});
-  expectCall(this.map_.setMapTypeId)(google.maps.MapTypeId.SATELLITE);
   cm.events.emit(this.mapModel_, 'map_type_changed');
 };
 
+/** Verifies that the map shows the OSM base map when OSM is enabled. */
+MapViewTest.prototype.testOsmMapTypeWhenEnabled = function() {
+  // The OSM option should be present in the menu...
+  var imageMapType = this.expectNew_('google.maps.ImageMapType', _);
+  expectCall(this.map_.mapTypes.set)('cm.osm', imageMapType);
+  this.expectedMapTypeControlOptions_.mapTypeControlOptions.mapTypeIds =
+      DEFAULT_MAP_TYPE_IDS.concat(['cm.osm']);
+
+  // ...when 'enable_osm_map_type' is set in the cm_config.
+  var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                               this.metadataModel_, false,
+                               {'enable_osm_map_type': true});
+
+  // When the map_type in the AppState is OSM...
+  expectCall(this.appState_.get)('map_type')
+      .willRepeatedly(returnWith(cm.MapModel.Type.OSM));
+  cm.events.emit(this.appState_, 'map_type_changed');
+
+  // ...the map should show the OSM base map.
+  expectEq('cm.osm', mapView.get('mapTypeId'));
+};
+
+/** Verifies that the map falls back to ROADMAP when OSM is not enabled. */
+MapViewTest.prototype.testOsmMapTypeWhenDisabled = function() {
+  var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                               this.metadataModel_, false);
+
+  // When OSM is not enabled, OSM should not appear in the map type menu...
+  this.expectNoCalls_('google.maps.ImageMapType');
+
+  // ...and when the map_type in the AppState is OSM...
+  expectCall(this.appState_.get)('map_type')
+      .willRepeatedly(returnWith(cm.MapModel.Type.OSM));
+  cm.events.emit(this.appState_, 'map_type_changed');
+
+  // ...the map should fall back to the ROADMAP base map.
+  expectEq(google.maps.MapTypeId.ROADMAP, mapView.get('mapTypeId'));
+};
 

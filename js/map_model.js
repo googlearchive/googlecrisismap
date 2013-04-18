@@ -57,8 +57,8 @@ cm.MapModel.Type = {
   SATELLITE: 'SATELLITE',
   HYBRID: 'HYBRID',
   TERRAIN: 'TERRAIN',
-  //  Must be distinct from any existing keys in google.maps.MapTypeId
-  CUSTOM: 'CM_CUSTOM_MAP_TYPE'
+  CUSTOM: 'CUSTOM',
+  OSM: 'OSM'
 };
 
 /** @type Object.<cm.MapModel.Type> */
@@ -66,16 +66,9 @@ cm.MapModel.MAPROOT_TO_MODEL_MAP_TYPES = {
   'GOOGLE_ROADMAP': cm.MapModel.Type.ROADMAP,
   'GOOGLE_SATELLITE': cm.MapModel.Type.SATELLITE,
   'GOOGLE_HYBRID': cm.MapModel.Type.HYBRID,
-  'GOOGLE_TERRAIN': cm.MapModel.Type.TERRAIN
+  'GOOGLE_TERRAIN': cm.MapModel.Type.TERRAIN,
+  'OSM': cm.MapModel.Type.OSM
 };
-
-/** @type Object.<string> */
-cm.MapModel.MODEL_TO_MAPROOT_MAP_TYPES = goog.object.create(
-    cm.MapModel.Type.ROADMAP, 'GOOGLE_ROADMAP',
-    cm.MapModel.Type.SATELLITE, 'GOOGLE_SATELLITE',
-    cm.MapModel.Type.HYBRID, 'GOOGLE_HYBRID',
-    cm.MapModel.Type.TERRAIN, 'GOOGLE_TERRAIN'
-);
 
 /**
  * @param {Object} maproot A MapRoot JS object.
@@ -99,16 +92,12 @@ cm.MapModel.newFromMapRoot = function(maproot) {
             (maproot['base_map_style'] || {})['definition'] || '');
   model.set('base_map_style_name',
             (maproot['base_map_style'] || {})['name'] || '');
-  // If there's a default map style specified, then let baseMapType to be
-  // custom, since this way we can have style related text boxes in the editor
-  // opened automatically.
-  if (model.get('base_map_style')) {
-    model.set('map_type', cm.MapModel.Type.CUSTOM);
-  } else {
-    model.set('map_type',
-              cm.MapModel.MAPROOT_TO_MODEL_MAP_TYPES[
-                  maproot['base_map_type'] || 'GOOGLE_ROADMAP']);
-  }
+  // MapRoot doesn't have a CUSTOM map type; the presence or absence of
+  // base_map_style determines whether the base map is in CUSTOM mode.
+  model.set('map_type',
+            model.get('base_map_style') ? cm.MapModel.Type.CUSTOM :
+            cm.MapModel.MAPROOT_TO_MODEL_MAP_TYPES[
+                maproot['base_map_type']] || cm.MapModel.Type.ROADMAP);
 
   var layers = new google.maps.MVCArray();
   model.set('layers', layers);
@@ -247,14 +236,12 @@ cm.MapModel.prototype.unregisterLayer_ = function(id) {
 cm.MapModel.prototype.toMapRoot = function() {
   var languages = /** @type Array.<string> */(this.get('languages'));
   var baseMapStyleName = this.get('base_map_style_name');
+  // MapRoot doesn't have a CUSTOM map type; the presence or absence of
+  // base_map_style determines whether the base map is in CUSTOM mode.
+  var baseMapStyle = this.get('map_type') === cm.MapModel.Type.CUSTOM ?
+      this.get('base_map_style') : null;
   var mapType = this.get('map_type');
-  // If default map type is not custom, then don't save the value in default
-  // map style text box (even though it's hidden, it may have value).
-  var baseMapStyle = mapType !== cm.MapModel.Type.CUSTOM ?
-      null : this.get('base_map_style');
-  // We don't save custom as a base map type into MapRoot.
-  mapType = mapType && mapType !== cm.MapModel.Type.CUSTOM ?
-      mapType : null;
+  mapType = mapType && mapType !== cm.MapModel.Type.CUSTOM ? mapType : null;
   var box = /** @type cm.LatLonBox */(this.get('viewport'));
   var viewport = box ? {'lat_lon_alt_box': box.round(4).toMapRoot()} : null;
   box = /** @type cm.LatLonBox */(this.get('full_extent'));
@@ -269,7 +256,8 @@ cm.MapModel.prototype.toMapRoot = function() {
     'full_extent': fullExtent,
     'base_map_style': baseMapStyle ?
         {'definition': baseMapStyle, 'name': baseMapStyleName} : null,
-    'base_map_type': cm.MapModel.MODEL_TO_MAPROOT_MAP_TYPES[mapType],
+    'base_map_type': goog.object.transpose(
+        cm.MapModel.MAPROOT_TO_MODEL_MAP_TYPES)[mapType],
     'layers': goog.array.map(
         this.get('layers').getArray(),
         function(layer) { return layer.toMapRoot(); })

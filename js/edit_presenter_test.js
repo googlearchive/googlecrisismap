@@ -70,13 +70,38 @@ EditPresenterTest.prototype.testInspectEvent = function() {
   cm.events.emit(goog.global, cm.events.INSPECT, {});
 };
 
-function findTypeEditorSpec(editorSpecs) {
+function findEditorSpec(key, editorSpecs) {
   for (var i = 0; i < editorSpecs.length; i++) {
-    if (editorSpecs[i].key === 'type') {
+    if (editorSpecs[i].key === key) {
       return editorSpecs[i];
     }
   }
 }
+
+/** Tests that 'enable_osm_map_type' enables the OSM base map option. */
+EditPresenterTest.prototype.testEnableOsmMapType = function() {
+  var OSM_CHOICE = {value: 'OSM', label: 'OpenStreetMap'};
+  var map = new cm.MapModel();
+  var inspector = this.expectNew_('cm.InspectorView'), specs;
+  inspector.inspect = function(title, editorSpecs, object) {
+    specs = editorSpecs;
+  };
+
+  // This should call inspector.inspect, which captures the 'editorSpecs' arg.
+  var presenter = new cm.EditPresenter(null, null, null, {});
+  cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
+  // The OSM option should not be present.
+  var spec = findEditorSpec('map_type', specs);
+  expectThat(spec.choices, not(contains(OSM_CHOICE)));
+
+  // Try again, this time with the enable_osm_map_type flag set.
+  presenter = new cm.EditPresenter(null, null, null,
+                                   {enable_osm_map_type: true});
+  cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
+  // The OSM option should be present this time.
+  var spec = findEditorSpec('map_type', specs);
+  expectThat(spec.choices, contains(OSM_CHOICE));
+};
 
 /** Tests that the EditPresenter responds correctly to ARRANGE events. */
 EditPresenterTest.prototype.testArrangerEvent = function() {

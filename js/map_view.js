@@ -36,6 +36,8 @@ goog.require('goog.json');
  *         control, no pegman)?
  *     panel_side: The side of the map the panel will be placed on,
  *         which dictates placement of the map controls.
+ *     enable_osm_map_type: Allow OSM as a base map option.  If the map's
+ *         'map_type' is OSM but this is not enabled, we fall back to ROADMAP.
  * @param {boolean=} opt_preview Whether or not this is a preview view.
  * @constructor
  * @extends google.maps.MVCObject
@@ -90,6 +92,12 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
    */
   this.listenerTokens_ = {};
 
+  /** @private {Element} A copyright notice to show on the map. */
+  this.copyrightDiv_ = cm.ui.create('div', {'class': 'cm-map-copyright'});
+
+  /** @private {boolean} Allow OSM as a base map type. */
+  this.osmEnabled_ = (opt_config || {})['enable_osm_map_type'];
+
   // The navigation controls must be moved (on non-touch devices) from TOP_LEFT
   // or the searchbox will be positioned to the left or right of it instead of
   // stacked vertically.  Placing the navigation controls in the LEFT_TOP allows
@@ -127,29 +135,49 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
     'mapTypeControl': !opt_preview
   });
 
-  // The MapView has its own "center" and "zoom" properties so that we can
-  // set its center and zoom while the google.maps.Map is still loading.
-  // During loading, google.maps.Map ignores setCenter and setZoom, but if
-  // its "center" and "zoom" properties are bound to the MapView, it will
-  // pick up the proper settings when it finishes loading.
+  // The MapView has its own "mapTypeId", "center", and "zoom" properties so we
+  // can set them while the google.maps.Map is still loading.  During loading,
+  // google.maps.Map ignores setMapTypeId, setCenter, and setZoom, but if its
+  // "mapTypeId", "center", and "zoom" properties are bound to the MapView,
+  // it will pick up the proper settings when it finishes loading.
+  this.set('mapTypeId', google.maps.MapTypeId.ROADMAP);
   this.set('center', new google.maps.LatLng(0, 0));
   this.set('zoom', 0);
 
   this.map_ = new google.maps.Map(parentElem, mapOptions);
-  this.map_.bindTo('mapTypeId', appState, 'map_type_id');
+  this.map_.bindTo('mapTypeId', this);
   this.map_.bindTo('center', this);
   this.map_.bindTo('zoom', this);
+  this.map_.controls[google.maps.ControlPosition.BOTTOM_RIGHT].push(
+      this.copyrightDiv_);
+
+  // Translate between cm.MapModel.Type and google.maps.MapTypeId.
+  cm.events.onChange(this.map_, 'mapTypeId', function() {
+    appState.set('map_type', goog.object.transpose(
+        cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES)[this.get('mapTypeId')]);
+  }, this);
+  cm.events.onChange(appState, 'map_type', function() {
+    var mapType = appState.get('map_type');
+    if (mapType === cm.MapModel.Type.OSM && !this.osmEnabled_) {
+      mapType = cm.MapModel.Type.ROADMAP;  // fall back if OSM is not enabled
+    }
+    this.set('mapTypeId', cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapType]);
+  }, this);
 
   // Expose the map's viewport as a property (see updateViewportProperty_ for
   // details on why we need a method rather than simply binding to 'bounds').
   // Note this property is read-only; don't set('viewport', ...) on a MapView.
   cm.events.onChange(this.map_, 'bounds', this.updateViewportProperty_, this);
 
-  // If the user edits base map type or style, reflect such change immediately.
+  // We have to update the copyright if the map type changes to/from OSM.
+  cm.events.onChange(this.map_, 'mapTypeId', this.updateMapCopyright, this);
+  this.updateMapCopyright();
+
+  // When the map type or style changes, the map type menu may need updating.
   cm.events.onChange(this.mapModel_,
                      ['base_map_style', 'base_map_style_name', 'map_type'],
-                     this.updateMapType, this);
-  this.updateMapType();
+                     this.updateMapTypeMenu, this);
+  this.updateMapTypeMenu();
 
   // Expose our 'viewport' property as a property of the AppState.
   this.bindTo('viewport', appState);
@@ -216,8 +244,10 @@ cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES = goog.object.create(
   cm.MapModel.Type.SATELLITE, google.maps.MapTypeId.SATELLITE,
   cm.MapModel.Type.HYBRID, google.maps.MapTypeId.HYBRID,
   cm.MapModel.Type.TERRAIN, google.maps.MapTypeId.TERRAIN,
-  // May be added to the MapTypeID registry in MapView.updateMapType()
-  cm.MapModel.Type.CUSTOM, cm.MapModel.Type.CUSTOM
+  // These values must differ from the other google.maps.MapTypeId values.
+  // They are added to the map type registry in MapView.updateMapTypeMenu().
+  cm.MapModel.Type.CUSTOM, 'cm.custom',
+  cm.MapModel.Type.OSM, 'cm.osm'
 );
 
 /** @type {Object.<google.maps.weather.LabelColor>} */
@@ -277,45 +307,64 @@ cm.MapView.prototype.updateViewportProperty_ = function() {
   this.set('viewport', new cm.LatLonBox(north, south, east, west));
 };
 
-/**
- * Updates the base map style and type of the map according to the model.
- * If the map has a base map style, it overrides the default base map type.
- */
-cm.MapView.prototype.updateMapType = function() {
+/** Updates the map types available in the menu, according to the model. */
+cm.MapView.prototype.updateMapTypeMenu = function() {
+  // Options to show in the map type menu.
   var mapTypeIds = [google.maps.MapTypeId.ROADMAP,
                     google.maps.MapTypeId.SATELLITE,
                     google.maps.MapTypeId.HYBRID,
                     google.maps.MapTypeId.TERRAIN];
-  var baseMapStyle = this.mapModel_.get('base_map_style');
   var mapType = this.mapModel_.get('map_type');
-  // There are several different cases to consider, which makes the code logic
-  // quite complex: user enters a valid style for the map, user enters an
-  // invalid style for the map, user enters a (in)valid or empty style and then
-  // changes the base map type to something other than custom.
+  var id, styledMap;
   if (mapType === cm.MapModel.Type.CUSTOM) {
+    // Add the custom style to the map type registry and show it in the menu.
+    id = /** @type string */(
+        cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.CUSTOM]);
+    var name = this.mapModel_.get('base_map_style_name') || 'Custom';
     try {
       var styles = /** @type Array.<(google.maps.MapTypeStyle)> */(
-          goog.json.parse(baseMapStyle)) || [];
-      var baseMapStyleName = this.mapModel_.get('base_map_style_name');
-      var styledMap = new google.maps.StyledMapType(styles,
-          {'name': baseMapStyleName || 'Custom'});
-      // Add the custom styled maps to the map type registry.
-      this.map_.mapTypes.set(cm.MapModel.Type.CUSTOM,
-                             /** @type google.maps.MapType */(styledMap));
-      mapTypeIds.push(cm.MapModel.Type.CUSTOM);
+          goog.json.parse(this.mapModel_.get('base_map_style')));
+      styledMap = new google.maps.StyledMapType(styles, {'name': name});
     } catch (error) {
-      // Custom style JSON is invalid; default to roadmap.
-      mapType = cm.MapModel.Type.ROADMAP;
+      // StyledMapType produces a styled version of the ROADMAP tiles.  If the
+      // style definition is invalid, we show a normal, unstyled road map.
+      styledMap = new google.maps.StyledMapType([], {'name': name});
     }
+    this.map_.mapTypes.set(id, /** @type google.maps.MapType */(styledMap));
+    mapTypeIds.push(id);
   }
-  this.map_.setMapTypeId(
-      cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[/** @type string */(mapType)]);
+  if (this.osmEnabled_) {
+    // Add the OSM map type to the map type registry and show it in the menu.
+    id = /** @type string */(
+        cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]);
+    var imageMapType = new google.maps.ImageMapType({
+      'getTileUrl': function(coord, zoom) {
+        return 'http://tile.openstreetmap.org/' + zoom + '/' +
+            coord.x + '/' + coord.y + '.png';
+      },
+      'tileSize': new google.maps.Size(256, 256),
+      'name': 'OpenStreetMap',
+      'maxZoom': 18
+    });
+    this.map_.mapTypes.set(id, /** @type google.maps.MapType */(imageMapType));
+    mapTypeIds.push(id);
+  }
   this.map_.setOptions({
       'mapTypeControlOptions': {
         'mapTypeIds': mapTypeIds,
         'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
       }
   });
+};
+
+/** Updates the copyright notice based on the currently selected map type. */
+cm.MapView.prototype.updateMapCopyright = function() {
+  cm.ui.clear(this.copyrightDiv_);
+  if (this.map_.get('mapTypeId') ===
+      cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]) {
+    this.copyrightDiv_.innerHTML = cm.MapView.MSG_OSM_COPYRIGHT_HTML;
+    cm.ui.append(this.copyrightDiv_, ' - ');
+  }
 };
 
 /**
@@ -635,3 +684,9 @@ cm.MapView.prototype.zoomToLayer = function(id) {
     }
   }
 };
+
+/** @desc Copyright notice for OpenStreetMap base map data. */
+cm.MapView.MSG_OSM_COPYRIGHT_HTML = goog.getMsg(
+    'Map data \u00a9 ' +
+    '<a href="http://www.openstreetmap.org/copyright" target="_blank">' +
+    'OpenStreetMap</a> contributors');

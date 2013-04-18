@@ -39,6 +39,7 @@ goog.require('cm.events');
  * @param {Object} opt_config Configuration settings.  These fields are used:
  *     share_url: The URL to which to POST to share the map.
  *     save_url: The URL to which to POST to save the edited map data.
+ *     enable_osm_map_type: Show OSM as a base map option in the editor.
  * @constructor
  */
 cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
@@ -104,6 +105,9 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.MapModel.Type.TERRAIN, label: 'Terrain'},
     {value: cm.MapModel.Type.CUSTOM, label: 'Custom'}
   ];
+  if (config['enable_osm_map_type']) {
+    mapTypeChoices.push({value: cm.MapModel.Type.OSM, label: 'OpenStreetMap'});
+  }
 
 
   var mapFields = [

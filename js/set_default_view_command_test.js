@@ -26,13 +26,13 @@ function SetDefaultViewCommandTest() {
   this.oldDefault_.set('enabled_layer_ids', new goog.structs.Set(['a', 'b']));
   this.oldDefault_.set('layer_opacities', {a: 25, b: 75, c: 1});
   this.oldDefault_.set('viewport', new cm.LatLonBox(20, -20, 10, 10));
-  this.oldDefault_.set('map_type_id', google.maps.MapTypeId.ROADMAP);
+  this.oldDefault_.set('map_type', cm.MapModel.Type.ROADMAP);
 
   this.newDefault_ = new cm.AppState('es');
   this.newDefault_.set('enabled_layer_ids', new goog.structs.Set(['a', 'c']));
   this.newDefault_.set('layer_opacities', {a: 0, b: 50, c: 100});
   this.newDefault_.set('viewport', new cm.LatLonBox(10, -10, 20, 20));
-  this.newDefault_.set('map_type_id', google.maps.MapTypeId.SATELLITE);
+  this.newDefault_.set('map_type', cm.MapModel.Type.SATELLITE);
 
   this.resetFired_ = false;
   this.resetMapModel_ = undefined;
@@ -52,8 +52,7 @@ registerTestSuite(SetDefaultViewCommandTest);
 SetDefaultViewCommandTest.prototype.assertMapModel_ = function(appState,
     mapModel) {
   expectEq(appState.get('viewport'), mapModel.get('viewport'));
-  expectEq(appState.get('map_type_id'),
-           cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapModel.get('map_type')]);
+  expectEq(appState.get('map_type'), mapModel.get('map_type'));
   var opacities = appState.get('layer_opacities');
   var enabledLayerIds = appState.get('enabled_layer_ids');
   cm.util.forLayersInMap(mapModel, function(layer) {
