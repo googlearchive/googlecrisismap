@@ -20,7 +20,6 @@ import json
 import webapp2
 
 import base_handler
-import jsonp
 import model
 
 
@@ -58,8 +57,7 @@ class Diff(base_handler.BaseHandler):
                 fromdesc=entry.domain + '/' + entry.label, todesc='Current',
                 context=True)
         })
-      self.response.out.write(jsonp.ToHtmlSafeJson(
-          {'saved_diff': saved_diff, 'catalog_diffs': catalog_diffs}))
+      self.WriteJson({'saved_diff': saved_diff, 'catalog_diffs': catalog_diffs})
 
 
 app = webapp2.WSGIApplication([(r'/crisismap/diff/([\w]+)', Diff)])

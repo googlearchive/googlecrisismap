@@ -105,12 +105,5 @@ class JsonpTest(test_utils.BaseTest):
     ]}
     self.assertEquals(expected_map_root, map_root)
 
-  def testXssVulnerability(self):
-    """Regression test for bug 6194786."""
-    self.assertFalse('</script>' in jsonp.ToHtmlSafeJson('x</script>y'))
-    self.assertFalse('<' in jsonp.ToHtmlSafeJson('x<y'))
-    self.assertFalse('>' in jsonp.ToHtmlSafeJson('x>y'))
-    self.assertFalse('&' in jsonp.ToHtmlSafeJson('x&y'))
-
 if __name__ == '__main__':
   test_utils.main()

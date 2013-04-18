@@ -38,5 +38,13 @@ class BaseHandlerTest(test_utils.BaseTest):
     # The hl parameter takes precedence over the Accept-Language header.
     self.assertEquals('tr', base_handler.ActivateLanguage('tr', 'th'))
 
+  def testJsonXssVulnerability(self):
+    """Verifies that ToHtmlSafeJson is safe against XSS."""
+    self.assertFalse('</script>' in base_handler.ToHtmlSafeJson('x</script>y'))
+    self.assertFalse('<' in base_handler.ToHtmlSafeJson('x<y'))
+    self.assertFalse('>' in base_handler.ToHtmlSafeJson('x>y'))
+    self.assertFalse('&' in base_handler.ToHtmlSafeJson('x&y'))
+
+
 if __name__ == '__main__':
   test_utils.main()

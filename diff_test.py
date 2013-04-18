@@ -18,7 +18,6 @@ import difflib
 import json
 
 import diff
-import jsonp
 import model
 import mox
 import test_utils
@@ -43,7 +42,6 @@ class DiffTest(test_utils.BaseTest):
     map_object.PutNewVersion(saved_json)
 
     # Exercise the diff endpoint.
-    self.mox.StubOutWithMock(jsonp, 'ToHtmlSafeJson')
     saved_diff = 'saved diff'
     catalog_diff = 'catalog diff'
     html_diff = self.mox.CreateMock(difflib.HtmlDiff)
@@ -57,10 +55,6 @@ class DiffTest(test_utils.BaseTest):
                         '{\n  "a": "b", \n  "x": "y"\n}'.splitlines(),
                         fromdesc='google.com/Published', todesc='Current',
                         context=mox.IgnoreArg()).AndReturn(catalog_diff)
-
-    jsonp.ToHtmlSafeJson({'saved_diff': saved_diff,
-                          'catalog_diffs': [{'name': 'google.com/Published',
-                                             'diff': catalog_diff}]})
 
     self.mox.ReplayAll()
     handler = test_utils.SetupHandler('/diff/%s' % map_object.id, diff.Diff(),

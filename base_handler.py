@@ -14,6 +14,7 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
+import json
 import os
 
 import webapp2
@@ -84,6 +85,12 @@ def ActivateLanguage(hl_param=None, accept_lang=None):
   return lang
 
 
+def ToHtmlSafeJson(data, **kwargs):
+  """Serializes a JSON data structure to JSON that is safe for use in HTML."""
+  return json.dumps(data, **kwargs).replace(
+      '&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
+
+
 class Error(Exception):
   """General error that carries a message with it."""
   pass
@@ -128,3 +135,14 @@ class BaseHandler(webapp2.RequestHandler):
       }))
     else:
       super(BaseHandler, self).handle_exception(exception, debug)
+
+  def WriteJson(self, data):
+    """Writes out a JSON or JSONP serialization of the given data."""
+    callback = self.request.get('callback', '')
+    output = ToHtmlSafeJson(data)
+    if callback:  # emit a JavaScript expression with a callback function
+      self.response.headers['Content-Type'] = 'application/javascript'
+      self.response.out.write(callback + '(' + output + ')')
+    else:  # just emit the JSON literal
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(output)

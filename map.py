@@ -25,7 +25,6 @@ import urlparse
 import webapp2
 
 import base_handler
-import jsonp
 import maproot
 import model
 
@@ -360,7 +359,7 @@ class MapByLabel(base_handler.BaseHandler):
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
-        'cm_config_json': jsonp.ToHtmlSafeJson(config),
+        'cm_config_json': base_handler.ToHtmlSafeJson(config),
         'ui_lang': self.request.lang,
         'maps_api_url': config['maps_api_url'],
         'hide_footer': config.get('hide_footer', False),
@@ -381,7 +380,7 @@ class MapById(base_handler.BaseHandler):
       # Security note: cm_config_json is assumed to be safe JSON; all other
       # template variables must be escaped in the template.
       self.response.out.write(self.RenderTemplate('map.html', {
-          'cm_config_json': jsonp.ToHtmlSafeJson(config),
+          'cm_config_json': base_handler.ToHtmlSafeJson(config),
           'ui_lang': self.request.lang,
           'maps_api_url': config['maps_api_url'],
           'hide_footer': config.get('hide_footer', False),

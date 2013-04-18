@@ -25,7 +25,7 @@ import zipfile
 
 import webapp2
 
-import jsonp
+import base_handler
 
 LINE_DEFAULT_KML_COLOR = 'FFFF8C8C'
 LINE_DEFAULT_WIDTH = 2
@@ -392,7 +392,7 @@ def FindLastText(element, xpath, default=None):
   return getattr(FindLast(element, xpath), 'text', default)
 
 
-class GetLegendItems(webapp2.RequestHandler):
+class GetLegendItems(base_handler.BaseHandler):
   """Handler for retrieving legend items from KML URLs."""
 
   KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
@@ -415,11 +415,11 @@ class GetLegendItems(webapp2.RequestHandler):
     (icon_styles, line_styles, polygon_styles,
      static_icon_urls, colors) = Extract(kml)
 
-    self.response.out.write(jsonp.ToHtmlSafeJson({
+    self.WriteJson({
         'icon_styles': icon_styles, 'line_styles': line_styles,
         'polygon_styles': polygon_styles,
         'static_icon_urls': list(static_icon_urls), 'colors': list(colors)
-    }))
+    })
 
   @classmethod
   def GetKmlFromURL(cls, url):

@@ -22,6 +22,8 @@ import urlparse
 
 import webapp2
 
+import base_handler
+
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch
 
@@ -52,12 +54,6 @@ class Error(Exception):
     """
     Exception.__init__(self, message)
     self.status = status
-
-
-def ToHtmlSafeJson(data, **kwargs):
-  """Serializes a JSON data structure to JSON that is safe for use in HTML."""
-  return json.dumps(data, **kwargs).replace(
-      '&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
 
 
 def SanitizeUrl(url):
@@ -182,7 +178,7 @@ def LocalizeMapRoot(map_root, lang):
     LocalizeLayer(layer, lang)
 
 
-class Jsonp(webapp2.RequestHandler):
+class Jsonp(base_handler.BaseHandler):
   """A proxy that validates JSON, localizes it, and returns JSON or JSONP.
 
   Accepts these query parameters:
@@ -205,18 +201,11 @@ class Jsonp(webapp2.RequestHandler):
     post_json = self.request.get('post_json', '')
     use_cache = not self.request.get('no_cache')
     hl = self.request.get('hl', '')
-    callback = self.request.get('callback', '')
     try:
-      json_data = FetchJson(url, post_json, use_cache, self.request.remote_addr)
+      data = FetchJson(url, post_json, use_cache, self.request.remote_addr)
       if hl:
-        LocalizeMapRoot(json_data, hl)
-      output = ToHtmlSafeJson(json_data)
-      if callback:  # emit a JavaScript expression with a callback function
-        output = callback + '(' + output + ')'
-        self.response.headers['Content-Type'] = 'application/javascript'
-      else:  # just emit the JSON literal
-        self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(output)
+        LocalizeMapRoot(data, hl)
+      self.WriteJson(data)
     except Error, e:
       self.error(e.status)
       self.response.out.write(e.message)
