@@ -278,6 +278,11 @@ AppStateTest.prototype.testSetFromUriMapType = function() {
 
   this.appState_.setFromUri(uri);
   expectEq(cm.MapModel.Type.HYBRID, this.appState_.get('map_type'));
+
+  // For backward compatibility, also accept lowercase map types.
+  uri.setParameterValue('t', 'terrain');
+  this.appState_.setFromUri(uri);
+  expectEq(cm.MapModel.Type.TERRAIN, this.appState_.get('map_type'));
 };
 
 /** Verifies that the AppState is set according to the 'layers' param. */

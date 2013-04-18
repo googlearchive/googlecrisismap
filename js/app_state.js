@@ -297,7 +297,7 @@ cm.AppState.prototype.setFromUri = function(uri) {
 
   var mapType = uri.getParameterValue('t');
   if (mapType) {
-    this.set('map_type', mapType);
+    this.set('map_type', mapType.toUpperCase());
   }
   // TODO(romano): Needs error-checking to verify that the layer
   // ID lists in the 'layers' and 'promoted' parameters are valid,
