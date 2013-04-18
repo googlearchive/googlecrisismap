@@ -38,9 +38,9 @@ specific language governing permissions and limitations under the License. */
 }
 
 .cm-mapbutton:hover {
-  background:#E6E6E6;
-  background:-moz-linear-gradient(top, #FFF 0%, #E6E6E6 100%);
-  background:-webkit-gradient(linear, left top, left bottom, from(#FFF), to(#E6E6E6));
+  /* @alternate */ background:#E6E6E6;
+  /* @alternate */ background:-moz-linear-gradient(top, #FFF 0%, #E6E6E6 100%);
+  /* @alternate */ background:-webkit-gradient(linear, left top, left bottom, from(#FFF), to(#E6E6E6));
   filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFFFF', endColorstr='#E6E6E6',GradientType=0);
 }
 
