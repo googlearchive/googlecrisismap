@@ -428,7 +428,7 @@ LayerModelTest.prototype.newWmsLayerFromMapRoot = function() {
     'source': {
       'wms': {
         'url': 'http://wms.service.url',
-        'wms_layers': ['wms_1', 'wms_2']
+        'layer_names': ['wms_1', 'wms_2']
       }
     }
   };
@@ -436,7 +436,7 @@ LayerModelTest.prototype.newWmsLayerFromMapRoot = function() {
   var layerModel = cm.LayerModel.newFromMapRoot(layerJson);
   expectEq(cm.LayerModel.Type.WMS, layerModel.get('type'));
   expectEq(layerModel.get('url'), layerJson['source']['wms']['url']);
-  expectThat(layerJson['source']['wms']['wms_layers'],
+  expectThat(layerJson['source']['wms']['layer_names'],
              elementsAre(layerModel.get('wms_layers')));
 };
 

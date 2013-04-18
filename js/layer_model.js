@@ -239,7 +239,7 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
     case cm.LayerModel.Type.WMS:
       var wms = source['wms'] || {};
       model.set('url', wms['url']);
-      model.set('wms_layers', wms['wms_layers']);
+      model.set('wms_layers', wms['layer_names']);
       break;
   }
 
@@ -342,7 +342,7 @@ cm.LayerModel.prototype.toMapRoot = function() {
       var layers = /** @type Array.<string> */(this.get('wms_layers')) || [];
       source['wms'] = {
         'url': this.get('url'),
-        'wms_layers': layers
+        'layer_names': layers
       };
       break;
   }

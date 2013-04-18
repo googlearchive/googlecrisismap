@@ -364,8 +364,8 @@ MapModelSystemTest.prototype.verifyTestMapRoot = function() {
   var json = cm.json_files.test_maproot;
   var mapModel = cm.MapModel.newFromMapRoot(json);
   var expectedTypes =
-      ['MAP_DATA', 'TILE', 'FUSION', 'GEORSS', 'KML',
-      'KML', 'FOLDER', 'FOLDER', 'TRAFFIC', 'TRANSIT', 'WEATHER', 'CLOUD'];
+      ['MAP_DATA', 'TILE', 'FUSION', 'GEORSS', 'KML', 'KML', 'FOLDER', 'FOLDER',
+       'TRAFFIC', 'TRANSIT', 'WEATHER', 'CLOUD', 'WMS'];
   var expectedLayers = [];
   goog.array.forEach(json.layers, function(layerMapRoot) {
     expectedLayers.push(cm.LayerModel.newFromMapRoot(layerMapRoot));
