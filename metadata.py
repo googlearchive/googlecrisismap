@@ -18,75 +18,86 @@ of relevant layers. Such updates are performed separately by retriever module.
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
-import datetime
-import json
-import time
-import urllib2
+import base64
+import hmac
+import logging
+import os
 
 import webapp2
 
-import map  # pylint: disable=redefined-builtin
-import metadata_retriever as retriever
+import base_handler
+import cache
+import maproot
+import metadata_fetch
 
-from google.appengine.api import memcache
+ACTIVE_SECONDS = 24 * 3600  # layers stay active for 24 hours after activation
+ADDRESS_TTL_SECONDS = 24 * 3600  # keep cached source address lists for a day
+SUPPORTED_LAYER_TYPES = [maproot.LayerType.KML, maproot.LayerType.GEORSS]
 
 
-def GetIntrinsicPropertiesRecord(source):
-  """Creates a dictionary object wih intrinsic properties of a source.
+def GetSourceAddresses(maproot_object):
+  """Yields addresses of all the supported sources in the given MapRoot JSON."""
+  for layer in maproot.GetAllLayers(maproot_object):
+    if layer.get('type') in SUPPORTED_LAYER_TYPES:
+      yield maproot.GetSourceAddress(layer)
+
+
+def CacheSourceAddresses(map_version_key, maproot_object):
+  """Caches a map's list of source addresses under an unguessable key.
+
+  The UI periodically hits metadata.py to get updated metadata for all the
+  layers in a map.  To save bandwidth, instead of putting all the source
+  addresses in every request, we cache the list and have the UI refer to it by
+  the cache key, which is derived from the MapVersionModel's db.Key (once
+  stored, a MapVersionModel is never modified).  We use HMAC to make the cache
+  key unguessable so that metadata.py doesn't expose the contents of all maps.
 
   Args:
-    source: A source address, formatted as a JSON string.
+    map_version_key: The MapVersionModel's datastore key.
+    maproot_object: The map's MapRoot JSON deserialized to an object.
 
   Returns:
-    A dictionary with instrinsic properties that belongs to the given source or
-    None if there is no information about the given source.
+    The cache key and the list of sources stored at that cache key.
   """
-  metadata = retriever.SourceMetadataModel.get_by_key_name(source)
-  if metadata:
-    record = {}
-    for prop in [
-        'content_hash', 'content_last_modified', 'content_length',
-        'has_no_features', 'has_unsupported_kml', 'server_error_occurred'
-    ]:
-      value = getattr(metadata, prop, None)
-      if value is not None:
-        record[prop] = value
-    return record
-  else:
-    return None
+  cache.Add(['source_addresses_key'], base64.urlsafe_b64encode(os.urandom(30)))
+  hmac_key = cache.Get(['source_addresses_key'])
+  cache_key = hmac.new(hmac_key, str(map_version_key)).hexdigest()
+  sources = sorted(set(GetSourceAddresses(maproot_object)))
+  cache.Set(['source_addresses', cache_key], sources, ADDRESS_TTL_SECONDS)
+  return cache_key, sources
 
 
-class Metadata(webapp2.RequestHandler):
+def ActivateSources(sources):
+  """Marks the specified sources active and queues fetch tasks as necessary."""
+  # To avoid hitting memcache N times for each pageview of an N-layer map, we
+  # skip activation if the same set of layers has been activated recently.
+  if cache.Add(['metadata_activate', hash(tuple(sources))], 1):
+    for address in sources:
+      if cache.Add(['metadata_active', address], 1, ttl_seconds=ACTIVE_SECONDS):
+        logging.info('Activating layer: ' + address)
+        metadata_fetch.ScheduleFetch(address, 0)  # start fetching immediately
+      else:  # extend the lifetime of the existing metadata_active flag
+        cache.Set(['metadata_active', address], 1, ttl_seconds=ACTIVE_SECONDS)
+
+
+class Metadata(base_handler.BaseHandler):
+  """Retrieves metadata for the specified cache key and source addresses.
+
+  Accepts these query parameters:
+    - key: Optional.  A cache key obtained from CacheSourceAddresses.
+    - source: Repeatable.  Any number of addresses of additional sources.
+    - callback: Optional.  A callback function name.  If provided, the
+          returned JSON is wrapped in a JavaScript function call.
+  """
+
   def get(self):  # pylint: disable=g-bad-name
-    """HTTP GET request handler for Metadata."""
-    # Comma cannot be used as the separation character, since it can possibly
-    # already exist in the layer address, since an adress is a JSON.
-    layer_addresses = self.request.get('layers')
-    if layer_addresses:
-      layer_addresses = urllib2.unquote(layer_addresses).split('$')
-    token = self.request.get('token')
-
-    sources = []
-    map_layer_addresses = memcache.get(token)
-    if map_layer_addresses:
-      sources += map_layer_addresses
-      # Keep the memcache entry fresh to avoid expiration.
-      memcache.set(token, map_layer_addresses,
-                   map.DEFAULT_LAYER_ADDRESS_CACHE_SECONDS)
-    if layer_addresses:
-      sources += layer_addresses
-
-    result = {}
-    for source in sources:
-      if source:
-        record = GetIntrinsicPropertiesRecord(source)
-        if record:
-          result[source] = record
-
-    # This ensures correct serialization of datetime objects.
-    def Serializer(o):
-      if isinstance(o, datetime.datetime):
-        return round(time.mktime(o.timetuple()))
-    self.response.out.write(json.dumps(result, default=Serializer))
+    """Retrieves metadata for the specified cache key and source addresses."""
+    cache_key = self.request.get('key')
+    sources = cache.Get(['source_addresses', cache_key]) or []
+    if sources:  # extend the lifetime of the cache entry
+      cache.Set(['source_addresses', cache_key], sources, ADDRESS_TTL_SECONDS)
+    sources += self.request.get_all('source')
+    self.WriteJson(dict((s, cache.Get(['metadata', s])) for s in sources))
+    ActivateSources(sources)
 
 app = webapp2.WSGIApplication([(r'.*', Metadata)])

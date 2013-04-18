@@ -14,8 +14,10 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
+import base64
 import datetime
 import os
+import time
 import unittest
 import urlparse
 
@@ -25,8 +27,12 @@ import webob
 import base_handler
 import mox
 
+from google.appengine.api import taskqueue
 from google.appengine.api import users
 from google.appengine.ext import testbed
+
+# mox.IgnoreArg() is such a horrible way to spell "I don't care".
+mox.ANY = mox.IgnoreArg()
 
 
 def SetupRequest(url, post_data=None):
@@ -74,17 +80,12 @@ def SetupHandler(url, handler, post_data=None):
   return handler
 
 
-class MyDateTime(datetime.datetime):
-  """Helper class for monkey patching datetime.datetime.utcnow.
-
-  The reason to use subclassing, rather than direct simple monkey patching,
-  is that built-in methods cannot be patched that way in Python.
-  """
-  default_datetime = datetime.datetime(2012, 4, 17, 20, 30, 40)
-
-  @classmethod
-  def utcnow(cls):  # pylint: disable=g-bad-name
-    return MyDateTime.default_datetime
+def DatetimeWithUtcnow(now):
+  """Creates a replacement for datetime.datetime with a stub for utcnow()."""
+  # datetime.datetime is a built-in type, so we can't reassign its 'utcnow'
+  # member; we have to subclass datetime.datetime instead.
+  return type('datetime.datetime', (datetime.datetime,),
+              {'utcnow': staticmethod(lambda: now)})
 
 
 class BaseTest(unittest.TestCase):
@@ -96,6 +97,7 @@ class BaseTest(unittest.TestCase):
     root = os.path.dirname(__file__) or '.'
     self.testbed.init_datastore_v3_stub(require_indexes=True, root_path=root)
     self.testbed.init_memcache_stub()
+    self.testbed.init_urlfetch_stub()
     self.testbed.init_user_stub()
     self.testbed.init_taskqueue_stub(root_path=root)
     self.mox = mox.Mox()
@@ -104,6 +106,51 @@ class BaseTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.testbed.deactivate()
     ClearUser()
+
+  def PopTasks(self, queue_name):
+    """Removes all the tasks from a given queue, returning a list of dicts."""
+    stub = self.testbed.get_stub('taskqueue')
+    tasks = stub.GetTasks(queue_name)
+    stub.FlushQueue(queue_name)
+    return tasks
+
+  def GetTaskBody(self, task):
+    """Gets the content of the POST data for a task as a string."""
+    return base64.b64decode(task['body'])
+
+  def GetTaskParams(self, task):
+    """Gets the POST parameters for a task as a list of (key, value) pairs."""
+    return urlparse.parse_qsl(self.GetTaskBody(task))
+
+  def ExecuteTask(self, task, handler):
+    """Executes a task from popTasks, using a given handler."""
+    handler = SetupHandler(task['url'], handler, self.GetTaskBody(task))
+    (task['method'] == 'POST' and handler.post or handler.get)()
+    return handler
+
+  def SetForTest(self, parent, child_name, new_child):
+    """Sets an attribute of an object, just for the duration of the test."""
+    self.mox.stubs.Set(parent, child_name, new_child)
+
+  def SetTime(self, timestamp):
+    """Sets a fake value for the current time, for the duration of the test."""
+    self.SetForTest(time, 'time', lambda: timestamp)
+    now = datetime.datetime.utcfromtimestamp(timestamp)
+    self.SetForTest(datetime, 'datetime', DatetimeWithUtcnow(now))
+
+    # Task.__determine_eta_posix uses the original time.time as a default
+    # argument value, so we have to monkey-patch it to make it use our fake.
+    determine_eta_posix = taskqueue.Task._Task__determine_eta_posix
+
+    def FakeDetermineEtaPosix(eta=None, countdown=None, current_time=time.time):
+      return determine_eta_posix(eta, countdown, current_time)
+    self.SetForTest(taskqueue.Task, '_Task__determine_eta_posix',
+                    staticmethod(FakeDetermineEtaPosix))
+
+  def assertBetween(self, low, high, actual):
+    """Checks that a value is within a desired range."""
+    self.assertGreaterEqual(actual, low)
+    self.assertLessEqual(actual, high)
 
   def assertEqualsUrlWithUnorderedParams(self, expected, actual):
     """Checks for an expected URL, ignoring the order of query params."""

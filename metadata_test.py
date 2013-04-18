@@ -14,66 +14,99 @@
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
-import datetime
 import json
-import time
-import urllib2
 
-import map  # pylint: disable=redefined-builtin
+import cache
 import metadata
-import metadata_retriever as retriever
-import model
 import test_utils
 
 
+MAPROOT = {
+    'title': 't1',
+    'layers': [{'id': 12,
+                'type': 'KML',
+                'source': {'kml': {'url': 'http://x.com/a'}}},
+               {'id': 15,
+                'type': 'GEORSS',
+                'source': {'georss': {'url': 'http://y.com/b'}}},
+               {'id': 16,
+                'type': 'GOOGLE_TRAFFIC'}]
+}
+
+
 class MetadataTest(test_utils.BaseTest):
-  def testGetIntrinsicPropertiesRecord(self):
-    """Tests if the instrinsic properties record is successfully generated."""
-    address = '{"url": "google.com/abc.kml"}'
-    sm = retriever.SourceMetadataModel(key_name=address, content_hash='abc',
-                                       content_length=7, server_etag='xyz')
-    sm.put()
-    record = metadata.GetIntrinsicPropertiesRecord(address)
-    self.assertEquals({'content_hash': 'abc', 'content_length': 7}, record)
+  def testGetSourceAddresses(self):
+    self.assertEquals(
+        set(['KML:http://x.com/a', 'GEORSS:http://y.com/b']),
+        set(metadata.GetSourceAddresses(MAPROOT)))
+
+  def testCacheSourceAddresses(self):
+    key1, sources = metadata.CacheSourceAddresses('abc', MAPROOT)
+    self.assertEquals(
+        set(['KML:http://x.com/a', 'GEORSS:http://y.com/b']),
+        set(cache.Get(['source_addresses', key1])))
+    self.assertEquals(
+        set(['KML:http://x.com/a', 'GEORSS:http://y.com/b']),
+        set(sources))
+
+    # Same map_version_key should yield the same cache key.
+    key2, sources = metadata.CacheSourceAddresses('abc', MAPROOT)
+    self.assertEquals(key1, key2)
+
+  def testActivateSources(self):
+    sources = ['KML:http://x.com/a', 'GEORSS:http://y.com/b']
+    metadata.ActivateSources(sources)
+
+    # Both sources should now be queued for metadata fetches.
+    urls = sorted(task['url'] for task in self.PopTasks('metadata'))
+    self.assertEquals(2, len(urls))
+    self.assertEqualsUrlWithUnorderedParams(
+        '/crisismap/metadata_fetch?source=GEORSS:http://y.com/b', urls[0])
+    self.assertEqualsUrlWithUnorderedParams(
+        '/crisismap/metadata_fetch?source=KML:http://x.com/a', urls[1])
+
+    # Activating multiple times should not add redundant tasks.
+    metadata.ActivateSources(sources)
+    metadata.ActivateSources(sources)
+    self.assertEquals(0, len(self.PopTasks('metadata')))
 
   def testGet(self):
-    """Tests Metadata GET handler."""
-    test_utils.SetUser('admin@google.com', '1', is_admin=True)
-    address1 = 'y.com/b.xml'
-    date1 = datetime.datetime(2012, 4, 17, 9, 5, 34)
-    sm = retriever.SourceMetadataModel(key_name=address1, has_no_features=True,
-                                       content_last_modified=date1)
-    sm.put()
-    maproot1 = """{"layers": [{"type": "GEORSS",
-                               "source": {"georss": {"url": "y.com/b.xml"}}}
-                             ]}"""
-    mm1 = model.Map.Create(maproot1, 'xyz.com')
-    key1 = map.CacheLayerAddresses(mm1)
+    key, _ = metadata.CacheSourceAddresses('abc', MAPROOT)
+    cache.Set(['metadata', 'KML:http://x.com/a'], {'length': 123})
+    cache.Set(['metadata', 'KML:http://p.com/q'], {'length': 456})
 
-    address2 = 'x.com/a.kml'
-    sm = retriever.SourceMetadataModel(key_name=address2, content_length=7,
-                                       content_hash='a', has_no_features=False)
-    sm.put()
-    maproot2 = """{"layers": [{"type": "KML",
-                               "source": {"kml": {"url": "x.com/a.kml"}}}
-                             ]}"""
-    model.Map.Create(maproot2, 'xyz.com')
-
-    # Token for the Map, valid address of a layer, invalid address of a layer.
-    url = ('/metadata?token=' + key1 + '&layers=' + urllib2.quote(address2) +
-           '%24abc.com/aaa.xml%24')
-    handler = test_utils.SetupHandler(url, metadata.Metadata())
+    # Map cache key, an address with metadata, and an address without metadata.
+    handler = test_utils.SetupHandler(
+        '/metadata?key=' + key +
+        '&source=KML:http://p.com/q' +
+        '&source=KML:http://z.com/z',
+        metadata.Metadata())
     handler.get()
-    result = json.loads(handler.response.body)
+    self.assertEquals({
+        'KML:http://x.com/a': {'length': 123},  # in map, has metadata
+        'GEORSS:http://y.com/b': None,  # in map, no metadata
+        'KML:http://p.com/q': {'length': 456},  # source param, has metadata
+        'KML:http://z.com/z': None  # source param, no metadata
+    }, json.loads(handler.response.body))
 
-    expected = {}
-    expected[address1] = metadata.GetIntrinsicPropertiesRecord(address1)
-    # Parse datetime into seconds from epoch.
-    seconds = int(time.mktime(date1.timetuple()))
-    expected[address1]['content_last_modified'] = seconds
-    expected[address2] = metadata.GetIntrinsicPropertiesRecord(address2)
+  def testGetAndActivate(self):
+    handler = test_utils.SetupHandler(
+        '/metadata?source=KML:http://u.com/v', metadata.Metadata())
+    handler.get()
 
-    self.assertEquals(expected, result)
+    # Requesting metadata should activate the source and queue a task.
+    self.assertEquals(1, cache.Get(['metadata_active', 'KML:http://u.com/v']))
+    urls = sorted(task['url'] for task in self.PopTasks('metadata'))
+    self.assertEquals(1, len(urls))
+    self.assertEqualsUrlWithUnorderedParams(
+        '/crisismap/metadata_fetch?source=KML:http://u.com/v', urls[0])
+
+    # Requesting multiple times should not add redundant tasks.
+    test_utils.SetupHandler(
+        '/metadata?source=KML:http://u.com/v', metadata.Metadata()).get()
+    test_utils.SetupHandler(
+        '/metadata?source=KML:http://u.com/v', metadata.Metadata()).get()
+    self.assertEquals(0, len(self.PopTasks('metadata')))
 
 if __name__ == '__main__':
   test_utils.main()

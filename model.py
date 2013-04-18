@@ -19,12 +19,10 @@ import json
 import os
 import random
 
-from google.appengine.api import memcache
+import cache
+
 from google.appengine.api import users
 from google.appengine.ext import db
-
-# Default lifetime for cached data in seconds.
-DEFAULT_CACHE_TTL_SECONDS = 10
 
 
 class Struct(object):
@@ -63,7 +61,7 @@ class AuthorizationError(Error):
   """User not authorized to perform operation."""
 
   def __init__(self, user, role, target):
-    Error.__init__(self, '%s lacks %s access to %r' % (user, role, target))
+    Error.__init__(self, 'User %s lacks %s access to %r' % (user, role, target))
     self.user = user
     self.role = role
     self.target = target
@@ -99,46 +97,6 @@ def ResultIterator(query):
     yield StructFromModel(result)
 
 
-def ToCacheKey(key_or_list):
-  """Converts an item or a list of items to a string suitable as a cache key.
-
-  Args:
-    key_or_list: A string, object with a __name__, None, or list of such items.
-
-  Returns:
-    A string serialization of the key.  If a list is given, its items are
-    joined with slashes; slashes and backslashes within items are escaped with
-    backslashes.  For non-string items, the item's __name__ is used.
-  """
-  if not isinstance(key_or_list, list):
-    key_or_list = [key_or_list]
-  return '/'.join((getattr(item, '__name__', item) or '')
-                  .replace('\\', '\\\\').replace('/', '\\/')
-                  for item in key_or_list)
-
-
-def GetCachedItem(key_or_list, fetcher, ttl_seconds=DEFAULT_CACHE_TTL_SECONDS):
-  """Gets an item from memcache, calling fetcher() if needed to fill the cache.
-
-  Args:
-    key_or_list: A string cache key or a list of keys (see ToCacheKey).
-    fetcher: A function to generate the value if we miss on the cache.
-    ttl_seconds: An integer number of seconds to keep the value in the cache.
-  Returns:
-    The cached item, or the freshly fetched item if it wasn't already cached.
-  """
-  key = ToCacheKey(key_or_list)
-  result = memcache.get(key)
-  if not result:
-    result = fetcher()
-    memcache.set(key, result, time=ttl_seconds)
-  return result
-
-
-def FlushCachedItem(key_or_list):
-  memcache.delete(ToCacheKey(key_or_list))
-
-
 class Config(db.Model):
   """A configuration setting for the application.
 
@@ -168,7 +126,7 @@ class Config(db.Model):
       if config:
         return json.loads(config.value_json)
       return default
-    return GetCachedItem([Config, key], Fetcher)
+    return cache.Get([Config, key], Fetcher)
 
   @staticmethod
   def Set(key, value):
@@ -180,26 +138,7 @@ class Config(db.Model):
     """
     config = Config(key_name=key, value_json=json.dumps(value))
     config.put()
-    FlushCachedItem([Config, key])
-
-  @staticmethod
-  @db.transactional
-  def GetOrInsert(key, value):
-    """Fetches or creates the configuration value for a given key.
-
-    Args:
-      key: A string, the name of the configuration item to get.
-      value: Any Python data structure that can be serialized to JSON.
-
-    Returns:
-      The configuration value.
-    """
-    config = Config.Get(key)
-    if config:
-      return config
-    else:
-      Config.Set(key, value)
-      return value
+    cache.Delete([Config, key])
 
 
 def GetUserDomain(user):
@@ -436,7 +375,7 @@ def DoAsAdmin(function, *args, **kwargs):
         'USER_EMAIL': 'root@google.com',
         'USER_ID': '0'
     })
-    function(*args, **kwargs)
+    return function(*args, **kwargs)
   finally:
     os.environ.update(original_info)
 
@@ -622,18 +561,16 @@ class CatalogEntry(object):
     """Gets all entries in all domains, in reverse update order."""
     # No access control; all catalog entries are publicly visible.
     # We use '*' in the cache key for the list that includes all domains.
-    return GetCachedItem(
-        [CatalogEntry, '*', 'all'],
-        lambda: map(CatalogEntry, CatalogEntryModel.All()))
+    return cache.Get([CatalogEntry, '*', 'all'],
+                     lambda: map(CatalogEntry, CatalogEntryModel.All()))
 
   @staticmethod
   def GetListed():
     """Gets all the listed entries in all domains, in reverse update order."""
     # No access control; all catalog entries are publicly visible.
     # We use '*' in the cache key for the list that includes all domains.
-    return GetCachedItem(
-        [CatalogEntry, '*', 'listed'],
-        lambda: map(CatalogEntry, CatalogEntryModel.AllListed()))
+    return cache.Get([CatalogEntry, '*', 'listed'],
+                     lambda: map(CatalogEntry, CatalogEntryModel.AllListed()))
 
   @staticmethod
   def GetByMapId(map_id):
@@ -644,7 +581,7 @@ class CatalogEntry(object):
   def GetAllInDomain(domain):
     """Gets all the entries in a domain, in reverse update order."""
     # No access control; all catalog entries are publicly visible.
-    return GetCachedItem(
+    return cache.Get(
         [CatalogEntry, domain, 'all'],
         lambda: map(CatalogEntry, CatalogEntryModel.AllInDomain(domain)))
 
@@ -652,7 +589,7 @@ class CatalogEntry(object):
   def GetListedInDomain(domain):
     """Gets all the listed entries in a domain, in reverse update order."""
     # No access control; all catalog entries are publicly visible.
-    return GetCachedItem(
+    return cache.Get(
         [CatalogEntry, domain, 'listed'],
         lambda: map(CatalogEntry, CatalogEntryModel.AllListedInDomain(domain)))
 
@@ -679,10 +616,10 @@ class CatalogEntry(object):
     model = CatalogEntryModel.Create(domain, label, map_object, is_listed)
 
     # We use '*' in the cache key for the list that includes all domains.
-    FlushCachedItem([CatalogEntry, '*', 'all'])
-    FlushCachedItem([CatalogEntry, '*', 'listed'])
-    FlushCachedItem([CatalogEntry, domain, 'all'])
-    FlushCachedItem([CatalogEntry, domain, 'listed'])
+    cache.Delete([CatalogEntry, '*', 'all'])
+    cache.Delete([CatalogEntry, '*', 'listed'])
+    cache.Delete([CatalogEntry, domain, 'all'])
+    cache.Delete([CatalogEntry, domain, 'listed'])
     return CatalogEntry(model)
 
   @staticmethod
@@ -703,22 +640,24 @@ class CatalogEntry(object):
       raise ValueError('No CatalogEntry %r in domain %r' % (label, domain))
     entry.delete()
     # We use '*' in the cache key for the list that includes all domains.
-    FlushCachedItem([CatalogEntry, '*', 'all'])
-    FlushCachedItem([CatalogEntry, '*', 'listed'])
-    FlushCachedItem([CatalogEntry, domain, 'all'])
-    FlushCachedItem([CatalogEntry, domain, 'listed'])
+    cache.Delete([CatalogEntry, '*', 'all'])
+    cache.Delete([CatalogEntry, '*', 'listed'])
+    cache.Delete([CatalogEntry, domain, 'all'])
+    cache.Delete([CatalogEntry, domain, 'listed'])
 
   is_listed = property(
       lambda self: self.model.is_listed,
       lambda self, value: setattr(self.model, 'is_listed', value))
 
-  # map_version_id provides the ID of this catalog entry's MapVersion.
-  map_version_id = property(lambda self: self.model.map_version.key().id())
+  # The datastore key of this catalog entry's MapVersionModel.
+  def GetMapVersionKey(self):
+    return CatalogEntryModel.map_version.get_value_for_datastore(self.model)
+  map_version_key = property(GetMapVersionKey)
 
   # maproot_json gets the (possibly cached) MapRoot JSON for this entry.
   def GetMaprootJson(self):
-    return GetCachedItem([CatalogEntry, self.domain, self.label, 'json'],
-                         lambda: self.model.map_version.maproot_json)
+    return cache.Get([CatalogEntry, self.domain, self.label, 'json'],
+                     lambda: self.model.map_version.maproot_json)
   maproot_json = property(GetMaprootJson)
 
   # Make the other properties of the CatalogEntryModel visible on CatalogEntry.
@@ -738,11 +677,11 @@ class CatalogEntry(object):
     AssertAccess(Role.CATALOG_EDITOR, domain)
     self.model.put()
     # We use '*' in the cache key for the list that includes all domains.
-    FlushCachedItem([CatalogEntry, '*', 'all'])
-    FlushCachedItem([CatalogEntry, '*', 'listed'])
-    FlushCachedItem([CatalogEntry, domain, 'all'])
-    FlushCachedItem([CatalogEntry, domain, 'listed'])
-    FlushCachedItem([CatalogEntry, domain, self.label, 'json'])
+    cache.Delete([CatalogEntry, '*', 'all'])
+    cache.Delete([CatalogEntry, '*', 'listed'])
+    cache.Delete([CatalogEntry, domain, 'all'])
+    cache.Delete([CatalogEntry, domain, 'listed'])
+    cache.Delete([CatalogEntry, domain, self.label, 'json'])
 
 
 class Map(object):
@@ -767,6 +706,13 @@ class Map(object):
   def __hash__(self):
     return hash(self.model)
 
+  # The datastore key for this map's MapModel entity.
+  key = property(lambda self: self.model.key())
+
+  # The datastore key for this map's latest MapVersionModel.
+  current_version_key = property(
+      lambda self: MapModel.current_version.get_value_for_datastore(self.model))
+
   # Map IDs are in base64, so they are safely convertible from Unicode to ASCII.
   id = property(lambda self: str(self.model.key().name()))
 
@@ -775,6 +721,10 @@ class Map(object):
             'title', 'description', 'current_version', 'world_readable',
             'owners', 'editors', 'viewers', 'domains', 'domain_role']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
+
+  @staticmethod
+  def get(key):  # lowercase to match db.Model.get  # pylint: disable=g-bad-name
+    return Map(MapModel.get(key))
 
   @staticmethod
   def _GetAll():
@@ -838,6 +788,11 @@ class Map(object):
     map_object.PutNewVersion(maproot_json)  # also puts the MapModel
     return map_object
 
+  @staticmethod
+  def _GetVersionByKey(key):
+    """Returns a map version by its datastore entity key.  NO ACCESS CHECK."""
+    return StructFromModel(MapVersionModel.get(key))
+
   def PutNewVersion(self, maproot_json):
     """Stores a new MapVersionModel object for this Map and returns its ID."""
     self.AssertAccess(Role.MAP_EDITOR)
@@ -852,7 +807,7 @@ class Map(object):
       self.model.current_version = new_version.put()
       self.model.put()
     db.run_in_transaction(PutModels)
-    FlushCachedItem([Map, self.id, 'json'])
+    cache.Delete([Map, self.id, 'json'])
     return new_version.key().id()
 
   def GetCurrent(self):
@@ -875,14 +830,13 @@ class Map(object):
     self.AssertAccess(Role.MAP_OWNER)
     self.model.is_deleted = True
     self.model.put()
-    FlushCachedItem([Map, self.id, 'json'])
+    cache.Delete([Map, self.id, 'json'])
 
   def GetCurrentJson(self):
     """Gets the current JSON for public viewing only."""
     self.AssertAccess(Role.MAP_VIEWER)
-    return GetCachedItem(
-        [Map, self.id, 'json'],
-        lambda: getattr(self.GetCurrent(), 'maproot_json', None))
+    return cache.Get([Map, self.id, 'json'],
+                     lambda: getattr(self.GetCurrent(), 'maproot_json', None))
 
   def GetVersions(self):
     """Yields all versions of this map in order from newest to oldest."""
@@ -992,7 +946,6 @@ class EmptyCatalogEntry(CatalogEntry):
     CatalogEntry.__init__(self, CatalogEntryModel(
         domain=domain, label='empty', title=EmptyMap.TITLE, map_id='0'))
 
-  map_version_id = property(lambda self: 1)
   maproot_json = property(lambda self: EmptyMap.JSON)
 
   def ReadOnlyError(self, *unused_args, **unused_kwargs):

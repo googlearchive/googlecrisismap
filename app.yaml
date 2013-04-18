@@ -62,21 +62,14 @@ handlers:
   static_files: js/compiled/\1.js
   upload: js/compiled/(.*).js
 
-# NOTE(cimamoglu): metadata_cleaner, metadata_scheduler and metadata_retriever
-# should have login: admin for security. This is a temporary solution until we
-# find out why cron jobs return with HTTP 403.
-- url: /crisismap/metadata_cleaner
-  script: metadata_cleaner.app
-
-- url: /crisismap/metadata_scheduler
-  script: metadata_scheduler.app
-  login: admin
-
-- url: /crisismap/metadata_retriever
-  script: metadata_retriever.app
-
 - url: /crisismap/metadata
   script: metadata.app
+
+- url: /crisismap/metadata_activate
+  script: metadata_activate.app
+
+- url: /crisismap/metadata_fetch
+  script: metadata_fetch.app
 
 - url: /crisismap/jsonp
   script: jsonp.app

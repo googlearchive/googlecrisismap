@@ -18,9 +18,6 @@ import map  # pylint: disable=redefined-builtin
 import model
 import test_utils
 
-from google.appengine.api import memcache
-from google.appengine.ext import db
-
 
 class MapTest(test_utils.BaseTest):
   """Tests for the map.py request handlers."""
@@ -39,7 +36,7 @@ class MapTest(test_utils.BaseTest):
         show_login=True,
         analytics_id=analytics_id,
         enable_editing=True)
-    db.put(config)
+    config.put()
 
     self.assertEquals({'hide_share_button': True,
                        'hide_my_location_button': True,
@@ -85,47 +82,8 @@ class MapTest(test_utils.BaseTest):
         'goog-test', 'https://www.google.org'))
 
     # test that setting default overrides even without a referer domain.
-    config = map.ClientConfig.Create('default', enable_editing=True)
-    db.put(config)
-
+    map.ClientConfig.Create('default', enable_editing=True).put()
     self.assertTrue(map.GetClientConfig(None, None)['enable_editing'])
-
-  def testCacheLayerAddresses(self):
-    """Tests if layer addresses are cached properly."""
-    maproot1 = """{"title": "t1",
-                   "layers": [{"id": 12,
-                               "type": "KML",
-                               "source": {"kml": {"url": "x.com/a.kml"}}},
-                              {"id": 15,
-                               "type": "GEORSS",
-                               "source": {"georss": {"url": "y.com/b.xml"}}}
-                             ]}"""
-    maproot2 = """{"title": "t2",
-                   "layers": [{"id": 13,
-                               "type": "KML",
-                               "source": {"kml": {"url": "a.com/y.kml"}}},
-                              {"id": 17,
-                               "type": "GEORSS",
-                               "source": {"georss": {"url": "b.com/x.xml"}}}
-                             ]}"""
-
-    test_utils.SetUser('creator@gmail.com', '1', is_admin=True)
-    mm = model.Map.Create(maproot1, 'xyz.com')
-    # The CatalogEntry object mc uses maproot1.
-    mc = model.CatalogEntry.Create('foo.com', 'test_map', mm, is_listed=True)
-    # The Map object mm is updated to maproot2.
-    mm.PutNewVersion(maproot2)
-
-    key1 = map.CacheLayerAddresses(catalog_entry=mc)
-    expected = set(['x.com/a.kml', 'y.com/b.xml'])
-    self.assertEquals(expected, set(memcache.get(key1)))
-    memcache.delete(key1)
-
-    # Map objects override CatalogEntry objects.
-    key2 = map.CacheLayerAddresses(mm, mc)
-    expected = set(['a.com/y.kml', 'b.com/x.xml'])
-    self.assertEquals(expected, set(memcache.get(key2)))
-    self.assertEquals(None, memcache.get(key1))
 
   def testGetMapMenuItems(self):
     """Tests GetMapMenuItems()."""

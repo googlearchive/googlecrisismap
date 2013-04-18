@@ -47,7 +47,7 @@ var TILECACHE_URL = '/crisismap/tilecache';
  * @param {cm.AppState} appState The application state model.
  * @param {cm.MetadataModel} metadataModel The metadata model.  If the layer is
  *     specified with a tile index, the TileOverlay will update the metadata
- *     content_last_modified field using the update_time in the tile index.
+ *     update_time field using the update_time in the tile index.
  * @constructor
  * @extends google.maps.MVCObject
  */
@@ -146,11 +146,10 @@ cm.TileOverlay = function(layer, map, appState, metadataModel) {
   this.requestDescriptor_ = null;
 
   /**
-   * @type {string}
+   * @type {cm.LayerModel}
    * @private
    */
-  this.layerId_ = /** @type string */(layer.get('id'));
-
+  this.layer_ = layer;
 
   /**
    * To be populated if bounds are specified.
@@ -349,7 +348,7 @@ cm.TileOverlay.prototype.initialize_ = function() {
  */
 cm.TileOverlay.prototype.updateOpacity_ = function() {
   var opacities = this.appState_.get('layer_opacities') || {};
-  var id = this.layerId_;
+  var id = /** @type {string} */(this.layer_.get('id'));
   this.mapType_.set('opacity', id in opacities ? opacities[id] / 100 : 1.0);
 };
 
@@ -490,7 +489,7 @@ cm.TileOverlay.prototype.handleTileIndex_ = function(indexJson) {
   }
 
   var updateTime = activeTileset['update_time'];
-  this.metadataModel_.setContentLastModified(this.layerId_, updateTime);
+  this.metadataModel_.setUpdateTime(this.layer_, updateTime);
 
   var newTilesetUrl = activeTileset['url'];
   if (!this.tileUrlPattern_) {
@@ -529,7 +528,7 @@ cm.TileOverlay.prototype.updateTileUrlPattern_ = function() {
     this.tileIndexFetcher_ = null;
     this.requestDescriptor_ = null;
     this.nextTileUrlPattern_ = null;
-    this.metadataModel_.setContentLastModified(this.layerId_, null);
+    this.metadataModel_.setUpdateTime(this.layer_, null);
     if (this.get('type') !== cm.LayerModel.Type.WMS) {
       this.tileUrlPattern_ = /** @type string */(this.get('url'));
     } else {

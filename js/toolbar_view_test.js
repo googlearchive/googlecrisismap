@@ -100,12 +100,10 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
       cm.ui.getText(diffPopup.lastChild).replace(/&nbsp;/g, '')));
 
   // Test the toolbar view with a map ID; should offer diffs and JSON.
-  encodeURIComponent = createMockFunction('encodeURIComponent');
-  expectCall(encodeURIComponent)(goog.json.serialize(mapRoot)).
-      willOnce(returnWith('encoded'));
   this.setForTest_('goog.net.XhrIo.send', createMockFunction());
   expectCall(goog.net.XhrIo.send)('/crisismap/diff/map_id',
-      _, 'POST', 'new_json=encoded').willOnce(function(url, callback) {
+      _, 'POST', 'new_json=%7B%22foo%22%3A%22bar%22%7D')
+      .willOnce(function(url, callback) {
         callback({'target': {
           'isSuccess': function() { return true; },
           'getResponseJson': function() {

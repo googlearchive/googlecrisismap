@@ -9,10 +9,22 @@
 # OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 # specific language governing permissions and limitations under the License.
 
-total_storage_limit: 10M
+# Storage limit estimate:
+#     10k sources * 1 task per source * 1k storage per task = 10M
+#     100 WMS layers * 1k queued tiles per layer * 1k storage per task = 100M
+
+total_storage_limit: 110M
 queue:
 - name: metadata
-  rate: 1/s
+  rate: 10/s
+  retry_parameters:
+    # Our tasks shouldn't raise exceptions, no matter what remote servers do.
+    # If a task fails, it's either a bug in our code or an App Engine problem.
+    # So we don't want fast retries, but we allow a few retries just in case.
+    task_retry_limit: 6
+    task_age_limit: 6h
+    min_backoff_seconds: 3600
+    max_backoff_seconds: 3600
 - name: servers
   rate: 5/s
 - name: tiles

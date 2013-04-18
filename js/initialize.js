@@ -22,7 +22,6 @@ goog.require('cm.MapModel');
 goog.require('cm.MapPicker');
 goog.require('cm.MapView');
 goog.require('cm.MetadataModel');
-goog.require('cm.MetadataUpdater');
 goog.require('cm.MyLocationButton');
 goog.require('cm.PanelView');
 goog.require('cm.Presenter');
@@ -188,9 +187,12 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   // Create the AppState and the model; set up configuration flags.
   var config = opt_config || {};
   var appState = new cm.AppState(opt_language);
-  var metadataModel = new cm.MetadataModel();
   var mapModel = cm.MapModel.newFromMapRoot(mapRoot);
   document.title = /** @type string */(mapModel.get('title'));
+  var metadataModel = new cm.MetadataModel(
+      mapModel, config['metadata'],
+      config['enable_metadata_pipeline'] && config['metadata_url']);
+
   var touch = cm.util.browserSupportsTouch();
   var uri = new goog.Uri(window.location);
   var embedded = !!uri.getParameterValue('embedded');
@@ -325,12 +327,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     goog.module.require('sanitizer', 'html', installHtmlSanitizer);
   }
 
-  if (config['metadata_url'] && config['enable_metadata_pipeline']) {
-    var metadataUpdater = new cm.MetadataUpdater(mapModel, metadataModel,
-                                                 config['metadata_url']);
-  }
-
-  // Expose the google.maps.Map and the MapModel for Puppet tests.
+  // Expose the google.maps.Map and the MapModel for testing and debugging.
   window['theMap'] = mapView.getMap();
   window['mapModel'] = mapModel;
 }

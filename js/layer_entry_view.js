@@ -102,6 +102,12 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   this.metadataModel_ = metadataModel;
 
   /**
+   * @type cm.events.ListenerToken
+   * @private
+   */
+  this.metadataListener_ = null;
+
+  /**
    * @type cm.AppState
    * @private
    */
@@ -236,6 +242,12 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   this.sliderListeners_ = null;
 
   /**
+   * @type {number?}
+   * @private
+   */
+  this.zoomLevel_ = null;  // initially unknown
+
+  /**
    * @type Object
    * @private
    */
@@ -321,6 +333,7 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   this.updateZoomLink_();
   this.updateTime_();
   this.updateWarning_();
+  this.updateFade_();
 
   // Attach event handlers to ensure this view reflects changes in the
   // layer model, the metadata model, and the AppState.
@@ -336,16 +349,15 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
     this.updateEnabled_();
   }, this);
   cm.events.onChange(model, 'type', this.updateSliderVisibility_, this);
-  cm.events.onChange(metadataModel, id, function() {
-    var metadata = this.metadataModel_.get(id);
-    this.updateWarning_();
-    this.updateDownloadLink_();
-    this.updateZoomLink_();
-    this.updateTime_();
-  }, this);
+
   cm.events.onChange(appState, ['enabled_layer_ids', 'promoted_layer_ids'],
                      this.updateEnabled_, this);
   cm.events.onChange(appState, 'promoted_layer_ids', this.updateTitle_, this);
+
+  // When the source address changes, update which metadata entry we listen to.
+  cm.events.onChange(model, ['type', 'url'],
+                     this.updateMetadataListener_, this);
+  this.updateMetadataListener_();
 
   // Add or remove each sublayer's LayerEntryView when layers are
   // added or removed.
@@ -368,8 +380,10 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
 
   // Attach event handler to change the visibility of panel entry view based on
   // the layer's min/max zoom levels and the map's current zoom level.
-  cm.events.listen(goog.global, cm.events.ZOOM_CHANGED, this.handleZoomChange_,
-                   this);
+  cm.events.listen(
+      goog.global, cm.events.ZOOM_CHANGED, this.handleZoomChange_, this);
+  cm.events.onChange(
+      model, ['min_zoom', 'max_zoom'], this.updateFade_, this);
 
   cm.events.forward(zoomLink, 'click', this,
                     cm.events.ZOOM_TO_LAYER, {id: id});
@@ -467,31 +481,21 @@ cm.LayerEntryView.prototype.updateLegend_ = function() {
       !legend || goog.string.isEmpty(legend.getHtml()));
 };
 
-/** @private Updates the warning and fade state based on the layer metadata. */
+/** @private Updates the warning label based on the layer metadata. */
 cm.LayerEntryView.prototype.updateWarning_ = function() {
-  var id = /** @type string */(this.model_.get('id'));
-  var isEmpty = this.metadataModel_.isEmpty(id);
-  var hasUnsupportedFeatures = this.metadataModel_.hasUnsupportedFeatures(id);
-  var warning = isEmpty ? MSG_NO_DATA_WARNING :
-      hasUnsupportedFeatures ? MSG_UNSUPPORTED_KML_WARNING : '';
-  // TODO(kpy): Both handleZoomChange_ and updateWarning_ affect the fade
-  // state, so for example, zooming from out-of-range to in-range will cause
-  // the layer entry to go black even when there is no data (the entry should
-  // stay grey).  These bits should be merged into a single updateFade_ method.
-  this.setFade_(isEmpty, warning);
-  cm.ui.setText(this.warningElem_, warning);
-  goog.dom.classes.enable(this.warningElem_, 'cm-hidden', !warning);
+  var isEmpty = this.metadataModel_.isEmpty(this.model_);
+  cm.ui.setText(this.warningElem_, isEmpty ? MSG_NO_DATA_WARNING : '');
+  goog.dom.classes.enable(this.warningElem_, 'cm-hidden', !isEmpty);
 };
 
 /** @private Updates the panel entry to match the model. */
 cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
-  var id = /** @type string */(this.model_.get('id'));
   var isFolder = this.model_.get('type') === cm.LayerModel.Type.FOLDER;
   var tip = '';
   cm.ui.clear(this.downloadElem_);
   if (!isFolder) {
     var type = /** @type cm.LayerModel.Type */(this.model_.get('type'));
-    var hideLink = this.metadataModel_.serverErrorOccurred(id) ||
+    var hideLink = this.metadataModel_.httpErrorOccurred(this.model_) ||
         this.model_.get('suppress_download_link');
     if (!hideLink) {
       var url = /** @type string */(this.model_.get('url'));
@@ -517,7 +521,7 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
                      cm.ui.createLink(linkText, url));
       }
       // Show the file size in human-readable form in a tooltip.
-      tip = cm.util.formatFileSize(this.metadataModel_.getContentLength(id));
+      tip = cm.util.formatFileSize(this.metadataModel_.getLength(this.model_));
     }
   }
   this.downloadElem_.title = tip;
@@ -526,8 +530,7 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
 /** @private Updates the timestamp of this layer entry. */
 cm.LayerEntryView.prototype.updateTime_ = function() {
   var message = '';
-  var id = /** @type string */(this.model_.get('id'));
-  var time = this.metadataModel_.getContentLastModified(id);
+  var time = this.metadataModel_.getUpdateTime(this.model_);
   if (time) {
     // Convert time in seconds to time in milliseconds.
     var d = new Date(time * 1000);
@@ -543,21 +546,49 @@ cm.LayerEntryView.prototype.updateTime_ = function() {
   cm.ui.setText(this.timeElem_, message);
 };
 
+/** @private Updates the UI to reflect changes in this layer's metadata. */
+cm.LayerEntryView.prototype.handleMetadataChange_ = function() {
+  this.updateDownloadLink_();
+  this.updateZoomLink_();
+  this.updateTime_();
+  this.updateWarning_();
+  this.updateFade_();
+};
+
+/** @private Monitors the appropriate metadata entry for the layer. */
+cm.LayerEntryView.prototype.updateMetadataListener_ = function() {
+  // When a layer's source address changes, we have to listen to the metadata
+  // entry for the new source and stop listening to the old one.
+  if (this.metadataListener_) {
+    cm.events.unlisten(this.metadataListener_);
+  }
+  this.metadataListener_ = this.metadataModel_.onChange(
+      this.model_, this.handleMetadataChange_, this);
+  this.handleMetadataChange_();
+};
+
 /**
- * Updates the entry's appearance based on whether the current zoom level is
- * within the layer's min/max zoom range.
- * @param {Object} e The event payload. One field is used:
- *     zoom: The current zoom level of the map.
+ * Updates the entry based on changes in the map's current zoom level.
+ * @param {Object} e The event payload.  e.zoom should contain the zoom level.
  * @private
  */
 cm.LayerEntryView.prototype.handleZoomChange_ = function(e) {
-  var zoom = /** @type number */ (e.zoom);
-  // If min_zoom or max_zoom are undefined, assume no lower or upper bound.
-  var minZoom = this.model_.get('min_zoom');
-  var maxZoom = this.model_.get('max_zoom');
-  var visible = !(goog.isNumber(minZoom) && zoom < minZoom ||
-                  goog.isNumber(maxZoom) && zoom > maxZoom);
-  this.setFade_(!visible, MSG_OUT_OF_ZOOM_RANGE_TOOLTIP);
+  this.zoomLevel_ = /** @type number */(e.zoom);
+  this.updateFade_();
+};
+
+/** @private Fades out the entry iff it is empty or out of zoom range. */
+cm.LayerEntryView.prototype.updateFade_ = function() {
+  if (this.metadataModel_.isEmpty(this.model_)) {
+    this.setFade_(true, MSG_NO_DATA_WARNING);
+  } else if (this.zoomLevel_ !== null) {
+    // If min_zoom or max_zoom are undefined, assume no lower or upper bound.
+    var minZoom = this.model_.get('min_zoom');
+    var maxZoom = this.model_.get('max_zoom');
+    var outOfRange = goog.isNumber(minZoom) && this.zoomLevel_ < minZoom ||
+                     goog.isNumber(maxZoom) && this.zoomLevel_ > maxZoom;
+    this.setFade_(outOfRange, MSG_OUT_OF_ZOOM_RANGE_TOOLTIP);
+  }
 };
 
 /**
@@ -589,8 +620,7 @@ cm.LayerEntryView.prototype.updateZoomLink_ = function() {
   // except for KMLLayer types, which have default viewports. TODO(romano):
   // also display folder zoomto links once a folder's viewport can be computed
   // from its descendants' viewports.
-  var id = /** @type string */(this.model_.get('id'));
-  var showZoomLink = !this.metadataModel_.isEmpty(id) && (
+  var showZoomLink = !this.metadataModel_.isEmpty(this.model_) && (
       this.model_.get('viewport') ||
       this.model_.get('type') === cm.LayerModel.Type.KML ||
       this.model_.get('type') === cm.LayerModel.Type.GEORSS);
@@ -763,4 +793,7 @@ cm.LayerEntryView.prototype.removeSublayer_ = function(layer) {
 /** Removes this cm.LayerEntryView from the UI. */
 cm.LayerEntryView.prototype.dispose = function() {
   cm.ui.remove(this.entryElem_);
+  if (this.metadataListener_) {
+    cm.events.unlisten(this.metadataListener_);
+  }
 };

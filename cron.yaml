@@ -10,15 +10,7 @@
 # specific language governing permissions and limitations under the License.
 
 cron:
-- description: schedule retrieval of metadata updates of layers
-  url: /crisismap/metadata_scheduler
-  schedule: every 2 minutes
-
-- description: schedule deletion of stale metadata update records
-  url: /crisismap/metadata_cleaner
-  schedule: every 24 hours
-
-- description: clean up after any crashed tileworkers.
+- description: clean up after any crashed tileworkers
   url: /crisismap/tileworker_cleanup
   schedule: every 5 minutes
 

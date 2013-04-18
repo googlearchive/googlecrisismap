@@ -27,6 +27,7 @@ function LayerEntryViewTest() {
   this.layerModel_.set('type', cm.LayerModel.Type.FUSION);
   this.layerModel_.set('sublayers', new google.maps.MVCArray());
   this.layerModel_.isTimeSeries = function() { return false; };
+  this.layerModel_.getSourceAddress = function() { return 'XYZ:xyz'; };
 
   this.metadataModel_ = new cm.MetadataModel();
 
@@ -295,27 +296,27 @@ LayerEntryViewTest.prototype.updateTime = function() {
   var metadata = this.metadataModel_;
 
   // Tests that the current time is formatted to say 0 minutes ago.
-  metadata.set('layer0', {'content_last_modified': now});
+  metadata.setUpdateTime(this.layerModel_, now);
   expectThat(cm.ui.getText(timeElem), containsRegExp(
       /Last updated: \d\d?:\d\d [AP]M \(0 minutes ago\)/));
 
   // Check 23 hours ago.
-  metadata.set('layer0', {'content_last_modified': now - 3600 * 23});
+  metadata.setUpdateTime(this.layerModel_, now - 3600 * 23);
   expectThat(cm.ui.getText(timeElem), containsRegExp(
       /Last updated: \d\d?:\d\d [AP]M \(23 hours ago\)/));
 
   // Check yesterday.
-  metadata.set('layer0', {'content_last_modified': now - 3600 * 24});
+  metadata.setUpdateTime(this.layerModel_, now - 3600 * 24);
   expectThat(cm.ui.getText(timeElem), containsRegExp(
       /Last updated: [A-Z][a-z]+ \d+, \d{4} \(1 day ago\)/));
 
   // Check 14 days ago.
-  metadata.set('layer0', {'content_last_modified': now - 3600 * 24 * 14});
+  metadata.setUpdateTime(this.layerModel_, now - 3600 * 24 * 14);
   expectThat(cm.ui.getText(timeElem), containsRegExp(
       /Last updated: [A-Z][a-z]+ \d+, \d{4}/));
 
   // Try a missing timestamp.
-  this.metadataModel_.set('layer0', {});
+  this.metadataModel_.setUpdateTime(this.layerModel_, null);
   expectEq(cm.ui.getText(timeElem), '');
 };
 
@@ -474,13 +475,10 @@ LayerEntryViewTest.prototype.testZoomFading = function() {
   this.layerModel_.set('max_zoom', 5);
 
   var parent = this.createView_();
-
   var elems = goog.array.map(
       ['cm-header', 'cm-layer-description', 'cm-layer-legend',
        'cm-timestamp', 'cm-slider', 'cm-sublayers', 'cm-warning'],
-      function(cls) {
-          return expectDescendantOf(parent, withClass(cls));
-      });
+      function(cls) { return expectDescendantOf(parent, withClass(cls)); });
 
   // Each of the elements above should be faded out twice and faded in twice.
   expectCall(goog.style.setOpacity)(anyOf(elems), 0.5).times(elems.length);
@@ -533,6 +531,7 @@ LayerEntryViewTest.prototype.updateEnabledTimeSeries = function() {
   childModel.set('id', 'child');
   childModel.set('sublayers', new google.maps.MVCArray());
   childModel.isTimeSeries = function() { return false; };
+  childModel.getSourceAddress = function() { return 'ABC:abc'; };
 
   this.layerModel_.set('sublayers', new google.maps.MVCArray([childModel]));
   this.layerModel_.isTimeSeries = function() { return true; };
@@ -572,11 +571,13 @@ LayerEntryViewTest.prototype.updateEnabledTimeSeriesSelect = function() {
   childModel1.set('id', 'child1');
   childModel1.set('sublayers', new google.maps.MVCArray());
   childModel1.isTimeSeries = function() { return false; };
+  childModel1.getSourceAddress = function() { return 'ABC:abc'; };
 
   var childModel2 = new google.maps.MVCObject;
   childModel2.set('id', 'child2');
   childModel2.set('sublayers', new google.maps.MVCArray());
   childModel2.isTimeSeries = function() { return false; };
+  childModel2.getSourceAddress = function() { return 'DEF:def'; };
 
   this.layerModel_.set('sublayers',
                        new google.maps.MVCArray([childModel1, childModel2]));
@@ -636,6 +637,7 @@ LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
   childModel.set('id', 'child');
   childModel.set('sublayers', new google.maps.MVCArray());
   childModel.isTimeSeries = function() { return false; };
+  childModel.getSourceAddress = function() { return 'PQR:pqr'; };
 
   this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
   this.layerModel_.set('sublayers', new google.maps.MVCArray([childModel]));
@@ -691,32 +693,40 @@ LayerEntryViewTest.prototype.clickCheckbox = function() {
 LayerEntryViewTest.prototype.testMetadataUpdates = function() {
   this.layerModel_.set('type', cm.LayerModel.Type.KML);
   this.layerModel_.set('url', 'http://monsters.com.au');
+
   var parent = this.createView_();
-  this.metadataModel_.set('layer0', {
-    'content_last_modified': 1344989642.0,
-    'content_length': 25000,
-    'has_no_features': false,
-    'has_unsupported_kml': true
+  var elems = goog.array.map(
+      ['cm-header', 'cm-layer-description', 'cm-layer-legend',
+       'cm-timestamp', 'cm-slider', 'cm-sublayers', 'cm-warning'],
+      function(cls) { return expectDescendantOf(parent, withClass(cls)); });
+
+  // The layer should be faded out...
+  expectCall(goog.style.setOpacity)(anyOf(elems), 0.5).times(elems.length);
+  // ...when the metadata says the layer has no features.
+  this.metadataModel_.set(this.layerModel_.getSourceAddress(), {
+    'update_time': 1344989642.0,
+    'length': 25000,
+    'has_no_features': true
   });
 
-  var warningElem = expectDescendantOf(parent, withClass('cm-warning'),
-                                       not(withClass('cm-hidden')));
-  expectThat(cm.ui.getText(warningElem), containsRegExp(/unsupported/));
-  var timeElem = expectDescendantOf(parent, withClass('cm-timestamp'),
-                                    not(withClass('cm-hidden')));
-  var downloadElem = expectDescendantOf(parent, 'a', withText('Download KML'),
-                                        withHref('http://monsters.com.au'),
-                                        not(withClass('cm-hidden')));
+  var warningElem = expectDescendantOf(
+      parent, withClass('cm-warning'), not(withClass('cm-hidden')));
+  expectThat(cm.ui.getText(warningElem), containsRegExp(/nothing to show/));
+  var timeElem = expectDescendantOf(
+      parent, withClass('cm-timestamp'), not(withClass('cm-hidden')));
+  var downloadElem = expectDescendantOf(
+      parent, 'a', withText('Download KML'),
+      withHref('http://monsters.com.au'), not(withClass('cm-hidden')));
   expectEq('25 k', downloadElem.parentNode.title);
-  var zoomLink = expectDescendantOf(parent, 'a',
-                                    withText(containsRegExp(/Zoom/)));
+  var zoomLink = expectDescendantOf(
+      parent, 'a', withText(containsRegExp(/Zoom/)));
 
-  // Remove content_length to clear file-size tooltip.
-  this.metadataModel_.set('layer0', {
-    'content_last_modified': 1344989642.0,
-    'has_no_features': false,
-    'has_unsupported_kml': true
+  // When the length field is removed...
+  this.metadataModel_.set(this.layerModel_.getSourceAddress(), {
+    'update_time': 1344989642.0,
+    'has_no_features': false
   });
+  // ...the file-size tooltip should go away.
   downloadElem = expectDescendantOf(parent, 'a', withText('Download KML'));
   expectEq('', downloadElem.parentNode.title);
 };

@@ -413,10 +413,12 @@ LayerModelTest.prototype.insertLayer = function() {
 /** Tests whether source adress is returned correctly. */
 LayerModelTest.prototype.testGetSourceAddress = function() {
   var layerModel = cm.LayerModel.newFromMapRoot(KML_MAP_ROOT_JSON);
-  expectEq('http://monkfish.com', layerModel.getSourceAddress());
+  expectEq('KML:http://monkfish.com', layerModel.getSourceAddress());
 
   layerModel = cm.LayerModel.newFromMapRoot(MAPTILE_MAP_ROOT_JSON);
-  expectEq('', layerModel.getSourceAddress());
+  expectEq('GOOGLE_MAP_TILES:' +
+           'http://mw1.google.com/mw-weather/radar/maptiles/index.js',
+           layerModel.getSourceAddress());
 };
 
 /** Tests creation of a WMS layer. */

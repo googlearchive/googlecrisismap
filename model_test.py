@@ -324,15 +324,6 @@ class MapTests(test_utils.BaseTest):
     m.Delete()
     self.assertEquals(None, model.Map.Get(m.id))
 
-  def testToCacheKey(self):
-    """Tests that cache keys are properly serialized and escaped."""
-    self.assertEquals('foo', model.ToCacheKey('foo'))
-    self.assertEquals('foo', model.ToCacheKey(['foo']))
-    self.assertEquals('foo/bar', model.ToCacheKey(['foo', 'bar']))
-    self.assertEquals('foo\\//bar', model.ToCacheKey(['foo/', 'bar']))
-    self.assertEquals('f\\\\\\\\oo\\/\\//\\\\b\\/ar',
-                      model.ToCacheKey(['f\\\\oo//', '\\b/ar']))
-
   def testMapCache(self):
     """Tests caching of current JSON data."""
     # Verify the default values from Map.Create.
@@ -347,11 +338,11 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals(m.title, 'title2')
     self.assertEquals(m.description, 'description2')
     # GetCurrentJson should have filled the cache.
-    self.assertEquals(json2, memcache.get('Map/%s/json' % m.id))
+    self.assertEquals(json2, memcache.get('Map,%s,json' % m.id))
 
     # PutVersion should clear the cache.
     m.PutNewVersion(json3)
-    self.assertEquals(None, memcache.get('Map/%s/json' % m.id))
+    self.assertEquals(None, memcache.get('Map,%s,json' % m.id))
     self.assertEquals(json3, m.GetCurrentJson())
 
   def testConfig(self):
@@ -360,10 +351,8 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals(None, model.Config.Get(key))
     model.Config.Set(key, 'value')
     self.assertEquals('value', model.Config.Get(key))
-    self.assertEquals('value', model.Config.GetOrInsert(key, 'new value'))
     model.Config.Set(key, [3, 4, {'a': 'b'}, None])
     self.assertEquals([3, 4, {'a': 'b'}, None], model.Config.Get(key))
-    self.assertEquals('new value', model.Config.GetOrInsert('xy', 'new value'))
     self.assertEquals(None, model.GetInitialDomainRole('xyz.com'))
     model.SetInitialDomainRole('xyz.com', model.Role.MAP_VIEWER)
     self.assertEquals(model.Role.MAP_VIEWER,

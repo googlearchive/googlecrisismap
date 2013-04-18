@@ -20,9 +20,14 @@ class LayerType(object):
   FOLDER = 'FOLDER'
   KML = 'KML'
   GEORSS = 'GEORSS'
-  TILE = 'TILE'
-  FUSION = 'FUSION'
-  MAP_DATA = 'MAP_DATA'
+  GOOGLE_MAP_TILES = 'GOOGLE_MAP_TILES'
+  GOOGLE_FUSION_TABLES = 'GOOGLE_FUSION_TABLES'
+  GOOGLE_MAP_DATA = 'GOOGLE_MAP_DATA'
+  GOOGLE_TRAFFIC = 'GOOGLE_TRAFFIC'
+  GOOGLE_TRANSIT = 'GOOGLE_TRANSIT'
+  GOOGLE_WEATHER = 'GOOGLE_WEATHER'
+  GOOGLE_CLOUD_IMAGERY = 'GOOGLE_CLOUD_IMAGERY'
+  WMS = 'WMS'
 
 
 def GetAllLayers(maproot):
@@ -35,12 +40,12 @@ def GetAllLayers(maproot):
     A list of all the layers in breadth-first order, not including folders.
   """
   layers = []
-  queue = maproot.get('layers', [])
+  queue = maproot.get('layers', [])[:]
   while queue:
     node = queue.pop()
     if node['type'] != LayerType.FOLDER:
       layers.append(node)
-    queue += node.get('sublayers', [])
+    queue.extend(node.get('sublayers', []))
   return layers
 
 
@@ -51,10 +56,11 @@ def GetSourceAddress(layer):
     layer: A MapRoot layer object.
 
   Returns:
-    A string suitable as a key for the data source, or None if none
+    A string suitable as a unique key for the data source, or None if none
     could be determined.
   """
-  # TODO(cimamoglu): Add a prefix such as 'url:' before URL addresses.
-  source = layer.get('source', {})
-  return (source.get('georss', {}).get('url') or
-          source.get('kml', {}).get('url') or None)
+  layer_type = layer.get('type', '')
+  source = layer.get('source', {}).get(layer_type.lower())
+  if layer_type in [LayerType.KML, LayerType.GEORSS,
+                    LayerType.GOOGLE_MAP_TILES]:
+    return layer_type + ':' + source.get('url', '')

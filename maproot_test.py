@@ -41,17 +41,21 @@ class MaprootTest(test_utils.BaseTest):
     self.assertEquals([], maproot.GetAllLayers({'nolayers': {'type': 'KML'}}))
 
   def testGetSourceAddress(self):
-    self.assertEquals('abc', maproot.GetSourceAddress(
-        {'source': {'georss': {'url': 'abc'}}}
+    self.assertEquals('GEORSS:abc', maproot.GetSourceAddress(
+        {'type': 'GEORSS', 'source': {'georss': {'url': 'abc'}}}
     ))
-    self.assertEquals('xyz', maproot.GetSourceAddress(
-        {'source': {'kml': {'url': 'xyz'}}}
+    self.assertEquals('KML:xyz', maproot.GetSourceAddress(
+        {'type': 'KML', 'source': {'kml': {'url': 'xyz'}}}
+    ))
+    self.assertEquals('GOOGLE_MAP_TILES:tuv', maproot.GetSourceAddress(
+        {'type': 'GOOGLE_MAP_TILES',
+         'source': {'google_map_tiles': {'url': 'tuv'}}}
     ))
     self.assertEquals(None, maproot.GetSourceAddress(
-        {'source': {'google_map_data': 'ab'}}
+        {'type': 'GOOGLE_MAP_DATA', 'source': {'google_map_data': 'ab'}}
     ))
     self.assertEquals(None, maproot.GetSourceAddress(
-        {'src': {'google_map_data': {'url': 'x'}}}
+        {'type': 'GOOGLE_TRAFFIC'}
     ))
 
 if __name__ == '__main__':

@@ -50,7 +50,7 @@ cm.LayerModel.Type = {
 };
 
 /** @type Object.<cm.LayerModel.Type> */
-cm.LayerModel.LAYER_TYPES_BY_SOURCE_TYPE = {
+cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
   'FOLDER': cm.LayerModel.Type.FOLDER,
   'KML': cm.LayerModel.Type.KML,
   'GEORSS': cm.LayerModel.Type.GEORSS,
@@ -63,21 +63,6 @@ cm.LayerModel.LAYER_TYPES_BY_SOURCE_TYPE = {
   'GOOGLE_CLOUD_IMAGERY': cm.LayerModel.Type.CLOUD,
   'WMS': cm.LayerModel.Type.WMS
 };
-
-/** @type Object.<string> */
-cm.LayerModel.SOURCE_TYPES_BY_LAYER_TYPE = goog.object.create(
-  cm.LayerModel.Type.FOLDER, 'FOLDER',
-  cm.LayerModel.Type.KML, 'KML',
-  cm.LayerModel.Type.GEORSS, 'GEORSS',
-  cm.LayerModel.Type.TILE, 'GOOGLE_MAP_TILES',
-  cm.LayerModel.Type.FUSION, 'GOOGLE_FUSION_TABLES',
-  cm.LayerModel.Type.MAP_DATA, 'GOOGLE_MAP_DATA',
-  cm.LayerModel.Type.TRAFFIC, 'GOOGLE_TRAFFIC',
-  cm.LayerModel.Type.TRANSIT, 'GOOGLE_TRANSIT',
-  cm.LayerModel.Type.WEATHER, 'GOOGLE_WEATHER',
-  cm.LayerModel.Type.CLOUD, 'GOOGLE_CLOUD_IMAGERY',
-  cm.LayerModel.Type.WMS, 'WMS'
-);
 
 /** @enum {string} */
 cm.LayerModel.TileCoordinateType = {
@@ -160,7 +145,7 @@ cm.LayerModel.nextId_ = 0;
  *     'type' member was not a recognized type name.
  */
 cm.LayerModel.newFromMapRoot = function(maproot) {
-  var type = cm.LayerModel.LAYER_TYPES_BY_SOURCE_TYPE[maproot['type']];
+  var type = cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES[maproot['type']];
   if (!type) {
     return null;
   }
@@ -363,7 +348,8 @@ cm.LayerModel.prototype.toMapRoot = function() {
     'visibility': this.get('default_visibility') ? 'DEFAULT_ON' : 'DEFAULT_OFF',
     'viewport': viewport,
     'full_extent': fullExtent,
-    'type': cm.LayerModel.SOURCE_TYPES_BY_LAYER_TYPE[type],
+    'type': goog.object.transpose(
+        cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES)[type],
     'min_zoom': this.get('min_zoom'),
     'max_zoom': this.get('max_zoom'),
     'opacity': opacity < 100 ? opacity : null,
@@ -394,14 +380,17 @@ goog.exportProperty(cm.LayerModel.prototype, 'changed',
  * string depends on the type of the layer.
  * NOTE: This method should be in sync with maproot.py.
  * TODO(cimamoglu): Implement this for other layer types.
- * @return {string}  The address string if it's found, empty string otherwise.
+ * @return {string} The address string if it's found, empty string otherwise.
  */
 cm.LayerModel.prototype.getSourceAddress = function() {
   var type = this.get('type');
   switch (type) {
     case cm.LayerModel.Type.KML:
     case cm.LayerModel.Type.GEORSS:
-      return /** @type {string} */(this.get('url'));
+    case cm.LayerModel.Type.TILE:
+      return goog.object.transpose(
+          cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES)[type] +
+          ':' + (this.get('url') || '');
     default:
       return '';
   }

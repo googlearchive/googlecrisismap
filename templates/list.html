@@ -55,14 +55,14 @@ specific language governing permissions and limitations under the License.
               </a>
               <span class="cm-publish-age">
                 {{e.last_updated|timesince}} ago
-                {% ifequal e.map_version_id m.GetCurrent.id %}
+                {% ifequal e.map_version_key m.current_version_key %}
                   (up to date)
                 {% else %}
                   (out of date)
                 {% endifequal %}
               </span>
               {% if e.domain in publishing_domains %}
-                {% ifnotequal e.map_version_id m.GetCurrent.id %}
+                {% ifnotequal e.map_version_key m.current_version_key %}
                   <form action="/crisismap/publish" method="post">
                     <input name="label" type=hidden value="{{e.label}}">
                     <input name="map_id" type=hidden value="{{m.id}}">

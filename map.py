@@ -14,10 +14,7 @@
 
 __author__ = 'giencke@google.com (Pete Giencke)'
 
-import base64
-import hmac
 import json
-import logging
 import os
 import urllib
 import urlparse
@@ -25,17 +22,14 @@ import urlparse
 import webapp2
 
 import base_handler
-import maproot
+import cache
+import metadata
 import model
 
-from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
 
 MAPS_API_BASE_URL = '//maps.google.com/maps/api/js'
-
-# The default lifetime for cached layer address data in seconds.
-DEFAULT_LAYER_ADDRESS_CACHE_SECONDS = 10 * 60
 
 
 def AllowDeveloperMode():
@@ -208,47 +202,6 @@ def GetMapsApiClientId(host_port):
   return ''
 
 
-def CacheLayerAddresses(map_object=None, catalog_entry=None,
-                        ttl_seconds=DEFAULT_LAYER_ADDRESS_CACHE_SECONDS):
-  """Caches the addresses of layers of a particular map version.
-
-  The address of a layer can be a URL or other kind of information (e.g. for
-  Fusion Table).
-
-  Args:
-    map_object: The optional MapVersion object to display.
-    catalog_entry: The optional CatalogEntry pointing at the map to display.
-        The caller should specify either map_object or catalog_entry; if
-        both are given, catalog_entry is ignored. If neither is given, then
-        the function simply returns.
-    ttl_seconds: An integer number of seconds to keep the value in the cache.
-
-  Returns:
-    If successful, the key of the map version in the cache. It is computed
-    through HMAC-MD5 with a secret key, map ID and map version ID.
-    Otherwise, None is returned.
-  """
-  if not map_object and not catalog_entry:
-    logging.error('Layer address caching needs a Map or CatalogEntry!')
-    return None
-  map_id = map_version = json_object = None
-  if catalog_entry:
-    map_id = catalog_entry.map_id
-    map_version = catalog_entry.map_version_id
-    json_object = json.loads(catalog_entry.maproot_json)
-  if map_object:
-    map_id = map_object.id
-    map_version = map_object.GetCurrent().id
-    json_object = json.loads(map_object.GetCurrentJson())
-
-  addresses = map(maproot.GetSourceAddress, maproot.GetAllLayers(json_object))
-  addresses = sorted(address for address in addresses if address)
-  hmac_key = str(model.Config.GetOrInsert(
-      'layer_address_hmac_key', str(base64.urlsafe_b64encode(os.urandom(30)))))
-  key = hmac.new(hmac_key, map_id + '.' + str(map_version)).hexdigest()
-  return key if memcache.set(key, addresses, ttl_seconds) else None
-
-
 def GetConfig(request, map_object=None, catalog_entry=None):
   """Gathers a dictionary of parameters to pass to the JavaScript code.
 
@@ -279,8 +232,10 @@ def GetConfig(request, map_object=None, catalog_entry=None):
       - get_module_url: A function for mapping the baseUrl, module name pair to
           a url for the corresponding module.  Currently not set by crisismaps,
           but its needed for Cartewheel.
+      - metadata: A dictionary mapping source addresses to metadata (see
+          metadata_fetch.py) for each source referenced in map_root.
       - metadata_url: The URL for this map to make metadata requests. It
-          contains the relevant memcache key as the token parameter.
+          contains the relevant cache key as the "key" parameter.
   """
   dev_mode = request.get('dev') and AllowDeveloperMode()
   user = users.get_current_user()
@@ -310,11 +265,16 @@ def GetConfig(request, map_object=None, catalog_entry=None):
       'maps_api_url': maps_api_url
   }
 
+  # Add settings from the selected client config, if any.
+  config.update(GetClientConfig(request.get('client'),
+                                request.headers.get('referer'), dev_mode))
+
   # If we have MapRoot data from the datastore, include it.
   if catalog_entry:
     config['map_root'] = json.loads(catalog_entry.maproot_json)
     config['map_id'] = catalog_entry.map_id
     config['label'] = catalog_entry.label
+    key = catalog_entry.map_version_key
   elif map_object:
     config['map_root'] = json.loads(map_object.GetCurrentJson())
     config['map_id'] = map_object.id
@@ -322,13 +282,12 @@ def GetConfig(request, map_object=None, catalog_entry=None):
     config['share_url'] = '/crisismap/share/%s' % map_object.id
     config['enable_editing'] = map_object.CheckAccess(model.Role.MAP_EDITOR)
     config['draft_mode'] = True
+    key = map_object.current_version_key
   if map_object or catalog_entry:
-    config['metadata_url'] = ('/crisismap/metadata?token=%s' %
-                              CacheLayerAddresses(map_object, catalog_entry))
-
-  # Add settings from the selected client config, if any.
-  config.update(GetClientConfig(request.get('client'),
-                                request.headers.get('referer'), dev_mode))
+    cache_key, sources = metadata.CacheSourceAddresses(key, config['map_root'])
+    config['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
+    config['metadata_url'] = '/crisismap/metadata?key=' + cache_key
+    metadata.ActivateSources(sources)
 
   if dev_mode:
     # In developer mode only, allow an arbitrary URL for MapRoot JSON.

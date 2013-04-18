@@ -16,6 +16,7 @@ function TileOverlayTest() {
   this.map_ = this.expectNew_('google.maps.Map');
   this.layer_ = new google.maps.MVCObject();
   this.layer_.set('id', 'layer0');
+  this.layer_.getSourceAddress = function() { return 'XYZ:xyz'; };
   this.appState_ = new google.maps.MVCObject();
   this.metadataModel_ = new cm.MetadataModel();
 
@@ -53,7 +54,7 @@ TileOverlayTest.prototype.testConstructorTileIndex = function() {
 
   // Simulate retrieval of the tile index JSON.
   jsonCallback({'active_tileset': {'update_time': 1234567890}});
-  expectEq(1234567890, this.metadataModel_.getContentLastModified('layer0'));
+  expectEq(1234567890, this.metadataModel_.getUpdateTime(this.layer_));
 };
 
 /** Tests whether opacity changes according to the application state model. */
