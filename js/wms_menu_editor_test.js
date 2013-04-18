@@ -22,8 +22,7 @@ WmsMenuEditorTest.prototype = new cm.TestBase();
 registerTestSuite(WmsMenuEditorTest);
 
 /**
- * Constructs the WmsMenuEditor and returns its parent.
- * @return {Element} An element containing the new WmsMenuEditor.
+ * Constructs the WmsMenuEditor.
  * @private
  */
 WmsMenuEditorTest.prototype.createEditor_ = function() {
@@ -37,7 +36,6 @@ WmsMenuEditorTest.prototype.createEditor_ = function() {
   this.optionX_ = expectDescendantOf(parent, 'option', withText('Choice X'));
   this.optionY_ = expectDescendantOf(parent, 'option', withText('Choice Y'));
   this.optionZ_ = expectDescendantOf(parent, 'option', withText('Choice Z'));
-  return parent;
 };
 
 /**
@@ -53,14 +51,14 @@ WmsMenuEditorTest.prototype.expectSelected_ = function(selected) {
 
 /** Tests construction of the editor. */
 WmsMenuEditorTest.prototype.testConstructor = function() {
-  var parent = this.createEditor_();
+  this.createEditor_();
   expectThat(this.editor_.get('value'), elementsAre([]));
   this.expectSelected_([false, false, false]);
 };
 
 /** Tests handling a query response from a valid WMS service. */
 WmsMenuEditorTest.prototype.testValidReply = function() {
-  var parent = this.createEditor_();
+  this.createEditor_();
   var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
   var replyCallback = null;
   tilestacheQuery.send = function(_, r, e) {
@@ -78,8 +76,7 @@ WmsMenuEditorTest.prototype.testValidReply = function() {
 
 /** Tests handling a query response from an invalid WMS service. */
 WmsMenuEditorTest.prototype.testInvalidService = function() {
-  var parent = this.createEditor_();
-
+  this.createEditor_();
   var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
   var errorCallback = null;
   tilestacheQuery.send = function(_, r, e) {
@@ -90,10 +87,9 @@ WmsMenuEditorTest.prototype.testInvalidService = function() {
   expectEq(0, this.editor_.select_.options.length);
 };
 
-
 /** Tests caching of layers. */
 WmsMenuEditorTest.prototype.testLayerCaching = function() {
-  var parent = this.createEditor_();
+  this.createEditor_();
   var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
   var querySent = false;
   var replyCallback;
@@ -116,4 +112,37 @@ WmsMenuEditorTest.prototype.testLayerCaching = function() {
   this.draft_.set('url', 'http://wms1.com');
   replyCallback({'layers': []});
   expectFalse(querySent);
+};
+
+/** Tests that server queries are made only for WMS layer types. */
+WmsMenuEditorTest.prototype.testLayerType = function() {
+  // Expect a query to be issued when the draft layer has a valid URL and
+  // type WMS.
+  var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
+  var querySent = false;
+  var replyCallback = null;
+  tilestacheQuery.send = function(_, r, e) {
+    querySent = true;
+    replyCallback = r;
+  };
+  this.draft_.set('url', 'http://some.wms/service');
+  this.createEditor_();
+  replyCallback({'layers': []});
+  expectTrue(querySent);
+
+  // Expect no query to be issued when the draft layer's URL changes but the
+  // type is no longer WMS.
+  querySent = false;
+  replyCallback = null;
+  expectFalse(querySent);
+  this.draft_.set('type', cm.LayerModel.Type.KML);
+  this.draft_.set('url', 'http://new.wms/service');
+  expectFalse(querySent);
+
+  // Expect a query to be issued if the draft layer's type changes back to
+  // WMS.
+  replyCallback = null;
+  this.draft_.set('type', cm.LayerModel.Type.WMS);
+  replyCallback({'layers': []});
+  expectTrue(querySent);
 };

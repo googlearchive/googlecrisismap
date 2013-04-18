@@ -96,16 +96,23 @@ cm.WmsMenuEditor = function(parentElem, id, options, draft) {
   cm.ui.append(parentElem, this.warningMessage_);
 
   this.bindTo('url', draft);
-  cm.events.onChange(this, 'url', this.handleUrlChanged_, this);
-  this.handleUrlChanged_();
+  this.bindTo('type', draft);
+
+  cm.events.onChange(this, ['url', 'type'], this.updateMenuOptions_,
+                     this);
+  this.updateMenuOptions_();
 };
 goog.inherits(cm.WmsMenuEditor, cm.MenuEditor);
 
 /**
- * Update the menu's layer options when the WMS service URL changes.
- *  * @private
+ * Update the menu's layer options.
+ * @private
  */
-cm.WmsMenuEditor.prototype.handleUrlChanged_ = function() {
+cm.WmsMenuEditor.prototype.updateMenuOptions_ = function() {
+  if (/** @type cm.LayerModel.Type */(this.get('type')) !==
+      cm.LayerModel.Type.WMS) {
+    return;
+  }
   var url = /** @type string */(this.get('url')) || '';
   url = url.replace(/^\s+|\s+$/g, '');   // remove leading and trailing spaces
   var handleWmsQueryResponse = goog.bind(function(json) {
@@ -123,7 +130,7 @@ cm.WmsMenuEditor.prototype.handleUrlChanged_ = function() {
       if (this.draftUrlChanged_) {
         this.draftUrlChanged_ = false;
         goog.global.setTimeout(goog.bind(function() {
-          this.handleUrlChanged_();
+          this.updateMenuOptions_();
         }, this), QUERY_DELAY_MS);
       }
     }
