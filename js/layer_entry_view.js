@@ -691,11 +691,12 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
 
     this.sliderListeners_ = [
       // When the user moves the slider, forward a CHANGE_OPACITY event.
-      cm.events.listen(this.slider_, 'change', function() {
-        cm.events.emit(
-            goog.global, cm.events.CHANGE_OPACITY,
-            {id: this.model_.get('id'), opacity: this.slider_.getValue()});
-      }, this),
+      cm.events.listen(
+          this.slider_, goog.ui.Component.EventType.CHANGE, function() {
+            cm.events.emit(
+                goog.global, cm.events.CHANGE_OPACITY,
+                {id: this.model_.get('id'), opacity: this.slider_.getValue()});
+          }, this),
       // Keep the slider's value updated.
       cm.events.onChange(this.appState_, 'layer_opacities',
                          this.updateSliderValue_, this)
