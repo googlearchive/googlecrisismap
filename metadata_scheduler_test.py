@@ -33,16 +33,18 @@ class MetadataSchedulerTest(test_utils.BaseTest):
     test_utils.BecomeAdmin()
     # Should not be queued because the map is not world readable or published.
     m1 = model.Map.Create('{"layers": [{"type": "KML", '
-                          '"source": {"kml": {"url": "j.com/k.kml"}}}]}')
+                          '"source": {"kml": {"url": "j.com/k.kml"}}}]}',
+                          'xyz.com')
     m1.SetWorldReadable(False)
 
     # Should be queued because the layer is valid and the map is world-readable.
     m2 = model.Map.Create('{"layers": [{"type": "KML", '
-                          '"source": {"kml": {"url": "a.com/b.kml"}}}]}')
+                          '"source": {"kml": {"url": "a.com/b.kml"}}}]}',
+                          'xyz.com')
     m2.SetWorldReadable(True)
 
     # Should not be queued because the layer has no type.
-    m3 = model.Map.Create('{}')
+    m3 = model.Map.Create('{}', 'xyz.com')
     m3.SetWorldReadable(False)
     model.CatalogEntry.Create('google.com', 'label1', m3, is_listed=True)
 

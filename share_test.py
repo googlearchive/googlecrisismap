@@ -33,7 +33,8 @@ class ShareTest(test_utils.BaseTest):
     os.environ.pop('USER_EMAIL', None)
     os.environ.pop('USER_ID', None)
     test_utils.BecomeAdmin()
-    self.map = model.Map.Create('{}', owners=['owner@gmail.com'],
+    self.map = model.Map.Create('{}', 'xyz.com',
+                                owners=['owner@gmail.com'],
                                 editors=['editor@gmail.com'],
                                 viewers=['viewer@gmail.com'])
 

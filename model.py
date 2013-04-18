@@ -40,9 +40,14 @@ class Struct(object):
 # Access role constants.
 # Role is capitalized like an enum class.  # pylint: disable=g-bad-name
 Role = Struct(
+    # Global roles
     ADMIN='ADMIN',  # can view, edit, or change permissions for anything
+
+    # Domain-specific roles
     CATALOG_EDITOR='CATALOG_EDITOR',  # can edit the catalog for a domain
     MAP_CREATOR='MAP_CREATOR',  # can create new maps
+
+    # Map-specific roles
     MAP_OWNER='MAP_OWNER',  # can change permissions for a map
     MAP_EDITOR='MAP_EDITOR',  # can save new versions of a map
     MAP_VIEWER='MAP_VIEWER',  # can view current version of a map
@@ -297,11 +302,11 @@ class AccessPolicy(object):
                      self.HasGlobalRole(user, Role.CATALOG_EDITOR) or
                      self.HasRoleAdmin(user))
 
-  def HasRoleMapCreator(self, user):
+  def HasRoleMapCreator(self, user, domain):
     """Returns True if a user should get MAP_CREATOR access."""
     # Users get creator access if they have global map creator access or if
     # they have admin access.
-    return user and (self.HasGlobalRole(user, Role.MAP_CREATOR) or
+    return user and (self.HasGlobalRole(user, [Role.MAP_CREATOR, domain]) or
                      self.HasRoleAdmin(user))
 
   def HasRoleMapOwner(self, user, map_object):
@@ -365,24 +370,28 @@ def CheckAccess(role, target=None, user=None, policy=None):
   Raises:
     ValueError: The specified role is not a valid member of Role.
   """
+
+  def RequireTargetClass(required_cls, cls_desc):
+    if not isinstance(target, required_cls):
+      raise ValueError('For role %r, target must be a %s' % (role, cls_desc))
+
   policy = policy or AccessPolicy()
   user = user or users.get_current_user()
 
   # Roles that are unrelated to a target.
   if role == Role.ADMIN:
     return policy.HasRoleAdmin(user)
-  if role == Role.MAP_CREATOR:
-    return policy.HasRoleMapCreator(user)
 
   # Roles with a domain as the target.
   if role == Role.CATALOG_EDITOR:
-    if not isinstance(target, str):
-      raise ValueError('For role %r, target must be a string' % role)
+    RequireTargetClass(basestring, 'string')
     return policy.HasRoleCatalogEditor(user, target)
+  if role == Role.MAP_CREATOR:
+    RequireTargetClass(basestring, 'string')
+    return policy.HasRoleMapCreator(user, target)
 
   # Roles with a Map as the target
-  if not isinstance(target, Map):
-    raise ValueError('For role %r, target must be a Map' % role)
+  RequireTargetClass(Map, 'Map')
   if role == Role.MAP_OWNER:
     return policy.HasRoleMapOwner(user, target)
   if role == Role.MAP_EDITOR:
@@ -400,8 +409,8 @@ def AssertAccess(role, target=None, user=None, policy=None):
     role: A Role constant identifying the desired access role.
     target: The object to which access is desired.  If 'role' is MAP_OWNER,
         MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
-        CATALOG_EDITOR, this must be a domain name (a string).  For other
-        roles, this argument is not used.
+        CATALOG_EDITOR or MAP_CREATOR, this must be a domain name (a string).
+        For other roles, this argument is not used.
     user: (optional) A google.appengine.api.users.User object.  If not
         specified, access permissions are checked for the current user.
     policy: The access policy to apply.
@@ -806,27 +815,25 @@ class Map(object):
     return map_object
 
   @staticmethod
-  def Create(maproot_json, owners=None, editors=None, viewers=None,
-             domains=None, domain_role=None, world_readable=False):
+  def Create(maproot_json, domain, owners=None, editors=None, viewers=None,
+             domain_role=None, world_readable=False):
     """Stores a new map with the given properties and MapRoot JSON content."""
     # maproot_json must be syntactically valid JSON, but otherwise any JSON
     # object is allowed; we don't check for MapRoot validity here.
-    AssertAccess(Role.MAP_CREATOR)
+    AssertAccess(Role.MAP_CREATOR, domain)
     if owners is None:
       owners = [users.get_current_user().email()]
     if editors is None:
       editors = []
     if viewers is None:
       viewers = []
-    if domains is None:
-      domains = []
     # urlsafe_b64encode encodes 12 random bytes as exactly 16 characters,
     # which can include digits, letters, hyphens, and underscores.  Because
     # the length is a multiple of 4, it won't have trailing "=" signs.
     map_object = Map(MapModel(
         key_name=base64.urlsafe_b64encode(
             ''.join(chr(random.randrange(256)) for i in xrange(12))),
-        owners=owners, editors=editors, viewers=viewers, domains=domains,
+        owners=owners, editors=editors, viewers=viewers, domains=[domain],
         domain_role=domain_role, world_readable=world_readable))
     map_object.PutNewVersion(maproot_json)  # also puts the MapModel
     return map_object

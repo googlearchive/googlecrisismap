@@ -23,11 +23,13 @@ class CreateTest(test_utils.BaseTest):
   """Tests for create.py."""
 
   def testCreate(self):
-    # Grant MAP_CREATOR permission to google.com.
-    model.SetGlobalRoles('google.com', [model.Role.MAP_CREATOR])
+    # Grant google.com MAP_CREATOR permission for the test domain
+    model.SetGlobalRoles('google.com',
+                         [[model.Role.MAP_CREATOR, 'xyz.com']])
     # foo@google.com should be able to create a map.
     test_utils.SetUser('foo@google.com')
-    handler = test_utils.SetupHandler('/create', create.Create(), '')
+    handler = test_utils.SetupHandler(
+        '/create?domain=xyz.com', create.Create(), '')
     handler.post()
     # Confirm that a map was created.
     location = handler.response.headers['Location']
@@ -42,11 +44,13 @@ class CreateTest(test_utils.BaseTest):
     self.assertRaises(model.AuthorizationError, handler.post)
 
   def testDomainRole(self):
-    # Grant MAP_CREATOR permission to foo@xyz.com.
-    model.SetGlobalRoles('foo@xyz.com', [model.Role.MAP_CREATOR])
+    # Grant MAP_CREATOR permission to foo@xyz.com
+    user = 'foo@xyz.com'
+    model.SetGlobalRoles(user, [[model.Role.MAP_CREATOR, 'xyz.com']])
     # foo@xyz.com should be able to create a map.
-    test_utils.SetUser('foo@xyz.com')
-    handler = test_utils.SetupHandler('/create', create.Create(), '')
+    test_utils.SetUser(user)
+    handler = test_utils.SetupHandler(
+        '/create?domain=xyz.com', create.Create(), '')
     handler.post()
     location = handler.response.headers['Location']
     # Check the map; initial_domain_role is unset so domain_role should be None.
@@ -59,8 +63,9 @@ class CreateTest(test_utils.BaseTest):
     # Now set the initial_domain_role for xyz.com.
     model.Config.Set('initial_domain_role:xyz.com', model.Role.MAP_EDITOR)
     # Create another map.
-    test_utils.SetUser('foo@xyz.com')
-    handler = test_utils.SetupHandler('/create', create.Create(), '')
+    test_utils.SetUser(user)
+    handler = test_utils.SetupHandler(
+        '/create?domain=xyz.com', create.Create(), '')
     handler.post()
     location = handler.response.headers['Location']
     # Check the map; initial_domain_role is set so domain_role should be set.

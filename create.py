@@ -26,10 +26,12 @@ class Create(base_handler.BaseHandler):
   """Handler that creates a new map."""
 
   def post(self):  # pylint: disable=g-bad-name
-    domain = model.GetUserDomain(users.get_current_user())
+    domain = self.request.get('domain')
+    if not domain:
+      domain = model.GetUserDomain(users.get_current_user())
     domain_role = model.GetInitialDomainRole(domain)
     map_object = model.Map.Create(
-        '{"title": "Untitled map"}', domains=[domain], domain_role=domain_role)
+        '{"title": "Untitled map"}', domain, domain_role=domain_role)
     self.redirect('/crisismap/maps/%s' % map_object.id)
 
 

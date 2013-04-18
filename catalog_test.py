@@ -25,7 +25,7 @@ class CatalogTest(test_utils.BaseTest):
   def setUp(self):
     super(CatalogTest, self).setUp()
     test_utils.BecomeAdmin()
-    self.map_object = model.Map.Create('{"title": "test map"}')
+    self.map_object = model.Map.Create('{"title": "test map"}', 'xyz.com')
     self.map_id = self.map_object.id
 
   def testGet(self):

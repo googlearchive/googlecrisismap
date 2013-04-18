@@ -37,7 +37,7 @@ class DiffTest(test_utils.BaseTest):
 
     # Create a saved map and a catalog entry to diff against.
     test_utils.BecomeAdmin()
-    map_object = model.Map.Create(catalog_json)
+    map_object = model.Map.Create(catalog_json, 'xyz.com')
     model.CatalogEntry.Create('google.com', 'Published', map_object)
     map_object.PutNewVersion(saved_json)
 

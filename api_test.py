@@ -27,7 +27,8 @@ class ApiTest(test_utils.BaseTest):
   def setUp(self):
     super(ApiTest, self).setUp()
     test_utils.BecomeAdmin()
-    self.map = model.Map.Create('{}', owners=['owner@gmail.com'],
+    self.map = model.Map.Create('{}', 'xyz.com',
+                                owners=['owner@gmail.com'],
                                 editors=['editor@gmail.com'],
                                 viewers=['viewer@gmail.com'])
 
@@ -83,12 +84,12 @@ class ApiTest(test_utils.BaseTest):
 
     test_utils.BecomeAdmin()
     # Create and publish two maps
-    model.CatalogEntry.Create('google.com', 'Map1',
-                              model.Map.Create(json.dumps(map1)))
-    model.CatalogEntry.Create('google.com', 'Map2',
-                              model.Map.Create(json.dumps(map2)))
+    model.CatalogEntry.Create('google.com', 'Map1', model.Map.Create(
+        json.dumps(map1), 'xyz.com'))
+    model.CatalogEntry.Create('google.com', 'Map2', model.Map.Create(
+        json.dumps(map2), 'xyz.com'))
     # Create a draft; should not be returned by api.Maps
-    model.Map.Create(json.dumps(draft))
+    model.Map.Create(json.dumps(draft), 'xyz.com')
 
     test_utils.ClearUser()
     handler = test_utils.SetupHandler('/api/maps', api.PublishedMaps())

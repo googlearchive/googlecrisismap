@@ -47,7 +47,7 @@ class MetadataTest(test_utils.BaseTest):
     maproot1 = """{"layers": [{"type": "GEORSS",
                                "source": {"georss": {"url": "y.com/b.xml"}}}
                              ]}"""
-    mm1 = model.Map.Create(maproot1)
+    mm1 = model.Map.Create(maproot1, 'xyz.com')
     key1 = map.CacheLayerAddresses(mm1)
 
     address2 = 'x.com/a.kml'
@@ -57,7 +57,7 @@ class MetadataTest(test_utils.BaseTest):
     maproot2 = """{"layers": [{"type": "KML",
                                "source": {"kml": {"url": "x.com/a.kml"}}}
                              ]}"""
-    model.Map.Create(maproot2)
+    model.Map.Create(maproot2, 'xyz.com')
 
     # Token for the Map, valid address of a layer, invalid address of a layer.
     url = ('/metadata?token=' + key1 + '&layers=' + urllib2.quote(address2) +

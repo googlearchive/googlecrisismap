@@ -110,7 +110,7 @@ class MapTest(test_utils.BaseTest):
                              ]}"""
 
     test_utils.SetUser('creator@gmail.com', '1', is_admin=True)
-    mm = model.Map.Create(maproot1)
+    mm = model.Map.Create(maproot1, 'xyz.com')
     # The CatalogEntry object mc uses maproot1.
     mc = model.CatalogEntry.Create('foo.com', 'test_map', mm, is_listed=True)
     # The Map object mm is updated to maproot2.
