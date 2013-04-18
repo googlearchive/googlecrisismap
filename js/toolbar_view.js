@@ -21,6 +21,7 @@ goog.require('cm.ui');
 goog.require('goog.dom');
 goog.require('goog.format.JsonPrettyPrinter');
 goog.require('goog.json');
+goog.require('goog.net.XhrIo');
 goog.require('goog.string');
 
 /** @desc Label for a link that lets the user rearrange the layer

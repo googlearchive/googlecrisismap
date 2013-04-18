@@ -16,6 +16,7 @@ goog.provide('cm.ShareEmailView');
 
 goog.require('cm.events');
 goog.require('cm.ui');
+goog.require('goog.net.XhrIo');
 
 /** @desc Text for title of popup. */
 var MSG_SHARE_TITLE = goog.getMsg('Share Map With User');

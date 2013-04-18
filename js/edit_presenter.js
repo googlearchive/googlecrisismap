@@ -30,6 +30,7 @@ goog.require('cm.SetDefaultViewCommand');
 goog.require('cm.ShareEmailView');
 goog.require('cm.editors');
 goog.require('cm.events');
+goog.require('goog.net.XhrIo');
 
 /**
  * Presenter for editing functionality.

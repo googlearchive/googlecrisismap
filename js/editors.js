@@ -23,6 +23,7 @@ goog.require('cm.MenuEditor');
 goog.require('cm.NumberEditor');
 goog.require('cm.RadioEditor');
 goog.require('cm.TextEditor');
+goog.require('cm.WmsMenuEditor');
 goog.require('cm.ui');
 goog.require('goog.object');
 

@@ -20,6 +20,7 @@ goog.require('cm.Html');
 goog.require('cm.HtmlEditor');
 goog.require('cm.LayerModel');
 goog.require('cm.ui');
+goog.require('goog.net.XhrIo');
 goog.require('goog.ui.ColorPalette');
 goog.require('goog.ui.ColorPicker');
 goog.require('goog.ui.Palette');

@@ -79,7 +79,7 @@ cm.util.forLayerAndDescendants = function(layer, callback,
  */
 cm.util.forLayersInMap = function(map, callback, opt_expandFn, opt_obj) {
   map.get('layers') && map.get('layers').forEach(function(layer) {
-   cm.util.forLayerAndDescendants(layer, callback, opt_expandFn, opt_obj);
+    cm.util.forLayerAndDescendants(layer, callback, opt_expandFn, opt_obj);
   });
 };
 
