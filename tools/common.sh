@@ -39,12 +39,13 @@ fi
 # Find the App Engine SDK directory.
 for dir in \
     "$APPENGINE_DIR" \
-    /usr/lib/google_appengine \
+    $HOME/google_appengine \
     /usr/local/lib/google_appengine \
     /usr/local/google_appengine \
-    $HOME/google_appengine; do
+    /usr/lib/google_appengine; do
     if [ -d "$dir" ]; then
         export APPENGINE_DIR="$dir"
+        break
     fi
 done
 
