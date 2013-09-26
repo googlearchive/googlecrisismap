@@ -286,7 +286,7 @@ cm.events.listen = function(source, type, handler, opt_obj) {
 cm.events.unlisten = function(token, opt_obj) {
   var tokens = goog.isArray(token) ? token : [token];
   for (var i = 0; token = tokens[i]; i++) {
-    if (typeof tokens[i] === 'number') {
+    if (goog.isNumber(tokens[i]) || tokens[i] instanceof goog.events.Listener) {
       goog.events.unlistenByKey(tokens[i]);  // Closure listener key (a number)
     } else {
       google.maps.event.removeListener(tokens[i]);
