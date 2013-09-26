@@ -19,10 +19,9 @@ html, body {
 /* Standard Google input boxes, from the Kennedy spec.
    kd_compontents.css, go/kennedyspec. */
 /* MOE:end_strip */
-input[type=text] {
+.cm-frame input[type=text] {
   height: 29px;
   background-color: #FFF;
-  /* line-height: 27px; */
   padding-left: 8px;
   color: #333;
   border: 1px solid #d9d9d9;
@@ -33,14 +32,14 @@ input[type=text] {
   box-sizing: border-box;
   -webkit-border-radius: 1px;
 }
-input[type=text]:hover {
+.cm-frame input[type=text]:hover {
   border: 1px solid #b9b9b9;
   border-top: 1px solid #a0a0a0;
   -webkit-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
   -moz-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
   box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
 }
-input[type=text]:focus {
+.cm-frame input[type=text]:focus {
   -webkit-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
   -moz-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
   box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
