@@ -239,7 +239,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   var searchbox = new cm.SearchBox(mapView.getMap());
   if (!preview) {
     new cm.LayersButton(mapView.getMap(), panelElem);
-    if (!config['hide_share_button']) {
+    if (!config['hide_share_button'] && !config['enable_editing']) {
       new cm.ShareButton(mapView.getMap(), appState,
                          !config['hide_facebook_button'],
                          !config['hide_google_plus_button'],

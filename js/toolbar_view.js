@@ -32,8 +32,8 @@ goog.require('goog.string');
 /** @desc Link text to arrange the layers in the panel. */
 var MSG_ARRANGE_LAYERS_LINK = goog.getMsg('Arrange');
 
-/** @desc Link text to arrange the layers in the panel. */
-var MSG_SHARE_EMAIL_LINK = goog.getMsg('Share with user');
+/** @desc Link text to invite a user to collaborate on editing a map. */
+var MSG_COLLABORATE_LINK = goog.getMsg('Collaborate');
 
 /** @desc Link text to add a new layer to the map. */
 var MSG_ADD_NEW_LAYERS = goog.getMsg('Add layers');
@@ -79,15 +79,15 @@ var HELP_LINK_URL = 'https://docs.google.com/document/d/' +
  */
 cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
     touch, opt_diffUrl) {
-  var shareEmailLink = cm.ui.createLink(MSG_SHARE_EMAIL_LINK);
-  cm.events.forward(shareEmailLink, 'click',
+  var collaborateLink = cm.ui.createLink(MSG_COLLABORATE_LINK);
+  cm.events.forward(collaborateLink, 'click',
                     goog.global, cm.events.SHARE_EMAIL);
 
   // TODO(romano): move the toolbars into the inner panel element, which
   // contains the collapse button, map title, description, and layers.
   var toolbarElem = cm.ui.create('div', {'class': cm.css.TOOLBAR},
       cm.ui.createLink(MSG_BACK_TO_MAP_LIST, mapListUrl),
-      cm.ui.SEPARATOR_DOT, shareEmailLink);
+      cm.ui.SEPARATOR_DOT, collaborateLink);
 
   var helpLink = cm.ui.createLink(MSG_HELP_LINK, HELP_LINK_URL, '_blank');
   cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, helpLink);

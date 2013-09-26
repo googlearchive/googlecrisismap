@@ -20,10 +20,11 @@ goog.require('cm.ui');
 goog.require('goog.net.XhrIo');
 
 /** @desc Text for title of popup. */
-var MSG_SHARE_TITLE = goog.getMsg('Share Map With User');
+var MSG_INVITE_TITLE = goog.getMsg('Invite user to collaborate');
 
 /** @desc Text for alert when share handler returns a 404. */
-var MSG_EMAIL_ERROR = goog.getMsg('Sorry, we had a problem sharing the map.');
+var MSG_EMAIL_ERROR = goog.getMsg(
+    'Sorry, there was a problem inviting someone to collaborate on this map.');
 
 /** @desc Text for label of message box. */
 var MSG_MESSAGE = goog.getMsg('Message text');
@@ -43,18 +44,17 @@ var MSG_OWNER = goog.getMsg('owner');
 /** @desc Text for label of message box. */
 var MSG_PERMISSION = goog.getMsg('Permission type');
 
-/** @desc Label for Share button in a dialog with Share and Cancel buttons. */
-var MSG_SHARE = goog.getMsg('Share');
+/** @desc Label for the Invite button on a dialog with Invite and Cancel. */
+var MSG_INVITE = goog.getMsg('Invite');
 
-/** @desc Label for Cancel button in a dialog with Share and Cancel buttons. */
+/** @desc Label for the Cancel button on a dialog with Invite and Cancel. */
 var MSG_CANCEL_BTN = goog.getMsg('Cancel');
 
 /** Regex for verifying email addresses on a shallow level. */
 var EMAIL_PATTERN = '^(.+)@(.+)$';
 
 /**
- * A share and emailer. Call share() to show a dialog box to
- * share and email a user.
+ * Popup to invite a user to edit a map.
  * @constructor
  */
 cm.ShareEmailView = function() {
@@ -122,7 +122,7 @@ cm.ShareEmailView = function() {
    * @type Element
    * @private
    */
-  this.shareBtn_;
+  this.inviteBtn_;
 
   /**
    * @type Element
@@ -132,15 +132,15 @@ cm.ShareEmailView = function() {
 
   this.popup_ = cm.ui.create('div',
                              {'class': [cm.css.SHARE_EMAILER, cm.css.POPUP]},
-      this.titleElem_ = cm.ui.create('h2', {}, MSG_SHARE_TITLE),
+      this.titleElem_ = cm.ui.create('h2', {}, MSG_INVITE_TITLE),
       this.tableElem_ = cm.ui.create('table'),
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
-      this.shareBtn_ = cm.ui.create(
-          'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_SHARE),
+      this.inviteBtn_ = cm.ui.create(
+          'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_INVITE),
       this.cancelBtn_ = cm.ui.create(
           'button', {'class': cm.css.BUTTON}, MSG_CANCEL_BTN)));
 
-  cm.events.listen(this.shareBtn_, 'click', this.handleShare_, this);
+  cm.events.listen(this.inviteBtn_, 'click', this.handleShare_, this);
   cm.events.listen(this.cancelBtn_, 'click', this.handleCancel_, this);
 };
 

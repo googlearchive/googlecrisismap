@@ -206,7 +206,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'maps_engine_map_id', label: 'Map ID',
      type: cm.editors.Type.TEXT,
      conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)}},
-    {key: 'maps_engine_layer_key', label: 'Layer ID',
+    {key: 'maps_engine_layer_key', label: 'Layer key',
      type: cm.editors.Type.TEXT,
      conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)}},
     {key: 'wms_layers', label: 'Layers',

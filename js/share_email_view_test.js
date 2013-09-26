@@ -57,8 +57,8 @@ ShareEmailViewTest.prototype.openShareEmail_ = function() {
 ShareEmailViewTest.prototype.testShare = function() {
   this.openShareEmail_();
 
-  // Click the SHARE button.
-  var button = expectDescendantOf(this.popup_, 'button', withText('Share'));
+  // Click the 'Collaborate' button.
+  var button = expectDescendantOf(this.popup_, 'button', withText('Invite'));
   cm.events.emit(button, 'click');
 
   var emailInput = expectDescendantOf(this.popup_,
