@@ -203,18 +203,6 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
       catalog_entry and catalog_entry.domain or
       config.Get('primary_domain'), request.root_path)
 
-  # Construct the URL for the Maps JavaScript API.
-  api_url_params = {
-      'sensor': 'false',
-      'libraries': 'places,search,visualization,weather',
-      'client': GetMapsApiClientId(request.host),
-      'language': request.lang
-  }
-  ui_region = request.get('gl')
-  if ui_region:
-    api_url_params['region'] = ui_region
-  maps_api_url = MAPS_API_BASE_URL + '?' + urllib.urlencode(api_url_params)
-
   # Fill the cm_config dictionary.
   root = request.root_path
   result = {
@@ -226,7 +214,6 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
       'login_url': users.GetLoginUrl(request.url),
       'logout_url': users.GetLogoutUrl(request.url),
       'map_catalog': map_catalog,
-      'maps_api_url': maps_api_url,
       'user_email': users.GetCurrent() and users.GetCurrent().email,
       'wms_configure_url': root + '/.wms/configure',
       'wms_tiles_url': root + '/.wms/tiles'
@@ -241,10 +228,6 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
     maproot_json = json.loads(catalog_entry.maproot_json)
     result['map_root'] = maproot_json
     result['map_id'] = catalog_entry.map_id
-    result['ui_lang'] = base_handler.SelectLanguage(
-        request.get('hl'),
-        request.headers.get('accept-language'),
-        maproot_json.get('default_language'))
     result['label'] = catalog_entry.label
     result['publisher_name'] = catalog_entry.publisher_name
     key = catalog_entry.map_version_key
@@ -253,10 +236,6 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
     maproot_json = json.loads(map_object.GetCurrentJson())
     result['map_root'] = maproot_json
     result['map_id'] = map_object.id
-    result['ui_lang'] = base_handler.SelectLanguage(
-        request.get('hl'),
-        request.headers.get('accept-language'),
-        maproot_json.get('default_language'))
     result['map_list_url'] = root + '/.maps'
     result['diff_url'] = root + '/.diff/' + map_object.id + xsrf_qs
     result['save_url'] = root + '/.api/maps/' + map_object.id + xsrf_qs
@@ -267,11 +246,31 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
     result['enable_editing'] = map_object.CheckAccess(perms.Role.MAP_EDITOR)
     result['draft_mode'] = True
     key = map_object.current_version_key
+
+  # Parameters that depend on the MapRoot, for both published and draft maps.
+  ui_region = request.get('gl')
   if map_object or catalog_entry:
+    result['ui_lang'] = base_handler.SelectLanguage(
+        request.get('hl'),
+        request.headers.get('accept-language'),
+        maproot_json.get('default_language'))
+    ui_region = maproot_json.get('region', ui_region)
     cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
     result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
     result['metadata_url'] = root + '/.metadata?key=' + cache_key
     metadata.ActivateSources(sources)
+
+  # Construct the URL for the Maps JavaScript API.
+  api_url_params = {
+      'sensor': 'false',
+      'libraries': 'places,search,visualization,weather',
+      'client': GetMapsApiClientId(request.host),
+      'language': request.lang
+  }
+  if ui_region:
+    api_url_params['region'] = ui_region
+  result['maps_api_url'] = (MAPS_API_BASE_URL + '?' +
+                            urllib.urlencode(api_url_params))
 
   if dev_mode:
     # In developer mode only, allow an arbitrary URL for MapRoot JSON.

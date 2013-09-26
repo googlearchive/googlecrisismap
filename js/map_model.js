@@ -77,10 +77,11 @@ cm.MapModel.MAPROOT_TO_MODEL_MAP_TYPES = {
 cm.MapModel.newFromMapRoot = function(maproot) {
   var model = new cm.MapModel();
   model.set('id', maproot['id'] || '');
-  model.set('languages', maproot['languages'] || []);
   model.set('title', maproot['title'] || '');
   model.set('description', new cm.Html(maproot['description'] || ''));
   model.set('footer', new cm.Html(maproot['footer'] || ''));
+  model.set('languages', maproot['languages'] || []);
+  model.set('region', maproot['region'] || '');
   model.set('viewport', cm.LatLonBox.fromMapRoot(
       (maproot['viewport'] || {})['lat_lon_alt_box']));
   model.set('full_extent', cm.LatLonBox.fromMapRoot(
@@ -245,10 +246,11 @@ cm.MapModel.prototype.toMapRoot = function() {
   var fullExtent = box ? {'lat_lon_alt_box': box.round(4).toMapRoot()} : null;
   return /** @type Object */(cm.util.removeNulls({
     'id': this.get('id'),
-    'languages': languages && languages.length ? languages : null,
     'title': this.get('title') || null,
     'description': this.get('description').getUnsanitizedHtml() || null,
     'footer': this.get('footer').getUnsanitizedHtml() || null,
+    'languages': languages && languages.length ? languages : null,
+    'region': this.get('region') || null,
     'viewport': viewport,
     'full_extent': fullExtent,
     'base_map_style': baseMapStyle ?

@@ -17,6 +17,7 @@ var DRACULA_MAPROOT = {
   title: 'Dracula invades Pittsburgh!',
   description: '<i>Deadly vampire</i> on the loose',
   footer: 'Brought to you by B. Stoker',
+  region: 'xz',
   base_map_style: {
     name: 'chic',
     definition: '[{"featureType": "all", "stylers": [{"saturation": 10}]}]'

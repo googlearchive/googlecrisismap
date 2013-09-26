@@ -139,6 +139,21 @@ class MapTest(test_utils.BaseTest):
     self.assertTrue('language=th' in cm_config['maps_api_url'])
     self.assertTrue('region=IN' in cm_config['maps_api_url'])
 
+  def testMapRegion(self):
+    """Verifies that the 'region' property affects the Maps API URL."""
+    with test_utils.RootLogin():
+      domains.Domain.Create('foo.com')
+      m = model.Map.Create('{"title": "no region"}', 'foo.com')
+
+      cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m.id), m)
+      self.assertTrue('&region=' not in cm_config['maps_api_url'])
+
+      domains.Domain.Create('foo.in')
+      m = model.Map.Create('{"title": "has region", "region": "in"}', 'foo.in')
+
+      cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m.id), m)
+      self.assertTrue('&region=in' in cm_config['maps_api_url'])
+
 
 class MapListTest(test_utils.BaseTest):
   """Tests for the map listing pages served by maps.py."""
