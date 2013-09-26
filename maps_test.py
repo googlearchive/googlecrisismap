@@ -53,6 +53,7 @@ class MapTest(test_utils.BaseTest):
                        'hide_facebook_button': False,
                        'hide_twitter_button': False,
                        'analytics_id': analytics_id,
+                       'custom_head_html': '',
                        'panel_side': 'right',
                        'panel_float': False,
                        'enable_editing': True,

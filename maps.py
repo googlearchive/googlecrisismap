@@ -62,6 +62,9 @@ class ClientConfig(db.Model):
   # If unspecified, the default Crisis Map Analytics ID is assigned downstream.
   analytics_id = db.StringProperty(default='')
 
+  # HTML to be inserted into head.
+  custom_head_html = db.StringProperty(default='')
+
   # Whether or not to activate the editing UI
   enable_editing = db.BooleanProperty(default=False)
 
@@ -306,6 +309,7 @@ class MapByLabel(base_handler.BaseHandler):
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
+        'head_html': cm_config.get('custom_head_html', ''),
         'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
         'ui_lang': cm_config['ui_lang'],
         'maps_api_url': cm_config['maps_api_url'],
@@ -341,6 +345,7 @@ class MapById(base_handler.BaseHandler):
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
+        'head_html': cm_config.get('custom_head_html', ''),
         'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
         'ui_lang': cm_config['ui_lang'],
         'maps_api_url': cm_config['maps_api_url'],

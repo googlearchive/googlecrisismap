@@ -18,6 +18,8 @@ specific language governing permissions and limitations under the License.
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta itemprop="image" content="{{root}}/.static/favicon.ico">
   <meta name="viewport" content="maximum-scale=1.0,initial-scale=1.0,user-scalable=no">
+  {# Custom head HTML #}
+  {{ head_html|safe }}
   <link rel="stylesheet" href="{{root}}/.static/mapviewer.css">
   <script type="text/javascript" src="{{maps_api_url}}"></script>
   <script type="text/javascript" src="{{root}}/.js/crisismap_main__{{ui_lang|urlencode}}.js"></script>
