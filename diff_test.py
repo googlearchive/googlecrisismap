@@ -35,10 +35,10 @@ class DiffTest(test_utils.BaseTest):
     catalog_json = json.dumps({'x': 'y', 'c': 'd'})
 
     # Create a saved map and a catalog entry to diff against.
-    test_utils.BecomeAdmin()
-    map_object = model.Map.Create(catalog_json, 'xyz.com')
-    model.CatalogEntry.Create('google.com', 'Published', map_object)
-    map_object.PutNewVersion(saved_json)
+    with test_utils.RootLogin():
+      map_object = model.Map.Create(catalog_json, 'xyz.com', owners=['owner'])
+      model.CatalogEntry.Create('xyz.com', 'Published', map_object)
+      map_object.PutNewVersion(saved_json)
 
     # Exercise the diff endpoint.
     saved_diff = 'saved diff'
@@ -52,11 +52,12 @@ class DiffTest(test_utils.BaseTest):
                         context=mox.IgnoreArg()).AndReturn(saved_diff)
     html_diff.make_file('{\n  "c": "d", \n  "x": "y"\n}'.splitlines(),
                         '{\n  "a": "b", \n  "x": "y"\n}'.splitlines(),
-                        fromdesc='google.com/Published', todesc='Current',
+                        fromdesc='xyz.com/Published', todesc='Current',
                         context=mox.IgnoreArg()).AndReturn(catalog_diff)
 
     self.mox.ReplayAll()
-    self.DoPost('/.diff/' + map_object.id, 'new_json=' + new_json)
+    with test_utils.Login('owner'):
+      self.DoPost('/.diff/' + map_object.id, 'new_json=' + new_json)
 
 
 if __name__ == '__main__':

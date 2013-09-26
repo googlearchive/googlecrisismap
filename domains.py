@@ -70,6 +70,7 @@ class Domain(object):
   @staticmethod
   def Create(domain_name, has_sticky_catalog_entries=False,
              default_label='empty', initial_domain_role=perms.Role.MAP_VIEWER):
+    """Creates and stores a Domain object, overwriting any existing one."""
     domain_name = Domain.NormalizeDomainName(domain_name)
     if not initial_domain_role:
       initial_domain_role = NO_ROLE
@@ -78,11 +79,13 @@ class Domain(object):
         has_sticky_catalog_entries=has_sticky_catalog_entries,
         initial_domain_role=initial_domain_role)
     domain_model.put()
-    return Domain(domain_model)
+    domain = Domain(domain_model)
+    domain._Cache()  # pylint: disable=protected-access
+    return domain
 
   @staticmethod
   def Get(domain_name):
-    """Get the domain given its name."""
+    """Gets the domain given its name."""
     domain_name = domain_name or config.Get('default_domain')
     domain_name = Domain.NormalizeDomainName(domain_name)
     cached = cache.Get(['Domain', domain_name])
@@ -104,55 +107,3 @@ class Domain(object):
         initial_domain_role=self.initial_domain_role or NO_ROLE)
     domain_model.put()
     self._Cache()
-
-# TODO(rew): Delete this once the initial domains have been created
-
-# Ensure this import goes away with the migration code
-import model   # pylint: disable=g-import-not-at-top, g-bad-import-order
-
-
-def SeedDomains(do_it=False):
-  perms.AssertAccess(perms.Role.ADMIN)
-  if do_it and not config.Get('default_domain'):
-    config.Set('default_domain', 'google.com')
-  for name in CollectDomains():
-    print 'Creating domain %s' % name
-    has_sticky_catalog_entries = name == 'gmail.com'
-    default_label = (config.Get('default_label')
-                     if name == 'google.com' else 'empty')
-    if do_it:
-      Domain.Create(name, has_sticky_catalog_entries=has_sticky_catalog_entries,
-                    default_label=default_label)
-    else:
-      print ('... would be created with has_sticky_catalog_entries=%s,'
-             ' default_label=%s' % (has_sticky_catalog_entries, default_label))
-
-
-def CollectDomains():
-  all_domains = set()
-  if config.Get('default_domain'):
-    all_domains.add(config.Get('default_domain'))
-  all_domains.update(DomainsFromPerms())
-  all_domains.update(DomainsFromMaps())
-  all_domains.update(DomainsFromCatalogEntries())
-  # pylint: disable=protected-access
-  return set(Domain.NormalizeDomainName(d) for d in all_domains)
-  # pylint: enable=protected-access
-
-
-def DomainsFromPerms():
-  domain_perms = (perms.Role.CATALOG_EDITOR, perms.Role.DOMAIN_ADMIN,
-                  perms.Role.MAP_CREATOR)
-  return [p.target for p in perms.Query(None, None, None)
-          if p.role in domain_perms]
-
-
-def DomainsFromMaps():
-  result = set()
-  for m in model.Map.GetAll():
-    result.update(m.domains)
-  return result
-
-
-def DomainsFromCatalogEntries():
-  return [entry.domain for entry in model.CatalogEntry.GetAll()]

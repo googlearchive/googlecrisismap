@@ -39,7 +39,7 @@ specific language governing permissions and limitations under the License.
           </a>
         </td>
         <td>{{e.title}}</td>
-        <td>{{e.last_updated|timesince}} ago by {{e.last_updater}}</td>
+        <td>{{e.updated|timesince}} ago by {{e.updater.email}}</td>
       </tr>
       {% endfor %}
     </table>

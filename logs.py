@@ -13,6 +13,7 @@
 
 import datetime
 import logging
+import users
 import utils
 
 from google.appengine.ext import db
@@ -50,7 +51,7 @@ def RecordEvent(event, domain_name=None, map_id=None, map_version_key=None,
   """Stores an event log entry."""
   try:
     EventLog(time=datetime.datetime.utcnow(),
-             user_id=user_id or utils.GetCurrentUserId(),
+             user_id=user_id or users.GetCurrent().id,
              event=event,
              domain_name=domain_name,
              map_id=map_id,

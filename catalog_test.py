@@ -15,6 +15,7 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import model
+import perms
 import test_utils
 
 
@@ -23,27 +24,31 @@ class CatalogTest(test_utils.BaseTest):
 
   def setUp(self):
     super(CatalogTest, self).setUp()
-    test_utils.BecomeAdmin()
-    self.map_object = model.Map.Create('{"title": "test map"}', 'xyz.com')
+    self.map_object = test_utils.CreateMap('{"title": "test map"}')
     self.map_id = self.map_object.id
+    perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
 
   def testGet(self):
     """Tests the Catalog GET handler."""
-    model.CatalogEntry.Create('foo.com', 'label', self.map_object)
-    response = self.DoGet('/foo.com/.catalog')
-    self.assertTrue('test map' in response.body, response.body)
-    self.assertTrue('/root/foo.com/label' in response.body, response.body)
+    with test_utils.RootLogin():
+      model.CatalogEntry.Create('xyz.com', 'label', self.map_object)
+    with test_utils.Login('publisher'):
+      response = self.DoGet('/xyz.com/.catalog')
+      self.assertTrue('test map' in response.body, response.body)
+      self.assertTrue('/root/xyz.com/label' in response.body, response.body)
 
   def testPost(self):
     """Tests the Catalog POST handler."""
-    model.CatalogEntry.Create('foo.com', 'label1', self.map_object)
-    model.CatalogEntry.Create('foo.com', 'label2', self.map_object)
+    with test_utils.RootLogin():
+      model.CatalogEntry.Create('xyz.com', 'label1', self.map_object)
+      model.CatalogEntry.Create('xyz.com', 'label2', self.map_object)
     # Catalog entries are not listed in the Map Picker by default.
-    self.assertFalse(model.CatalogEntry.Get('foo.com', 'label1').is_listed)
-    self.assertFalse(model.CatalogEntry.Get('foo.com', 'label2').is_listed)
-    self.DoPost('/foo.com/.catalog', 'label1=True')
-    self.assertTrue(model.CatalogEntry.Get('foo.com', 'label1').is_listed)
-    self.assertFalse(model.CatalogEntry.Get('foo.com', 'label2').is_listed)
+    self.assertFalse(model.CatalogEntry.Get('xyz.com', 'label1').is_listed)
+    self.assertFalse(model.CatalogEntry.Get('xyz.com', 'label2').is_listed)
+    with test_utils.Login('publisher'):
+      self.DoPost('/xyz.com/.catalog', 'label1=True')
+      self.assertTrue(model.CatalogEntry.Get('xyz.com', 'label1').is_listed)
+      self.assertFalse(model.CatalogEntry.Get('xyz.com', 'label2').is_listed)
 
 if __name__ == '__main__':
   test_utils.main()

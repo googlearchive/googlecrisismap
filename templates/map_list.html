@@ -30,8 +30,8 @@ specific language governing permissions and limitations under the License.
       <tr>
         <td><a href=".maps/{{m.id}}" title="{{m.description}}"
             >{{m.title}}</a></td>
-        <td>{{m.created|timesince}} ago by {{m.creator}}</td>
-        <td>{{m.last_updated|timesince}} ago by {{m.last_updater}}</td>
+        <td>{{m.created|timesince}} ago by {{m.creator.email}}</td>
+        <td>{{m.updated|timesince}} ago by {{m.updater.email}}</td>
         <td>
           <form action=".delete" method="post">
             <input name="map" type=hidden value="{{m.id}}">
@@ -46,7 +46,7 @@ specific language governing permissions and limitations under the License.
                 {{e.domain}}/{{e.label}}
               </a>
               <span class="cm-publish-age">
-                {{e.last_updated|timesince}} ago
+                {{e.updated|timesince}} ago
                 {% ifequal e.map_version_key m.current_version_key %}
                   (up to date)
                 {% else %}
@@ -87,7 +87,7 @@ specific language governing permissions and limitations under the License.
       </tr>
     {% endfor %}
   </table>
-  {% if not profile.welcome_message_dismissed %}
+  {% if not user.welcome_message_dismissed %}
     {% include "welcome.html" %}
   {% endif %}
 {% endblock content %}

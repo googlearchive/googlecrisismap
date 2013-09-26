@@ -31,14 +31,14 @@ specific language governing permissions and limitations under the License.
             {% endif %}
             {% for label in labels %}
               <option value="{{label}}"
-                      {% if label == domain.default_label %}selected{% endif %}>
+                  {% if label == domain.default_label %}selected{% endif %}>
                 {{label}}
               </option>
             {% endfor %}
             {% if 'empty' not in labels %}
               <option disabled>
               <option value="empty"
-                      {% if domain.default_label == 'empty' %}selected {% endif %}>
+                  {% if domain.default_label == 'empty' %}selected{% endif %}>
                 &lt;None&gt;
               </option>
             {% endif %}
@@ -49,7 +49,7 @@ specific language governing permissions and limitations under the License.
         <span class="cm-perms-setting-label">Publisher owns their labels:</span>
         <span class="cm-perms-setting-value">
           <input type="checkbox" name="has_sticky_catalog_entries"
-                 {{ domain.has_sticky_catalog_entries|yesno:"checked" }}>
+              {{domain.has_sticky_catalog_entries|yesno:"checked"}}>
         </span>
       </li>
       <li>
@@ -60,7 +60,7 @@ specific language governing permissions and limitations under the License.
           <select name="initial_domain_role">
             {% for choice in initial_domain_role_choices %}
               <option value={{choice.0}}
-                      {% if domain.initial_domain_role == choice.0 %}selected {% endif %}>
+                  {% if domain.initial_domain_role == choice.0 %}selected{% endif %}>
                 {{choice.1}}
               </option>
             {% endfor %}
@@ -83,13 +83,13 @@ specific language governing permissions and limitations under the License.
           <th scope="col">{{choice.1}}</th>
         {% endfor %}
       </tr>
-      {% for user in users %}
+      {% for user_role in user_roles %}
         <tr>
-          <td class="cm-perms-subject">{{user.0}}</td>
+          <td class="cm-perms-subject">{{user_role.0.email}}</td>
           {% for choice in user_permission_choices %}
             <td>
-              <input type="checkbox" name="{{user.0}}.{{choice.0}}"
-                     {% if choice.0 in user.1 %}checked{% endif %}>
+              <input type="checkbox" name="{{user_role.0.id}}.{{choice.0}}"
+                  {% if choice.0 in user_role.1 %}checked{% endif %}>
             </td>
           {% endfor %}
         </tr>
@@ -123,21 +123,22 @@ specific language governing permissions and limitations under the License.
   <h2>Domain administration</h2>
   <div class="cm-section">
     <div class="cm-p">
-      Google Crisis Map organizes maps under <b>domains</b> that identify the
-      organization publishing them.  Your domain is {{domain.name}}.  From here,
-      you can set various defaults for your domain, add new users, and manage
-      the permissions those users have.
+      Google Crisis Map organizes maps under domains that identify the
+      organization publishing them.  Your domain is <b>{{domain.name}}</b>.
+      From here, you can set various defaults for your domain,
+      add new users, and manage the permissions those users have.
     </div>
     <div class="cm-p">
-      <b>You are now the administrator of {{domain.name}} administrator</b>,
+      <b>You are now the administrator for {{domain.name}}</b>,
       which gives you access to this page.  You can add other
       administrators, but a domain should always have at least one
       administrator.
     </div>
-    <div class="cm-button-area">
-      <input type="submit" class="cm-submit cm-button" value="OK"
-             onclick="hide($('domain-welcome-popup'))">
-    </div>
+  </div>
+  <div class="cm-button-area">
+    <input type="submit" class="cm-submit cm-button" value="OK"
+           onclick="hide($('domain-welcome-popup'))">
+  </div>
   </form>
 </div>
 <script type="text/javascript" src="{{root}}/.static/popups.js"></script>

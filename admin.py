@@ -14,12 +14,11 @@
 
 __author__ = 'rew@google.com (Becky Willrich)'
 
-import re
-
 import base_handler
 import domains
 import model
 import perms
+import users
 import utils
 
 
@@ -37,20 +36,22 @@ USER_PERMISSION_CHOICES = (
 )
 
 
-def ValidateEmail(email):
-  """Verify that the given string could plausibly be an e-mail address."""
-  match = re.match(r'^[\w.-]+@([\w.-]+)$', email)
-  return match and ValidateDomain(match.group(1))
+def SetRolesForDomain(subject_roles, domain_name):
+  """Gives each user exactly the specified set of roles to the given domain.
 
-
-def ValidateDomain(domain):
-  """Verify that the given string could plausibly be a domain name."""
-  return re.match(r'^([\w-]+\.)+[\w-]+$', domain)
-
-
-def ValidateNewUser(name):
-  return ('@' in name and ValidateEmail(name)
-          or ValidateDomain(name))
+  Args:
+    subject_roles: A dictionary mapping subjects (user IDs or domain names)
+        to sets of perms.Role constants.  For each subject, all roles in the
+        set will be granted, and all roles not in the set will be revoked.
+    domain_name: A domain name.
+  """
+  old_subject_roles = perms.GetSubjectsForTarget(domain_name)
+  for subject, new_roles in subject_roles.items():
+    old_roles = old_subject_roles.get(subject, set())
+    for role in old_roles - new_roles:
+      perms.Revoke(subject, role, domain_name)
+    for role in new_roles - old_roles:
+      perms.Grant(subject, role, domain_name)
 
 
 class Admin(base_handler.BaseHandler):
@@ -66,7 +67,7 @@ class Admin(base_handler.BaseHandler):
     else:
       self.GetGeneralAdmin()
 
-  # "user" is currently unused, but we must have a user (tacetly used in
+  # "user" is currently unused, but we must have a user (tacitly used in
   # AssertAccess) and we cannot rename the arg.
   def GetDomainAdmin(self, user, domain):  # pylint:disable=unused-argument
     """Displays the administration page for the given domain."""
@@ -74,20 +75,18 @@ class Admin(base_handler.BaseHandler):
     perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain_name)
     domain = domains.Domain.Get(domain_name)
     if not domain:
-      raise base_handler.Error(404, 'Unknown domain <%s>.' % domain_name)
-    all_users = perms.GetSubjectsInDomain(domain_name)
-    domain_list = sorted(((u, all_users[u]) for u in all_users if '@' not in u),
-                         cmp=lambda x, y: cmp(x[0], y[0]))
-    emails = sorted(((u, all_users[u]) for u in all_users if '@' in u),
-                    cmp=lambda x, y: cmp(x[0], y[0]))
-    labels = sorted(l.label for l in model.CatalogEntry.GetAll(domain_name))
-    context = {
-        'domain': domain, 'users': emails, 'domains': domain_list,
-        'labels': labels, 'user_permission_choices': USER_PERMISSION_CHOICES,
-        'initial_domain_role_choices': INITIAL_DOMAIN_ROLE_CHOICES}
-    if self.request.get('welcome'):
-      context['show_welcome'] = True
-    self.response.out.write(self.RenderTemplate('admin_domain.html', context))
+      raise base_handler.Error(404, 'Unknown domain %r.' % domain_name)
+    subject_roles = perms.GetSubjectsForTarget(domain_name).items()
+    user_roles = [(users.Get(s), r)
+                  for (s, r) in subject_roles if perms.IsUserId(s)]
+    user_roles.sort(key=lambda (u, r): u.email)
+    labels = sorted(e.label for e in model.CatalogEntry.GetAll(domain_name))
+    self.response.out.write(self.RenderTemplate('admin_domain.html', {
+        'domain': domain, 'user_roles': user_roles, 'labels': labels,
+        'user_permission_choices': USER_PERMISSION_CHOICES,
+        'initial_domain_role_choices': INITIAL_DOMAIN_ROLE_CHOICES,
+        'show_welcome': self.request.get('welcome', '')
+    }))
 
   def GetGeneralAdmin(self):
     """Renders the general admin page."""
@@ -95,14 +94,14 @@ class Admin(base_handler.BaseHandler):
     self.response.out.write(self.RenderTemplate('admin.html', {}))
     # TODO(kpy): Also show a list of existing domains on this page?
 
-  def Post(self, domain, user):
+  def Post(self, user, domain):
     """Landing for posts from the domain administration page."""
     which = self.request.POST.pop('form')
     target = self.request.path
     if which != 'create-domain':
       perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain, user)
       if not domains.Domain.Get(domain):
-        raise base_handler.Error(404, 'Unknown domain <%s>.' % domain)
+        raise base_handler.Error(404, 'Unknown domain %r.' % domain)
     if which == 'domain-settings':
       self.UpdateDomainSettings(self.request.POST, domain)
     elif which == 'create-domain':
@@ -110,8 +109,8 @@ class Admin(base_handler.BaseHandler):
       target += '?welcome=1'
     elif which == 'add-user':
       self.AddUser(self.request.POST, domain)
-    else:   # User or domain permissions
-      self.UpdatePermissions(self.request.POST, domain)
+    else:  # user or domain permissions
+      SetRolesForDomain(self.FindNewPerms(self.request.POST, domain), domain)
     self.redirect(target)
 
   def UpdateDomainSettings(self, inputs, domain_name):
@@ -123,21 +122,14 @@ class Admin(base_handler.BaseHandler):
     domain.Put()
 
   def AddUser(self, inputs, domain):
-    new_user = inputs.get('new_email')
-    if not new_user:
-      raise base_handler.Error(400, 'No user supplied')
-    if not ValidateNewUser(new_user):
-      raise base_handler.Error(
-          400, 'Could not interpret %s as either an e-mail address '
-          'or a domain name' % new_user)
+    """Grants domain roles to a new user."""
+    new_email = inputs.get('new_email').strip()
+    if not utils.IsValidEmail(new_email):
+      raise base_handler.Error(400, 'Invalid e-mail address: %r.' % new_email)
+    user = users.GetForEmail(new_email)
     for role, _ in USER_PERMISSION_CHOICES:
       if inputs.get('new_email.%s' % role):
-        perms.Grant(new_user, role, domain)
-
-  def UpdatePermissions(self, inputs, domain):
-    new_perms = self.FindNewPerms(inputs, domain)
-    for user_or_domain, new_roles in new_perms.iteritems():
-      perms.SetDomainRoles(user_or_domain, domain, new_roles)
+        perms.Grant(user.id, role, domain)
 
   def FindNewPerms(self, inputs, domain):
     """Looks at inputs and determines the new permissions for all users.
@@ -147,30 +139,28 @@ class Admin(base_handler.BaseHandler):
       domain: the name of the domain whose permissions are being computed
 
     Returns:
-      A dictionary keyed by user/domain.  Values are lists of the roles
-      which the key should have.
+      A dictionary keyed by user/domain.  Values are sets of the roles
+      that the key should have.
     """
-    curr_users = perms.GetSubjectsInDomain(domain).keys()
-    new_perms = dict((user, []) for user in curr_users)
+    subjects = perms.GetSubjectsForTarget(domain)
+    new_perms = dict((s, set()) for s in subjects if perms.IsUserId(s))
     for key in inputs:
-      user, role = key.rsplit('.', 1)
-      new_perms.setdefault(user, []).append(role)
+      uid, role = key.rsplit('.', 1)
+      new_perms.setdefault(uid, set()).add(role)
     return new_perms
 
   def CreateDomain(self, domain_name, user):
-    email = utils.NormalizeEmail(user.email())
-
     def GrantPerms():
-      perms.Grant(email, perms.Role.DOMAIN_ADMIN, domain_name)
-      perms.Grant(email, perms.Role.CATALOG_EDITOR, domain_name)
-      perms.Grant(email, perms.Role.MAP_CREATOR, domain_name)
+      perms.Grant(user.id, perms.Role.DOMAIN_ADMIN, domain_name)
+      perms.Grant(user.id, perms.Role.CATALOG_EDITOR, domain_name)
+      perms.Grant(user.id, perms.Role.MAP_CREATOR, domain_name)
 
     def TestPerms():
       return perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name, user)
 
     domain = domains.Domain.Get(domain_name)
     if domain:
-      raise base_handler.Error(404, 'Domain %s already exists' % domain_name)
+      raise base_handler.Error(403, 'Domain %r already exists.' % domain_name)
     utils.SetAndTest(GrantPerms, TestPerms)
     domains.Domain.Create(domain_name)
 

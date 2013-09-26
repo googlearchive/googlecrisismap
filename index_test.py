@@ -42,16 +42,17 @@ class IndexTest(test_utils.BaseTest):
     self.assertEquals('http://app.com/root/empty?layers=x',
                       self.DoGet('/?layers=x', status=302).headers['Location'])
 
-    test_utils.BecomeAdmin()
-    domain = domains.Domain.Get(None)
-    domain.default_label = 'qwerty'
-    domain.Put()
+    with test_utils.RootLogin():
+      domain = domains.Domain.Get(None)
+      domain.default_label = 'qwerty'
+      domain.Put()
     self.assertEquals('http://app.com/root/qwerty?layers=x',
                       self.DoGet('/?layers=x', status=302).headers['Location'])
 
-    domain = domains.Domain.Create('foo.org')
-    domain.default_label = 'fancy-label'
-    domain.Put()
+    with test_utils.RootLogin():
+      domain = domains.Domain.Create('foo.org')
+      domain.default_label = 'fancy-label'
+      domain.Put()
     response = self.DoGet('/foo.org/?layers=x', status=302)
     self.assertEquals('http://app.com/root/foo.org/fancy-label?layers=x',
                       response.headers['Location'])

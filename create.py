@@ -17,7 +17,7 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 import base_handler
 import logs
 import model
-import profiles
+import users
 
 
 class Create(base_handler.BaseHandler):
@@ -34,6 +34,5 @@ class Create(base_handler.BaseHandler):
         acceptable_purpose=bool(self.request.get('acceptable_purpose')),
         acceptable_org=acceptable_org,
         org_name=acceptable_org and self.request.get('organization') or '')
-    profiles.Profile.SetMarketingConsent(
-        user, bool(self.request.get('marketing_consent')))
+    users.SetMarketingConsent(user.id, self.request.get('marketing_consent'))
     self.redirect('.maps/%s' % map_object.id)

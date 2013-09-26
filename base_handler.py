@@ -23,6 +23,7 @@ import webapp2
 import config
 import domains
 import perms
+import users
 import utils
 # pylint: disable=g-import-not-at-top
 try:
@@ -30,7 +31,6 @@ try:
 except ImportError:
   languages = utils.Struct(ALL_LANGUAGES=['en'])
 
-from google.appengine.api import users
 from google.appengine.ext.webapp import template
 
 # A mapping from deprecated ISO language codes to valid ones.
@@ -134,9 +134,9 @@ class BaseHandler(webapp2.RequestHandler):
       if 'domain' in kwargs and 'domain' not in args:
         raise Error(404, 'Not found.')
       if 'user' in args:
-        kwargs['user'] = users.get_current_user()
+        kwargs['user'] = users.GetCurrent()
       if 'user' in required_args and not kwargs['user']:
-        return self.redirect(users.create_login_url(self.request.url))
+        return self.redirect(users.GetLoginUrl(self.request.url))
 
       # Fill in some useful request variables.
       self.request.lang = ActivateLanguage(
@@ -150,7 +150,7 @@ class BaseHandler(webapp2.RequestHandler):
       self.response.set_status(403, message=exception.message)
       self.response.out.write(self.RenderTemplate('unauthorized.html', {
           'exception': exception,
-          'login_url': users.create_login_url(self.request.url)
+          'login_url': users.GetLoginUrl(self.request.url)
       }))
     except perms.NotPublishableError as exception:
       self.response.set_status(403, message=exception.message)
@@ -171,14 +171,24 @@ class BaseHandler(webapp2.RequestHandler):
 
     Args:
       template_name: A string, the filename of the template to render.
-      context: An optional dictionary of template variables.  The {{root}}
-          variable will be automatically set to the root_path of the app.
+      context: An optional dictionary of template variables.  A few variables
+          are automatically added to this context:
+            - {{root}} is the root_path of the app
+            - {{user}} is the signed-in user
+            - {{email_username}} is the part of the user's address before '@'
+            - {{login_url}} is a URL to a sign-in page
+            - {{logout_url}} is a URL that signs the user out
+            - {{navbar}} contains variables used by the navigation sidebar
     Returns:
       A string, the rendered template.
     """
     path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
-    context = dict(context, root=config.Get('root_path') or '')
-    context['navbar'] = self._GetNavbarContext()
+    user = users.GetCurrent()
+    context = dict(context, root=config.Get('root_path') or '',
+                   user=user, email_username=user and user.email.split('@')[0],
+                   login_url=users.GetLoginUrl(self.request.url),
+                   logout_url=users.GetLogoutUrl(self.request.url),
+                   navbar=self._GetNavbarContext(user))
     return template.render(path, context)
 
   def WriteJson(self, data):
@@ -192,16 +202,13 @@ class BaseHandler(webapp2.RequestHandler):
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(output)
 
-  def _GetNavbarContext(self):
-    email = utils.GetCurrentUserEmail()
-    domain_name = utils.GetCurrentUserDomain()
-    return {
-        'user': email,
-        'user_domain': domain_name,
-        'admin_domains': perms.GetDomains(email, perms.Role.DOMAIN_ADMIN),
-        'catalog_domains': perms.GetDomains(email, perms.Role.CATALOG_EDITOR),
-        'creator_domains': perms.GetDomainsWithRole(perms.Role.MAP_CREATOR),
-        'add_domain_create_link': domains.Domain.Get(domain_name) is None,
-        'is_admin': perms.CheckAccess(perms.Role.ADMIN, perms.GLOBAL_TARGET),
-        'logout_url': users.create_logout_url(self.request.url)
-    }
+  def _GetNavbarContext(self, user):
+    get_domains = lambda role: perms.GetAccessibleDomains(user, role)
+    return user and {
+        'admin_domains': get_domains(perms.Role.DOMAIN_ADMIN),
+        'catalog_domains': get_domains(perms.Role.CATALOG_EDITOR),
+        'creator_domains': get_domains(perms.Role.MAP_CREATOR),
+        'add_domain_create_link': (user.domain and
+                                   not domains.Domain.Get(user.domain)),
+        'is_admin': perms.CheckAccess(perms.Role.ADMIN)
+    } or {}

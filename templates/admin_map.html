@@ -31,20 +31,21 @@ specific language governing permissions and limitations under the License.
   </tr>
   <tr>
     <th>Created by:</th>
-    <td><span class="cm-user">{{map.creator}}</span>
+    <td><span class="cm-user">{{map.creator.email}}</span>
     at {{map.created}} UTC</td>
   </tr>
   <tr>
     <th>Last updated by:</th>
-    <td><span class="cm-user">{{map.last_updater}}</span>
-    at {{map.last_updated}} UTC</td>
+    <td><span class="cm-user">{{map.updater.email}}</span>
+    at {{map.updated}} UTC</td>
   </tr>
 </table>
 
 <form method="post">
 {% if map.is_deleted %}
   <div class="cm-warning">
-    <strong>This map is marked as deleted</strong>.
+    <strong>This map was marked as deleted</strong>
+    by {{map.deleter.email}} at {{map.deleted}} UTC.
     <p>
     It cannot be accessed by anyone.
     The permissions below do not apply;
@@ -56,7 +57,7 @@ specific language governing permissions and limitations under the License.
   {% if map.is_blocked %}
     <div class="cm-warning">
       <strong>This map was blocked</strong>
-      by {{map.blocker}} at {{map.blocked}} UTC.
+      by {{map.blocker.email}} at {{map.blocked}} UTC.
       <p>
       Only {{map.owners.0}} or an administrator can view or edit it,
       and it cannot be published.

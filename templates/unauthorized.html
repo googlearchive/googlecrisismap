@@ -17,12 +17,12 @@ specific language governing permissions and limitations under the License.
   <div class="cm-error-box">
     {% if exception.user %}
       {% if exception.target %}
-        You're signed in as {{exception.user}},
+        You're signed in as {{exception.subject.email}},
         but you don't have {{exception.role}} access to that map.
         (You could try asking the owner of the map for access,
         or try <a href="{{login_url}}">signing in as a different user</a>.)
       {% else %}
-        You're signed in as {{exception.user}},
+        You're signed in as {{exception.subject.email}},
         but you don't have {{exception.role}} access.
         (You could try asking a site administrator for access,
         or try <a href="{{login_url}}">signing in as a different user</a>.)

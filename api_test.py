@@ -25,18 +25,17 @@ class ApiTest(test_utils.BaseTest):
 
   def setUp(self):
     super(ApiTest, self).setUp()
-    test_utils.BecomeAdmin()
-    self.map = model.Map.Create('{}', 'xyz.com',
-                                owners=['owner@gmail.com'],
-                                editors=['editor@gmail.com'],
-                                viewers=['viewer@gmail.com'])
+    self.map = test_utils.CreateMap(
+        owners=['owner'], editors=['editor'], viewers=['viewer'])
 
   def testGetMap(self):
     """Fetches a map through the API."""
     json_dict = {'json': True, 'stuff': [0, 1]}
     maproot_json = json.dumps(json_dict)
-    self.map.PutNewVersion(maproot_json)
-    response = self.DoGet('/.api/maps/%s' % self.map.id)
+    with test_utils.Login('editor'):
+      self.map.PutNewVersion(maproot_json)
+    with test_utils.Login('viewer'):
+      response = self.DoGet('/.api/maps/%s' % self.map.id)
     self.assertEquals({'json': json_dict}, json.loads(response.body))
 
   def testGetInvalidMap(self):
@@ -46,11 +45,13 @@ class ApiTest(test_utils.BaseTest):
   def testPostMap(self):
     """Posts a new version of a map."""
     maproot_json = '{"stuff": [0, 1]}'
-    self.DoPost('/.api/maps/' + self.map.id, 'json=' + maproot_json)
+    with test_utils.Login('editor'):
+      self.DoPost('/.api/maps/' + self.map.id, 'json=' + maproot_json)
     # Now we refetch the map because the object changed underneath us.
-    map_object = model.Map.Get(self.map.id)
-    # verify that the pieces were saved properly
-    self.assertEquals(maproot_json, map_object.GetCurrentJson())
+    with test_utils.Login('viewer'):
+      # Verify that the edited content was saved properly.
+      map_object = model.Map.Get(self.map.id)
+      self.assertEquals(maproot_json, map_object.GetCurrentJson())
 
   def testPublishedMaps(self):
     map1 = {'title': 'Map 1',
@@ -69,19 +70,18 @@ class ApiTest(test_utils.BaseTest):
                         {'id': 17, 'type': 'GEORSS',
                          'source': {'georss': {'url': 'b.com/x.xml'}}}]}
 
-    test_utils.BecomeAdmin()
     # Create and publish two maps
-    model.CatalogEntry.Create('google.com', 'Map1', model.Map.Create(
-        json.dumps(map1), 'xyz.com'))
-    model.CatalogEntry.Create('google.com', 'Map2', model.Map.Create(
-        json.dumps(map2), 'xyz.com'))
-    # Create a draft; should not be returned by api.Maps
-    model.Map.Create(json.dumps(draft), 'xyz.com')
+    with test_utils.RootLogin():
+      m1 = test_utils.CreateMap(json.dumps(map1))
+      model.CatalogEntry.Create('xyz.com', 'label1', m1)
+      m2 = test_utils.CreateMap(json.dumps(map2))
+      model.CatalogEntry.Create('xyz.com', 'label2', m2)
+      # Create a draft; should not be returned by api.Maps
+      test_utils.CreateMap(json.dumps(draft))
 
-    test_utils.ClearUser()
     response = self.DoGet('/.api/maps')
-    self.assertEquals([{'url': '/root/google.com/Map2', 'maproot': map2},
-                       {'url': '/root/google.com/Map1', 'maproot': map1}],
+    self.assertEquals([{'url': '/root/xyz.com/label2', 'maproot': map2},
+                       {'url': '/root/xyz.com/label1', 'maproot': map1}],
                       json.loads(response.body))
 
 

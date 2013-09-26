@@ -28,9 +28,10 @@ import config
 import domains
 import model
 import mox
+import perms
+import users
 
 from google.appengine.api import taskqueue
-from google.appengine.api import users
 from google.appengine.ext import testbed
 
 # mox.IgnoreArg() is such a horrible way to spell "I don't care".
@@ -58,24 +59,41 @@ def SetupRequest(path, lang='en'):
   return request
 
 
-def SetUser(email, user_id=None, is_admin=False):
-  """Sets the current user for testing."""
-  os.environ['USER_EMAIL'] = email
-  os.environ['USER_ID'] = user_id or str(hash(email) % (1 << 64))
-  os.environ['USER_IS_ADMIN'] = is_admin and '1' or '0'
-  return users.User(email=email)
+class LoginContext(object):
+  """A context manager that sets and restores the user login for testing."""
+
+  def __init__(self, uid, domain, email):
+    self.login_info = uid, domain, email
+    self.user = users.User(id=uid, domain=domain, email=email)
+
+  def __enter__(self):
+    self.original = users._GetLoginInfo
+    users._GetLoginInfo = lambda: self.login_info
+    return self.user
+
+  def __exit__(self, etype, evalue, etb):
+    users._GetLoginInfo = self.original
 
 
-def BecomeAdmin(email='admin@google.com', user_id=None):
-  """Sets the current user to an admin user for testing."""
-  return SetUser(email, user_id, True)
+def Login(uid):
+  """Context manager: signs in a non-Google-Apps user."""
+  return LoginContext(uid, '', uid + '@gmail.test')
 
 
-def ClearUser():
-  """Clean up the environment variables touched by SetUser."""
-  os.environ.pop('USER_EMAIL', None)
-  os.environ.pop('USER_ID', None)
-  os.environ['USER_IS_ADMIN'] = '0'
+def DomainLogin(uid, domain):
+  """Context manager: signs in a Google Apps user."""
+  return LoginContext(uid, domain, uid + '@' + domain)
+
+
+def RootLogin():
+  """Context manager: signs in as user 'root', which always has ADMIN access."""
+  return LoginContext(perms.ROOT.id, '', 'root@gmail.test')
+
+
+def SetupUser(context):
+  """Ensures that the User for a login context exists in the datastore."""
+  with context:
+    return users.GetCurrent()  # implicitly updates the datastore
 
 
 def SetupHandler(url, handler, post_data=None):
@@ -101,21 +119,9 @@ def DatetimeWithUtcnow(now):
                'now': staticmethod(lambda: now)})
 
 
-def CreateMapAsAdmin(**kwargs):
-  BecomeAdmin()
-  map_object = model.Map.Create(
-      '{"description": "description", "title": "title"}',
-      DEFAULT_DOMAIN, **kwargs)
-  return map_object, map_object.GetCurrent().id
-
-
-def TestRedirect(self, uri):
-  # Passing Unicode to redirect() is fatal in production; make it so in tests.
-  if type(uri) != str:
-    raise TypeError('redirect() must be called with an 8-bit string')
-  original_redirect(self, uri)
-
-original_redirect = webapp2.RequestHandler.redirect
+def CreateMap(maproot_json='{"title": "Foo"}', domain=DEFAULT_DOMAIN, **kwargs):
+  with RootLogin():
+    return model.Map.Create(maproot_json, domain, **kwargs)
 
 
 class BaseTest(unittest.TestCase):
@@ -128,19 +134,21 @@ class BaseTest(unittest.TestCase):
     root = os.path.dirname(__file__) or '.'
     self.testbed.init_datastore_v3_stub(require_indexes=True, root_path=root)
     self.testbed.init_memcache_stub()
+    self.testbed.init_taskqueue_stub(root_path=root)
     self.testbed.init_urlfetch_stub()
     self.testbed.init_user_stub()
-    self.testbed.init_taskqueue_stub(root_path=root)
+    self.original_datetime = datetime.datetime
+    os.environ.pop('USER_EMAIL', None)
+    os.environ.pop('USER_ID', None)
+    os.environ.pop('USER_IS_ADMIN', None)
+    os.environ.pop('USER_ORGANIZATION', None)
     config.Set('root_path', ROOT_PATH)
     config.Set('default_domain', DEFAULT_DOMAIN)
     domains.Domain.Create(DEFAULT_DOMAIN)
 
-    self.mox.stubs.Set(webapp2.RequestHandler, 'redirect', TestRedirect)
-
   def tearDown(self):
     self.mox.UnsetStubs()
     self.testbed.deactivate()
-    ClearUser()
 
   def DoGet(self, path, status=None):
     """Dispatches a GET request according to the routes in app.py.
@@ -175,7 +183,7 @@ class BaseTest(unittest.TestCase):
     """
     request = SetupRequest(path)
     request.method = 'POST'
-    request.body = data
+    request.body = str(data)
     request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
     response = DispatchRequest(request)
     if status:
@@ -214,7 +222,7 @@ class BaseTest(unittest.TestCase):
   def SetTime(self, timestamp):
     """Sets a fake value for the current time, for the duration of the test."""
     self.SetForTest(time, 'time', lambda: timestamp)
-    now = datetime.datetime.utcfromtimestamp(timestamp)
+    now = self.original_datetime.utcfromtimestamp(timestamp)
     self.SetForTest(datetime, 'datetime', DatetimeWithUtcnow(now))
 
     # Task.__determine_eta_posix uses the original time.time as a default

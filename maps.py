@@ -15,7 +15,6 @@
 __author__ = 'giencke@google.com (Pete Giencke)'
 
 import json
-import os
 import urllib
 import urlparse
 
@@ -25,20 +24,11 @@ import config
 import metadata
 import model
 import perms
-import profiles
-import utils
+import users
 
-from google.appengine.api import users
 from google.appengine.ext import db
 
 MAPS_API_BASE_URL = '//maps.google.com/maps/api/js'
-
-
-def AllowDeveloperMode():
-  """Returns True if running in development or accessed internally."""
-  return ('Development' in os.environ.get('SERVER_SOFTWARE', '') or
-          os.environ.get('TRUSTED_IP_REQUEST') or
-          users.is_current_user_admin())
 
 
 class ClientConfig(db.Model):
@@ -208,7 +198,7 @@ def GetMapsApiClientId(host_port):
 
 
 def GetConfig(request, map_object=None, catalog_entry=None):
-  dev_mode = request.get('dev') and AllowDeveloperMode()
+  dev_mode = request.get('dev') and users.IsDeveloper()
   map_catalog = GetMapMenuItems(
       catalog_entry and catalog_entry.domain or
       config.Get('primary_domain'), request.root_path)
@@ -229,9 +219,9 @@ def GetConfig(request, map_object=None, catalog_entry=None):
   result = {
       'ui_lang': request.lang,
       'dev_mode': dev_mode,
-      'user_email': utils.GetCurrentUserEmail(),
-      'login_url': users.create_login_url(request.url),
-      'logout_url': users.create_logout_url(request.url),
+      'user_email': users.GetCurrent() and users.GetCurrent().email,
+      'login_url': users.GetLoginUrl(request.url),
+      'logout_url': users.GetLogoutUrl(request.url),
       'map_catalog': map_catalog,
       'maps_api_url': maps_api_url,
       # Each endpoint that the JS client code uses gets an entry in config.
@@ -354,7 +344,6 @@ class MapList(base_handler.BaseHandler):
   def Get(self, user, domain=None):  # pylint: disable=g-bad-name
     """Produces the map listing page."""
     maps = list(model.Map.GetViewable(user, domain))
-    catalog_domains = perms.GetDomainsWithRole(perms.Role.CATALOG_EDITOR)
     title = 'Maps for all domains'
     if domain:
       title = 'Maps for %s' % domain
@@ -370,6 +359,6 @@ class MapList(base_handler.BaseHandler):
     self.response.out.write(self.RenderTemplate('map_list.html', {
         'title': title,
         'maps': maps,
-        'catalog_domains': catalog_domains,
-        'profile': profiles.Profile.Get(user)
+        'catalog_domains': perms.GetAccessibleDomains(
+            user, perms.Role.CATALOG_EDITOR)
     }))

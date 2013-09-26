@@ -12,9 +12,8 @@
 
 """Utilities used throughout crisismap."""
 
+import re
 import time
-
-from google.appengine.api import users
 
 
 class Struct(object):
@@ -25,6 +24,18 @@ class Struct(object):
 
   def __iter__(self):
     return iter(self.__dict__)
+
+  def __setattr__(self, name, value):
+    raise TypeError('%r has read-only attributes' % self)
+
+  @classmethod
+  def FromModel(cls, model):
+    """Populates a new Struct from an ndb.Model (doesn't take a db.Model)."""
+    # ._properties is actually a public API; it's just named with "_" in order
+    # to avoid collision with property names (see http://goo.gl/xAcU4).
+    properties = model._properties  # pylint: disable=protected-access
+    return cls(id=model.key.id(),
+               **dict((name, getattr(model, name)) for name in properties))
 
 
 def StructFromModel(model):
@@ -44,63 +55,15 @@ def StructFromModel(model):
     and key().id().  Returns None if 'model' is None.
   """
   if model:
-    return Struct(
-        id=model.key().id(),
-        name=model.key().name(),
-        key=model.key(),
-        **dict((name, prop.get_value_for_datastore(model))
-               for (name, prop) in model.properties().iteritems()))
+    return Struct(key=model.key(), id=model.key().id(), name=model.key().name(),
+                  **dict((name, prop.get_value_for_datastore(model))
+                         for (name, prop) in model.properties().iteritems()))
 
 
 def ResultIterator(query):
   """Returns a generator that yields Struct objects."""
   for result in query:
     yield StructFromModel(result)
-
-
-def NormalizeEmail(email):
-  """Normalizes an e-mail address for storage or comparison."""
-  username, domain = email.split('@')
-  return username.lower().replace('.', '') + '@' + domain.lower()
-
-
-def GetUserDomain(user):
-  """Gets the e-mail domain of the given user."""
-  return user and user.email().split('@')[-1]
-
-
-def GetCurrentUserId():
-  """Gets the user's numeric ID, or None if no user is signed in."""
-  user = users.get_current_user()
-  return user and user.user_id()
-
-
-def GetCurrentUserEmail():
-  """Gets the user's normalized address, or '' if no user is signed in."""
-  user = users.get_current_user()
-  return user and NormalizeEmail(user.email()) or ''
-
-
-def GetCurrentUserDomain():
-  """Gets the domain part (after '@') of the current user's e-mail address.
-
-  Returns:
-    The user's e-mail domain, or '' if no user is signed in.
-  """
-  return GetCurrentUserEmail().split('@')[-1]
-
-
-def GetCurrentUser():
-  """Gets the current user's User object.  Use this, not users.get_current_user.
-
-  Returns:
-    A google.appengine.api.users.User object with a normalized e-mail address,
-    or None if no user is signed in.  Always use this function instead of
-    users.get_current_user, which can return a User object whose e-mail address
-    contains capital letters or periods, and thus won't compare consistently.
-  """
-  email = GetCurrentUserEmail()
-  return email and users.User(email) or None
 
 
 def SetAndTest(set_func, test_func, sleep_delta=0.05, num_tries=20):
@@ -131,3 +94,7 @@ def SetAndTest(set_func, test_func, sleep_delta=0.05, num_tries=20):
     if sleep_delta:
       time.sleep(sleep_delta)
   return False
+
+
+def IsValidEmail(email):
+  return re.match(r'^[\w.-]+@([\w-]+\.)+[\w-]+$', email)

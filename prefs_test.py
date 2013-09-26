@@ -14,45 +14,42 @@
 
 __author__ = 'romano@google.com (Raquel Romano)'
 
-import profiles
 import test_utils
+import users
 
 
 class PrefsTest(test_utils.BaseTest):
   """Tests the prefs.py handler."""
 
-  def setUp(self):
-    super(PrefsTest, self).setUp()
-    self.user = test_utils.SetUser('random@gmail.com')
-
   def testGet(self):
     """Tests the Prefs GET handler."""
-    result = self.DoGet('/.prefs').body
-    self.assertTrue('Preference' in result, result)
+    with test_utils.Login('test'):
+      result = self.DoGet('/.prefs').body
+      self.assertTrue('Preference' in result, result)
 
   def testPost(self):
     """Tests the Prefs POST handler."""
-    self.assertEquals(None, profiles.Profile.Get(self.user))
+    with test_utils.Login('test'):
+      # The first request of any kind should store the UserModel entity, but
+      # requests should not affect the preference flags unless save_keys is set.
+      self.DoPost('/.prefs', 'marketing_consent=on')
+      self.assertFalse(users.Get('test').marketing_consent_answered)
 
-    # There should be no effect unless save_keys is set.
-    self.DoPost('/.prefs', 'marketing_consent=on')
-    self.assertEquals(None, profiles.Profile.Get(self.user))
+      # save_keys indicates which keys to save, even if the POST data doesn't
+      # contain a particular key's name because its checkbox is off.
+      self.DoPost('/.prefs', 'save_keys=marketing_consent')
+      self.assertFalse(users.Get('test').marketing_consent)
+      self.assertTrue(users.Get('test').marketing_consent_answered)
 
-    # save_keys indicates which keys to save (even if the POST data doesn't
-    # contain a particular key's name because its checkbox is off)
-    self.DoPost('/.prefs', 'save_keys=marketing_consent')
-    self.assertFalse(profiles.Profile.Get(self.user).marketing_consent)
-    self.assertTrue(profiles.Profile.Get(self.user).marketing_consent_answered)
+      # With no save_keys, there should be no effect.
+      self.DoPost('/.prefs', 'marketing_consent=on')
+      self.assertFalse(users.Get('test').marketing_consent)
+      self.assertTrue(users.Get('test').marketing_consent_answered)
 
-    # No save_keys, no effect.
-    self.DoPost('/.prefs', 'marketing_consent=on')
-    self.assertFalse(profiles.Profile.Get(self.user).marketing_consent)
-    self.assertTrue(profiles.Profile.Get(self.user).marketing_consent_answered)
-
-    # With save_keys, this should turn marketing_consent on.
-    self.DoPost('/.prefs', 'save_keys=marketing_consent&marketing_consent=on')
-    self.assertTrue(profiles.Profile.Get(self.user).marketing_consent)
-    self.assertTrue(profiles.Profile.Get(self.user).marketing_consent_answered)
+      # With save_keys, this should turn marketing_consent on.
+      self.DoPost('/.prefs', 'save_keys=marketing_consent&marketing_consent=on')
+      self.assertTrue(users.Get('test').marketing_consent)
+      self.assertTrue(users.Get('test').marketing_consent_answered)
 
 
 if __name__ == '__main__':

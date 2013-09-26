@@ -22,7 +22,6 @@ import zipfile
 
 import cache
 import metadata_fetch
-import model
 import test_utils
 import utils
 
@@ -438,16 +437,16 @@ class MetadataFetchTest(test_utils.BaseTest):
 
   def testSystem(self):
     """Tests map, metadata_fetch, and metadata, all working together."""
-    test_utils.BecomeAdmin()
-    map_object = model.Map.Create("""{
+    map_object = test_utils.CreateMap("""{
         "layers": [{"type": "KML",
                     "source": {"kml": {"url": "%s"}}},
                    {"type": "GEORSS",
                     "source": {"georss": {"url": "%s"}}}]
-    }""" % (SOURCE_URL, GEORSS_URL), 'xyz.com')
+    }""" % (SOURCE_URL, GEORSS_URL), 'xyz.com', owners=['owner'])
 
     # Simulate the first map load.
-    response = self.DoGet('/xyz.com/.maps/' + map_object.id)
+    with test_utils.Login('owner'):
+      response = self.DoGet('/xyz.com/.maps/' + map_object.id)
 
     # Get the metadata cache key mentioned in the map page.
     key = re.search(r'"metadata_url": "/root/.metadata\?key=(\w+)"',
@@ -460,7 +459,8 @@ class MetadataFetchTest(test_utils.BaseTest):
     self.assertTrue(tasks[1]['url'].startswith('/root/.metadata_fetch'))
 
     # Loading the map again should not queue redundant tasks.
-    self.DoGet('/xyz.com/.maps/' + map_object.id)
+    with test_utils.Login('owner'):
+      self.DoGet('/xyz.com/.maps/' + map_object.id)
     self.assertEqual(0, len(self.PopTasks('metadata')))
 
     # Execute the queued metadata_fetch tasks.

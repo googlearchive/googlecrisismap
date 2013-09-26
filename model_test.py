@@ -14,169 +14,123 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
+import copy
+
 import domains
 import model
 import perms
 import test_utils
-import utils
+import users
 
 from google.appengine.api import memcache
-from google.appengine.api import users
+
+JSON1 = '{"title": "One", "description": "description1"}'
+JSON2 = '{"title": "Two", "description": "description2"}'
+JSON3 = '{"title": "Three", "description": "description3"}'
 
 
 class MapTests(test_utils.BaseTest):
   """Tests the map model classes and associated access control logic."""
 
-  def setUp(self):
-    super(MapTests, self).setUp()
-
   def testVersions(self):
     """Verifies that creating and setting versions works properly."""
-    test_utils.BecomeAdmin()
+    with test_utils.RootLogin():
+      m = model.Map.Create(JSON1, 'xyz.com')
+      id1 = m.GetCurrent().id
+      id2 = m.PutNewVersion(JSON2)
 
-    json1 = '{"description": "description1"}'
-    json2 = '{"description": "description2"}'
-    m = model.Map.Create(json1, 'xyz.com')
-    id1 = m.GetCurrent().id
-    id2 = m.PutNewVersion(json2)
+      # Verify that versions are returned in reverse chronological order.
+      versions = list(m.GetVersions())
+      self.assertEquals(id2, versions[0].id)
+      self.assertEquals(id1, versions[1].id)
 
-    # Verify that versions are returned in reverse chronological order.
-    versions = list(m.GetVersions())
-    self.assertEquals(id2, versions[0].id)
-    self.assertEquals(id1, versions[1].id)
-
-    # Verify that GetCurrent() sees the most recent version as expected.
-    current = m.GetCurrent()
-    self.assertEquals(id2, current.id)
-    self.assertEquals(json2, current.maproot_json)
-    self.assertEquals('admin@google.com', current.creator.email())
+      # Verify that GetCurrent() sees the most recent version as expected.
+      current = m.GetCurrent()
+      self.assertEquals(id2, current.id)
+      self.assertEquals(JSON2, current.maproot_json)
+      self.assertEquals('root', current.creator_id)
 
   def testWorldReadable(self):
     # Verify that the current version is only visible to the public after
     # setting world_readable to True.
-    test_utils.BecomeAdmin()
-    json = '{"description": "description1"}'
-    m = model.Map.Create(json, 'xyz.com')
+    with test_utils.RootLogin():
+      m = model.Map.Create(JSON1, 'xyz.com')
+    with test_utils.Login('outsider'):
+      self.assertRaises(perms.AuthorizationError, m.GetCurrent)
 
-    test_utils.SetUser('random@gmail.com')
-    self.assertRaises(perms.AuthorizationError, m.GetCurrent)
+    with test_utils.RootLogin():
+      m.SetWorldReadable(True)
+    with test_utils.Login('outsider'):
+      self.assertEquals(JSON1, m.GetCurrent().maproot_json)
 
-    test_utils.SetUser('admin@google.com')
-    m.SetWorldReadable(True)
-    test_utils.SetUser('random@gmail.com')
-    self.assertEquals(json, m.GetCurrent().maproot_json)
-
-    test_utils.SetUser('admin@google.com')
-    m.SetWorldReadable(False)
-    test_utils.SetUser('random@gmail.com')
-    self.assertRaises(perms.AuthorizationError, m.GetCurrent)
+    with test_utils.RootLogin():
+      m.SetWorldReadable(False)
+    with test_utils.Login('outsider'):
+      self.assertRaises(perms.AuthorizationError, m.GetCurrent)
 
   def testRevokePermission(self):
     """Verifies internal model permission lists are correctly modified."""
-    admin = test_utils.BecomeAdmin()
-    json = '{"description": "description1"}'
-    m = model.Map.Create(json, 'xyz.com')
-    access_policy = perms.AccessPolicy()
+    user1 = test_utils.SetupUser(test_utils.Login('user1'))
+    user2 = test_utils.SetupUser(test_utils.Login('user2'))
+    with test_utils.RootLogin() as user0:
+      m = test_utils.CreateMap()
 
-    user = users.User('user@gmail.com')
-    user2 = users.User('user2@gmail.com')
+      permissions = {perms.Role.MAP_VIEWER: m.model.viewers,
+                     perms.Role.MAP_EDITOR: m.model.editors,
+                     perms.Role.MAP_OWNER: m.model.owners}
+      initial_grantees = copy.deepcopy(permissions)
+      for role in permissions:
+        permissions[role] += ['user1', 'user2']
+        m.AssertAccess(role, user1)
+        m.AssertAccess(role, user2)
 
-    # Verify starting state of lists.
-    self.assertEquals([], m.model.viewers)
-    self.assertEquals([], m.model.editors)
-    self.assertEquals([admin.email()], m.model.owners)
+        m.RevokePermission(role, 'user2')
+        self.assertEquals(initial_grantees[role] + ['user1'], permissions[role])
+        self.assertFalse(m.CheckAccess(role, user2))
+        m.RevokePermission(role, 'user2')  # idempotent, no effect
+        self.assertEquals(initial_grantees[role] + ['user1'], permissions[role])
+        self.assertFalse(m.CheckAccess(role, user2))
+        m.RevokePermission(role, 'user1')
+        self.assertEquals(initial_grantees[role], permissions[role])
+        self.assertFalse(m.CheckAccess(role, user1))
 
-    permissions = {perms.Role.MAP_VIEWER: m.model.viewers,
-                   perms.Role.MAP_EDITOR: m.model.editors,
-                   perms.Role.MAP_OWNER: m.model.owners}
-    for role in permissions:
-      # Local copy is manually updated to reflect proper state of model list.
-      expected_users = list(permissions[role])
-      permissions[role].append(user.email())  # Grant permission.
-      expected_users.append(user.email())
-      m.AssertAccess(role, user, access_policy)
-      self.assertEquals(expected_users, permissions[role])
-
-      permissions[role].append(user2.email())  # Grant permission.
-      expected_users.append(user2.email())
-      m.AssertAccess(role, user2, access_policy)
-      self.assertEquals(expected_users, permissions[role])
-
-      m.RevokePermission(role, user2)
-      expected_users.pop()
-      self.assertFalse(m.CheckAccess(role, user2, access_policy))
-      self.assertEquals(expected_users, permissions[role])
-
-      # Should do nothing: revoking a permission the user doesn't have.
-      m.RevokePermission(role, user2)
-      self.assertFalse(m.CheckAccess(role, user2, access_policy))
-      self.assertEquals(expected_users, permissions[role])
-
-      m.RevokePermission(role, user)
-      expected_users.pop()
-      self.assertFalse(m.CheckAccess(role, user, access_policy))
-      self.assertEquals(expected_users, permissions[role])
-
-    self.assertEquals([], m.model.viewers)
-    self.assertEquals([], m.model.editors)
-    self.assertEquals([admin.email()], m.model.owners)
-
-    # Should do nothing: only viewer, editor, owner revokable.
-    m.AssertAccess(perms.Role.ADMIN, admin)
-    m.RevokePermission(perms.Role.ADMIN, admin)
-    m.AssertAccess(perms.Role.ADMIN, admin)
-
-    self.assertEquals([], m.model.viewers)
-    self.assertEquals([], m.model.editors)
-    self.assertEquals([admin.email()], m.model.owners)
+      # Should do nothing: only viewer, editor, and owner are revocable.
+      m.AssertAccess(perms.Role.ADMIN, user0)
+      m.RevokePermission(perms.Role.ADMIN, 'root')
+      m.AssertAccess(perms.Role.ADMIN, user0)
 
   def testChangePermissionLevel(self):
     """Verifies that permission level changes appropriately."""
-    # ChangePermissionLevel calls RevokePermission internally, make sure
-    # that the RevokePermissions tests are passing as well.
-    test_utils.BecomeAdmin()
-    json = '{"description": "description1"}'
-    m = model.Map.Create(json, 'xyz.com')
-    access_policy = perms.AccessPolicy()
+    user1 = test_utils.SetupUser(test_utils.Login('user1'))
+    with test_utils.RootLogin():
+      m = test_utils.CreateMap()
 
-    admin = test_utils.SetUser('admin@google.com')
-    user = users.User('user@gmail.com')
+      permissions = {perms.Role.MAP_VIEWER: m.model.viewers,
+                     perms.Role.MAP_EDITOR: m.model.editors,
+                     perms.Role.MAP_OWNER: m.model.owners}
+      initial_grantees = copy.deepcopy(permissions)
+      for role in permissions:
+        m.ChangePermissionLevel(role, 'user1')  # grant permission
+        self.assertEquals(initial_grantees[role] + ['user1'], permissions[role])
+        self.assertTrue(m.CheckAccess(role, user1))
+        m.ChangePermissionLevel(role, 'user1')  # idempotent, no effect
+        self.assertEquals(initial_grantees[role] + ['user1'], permissions[role])
+        self.assertTrue(m.CheckAccess(role, user1))
 
-    # Verify starting state of lists.
-    self.assertEquals([], m.model.viewers)
-    self.assertEquals([], m.model.editors)
-    self.assertEquals([admin.email()], m.model.owners)
+        # Make sure the user doesn't have any of the other permissions.
+        for other_role in permissions:
+          if other_role != role:
+            self.assertFalse('user1' in permissions[other_role])
 
-    permissions = {perms.Role.MAP_VIEWER: m.model.viewers,
-                   perms.Role.MAP_EDITOR: m.model.editors,
-                   perms.Role.MAP_OWNER: m.model.owners}
-    for role in permissions:
-      expected_users = list(permissions[role])
-      m.ChangePermissionLevel(role, user)  # Grant permission.
-      expected_users.append(user.email())
-      m.AssertAccess(role, user, access_policy)
-      self.assertEquals(expected_users, permissions[role])
-      # Should do nothing. List should still only have one copy of user info.
-      m.ChangePermissionLevel(role, user)
-      self.assertEquals(expected_users, permissions[role])
-
-      # Make sure the user doesn't have any of the other permissions.
-      for other_role in permissions:
-        if other_role != role:
-          self.assertFalse(user.email() in permissions[other_role])
-
-    # Should do nothing: only viewer, editor, owner roles
-    # changeable permissions.
-    m.ChangePermissionLevel(perms.Role.ADMIN, user)
-    self.assertFalse(m.CheckAccess(perms.Role.ADMIN, user, access_policy))
+      # Should do nothing: only viewer, editor, owner are valid roles.
+      m.ChangePermissionLevel(perms.Role.ADMIN, 'user1')
+      self.assertFalse(m.CheckAccess(perms.Role.ADMIN, user1))
 
   def testCreate(self):
     """Verifies that map creation works properly."""
     # Verify the default values from Map.Create.
-    test_utils.BecomeAdmin()
-
-    m = model.Map.Create('{}', 'xyz.com')
-    self.assertEquals(['admin@google.com'], m.model.owners)
+    m = test_utils.CreateMap()
+    self.assertEquals(['root'], m.model.owners)
     self.assertEquals([], m.model.editors)
     self.assertEquals([], m.model.viewers)
     self.assertEquals(['xyz.com'], m.model.domains)
@@ -185,44 +139,38 @@ class MapTests(test_utils.BaseTest):
   def testMapCache(self):
     """Tests caching of current JSON data."""
     # Verify the default values from Map.Create.
-    test_utils.BecomeAdmin()
+    with test_utils.RootLogin():
+      m = model.Map.Create(JSON1, 'xyz.com', world_readable=True)
+      m.PutNewVersion(JSON2)
+      self.assertEquals(JSON2, m.GetCurrentJson())
+      self.assertEquals(m.title, 'Two')
+      self.assertEquals(m.description, 'description2')
+      # GetCurrentJson should have filled the cache.
+      self.assertEquals(JSON2, memcache.get('Map,%s,json' % m.id))
 
-    json1 = '{"description": "description1"}'
-    json2 = '{"description": "description2", "title": "title2"}'
-    json3 = '{"description": "description3", "title": "title3"}'
-    m = model.Map.Create(json1, 'xyz.com', world_readable=True)
-    m.PutNewVersion(json2)
-    self.assertEquals(json2, m.GetCurrentJson())
-    self.assertEquals(m.title, 'title2')
-    self.assertEquals(m.description, 'description2')
-    # GetCurrentJson should have filled the cache.
-    self.assertEquals(json2, memcache.get('Map,%s,json' % m.id))
-
-    # PutVersion should clear the cache.
-    m.PutNewVersion(json3)
-    self.assertEquals(None, memcache.get('Map,%s,json' % m.id))
-    self.assertEquals(json3, m.GetCurrentJson())
+      # PutVersion should clear the cache.
+      m.PutNewVersion(JSON3)
+      self.assertEquals(None, memcache.get('Map,%s,json' % m.id))
+      self.assertEquals(JSON3, m.GetCurrentJson())
 
   def testGetAll(self):
     """Tests Maps.GetAll and Maps.GetViewable."""
-    test_utils.BecomeAdmin()
-    m1 = model.Map.Create('{}', 'xyz.com', world_readable=True)
-    m2 = model.Map.Create('{}', 'xyz.com', world_readable=False)
+    with test_utils.RootLogin() as root:
+      m1 = model.Map.Create('{}', 'xyz.com', world_readable=True)
+      m2 = model.Map.Create('{}', 'xyz.com', world_readable=False)
 
-    def ModelKeys(maps):
-      return set([m.model.key() for m in maps])
+      def ModelKeys(maps):
+        return {m.model.key() for m in maps}
 
-    all_maps = ModelKeys([m1, m2])
-    public_maps = ModelKeys([m1])
+      all_maps = ModelKeys([m1, m2])
+      public_maps = ModelKeys([m1])
 
-    user = utils.GetCurrentUser()
-    self.assertEquals(all_maps, ModelKeys(list(model.Map.GetViewable(user))))
-    self.assertEquals(all_maps, ModelKeys(list(model.Map.GetAll())))
+      self.assertEquals(all_maps, ModelKeys(model.Map.GetViewable(root)))
+      self.assertEquals(all_maps, ModelKeys(model.Map.GetAll()))
 
-    test_utils.SetUser('john.q.public@gmail.com')
-    user = utils.GetCurrentUser()
-    self.assertRaises(perms.AuthorizationError, model.Map.GetAll)
-    self.assertEquals(public_maps, ModelKeys(model.Map.GetViewable(user)))
+    with test_utils.Login('outsider') as outsider:
+      self.assertRaises(perms.AuthorizationError, model.Map.GetAll)
+      self.assertEquals(public_maps, ModelKeys(model.Map.GetViewable(outsider)))
 
 
 class CatalogEntryTests(test_utils.BaseTest):
@@ -230,225 +178,246 @@ class CatalogEntryTests(test_utils.BaseTest):
 
   def testCreate(self):
     """Tests creation of a CatalogEntry."""
-    mm, _ = test_utils.CreateMapAsAdmin(viewers=['random_user@gmail.com'])
+    m = test_utils.CreateMap(
+        '{"title": "Fancy fancy"}', editors=['publisher', 'outsider'])
 
-    # Random users shouldn't be able to create catalog entries.
-    test_utils.SetUser('random_user@gmail.com')
-    self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Create,
-                      'foo.com', 'label', mm, is_listed=True)
-    # After we grant the CATALOG_EDITOR role, CatalogEntry.Create should work.
-    perms.Grant('random_user@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
-    mc = model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
+    with test_utils.Login('outsider'):
+      # User 'outsider' doesn't have CATALOG_EDITOR.
+      self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Create,
+                        'xyz.com', 'label', m)
+      # Even with CATALOG_EDITOR, CatalogEntry.Create should still fail because
+      # user 'outsider' can't view the map.
+      perms.Grant('outsider', perms.Role.CATALOG_EDITOR, 'xyz.com')
 
-    self.assertEquals('foo.com', mc.domain)
-    self.assertEquals('label', mc.label)
-    self.assertEquals('title', mc.title)
-    self.assertEquals(True, mc.is_listed)
-    self.assertEquals(mm.id, mc.map_id)
+    with test_utils.Login('publisher'):
+      # Initially, user 'publisher' doesn't have CATALOG_EDITOR.
+      self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Create,
+                        'xyz.com', 'label', m)
+      # After we grant CATALOG_EDITOR, 'publisher' should be able to publish.
+      perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
+      mc = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+      self.assertEquals('xyz.com', mc.domain)
+      self.assertEquals('label', mc.label)
+      self.assertEquals('Fancy fancy', mc.title)
+      self.assertTrue(mc.is_listed)
+      self.assertEquals(m.id, mc.map_id)
 
-    # Creating another entry with the same path_name should succeed.
-    model.CatalogEntry.Create('foo.com', 'label', mm)
+      # Creating another entry with the same path_name should succeed.
+      model.CatalogEntry.Create('xyz.com', 'label', m)
 
-  def testCatalogDelete(self):
-    mm, _ = test_utils.CreateMapAsAdmin(viewers=['random_user@gmail.com'])
-    test_utils.BecomeAdmin()
-    model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
-    domains.Domain.Create('foo.com')
+  def testDelete(self):
+    m = test_utils.CreateMap('{"title": "Bleg"}', viewers=['viewer'])
+    with test_utils.RootLogin():
+      model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+      domains.Domain.Create('xyz.com')
 
     # Validate that CatalogEntry is created successfully.
-    self.assertEquals('title', model.CatalogEntry.Get('foo.com', 'label').title)
+    self.assertEquals('Bleg', model.CatalogEntry.Get('xyz.com', 'label').title)
     # Trying to delete a nonexisting entry should raise an exception.
-    self.assertRaises(ValueError, model.CatalogEntry.Delete, 'foo.com', 'xyz')
+    self.assertRaises(ValueError, model.CatalogEntry.Delete, 'xyz.com', 'xyz')
     # Random users shouldn't be able to delete catalog entries.
-    test_utils.SetUser('random_user@gmail.com')
-    self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Delete,
-                      'foo.com', 'label')
-    # After we grant the CATALOG_EDITOR role, CatalogEntry.Delete should work.
-    perms.Grant('random_user@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
-    model.CatalogEntry.Delete('foo.com', 'label')
+    with test_utils.Login('outsider'):
+      self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Delete,
+                        'xyz.com', 'label')
+      # After we grant the CATALOG_EDITOR role, CatalogEntry.Delete should work.
+      perms.Grant('outsider', perms.Role.CATALOG_EDITOR, 'xyz.com')
+      model.CatalogEntry.Delete('xyz.com', 'label')
 
     # Assert that the entry is successfully deleted.
-    self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'label'))
+    self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))
     # A CatalogEntry cannot be deleted twice.
-    self.assertRaises(ValueError, model.CatalogEntry.Delete, 'foo.com', 'label')
+    self.assertRaises(ValueError, model.CatalogEntry.Delete, 'xyz.com', 'label')
 
-  def testCatalogDelete_PublisherPolicy(self):
-    # Under the publisher policy, even catalog editors should not be able
+  def testDelete_StickyCatalogEntries(self):
+    # Under the sticky catalog policy, even catalog editors should not be able
     # to delete catalog entries if they are not the owner.
-    mm, _ = test_utils.CreateMapAsAdmin(
-        viewers=['random_user@gmail.com', 'creator@gmail.com'])
-    test_utils.BecomeAdmin()
+    m = test_utils.CreateMap(editors=['publisher', 'coworker'])
+    with test_utils.RootLogin():
+      domains.Domain.Create('xyz.com', has_sticky_catalog_entries=True)
+      perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
+      perms.Grant('coworker', perms.Role.CATALOG_EDITOR, 'xyz.com')
 
-    domains.Domain.Create('foo.com', has_sticky_catalog_entries=True)
-    perms.Grant('random_user@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
-    perms.Grant('creator@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
+    with test_utils.Login('publisher'):
+      model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+    with test_utils.Login('coworker'):
+      self.assertRaises(perms.NotCatalogEntryOwnerError,
+                        model.CatalogEntry.Delete, 'xyz.com', 'label')
+    with test_utils.Login('publisher'):
+      model.CatalogEntry.Delete('xyz.com', 'label')
 
-    test_utils.SetUser('creator@gmail.com')
-    model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
-    test_utils.SetUser('random_user@gmail.com')
-    self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Delete,
-                      'foo.com', 'label')
-    test_utils.SetUser('creator@gmail.com')
-    model.CatalogEntry.Delete('foo.com', 'label')
-
-  def testUpdate(self):
+  def testPut(self):
     """Tests modification and update of an existing CatalogEntry."""
-    mm, vid = test_utils.CreateMapAsAdmin(viewers=['random_user@gmail.com'])
-    mc = model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
-    self.assertEquals('title', mc.title)
+    perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
+    with test_utils.Login('publisher'):
+      m = test_utils.CreateMap(JSON1, editors=['publisher'])
+      mc = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+      self.assertEquals('One', mc.title)
 
-    # Update the CatalogEntry to point at a new MapVersion.
-    new_json = '{"description": "description2", "title": "title2"}'
-    new_vid = mm.PutNewVersion(new_json)
-    e = mc.Get('foo.com', 'label')
-    self.assertEquals(vid, e.model.map_version.key().id())
-    mc.is_listed = False
-    mc.SetMapVersion(mm)
+      # Update the CatalogEntry to point at a new MapVersion.
+      m.PutNewVersion(JSON2)
+      mc = model.CatalogEntry.Get('xyz.com', 'label')
+      self.assertEquals('One', mc.title)  # no change yet
+      mc.is_listed = True
+      mc.SetMapVersion(m)
 
     # Random users shouldn't be able to update catalog entries.
-    test_utils.SetUser('random_user@gmail.com')
-    self.assertRaises(perms.AuthorizationError, mc.Put)
-    # After we grant the CATALOG_EDITOR role, CatalogEntry.Put should work.
-    perms.Grant('random_user@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
-    mc.Put()
+    with test_utils.Login('outsider'):
+      self.assertRaises(perms.AuthorizationError, mc.Put)
+      # After we grant the CATALOG_EDITOR role, CatalogEntry.Put should work.
+      perms.Grant('outsider', perms.Role.CATALOG_EDITOR, 'xyz.com')
+      mc.Put()
 
     # The CatalogEntry should now point at the new MapVersion.
-    mc = model.CatalogEntry.Get('foo.com', 'label')
-    self.assertEquals(new_vid, mc.model.map_version.key().id())
-    self.assertEquals('title2', mc.title)
-    self.assertEquals(new_json, mc.maproot_json)
-    self.assertEquals(False, mc.is_listed)
+    mc = model.CatalogEntry.Get('xyz.com', 'label')
+    self.assertEquals('Two', mc.title)
+    self.assertEquals(JSON2, mc.maproot_json)
+    self.assertEquals(True, mc.is_listed)
+
+  def testPut_StickyCatalogEntries(self):
+    # Under the sticky catalog policy, even catalog editors should not be able
+    # to update catalog entries if they are not the owner.
+    with test_utils.RootLogin():
+      domains.Domain.Create('xyz.com', has_sticky_catalog_entries=True)
+      perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
+      perms.Grant('coworker', perms.Role.CATALOG_EDITOR, 'xyz.com')
+
+    with test_utils.Login('publisher'):
+      m = test_utils.CreateMap(JSON1, editors=['publisher', 'coworker'])
+      mc = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+      m.PutNewVersion(JSON2)
+
+    # Even though coworker has CATALOG_EDITOR, she can't overwrite the entry.
+    with test_utils.Login('coworker'):
+      mc.SetMapVersion(m)
+      self.assertRaises(perms.NotCatalogEntryOwnerError, mc.Put)
+    with test_utils.Login('publisher'):
+      mc.Put()  # publisher owns the catalog entry, so this succeeds
 
   def testListedMaps(self):
     """Tests CatalogEntry.GetAll and CatalogEntry.GetListed."""
-    mm, _ = test_utils.CreateMapAsAdmin()
-    mc = model.CatalogEntry.Create('foo.com', 'abcd', mm, is_listed=False)
+    with test_utils.RootLogin():
+      m = test_utils.CreateMap()
+      mc = model.CatalogEntry.Create('xyz.com', 'abcd', m, is_listed=False)
 
     self.assertEquals(0, len(model.CatalogEntry.GetListed()))
-    self.assertEquals(0, len(model.CatalogEntry.GetListed('foo.com')))
+    self.assertEquals(0, len(model.CatalogEntry.GetListed('xyz.com')))
 
     maps = list(model.CatalogEntry.GetAll())
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 
-    maps = list(model.CatalogEntry.GetAll('foo.com'))
+    maps = list(model.CatalogEntry.GetAll('xyz.com'))
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 
-    maps = list(model.CatalogEntry.GetByMapId(mm.id))
+    maps = list(model.CatalogEntry.GetByMapId(m.id))
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 
-    model.CatalogEntry.Create('foo.com', 'abcd', mm, is_listed=True)
+    with test_utils.RootLogin():
+      model.CatalogEntry.Create('xyz.com', 'abcd', m, is_listed=True)
 
     maps = model.CatalogEntry.GetListed()
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 
-    maps = model.CatalogEntry.GetListed('foo.com')
+    maps = model.CatalogEntry.GetListed('xyz.com')
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 
   def testMapDelete(self):
-    m, _ = test_utils.CreateMapAsAdmin(owners=['owner@example.com'],
-                                       editors=['editor@example.com'],
-                                       viewers=['viewer@example.com'])
-    model.CatalogEntry.Create('foo.com', 'label', m, is_listed=True)
-    map_id = m.id
+    with test_utils.RootLogin():
+      m = test_utils.CreateMap(
+          owners=['owner'], editors=['editor'], viewers=['viewer'])
+      model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+      map_id = m.id
 
     # Non-owners should not be able to delete the map.
-    test_utils.SetUser('editor@example.com')
-    m = model.Map.Get(map_id)
-    self.assertRaises(perms.AuthorizationError, m.Delete)
-
-    test_utils.SetUser('viewer@example.com')
-    m = model.Map.Get(map_id)
-    self.assertRaises(perms.AuthorizationError, m.Delete)
+    with test_utils.Login('editor'):
+      self.assertRaises(perms.AuthorizationError, model.Map.Get(map_id).Delete)
+    with test_utils.Login('viewer'):
+      self.assertRaises(perms.AuthorizationError, model.Map.Get(map_id).Delete)
 
     # Owners should be able to delete the map.
-    test_utils.SetUser('owner@example.com')
-    m = model.Map.Get(map_id)
-    m.Delete()
-    self.assertTrue(m.is_deleted)
-    self.assertEquals('owner@example.com', m.deleter.email())
+    with test_utils.Login('owner'):
+      m = model.Map.Get(map_id)
+      m.Delete()
+      self.assertTrue(m.is_deleted)
+      self.assertEquals('owner', m.deleter_id)
 
     # The catalog entry should be gone.
-    self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'label'))
+    self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))
 
     # The map should no longer be retrievable by Get and GetAll.
     self.assertEquals(None, model.Map.Get(map_id))
-    self.assertEquals([], list(model.Map.GetViewable(utils.GetCurrentUser())))
+    self.assertEquals([], list(model.Map.GetViewable(users.GetCurrent())))
 
     # Non-admins (even the owner) should not be able to retrieve deleted maps.
     self.assertRaises(perms.AuthorizationError, model.Map.GetDeleted, map_id)
 
-    # Admins should be able to undelete.
-    test_utils.BecomeAdmin()
-    m = model.Map.GetDeleted(map_id)
-    m.Undelete()
-
-    test_utils.SetUser('viewer@example.com')
-    self.assertTrue(model.Map.Get(map_id))
+    # Admins should be able to undelete, which makes the map viewable again.
+    with test_utils.RootLogin():
+      m = model.Map.GetDeleted(map_id)
+      m.Undelete()
+    with test_utils.Login('viewer'):
+      self.assertTrue(model.Map.Get(map_id))
 
   def testMapBlock(self):
-    m, _ = test_utils.CreateMapAsAdmin(owners=['owner@example.com'],
-                                       editors=['editor@example.com'],
-                                       viewers=['viewer@example.com'])
-    model.CatalogEntry.Create('foo.com', 'label', m, is_listed=True)
-    map_id = m.id
+    with test_utils.RootLogin():
+      m = test_utils.CreateMap(
+          owners=['owner'], editors=['editor'], viewers=['viewer'])
+      model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+      map_id = m.id
 
     # Non-admins should not be able to block the map.
-    test_utils.SetUser('owner@example.com')
-    m = model.Map.Get(map_id)
-    self.assertRaises(perms.AuthorizationError, m.SetBlocked, True)
+    with test_utils.Login('owner'):
+      m = model.Map.Get(map_id)
+      self.assertRaises(perms.AuthorizationError, m.SetBlocked, True)
 
     # Admins should be able to block the map.
-    test_utils.BecomeAdmin()
-    m.SetBlocked(True)
-    self.assertTrue(m.is_blocked)
-    self.assertEquals('admin@google.com', m.blocker.email())
+    with test_utils.RootLogin():
+      m.SetBlocked(True)
+      self.assertTrue(m.is_blocked)
+      self.assertEquals('root', m.blocker_id)
 
     # The catalog entry should be gone.
-    self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'label'))
+    self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))
 
-    # The map should no longer be accessible by non-owners.
-    test_utils.SetUser('viewer@example.com')
-    self.assertRaises(perms.AuthorizationError, model.Map.Get, map_id)
+    # The map should no longer be accessible to non-owners.
+    with test_utils.Login('editor'):
+      self.assertRaises(perms.AuthorizationError, model.Map.Get, map_id)
+    with test_utils.Login('viewer'):
+      self.assertRaises(perms.AuthorizationError, model.Map.Get, map_id)
 
-    test_utils.SetUser('editor@example.com')
-    self.assertRaises(perms.AuthorizationError, model.Map.Get, map_id)
-
-    # The map should still be accessible by the owner.
-    test_utils.SetUser('owner@example.com')
-    m = model.Map.Get(map_id)
-
-    # Even the owner should not be able to publish the map.
-    perms.Grant('owner@example.com', perms.Role.CATALOG_EDITOR, 'example.com')
-    self.assertRaises(perms.NotPublishableError,
-                      model.CatalogEntry.Create, 'example.com', 'foo', m)
+    # The map should be accessible to the owner, but not publishable.
+    perms.Grant('owner', perms.Role.CATALOG_EDITOR, 'xyz.com')
+    with test_utils.Login('owner'):
+      m = model.Map.Get(map_id)
+      self.assertRaises(perms.NotPublishableError,
+                        model.CatalogEntry.Create, 'xyz.com', 'foo', m)
 
   def testMapWipe(self):
-    m, _ = test_utils.CreateMapAsAdmin(owners=['owner@example.com'],
-                                       editors=['editor@example.com'],
-                                       viewers=['viewer@example.com'])
-    model.CatalogEntry.Create('foo.com', 'label', m, is_listed=True)
-    map_id = m.id
+    with test_utils.RootLogin():
+      m = test_utils.CreateMap(
+          owners=['owner'], editors=['editor'], viewers=['viewer'])
+      model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+      map_id = m.id
 
     # Non-admins should not be able to wipe the map.
-    test_utils.SetUser('owner@example.com')
-    m = model.Map.Get(map_id)
-    self.assertRaises(perms.AuthorizationError, m.Wipe)
+    with test_utils.Login('owner'):
+      self.assertRaises(perms.AuthorizationError, m.Wipe)
 
     # Admins should be able to wipe the map.
-    test_utils.BecomeAdmin()
-    m.Wipe()
+    with test_utils.RootLogin():
+      m.Wipe()
 
     # The catalog entry should be gone.
-    self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'label'))
+    self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))
 
     # The map should be totally gone.
     self.assertEquals(None, model.Map.Get(map_id))
-    self.assertEquals(None, model.Map.GetDeleted(map_id))
+    with test_utils.RootLogin():
+      self.assertEquals(None, model.Map.GetDeleted(map_id))
 
 
 if __name__ == '__main__':

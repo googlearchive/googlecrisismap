@@ -15,21 +15,33 @@
 import collections
 
 import cache
+import users
 import utils
 
-from google.appengine.api import users
 from google.appengine.ext import db
+
+# A special user with ADMIN access.  Real user objects that come from a
+# Google sign-in page always have numeric IDs.
+ROOT = users.User(id='root')
 
 
 class AuthorizationError(Exception):
-  """User not authorized to perform operation."""
+  """Subject is not authorized to perform an operation on a domain or a map."""
 
-  def __init__(self, user, role, target):
+  def __init__(self, subject, role, target):
     super(AuthorizationError, self).__init__(
-        'User %s lacks %s access to %r' % (user, role, target))
-    self.user = user
+        '%r lacks %s access to %r' % (subject, role, target))
+    self.subject = subject
     self.role = role
     self.target = target
+
+
+class NotCatalogEntryOwnerError(Exception):
+  """User is not authorized to change or delete a catalog entry."""
+
+  def __init__(self, subject, target):
+    Exception.__init__(self, '%r does not own catalog entry %s/%s' %
+                       (subject, target.domain, target.label))
 
 
 class NotPublishableError(Exception):
@@ -100,19 +112,47 @@ def _LoadPermissions(subject, target):
   return [_Permission(m.subject, m.role, m.target) for m in models]
 
 
-def Query(subject, role, target):
+def _Query(subject, role, target):
+  """Gets a list of all _Permissions matching a given subject, role, and target.
+
+  Args:
+    subject: A user ID or domain name, or None to query for all subjects.
+    role: A Role constant, or None to query for all roles.
+    target: A domain name, or None to query for all domains.
+  Returns:
+    A list of matching _Permission objects.
+  """
   perms = cache.Get(_PermissionCachePath(subject=subject, target=target),
                     make_value=lambda: _LoadPermissions(subject, target))
   return [p for p in perms if p.role == role] if role else perms
 
 
-def Get(subject, role, target):
-  perms = Query(subject, role, target)
-  return perms[0] if perms else None
+def _QueryForUser(user, role, target):
+  """Gets all _Permissions for the user's ID and (if present) GA domain."""
+  perms = _Query(user.id, role, target)
+  if user.domain:
+    perms += _Query(user.domain, role, target)
+  return perms
+
+
+def _Exists(subject, role, target):
+  """Returns True if the specified single _Permission exists."""
+  return subject and role and target and bool(_Query(subject, role, target))
+
+
+def _ExistsForUser(user, role, target):
+  """Returns True if a _Permission exists for the user's ID or GA domain."""
+  return _Exists(user.id, role, target) or _Exists(user.domain, role, target)
 
 
 def Grant(subject, role, target):
-  """Grants the given role to the subject for the target."""
+  """Grants the given role to the subject for the target.
+
+  Args:
+    subject: A user ID or domain name.
+    role: A Role constant.
+    target: A domain name.
+  """
   perm = _Permission(subject, role, target)
   perm_model = PermissionModel(
       subject=subject, role=role, target=target,
@@ -129,83 +169,34 @@ def _Revoke(perm):
 
 
 def Revoke(subject, role, target):
+  """Removes a specific permission.  Note: inherited access may still apply.
+
+  Args:
+    subject: A user ID or domain name.
+    role: A Role constant.
+    target: A domain name.
+  """
   _Revoke(_Permission(subject, role, target))
 
 
-def SetDomainRoles(subject, domain, new_roles):
-  """Gives the subject the listed roles to the given domain.
+def GetSubjectsForTarget(target):
+  """Gets information on subjects that have any permissions to a given target.
 
   Args:
-    subject: An e-mail address or a domain name; the person/domain whose
-        roles are being set.
-    domain: The domain to whose access is being set.
-    new_roles: The list of roles the subject should receive; if the subject
-        currently has roles that are not in new_roles, they will be revoked.
-  """
-  perms = Query(subject, None, domain)
-  for perm in perms:
-    if perm.role not in new_roles:
-      _Revoke(perm)
-  old_roles = [perm.role for perm in perms]
-  for role in new_roles:
-    if role not in old_roles:
-      Grant(subject, role, domain)
-
-
-def GetDomainRoles(subject, domain):
-  """Returns the list of roles held by subject in domain."""
-  return [perm.role for perm in Query(subject, None, domain)]
-
-
-def GetDomainsWithRole(role, user=None):
-  """Gets the domains for which the given user has the given type of access.
-
-  Args:
-    role: A Role constant.
-    user: A google.appengine.api.users.User object, or None.
-
+    target: A domain name.
   Returns:
-    A list of strings (domain names).  Note that users with ADMIN access will
-    actually have access for all domains, but the result will only include the
-    domains that are specifically granted to the user or the user's domain.
+    A dictionary whose keys are subjects (user IDs or domain names) and values
+    are sets of the roles for those subjects.
   """
-  email = user and user.email() or utils.GetCurrentUserEmail()
-  domain = user and utils.GetUserDomain(user) or utils.GetCurrentUserDomain()
-  return sorted(
-      [p.target for p in Query(email, role, None)] +
-      [p.target for p in Query(domain, role, None)])
-
-
-def GetSubjectsInDomain(domain):
-  """Retrieves all users granted permissions in the given domain.
-
-  Args:
-    domain: (string) the name of the domain being queried.
-
-  Returns:
-    A dictionary that maps users (or domains) to the list of granted
-    permissions.  Note that permissions they inherit from their domain
-    are NOT returned.
-  """
-  all_perms = Query(None, None, domain)
   result = {}
-  for perm in all_perms:
-    result.setdefault(perm.subject, []).append(perm.role)
+  for perm in _Query(None, None, target):
+    result.setdefault(perm.subject, set()).add(perm.role)
   return result
 
 
-def GetDomains(subject, role):
-  """Retrieves all the domains where the subject has role permissions."""
-  # Order is important here; we go from strongest role to weakest, because
-  # stronger roles implicitly grant the weaker ones.
-  DOMAIN_ROLES = (Role.DOMAIN_ADMIN, Role.CATALOG_EDITOR, Role.MAP_CREATOR)
-  if role not in DOMAIN_ROLES:
-    return []
-  perm_list = Query(subject, None, None)
-  # Because stronger roles grant weaker ones, we take from the front of the
-  # list to the role we are searching for.
-  qualifying_roles = DOMAIN_ROLES[:DOMAIN_ROLES.index(role)+1]
-  return list(set(p.target for p in perm_list if p.role in qualifying_roles))
+def IsUserId(subject):
+  """Returns True if the subject is a user ID, False if it's a domain."""
+  return '.' not in subject
 
 
 class AccessPolicy(object):
@@ -213,66 +204,59 @@ class AccessPolicy(object):
 
   def HasRoleAdmin(self, user):
     """Returns True if a user should get ADMIN access."""
-    # Users get admin access if they have global admin access or if they
-    # have App Engine administrator permission for this app.
-    return user and (Get(user.email(), Role.ADMIN, GLOBAL_TARGET) or
-                     (user == users.get_current_user() and
-                      users.is_current_user_admin()))
-
-  def _HasDomainPermission(self, user, role, domain):
-    return (Get(user.email(), role, domain) or
-            Get(utils.GetUserDomain(user), role, domain))
+    # Users get admin access if they have the global ADMIN permission.  The
+    # special user ROOT, which can only be created programmatically and cannot
+    # come from a real Google sign-in page, also gets ADMIN access.
+    return user and (_Exists(user.id, Role.ADMIN, GLOBAL_TARGET) or
+                     user.id == ROOT.id)
 
   def HasRoleDomainAdmin(self, user, domain):
     """Returns True if the user should get DOMAIN_ADMIN access for a domain."""
-    # Users get domain administration access if they have DOMAIN_ADMIN access
-    # to the domain, or if they have admin access.
-    return user and (self._HasDomainPermission(user, Role.DOMAIN_ADMIN, domain)
-                     or self.HasRoleAdmin(user))
+    # Users get domain administration access if they have domain administrator
+    # permission to the domain, or if they have global admin access.
+    return user and (_ExistsForUser(user, Role.DOMAIN_ADMIN, domain) or
+                     self.HasRoleAdmin(user))
 
   def HasRoleCatalogEditor(self, user, domain):
     """Returns True if a user should get CATALOG_EDITOR access for a domain."""
-    # Users get catalog editor access if they have catalog editor access to the
-    # specified domain, if they have catalog editor access to all domains, or
-    # if they have admin access.
-    return user and (Get(user.email(), Role.CATALOG_EDITOR, domain)
-                     or Get(
-                         utils.GetUserDomain(user), Role.CATALOG_EDITOR, domain)
-                     or self.HasRoleAdmin(user))
+    # Users get catalog editor access if they have catalog editor permission to
+    # the specified domain, or if they have domain admin access.
+    return user and (_ExistsForUser(user, Role.CATALOG_EDITOR, domain) or
+                     self.HasRoleDomainAdmin(user, domain))
 
   def HasRoleMapCreator(self, user, domain):
     """Returns True if a user should get MAP_CREATOR access."""
-    # Users get creator access if they have global map creator access or if
-    # they have admin access.
-    return user and (self._HasDomainPermission(user, Role.MAP_CREATOR, domain)
-                     or self.HasRoleAdmin(user))
+    # Users get map creator access if they have map creator permission to the
+    # specified domain, or if they have catalog editor access.
+    return user and (_ExistsForUser(user, Role.MAP_CREATOR, domain)
+                     or self.HasRoleCatalogEditor(user, domain))
 
   def _HasMapPermission(self, user, role, map_object):
     # If the map is blocked, only the first owner can access it.
     if map_object.is_blocked:
-      if not (user and [user.email()] == map_object.owners[:1]):
+      if not (user and [user.id] == map_object.owners[:1]):
         return False
 
     if role == Role.MAP_VIEWER and map_object.world_readable:
       return True
     if not user:
       return False
-    domain_role = (utils.GetUserDomain(user) in map_object.domains and
-                   map_object.domain_role or None)
+    domain_role = (user.domain and user.domain in map_object.domains and
+                   map_object.domain_role) or None
 
     # Map permissions exist in a hierarchy - editors can always view;
     # owners can always edit.
-    if domain_role == Role.MAP_OWNER or user.email() in map_object.owners:
+    if domain_role == Role.MAP_OWNER or user.id in map_object.owners:
       return True
     if role == Role.MAP_OWNER:
       return False
 
-    if domain_role == Role.MAP_EDITOR or user.email() in map_object.editors:
+    if domain_role == Role.MAP_EDITOR or user.id in map_object.editors:
       return True
     if role == Role.MAP_EDITOR:
       return False
 
-    if domain_role == Role.MAP_VIEWER or user.email() in map_object.viewers:
+    if domain_role == Role.MAP_VIEWER or user.id in map_object.viewers:
       return True
     return False
 
@@ -301,6 +285,18 @@ class AccessPolicy(object):
             self.HasRoleMapEditor(user, map_object))
 
 
+def GetAccessibleDomains(user, role):
+  """Gets the set of domains for which the user has the specified access."""
+  # Ordered by increasing strength: stronger roles implicitly grant weaker ones.
+  DOMAIN_ROLES = [Role.MAP_CREATOR, Role.CATALOG_EDITOR, Role.DOMAIN_ADMIN]
+  if role not in DOMAIN_ROLES:
+    return set()
+  # This set includes the desired role and all stronger roles.
+  qualifying_roles = DOMAIN_ROLES[DOMAIN_ROLES.index(role):]
+  return {p.target for p in _QueryForUser(user, None, None)
+          if p.role in qualifying_roles}
+
+
 def CheckAccess(role, target=None, user=None, policy=None):
   """Checks whether the given user has the specified access role.
 
@@ -310,8 +306,8 @@ def CheckAccess(role, target=None, user=None, policy=None):
         MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
         CATALOG_EDITOR, MAP_CREATOR, or DOMAIN_ADMIN, this must be a domain
         name (a string).  For other roles, this argument is not used.
-    user: (optional) A google.appengine.api.users.User object.  If not
-        specified, access permissions are checked for the current user.
+    user: (optional) A users.User object.  If not specified, access permissions
+        are checked for the currently signed-in user.
     policy: The access policy to apply.
 
   Returns:
@@ -329,7 +325,7 @@ def CheckAccess(role, target=None, user=None, policy=None):
   if role not in Role:
     raise ValueError('Invalid role %r' % role)
   policy = policy or AccessPolicy()
-  user = user or utils.GetCurrentUser()
+  user = user or users.GetCurrent()
 
   # Roles that are unrelated to a target.
   if role == Role.ADMIN:
@@ -366,14 +362,14 @@ def AssertAccess(role, target=None, user=None, policy=None):
         MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
         CATALOG_EDITOR, MAP_CREATOR or DOMAIN_ADMIN, this must be a domain name
         (a string).  For other roles, this argument is not used.
-    user: (optional) A google.appengine.api.users.User object.  If not
-        specified, access permissions are checked for the current user.
+    user: (optional) A users.User object.  If not specified, access permissions
+        are checked for the currently signed-in user.
     policy: The access policy to apply.
 
   Raises:
     AuthorizationError: If the user lacks the given access permission.
   """
-  user = user or utils.GetCurrentUser()  # ensure user is set in error message
+  user = user or users.GetCurrent()  # ensure user is set in error message
   if not CheckAccess(role, target=target, user=user, policy=policy):
     raise AuthorizationError(user, role, target)
 
@@ -382,3 +378,9 @@ def AssertPublishable(map_object):
   """Requires that the given map be publishable."""
   if map_object.is_blocked:
     raise NotPublishableError(map_object)
+
+
+def AssertCatalogEntryOwner(entry, user=None):
+  user = user or users.GetCurrent()
+  if not user.id == entry.creator_id:
+    raise NotCatalogEntryOwnerError(user, entry)

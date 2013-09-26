@@ -18,22 +18,6 @@ import test_utils
 import utils
 
 
-class UtilsTests(test_utils.BaseTest):
-  def testGetCurrentUserEmail(self):
-    """Verifies that GetCurrentUserEmail normalizes e-mail addresses."""
-    test_utils.ClearUser()
-    self.assertEquals('', utils.GetCurrentUserEmail())
-    test_utils.SetUser('Dr.Horrible@eXAMple.com')
-    self.assertEquals('drhorrible@example.com', utils.GetCurrentUserEmail())
-
-  def testGetCurrentUserDomain(self):
-    """Verifies that GetCurrentUserDomain works."""
-    test_utils.ClearUser()
-    self.assertEquals('', utils.GetCurrentUserDomain())
-    test_utils.SetUser('Dr.Horrible@eXAMple.com')
-    self.assertEquals('example.com', utils.GetCurrentUserDomain())
-
-
 class UtilsSetAndTestTests(test_utils.BaseTest):
 
   def setUp(self):
@@ -83,6 +67,15 @@ class UtilsSetAndTestTests(test_utils.BaseTest):
     self.assertFalse(utils.SetAndTest(
         self.MockSet, self.MockTestFalse, num_tries=5, sleep_delta=0))
 
+  def testIsValidEmail(self):
+    self.assertTrue(utils.IsValidEmail('user@domain.subdomain.com'))
+    self.assertTrue(utils.IsValidEmail('a@b.c'))
+    self.assertFalse(utils.IsValidEmail('a@b@c'))
+    self.assertFalse(utils.IsValidEmail('@domain.com'))
+    self.assertFalse(utils.IsValidEmail('domain.com'))
+    self.assertFalse(utils.IsValidEmail('user'))
+    self.assertFalse(utils.IsValidEmail('a@b'))
+    self.assertFalse(utils.IsValidEmail('a@b.'))
 
 if __name__ == '__main__':
   test_utils.main()

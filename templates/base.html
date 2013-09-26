@@ -28,6 +28,14 @@ specific language governing permissions and limitations under the License.
 
 <body class="cm-body">
   <div class="cm-userbar">
+    {% if user.domain %}
+      {{email_username}}@<b>{{user.domain}}</b>
+    {% else %}
+      {{user.email}}
+    {% endif %}
+    &#xb7;
+    <a href="{{logout_url}}">Sign out</a>
+    &#xb7;
     <a href="{{root}}/.prefs">Preferences</a>
     &#xb7;
     <a href="https://docs.google.com/spreadsheet/embeddedform?formkey=dEJLVXhkbGNobWNNTnUzRGZGQ2tJbXc6MQ"
@@ -82,10 +90,10 @@ specific language governing permissions and limitations under the License.
         {% if navbar.add_domain_create_link %}
           <li>
             <form id="create-domain-form" method="post"
-                  action="{{root}}/{{navbar.user_domain}}/.admin">
+                  action="{{root}}/{{user.domain}}/.admin">
               <input type="hidden" name="form" value="create-domain">
               <a href="#" onclick="this.parentNode.submit()">
-                Create domain {{navbar.user_domain}}
+                Create domain {{user.domain}}
               </a>
             </form>
           </li>

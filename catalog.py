@@ -16,7 +16,6 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import base_handler
 import model
-import profiles
 
 
 class Catalog(base_handler.BaseHandler):
@@ -26,8 +25,7 @@ class Catalog(base_handler.BaseHandler):
     """Displays the list of catalog entries."""
     self.response.out.write(self.RenderTemplate('catalog.html', {
         'domain': domain,
-        'entries': model.CatalogEntry.GetAll(domain),
-        'profile': profiles.Profile.Get(user)
+        'entries': model.CatalogEntry.GetAll(domain)
     }))
 
   def Post(self, domain, user):  # pylint: disable=unused-argument

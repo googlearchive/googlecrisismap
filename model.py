@@ -23,6 +23,7 @@ import random
 import cache
 import domains
 import perms
+import users
 import utils
 
 from google.appengine.ext import db
@@ -62,9 +63,10 @@ class MapVersionModel(db.Model):
   maproot_json = db.TextProperty()
 
   # Fields below are metadata for those with edit access, not for public
-  # display.  No last_updated field is needed; these objects are immutable.
-  creator = db.UserProperty(auto_current_user_add=True)
-  created = db.DateTimeProperty(auto_now_add=True)
+  # display.  No updated field is needed; these objects are immutable.
+  created = db.DateTimeProperty()
+  creator_id = db.StringProperty()
+  creator = db.UserProperty()  # DEPRECATED
 
 
 class MapModel(db.Model):
@@ -73,8 +75,7 @@ class MapModel(db.Model):
   NOTE: This class is private to this module; outside code should use the Map
   class to create or access maps.
 
-  The key_name is a unique map name chosen by the creator.  The latest version
-  of the map is what's shown to viewers.
+  The key_name is a unique ID.  The latest version is what's shown to viewers.
   """
 
   # Title for the current version.  Cached from the current version for display.
@@ -85,28 +86,33 @@ class MapModel(db.Model):
   description = db.TextProperty()
 
   # Metadata for auditing and debugging purposes.
-  created = db.DateTimeProperty(auto_now_add=True)
-  creator = db.UserProperty(auto_current_user_add=True)
-  last_updated = db.DateTimeProperty(auto_now=True)
-  last_updater = db.UserProperty(auto_current_user=True)
+  created = db.DateTimeProperty()
+  creator_id = db.StringProperty()
+  creator = db.UserProperty()  # DEPRECATED
+  updated = db.DateTimeProperty()
+  updater_id = db.StringProperty()
+  last_updated = db.DateTimeProperty()  # DEPRECATED
+  last_updater = db.UserProperty()  # DEPRECATED
 
   # To mark a map as deleted, set this to anything other than NEVER; the map
   # won't be returned by Map.Get* methods, though it remains in the datastore.
   deleted = db.DateTimeProperty(default=NEVER)
-  deleter = db.UserProperty()
+  deleter_id = db.StringProperty()
+  deleter = db.UserProperty()  # DEPRECATED
 
   # To mark a map as blocked, set this to anything other than NEVER; then only
   # the first owner can view or edit the map, and the map cannot be published.
   blocked = db.DateTimeProperty(default=NEVER)
-  blocker = db.UserProperty()
+  blocker_id = db.StringProperty()
+  blocker = db.UserProperty()  # DEPRECATED
 
-  # List of users who can set the flags and permission lists on this object.
+  # User IDs of users who can set the flags and permission lists on this object.
   owners = db.StringListProperty()
 
-  # List of individual users who can edit this map.
+  # User IDs of users who can edit this map.
   editors = db.StringListProperty()
 
-  # List of individual users who can view the current version of this map.
+  # User IDs of users who can view the current version of this map.
   viewers = db.StringListProperty()
 
   # List of domains that this map belongs to.
@@ -150,10 +156,13 @@ class CatalogEntryModel(db.Model):
   label = db.StringProperty()
 
   # Metadata about the catalog entry itself.
-  creator = db.UserProperty(auto_current_user_add=True)
-  created = db.DateTimeProperty(auto_now_add=True)
-  last_updated = db.DateTimeProperty(auto_now=True)
-  last_updater = db.UserProperty(auto_current_user=True)
+  created = db.DateTimeProperty()
+  creator_id = db.StringProperty()
+  creator = db.UserProperty()  # DEPRECATED
+  updated = db.DateTimeProperty()
+  updater_id = db.StringProperty()
+  last_updated = db.DateTimeProperty()  # DEPRECATED
+  last_updater = db.UserProperty()  # DEPRECATED
 
   # The displayed title (in the crisis picker).  Set from the map_object.
   title = db.StringProperty()
@@ -179,7 +188,7 @@ class CatalogEntryModel(db.Model):
   @staticmethod
   def GetAll(domain=None):
     """Yields all CatalogEntryModels in reverse update order."""
-    query = CatalogEntryModel.all().order('-last_updated')
+    query = CatalogEntryModel.all().order('-updated')
     if domain:
       query = query.filter('domain =', domain)
     return query
@@ -190,13 +199,22 @@ class CatalogEntryModel(db.Model):
     return CatalogEntryModel.GetAll(domain).filter('is_listed =', True)
 
   @staticmethod
-  def Create(domain, label, map_object, is_listed=False):
+  def Put(uid, domain, label, map_object, is_listed=False):
     """Stores a CatalogEntryModel pointing at the map's current version."""
-    entity = CatalogEntryModel(key_name=domain + ':' + label, domain=domain,
-                               label=label, title=map_object.title,
-                               map_id=map_object.id,
-                               map_version=map_object.GetCurrent().key,
-                               is_listed=is_listed)
+    if ':' in domain:
+      raise ValueError('Invalid domain %r' % domain)
+    now = datetime.datetime.utcnow()
+    entity = CatalogEntryModel.get_by_key_name(domain + ':' + label)
+    if not entity:
+      entity = CatalogEntryModel(key_name=domain + ':' + label,
+                                 domain=domain, label=label,
+                                 created=now, creator_id=uid)
+    entity.updated = now
+    entity.updater_id = uid
+    entity.title = map_object.title
+    entity.map_id = map_object.id
+    entity.map_version = map_object.GetCurrent().key
+    entity.is_listed = is_listed
     entity.put()
     return entity
 
@@ -251,14 +269,16 @@ class CatalogEntry(object):
     return [CatalogEntry(model)
             for model in CatalogEntryModel.GetAll().filter('map_id =', map_id)]
 
+  # TODO(kpy): First argument should be a user.
   @staticmethod
-  def Create(domain, label, map_object, is_listed=False):
+  def Create(domain_name, label, map_object, is_listed=False):
     """Stores a new CatalogEntry with version set to the map's current version.
 
-    If a CatalogEntry already exists with the same label, it is overwritten.
+    If a CatalogEntry already exists with the same label, and the user is
+    allowed to overwrite it, it is overwritten.
 
     Args:
-      domain: The domain in which to create the CatalogEntry.
+      domain_name: The domain in which to create the CatalogEntry.
       label: The publication label to use for this map.
       map_object: The Map object whose current version to use.
       is_listed: If True, show this entry in the map picker menu.
@@ -267,20 +287,28 @@ class CatalogEntry(object):
     Raises:
       ValueError: If the domain string is invalid.
     """
-    domain = str(domain)  # accommodate Unicode strings
-    if ':' in domain:
-      raise ValueError('Invalid domain %r' % domain)
-    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain)
+    domain_name = str(domain_name)  # accommodate Unicode strings
+    domain = domains.Domain.Get(domain_name)
+    if not domain:
+      raise ValueError('Unknown domain %r' % domain_name)
+    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain_name)
     perms.AssertAccess(perms.Role.MAP_VIEWER, map_object)
     perms.AssertPublishable(map_object)
-    model = CatalogEntryModel.Create(domain, label, map_object, is_listed)
+    # If catalog is sticky, only a creator or domain admin may update an entry.
+    if (domain.has_sticky_catalog_entries and
+        not perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name)):
+      entry = CatalogEntryModel.Get(domain_name, label)
+      if entry:
+        perms.AssertCatalogEntryOwner(entry)
+    entry = CatalogEntryModel.Put(
+        users.GetCurrent().id, domain_name, label, map_object, is_listed)
 
     # We use '*' in the cache key for the list that includes all domains.
     cache.Delete([CatalogEntry, '*', 'all'])
     cache.Delete([CatalogEntry, '*', 'listed'])
-    cache.Delete([CatalogEntry, domain, 'all'])
-    cache.Delete([CatalogEntry, domain, 'listed'])
-    return CatalogEntry(model)
+    cache.Delete([CatalogEntry, domain_name, 'all'])
+    cache.Delete([CatalogEntry, domain_name, 'listed'])
+    return CatalogEntry(entry)
 
   @staticmethod
   def Delete(domain_name, label):
@@ -295,18 +323,17 @@ class CatalogEntry(object):
     """
     domain_name = str(domain_name)  # accommodate Unicode strings
     domain = domains.Domain.Get(domain_name)
+    if not domain:
+      raise ValueError('Unknown domain %r' % domain_name)
     entry = CatalogEntryModel.Get(domain_name, label)
     if not entry:
       raise ValueError('No CatalogEntry %r in domain %r' % (label, domain_name))
-    if not domain:
-      raise ValueError('Unknown domain %r' % domain_name)
     perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain_name)
-    if domain.has_sticky_catalog_entries:
-      # When catalog entries are sticky, only the label creator or a
-      # domain admin may delete a label
-      email = utils.GetCurrentUserEmail()
-      if email != utils.NormalizeEmail(entry.creator.email()):
-        perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain_name)
+    # If catalog is sticky, only a creator or domain admin may delete an entry.
+    if (domain.has_sticky_catalog_entries and
+        not perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name)):
+      perms.AssertCatalogEntryOwner(entry)
+
     entry.delete()
     # We use '*' in the cache key for the list that includes all domains.
     cache.Delete([CatalogEntry, '*', 'all'])
@@ -346,8 +373,12 @@ class CatalogEntry(object):
 
   # Make the other properties of the CatalogEntryModel visible on CatalogEntry.
   for x in ['domain', 'label', 'map_id', 'title', 'publisher_name',
-            'creator', 'created', 'last_updated', 'last_updater']:
+            'created', 'creator_id', 'updated', 'updater_id']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
+
+  # Handy access to the user profiles associated with user IDs.
+  creator = property(lambda self: users.Get(self.creator_id))
+  updater = property(lambda self: users.Get(self.updater_id))
 
   def SetMapVersion(self, map_object):
     """Points this entry at the specified MapVersionModel."""
@@ -361,15 +392,26 @@ class CatalogEntry(object):
 
   def Put(self):
     """Saves any modifications to the datastore."""
-    domain = str(self.domain)  # accommodate Unicode strings
-    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain)
+    domain_name = str(self.domain)  # accommodate Unicode strings
+    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain_name)
+    # If catalog is sticky, only a creator or domain admin may update an entry.
+    domain = domains.Domain.Get(domain_name)
+    if not domain:
+      raise ValueError('Unknown domain %r' % domain_name)
+    # TODO(kpy): We could use a perms function for this catalog entry check.
+    if (domain.has_sticky_catalog_entries and
+        not perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name)):
+      perms.AssertCatalogEntryOwner(self.model)
+
+    self.model.updater_id = users.GetCurrent().id
+    self.model.updated = datetime.datetime.utcnow()
     self.model.put()
     # We use '*' in the cache key for the list that includes all domains.
     cache.Delete([CatalogEntry, '*', 'all'])
     cache.Delete([CatalogEntry, '*', 'listed'])
-    cache.Delete([CatalogEntry, domain, 'all'])
-    cache.Delete([CatalogEntry, domain, 'listed'])
-    cache.Delete([CatalogEntry, domain, self.label, 'json'])
+    cache.Delete([CatalogEntry, domain_name, 'all'])
+    cache.Delete([CatalogEntry, domain_name, 'listed'])
+    cache.Delete([CatalogEntry, domain_name, self.label, 'json'])
 
 
 class Map(object):
@@ -406,15 +448,21 @@ class Map(object):
   id = property(lambda self: str(self.model.key().name()))
 
   # Make the other properties of the underlying MapModel readable on the Map.
-  for x in ['creator', 'created', 'last_updated', 'last_updater',
-            'blocked', 'blocker', 'deleted', 'deleter',
+  for x in ['created', 'creator_id', 'updated', 'updater_id',
+            'blocked', 'blocker_id', 'deleted', 'deleter_id',
             'title', 'description', 'current_version', 'world_readable',
             'owners', 'editors', 'viewers', 'domains', 'domain_role']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
 
+  # Handy access to the user profiles associated with user IDs.
+  creator = property(lambda self: users.Get(self.creator_id))
+  updater = property(lambda self: users.Get(self.updater_id))
+  blocker = property(lambda self: users.Get(self.blocker_id))
+  deleter = property(lambda self: users.Get(self.deleter_id))
+
   # Handy Boolean access to the blocked or deleted status.
-  is_deleted = property(lambda self: self.deleted != NEVER)
   is_blocked = property(lambda self: self.blocked != NEVER)
+  is_deleted = property(lambda self: self.deleted != NEVER)
 
   @staticmethod
   def get(key):  # lowercase to match db.Model.get  # pylint: disable=g-bad-name
@@ -426,7 +474,7 @@ class Map(object):
     query = MapModel.all().filter('deleted =', NEVER)
     if domain:
       query = query.filter('domains =', domain)
-    for model in query.order('-last_updated'):
+    for model in query.order('-updated'):
       yield Map(model)
 
   @staticmethod
@@ -480,21 +528,20 @@ class Map(object):
     domain = domain_obj
     perms.AssertAccess(perms.Role.MAP_CREATOR, domain.name)
     if owners is None:
-      # TODO(kpy): Take user as an argument instead of calling GetCurrentUser.
-      owners = [utils.GetCurrentUserEmail()]
+      # TODO(kpy): Take user as an argument instead of calling GetCurrent.
+      owners = [users.GetCurrent().id]
     if editors is None:
       editors = []
     if viewers is None:
       viewers = []
     if domain.initial_domain_role != domains.NO_ROLE:
-      map_creators = [p.subject for p
-                      in perms.Query(None, perms.Role.MAP_CREATOR, domain.name)]
+      domain_subjects = set(perms.GetSubjectsForTarget(domain.name).keys())
       if domain.initial_domain_role == perms.Role.MAP_OWNER:
-        owners = list(set(owners + map_creators))
+        owners = list(set(owners) | domain_subjects)
       elif domain.initial_domain_role == perms.Role.MAP_EDITOR:
-        editors = list(set(editors + map_creators))
+        editors = list(set(editors) | domain_subjects)
       else:
-        viewers = list(set(viewers + map_creators))
+        viewers = list(set(viewers) | domain_subjects)
 
     # urlsafe_b64encode encodes 12 random bytes as exactly 16 characters,
     # which can include digits, letters, hyphens, and underscores.  Because
@@ -502,6 +549,7 @@ class Map(object):
     map_object = Map(MapModel(
         key_name=base64.urlsafe_b64encode(
             ''.join(chr(random.randrange(256)) for i in xrange(12))),
+        created=datetime.datetime.utcnow(), creator_id=users.GetCurrent().id,
         owners=owners, editors=editors, viewers=viewers, domains=[domain.name],
         domain_role=domain.initial_domain_role, world_readable=world_readable))
     map_object.PutNewVersion(maproot_json)  # also puts the MapModel
@@ -516,11 +564,16 @@ class Map(object):
     """Stores a new MapVersionModel object for this Map and returns its ID."""
     self.AssertAccess(perms.Role.MAP_EDITOR)
     maproot = json.loads(maproot_json)  # validate the JSON first
+    now = datetime.datetime.utcnow()
+    uid = users.GetCurrent().id
 
-    new_version = MapVersionModel(parent=self.model, maproot_json=maproot_json)
+    new_version = MapVersionModel(parent=self.model, maproot_json=maproot_json,
+                                  created=now, creator_id=uid)
     # Update the MapModel from fields in the MapRoot JSON.
     self.model.title = maproot.get('title', '')
     self.model.description = maproot.get('description', '')
+    self.model.updated = now
+    self.model.updater_id = uid
 
     def PutModels():
       self.model.current_version = new_version.put()
@@ -545,7 +598,7 @@ class Map(object):
     """Marks a map as deleted (so it won't be returned by Get or GetAll)."""
     self.AssertAccess(perms.Role.MAP_OWNER)
     self.model.deleted = datetime.datetime.utcnow()
-    self.model.deleter = utils.GetCurrentUser()
+    self.model.deleter_id = users.GetCurrent().id
     CatalogEntry.DeleteByMapId(self.id)
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
@@ -554,7 +607,7 @@ class Map(object):
     """Unmarks a map as deleted."""
     self.AssertAccess(perms.Role.ADMIN)
     self.model.deleted = NEVER
-    self.model.deleter = None
+    self.model.deleter_id = None
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
 
@@ -563,11 +616,11 @@ class Map(object):
     perms.AssertAccess(perms.Role.ADMIN)
     if block:
       self.model.blocked = datetime.datetime.utcnow()
-      self.model.blocker = utils.GetCurrentUser()
+      self.model.blocker_id = users.GetCurrent().id
       CatalogEntry.DeleteByMapId(self.id)
     else:
       self.model.blocked = NEVER
-      self.model.blocker = None
+      self.model.blocker_id = None
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
 
@@ -601,42 +654,40 @@ class Map(object):
     self.model.world_readable = world_readable
     self.model.put()
 
-  def RevokePermission(self, role, user):
+  def RevokePermission(self, role, uid):
     """Revokes user permissions for the map."""
     self.AssertAccess(perms.Role.MAP_OWNER)
-    email = str(user.email())  # The lists need basic strings.
     # Does nothing if the user does not have the role to begin with or if
     # the role is not editor, viewer, or owner.
-    if role == perms.Role.MAP_VIEWER and email in self.model.viewers:
-      self.model.viewers.remove(email)
-    elif role == perms.Role.MAP_EDITOR and email in self.model.editors:
-      self.model.editors.remove(email)
-    elif role == perms.Role.MAP_OWNER and email in self.model.owners:
-      self.model.owners.remove(email)
+    if role == perms.Role.MAP_VIEWER and uid in self.model.viewers:
+      self.model.viewers.remove(uid)
+    elif role == perms.Role.MAP_EDITOR and uid in self.model.editors:
+      self.model.editors.remove(uid)
+    elif role == perms.Role.MAP_OWNER and uid in self.model.owners:
+      self.model.owners.remove(uid)
     self.model.put()
 
-  def ChangePermissionLevel(self, role, user):
+  def ChangePermissionLevel(self, role, uid):
     """Changes the user's level of permission."""
     # When a user's permission is changed to viewer, editor, or owner,
     # their former permission level is revoked.
     # Does nothing if role is not in permissions.
     self.AssertAccess(perms.Role.MAP_OWNER)
-    email = str(user.email())  # The lists need basic strings.
     permissions = [
         perms.Role.MAP_VIEWER, perms.Role.MAP_EDITOR, perms.Role.MAP_OWNER]
     if role not in permissions:
       return
-    elif role == perms.Role.MAP_VIEWER and email not in self.model.viewers:
-      self.model.viewers.append(email)
-    elif role == perms.Role.MAP_EDITOR and email not in self.model.editors:
-      self.model.editors.append(email)
-    elif role == perms.Role.MAP_OWNER and email not in self.model.owners:
-      self.model.owners.append(email)
+    elif role == perms.Role.MAP_VIEWER and uid not in self.model.viewers:
+      self.model.viewers.append(uid)
+    elif role == perms.Role.MAP_EDITOR and uid not in self.model.editors:
+      self.model.editors.append(uid)
+    elif role == perms.Role.MAP_OWNER and uid not in self.model.owners:
+      self.model.owners.append(uid)
 
     # Take away the other permissions
     for permission in permissions:
       if permission != role:
-        self.RevokePermission(permission, user)
+        self.RevokePermission(permission, uid)
     self.model.put()
 
   def CheckAccess(self, role, user=None, policy=None):

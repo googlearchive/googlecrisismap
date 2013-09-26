@@ -17,10 +17,10 @@ __author__ = 'muzny@google.com (Grace Muzny)'
 import base_handler
 import model
 import perms
+import users
 import utils
 
 from google.appengine.api import mail
-from google.appengine.api import users
 
 
 class Share(base_handler.BaseHandler):
@@ -31,23 +31,21 @@ class Share(base_handler.BaseHandler):
     map_object = model.Map.Get(map_id)
     if map_object is None:
       raise base_handler.Error(404, 'Map %r not found.' % map_id)
-
     role = self.request.get('role')
     recipient_email = self.request.get('recipient')
     message = self.request.get('message', '')
 
-    # If these are empty, we shouldn't try to do anything.
-    if not role or not recipient_email:
-      raise base_handler.Error(400, 'role and recipient params are required')
-
-    recipient_user = users.User(recipient_email)
-    # Give the user the proper permission.
+    # If these are empty or invalid, we shouldn't try to do anything.
     if role not in [perms.Role.MAP_VIEWER, perms.Role.MAP_EDITOR,
                     perms.Role.MAP_OWNER]:
-      raise base_handler.Error(400, '%r is not a valid role.' % role)
+      raise base_handler.Error(400, 'Invalid role parameter: %r.' % role)
+    if not utils.IsValidEmail(recipient_email):
+      raise base_handler.Error(
+          400, 'Invalid e-mail address: %r.' % recipient_email)
 
     # Change the recipient's permission level as specified.
-    map_object.ChangePermissionLevel(role, recipient_user)
+    recipient = users.GetForEmail(recipient_email)
+    map_object.ChangePermissionLevel(role, recipient.id)
     # Send the recipient an email.
     self.SendPermissionChangeEmail(recipient_email, map_object, role, message)
     self.response.set_status(201)
@@ -55,7 +53,7 @@ class Share(base_handler.BaseHandler):
   def SendPermissionChangeEmail(self, recipient_email, map_object,
                                 role, message):
     """Sends recipient_email an email with info of map and permission level."""
-    email = utils.GetCurrentUserEmail()
+    email = users.GetCurrent().email
     subject = '%s has shared "%s" with you' % (email, map_object.title)
     url = (self.request.host_url + self.request.root_path + '/.maps/' +
            map_object.id)

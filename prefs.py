@@ -15,17 +15,15 @@
 __author__ = 'romano@google.com (Raquel Romano)'
 
 import base_handler
-import profiles
+import users
 
 
 class Prefs(base_handler.BaseHandler):
   """Handler for viewing and changing user preferences."""
 
-  def Get(self, user):
+  def Get(self):
     """Displays user preferences."""
-    self.response.out.write(self.RenderTemplate('prefs.html', {
-        'profile': profiles.Profile.Get(user)
-    }))
+    self.response.out.write(self.RenderTemplate('prefs.html', {}))
 
   def Post(self, user):
     """Updates user preferences."""
@@ -35,11 +33,10 @@ class Prefs(base_handler.BaseHandler):
     # and a key that we don't intend to change.
     save_keys = self.request.get('save_keys').split(',')
     if 'marketing_consent' in save_keys:
-      profiles.Profile.SetMarketingConsent(
-          user, bool(self.request.get('marketing_consent')))
+      users.SetMarketingConsent(user.id, self.request.get('marketing_consent'))
     if 'welcome_message_dismissed' in save_keys:
-      profiles.Profile.SetWelcomeMessageDismissed(
-          user, bool(self.request.get('welcome_message_dismissed')))
+      users.SetWelcomeMessageDismissed(
+          user.id, self.request.get('welcome_message_dismissed'))
 
     if self.request.get('redirect'):
       self.redirect(self.request.root_path + self.request.get('redirect'))

@@ -158,7 +158,7 @@ KML_SUPPORTED_TAGS = set([
 
 class MetadataFetchLog(db.Model):
   """Just a log of fetches.  The metadata we actually use is in memcache."""
-  log_time = db.DateTimeProperty(auto_now=True)
+  log_time = db.DateTimeProperty()
   address = db.StringProperty()
   fetch_time = db.DateTimeProperty()
   fetch_status = db.IntegerProperty()
@@ -173,7 +173,8 @@ class MetadataFetchLog(db.Model):
     """Stores a log entry.  Guaranteed not to raise an exception."""
     try:
       utcdatetime = lambda t: t and datetime.datetime.utcfromtimestamp(t)
-      MetadataFetchLog(address=address,
+      MetadataFetchLog(log_time=datetime.datetime.utcnow(),
+                       address=address,
                        fetch_time=utcdatetime(metadata['fetch_time']),
                        fetch_status=metadata.get('fetch_status'),
                        fetch_length=metadata.get('fetch_length'),

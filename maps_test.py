@@ -94,11 +94,11 @@ class MapTest(test_utils.BaseTest):
 
   def testGetMapMenuItems(self):
     """Tests GetMapMenuItems()."""
-    test_utils.BecomeAdmin()
-    model.CatalogEntryModel(key_name='foo.com:m1', domain='foo.com',
-                            label='m1', title='Map 1', is_listed=True).put()
-    model.CatalogEntryModel(key_name='primary.com:m2', domain='primary.com',
-                            label='m2', title='Map 2', is_listed=True).put()
+    with test_utils.RootLogin():
+      model.CatalogEntryModel(key_name='foo.com:m1', domain='foo.com',
+                              label='m1', title='Map 1', is_listed=True).put()
+      model.CatalogEntryModel(key_name='primary.com:m2', domain='primary.com',
+                              label='m2', title='Map 2', is_listed=True).put()
 
     self.assertEquals([{'title': 'Map 1', 'url': '/root/foo.com/m1'}],
                       maps.GetMapMenuItems('foo.com', '/root'))
@@ -107,7 +107,6 @@ class MapTest(test_utils.BaseTest):
 
   def testClientConfigOverride(self):
     """Verifies that query parameters can override client config settings."""
-    test_utils.BecomeAdmin()
     cm_config = maps.GetConfig(test_utils.SetupRequest('/?dev=1&show_login=1'))
     self.assertEquals(True, cm_config['show_login'])
 
@@ -146,24 +145,24 @@ class MapListTest(test_utils.BaseTest):
 
   def testGet(self):
     """Tests the map listing page."""
-    test_utils.BecomeAdmin()
-    domains.Domain.Create('cows.net')
-    domains.Domain.Create('dogs.org')
-    m1 = model.Map.Create('{"title": "Moo"}', 'cows.net', viewers=['x@y.com'])
-    m2 = model.Map.Create('{"title": "Arf"}', 'dogs.org', viewers=['x@y.com'])
-    test_utils.SetUser('x@y.com')
+    with test_utils.RootLogin():
+      domains.Domain.Create('cows.net')
+      domains.Domain.Create('dogs.org')
+      m1 = model.Map.Create('{"title": "Moo"}', 'cows.net', viewers=['viewer'])
+      m2 = model.Map.Create('{"title": "Arf"}', 'dogs.org', viewers=['viewer'])
 
-    result = self.DoGet('/.maps').body
-    self.assertTrue('Moo' in result, result)
-    self.assertTrue('.maps/' + m1.id in result, result)
-    self.assertTrue('Arf' in result, result)
-    self.assertTrue('.maps/' + m2.id in result, result)
+    with test_utils.Login('viewer'):
+      result = self.DoGet('/.maps').body
+      self.assertTrue('Moo' in result, result)
+      self.assertTrue('.maps/' + m1.id in result, result)
+      self.assertTrue('Arf' in result, result)
+      self.assertTrue('.maps/' + m2.id in result, result)
 
-    result = self.DoGet('/dogs.org/.maps').body
-    self.assertTrue('Moo' not in result, result)
-    self.assertTrue('.maps/' + m1.id not in result, result)
-    self.assertTrue('Arf' in result, result)
-    self.assertTrue('.maps/' + m2.id in result, result)
+      result = self.DoGet('/dogs.org/.maps').body
+      self.assertTrue('Moo' not in result, result)
+      self.assertTrue('.maps/' + m1.id not in result, result)
+      self.assertTrue('Arf' in result, result)
+      self.assertTrue('.maps/' + m2.id in result, result)
 
 if __name__ == '__main__':
   test_utils.main()

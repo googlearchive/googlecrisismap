@@ -1,0 +1,139 @@
+{% comment %}
+Copyright 2013 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+<title>Appserver Login</title>
+<style>
+  body, table {
+    margin: 0;
+    font-family: helvetica, arial;
+    font-size: 13px;
+  }
+  .label, .none, .button, .instructions {
+    color: #aaa;
+  }
+  table {
+    border-collapse: collapse;
+    cursor: default;
+    width: 100%;
+  }
+  div.instructions, td, th {
+    padding: 6px 16px;
+    line-height: 24px;
+    white-space: nowrap;
+  }
+  th {
+    text-align: left;
+    padding: 24px 0 6px 16px;
+  }
+  .sign-in {
+    padding: 0 0 0 16px;
+    cursor: pointer;
+  }
+  .button, .arrow {
+    display: inline-block;
+  }
+  .button {
+    padding: 0 4px 0 8px;
+    border-radius: 4px 0 0 4px;
+    background: #fff;
+  }
+  .arrow {
+    border-style: solid;
+    border-width: 12px 0 12px 12px;
+    border-color: transparent;
+    border-left-color: #fff;
+    vertical-align: bottom;
+  }
+  .in-progress .button {
+    background: #888;
+  }
+  .in-progress .arrow {
+    border-left-color: #888;
+  }
+  .user:hover {
+    background: #cdf;
+  }
+  .user:hover .button {
+    color: #000;
+  }
+  tr.current, tr.current:hover, tr.signing-in, tr.signing-in:hover {
+    background: #ccf4cc;
+  }
+  .current .button, .current.user:hover .button {
+    color: #fff;
+  }
+  .current .button {
+    background: #080;
+  }
+  .current .arrow {
+    border-left-color: #080;
+  }
+</style>
+
+<div class="instructions">
+  Select a user below, or <a href="{{logout_url}}">sign out</a>.
+</div>
+<table>
+  {% if previous_users %}
+    <tr>
+      <th colspan=5>Sign in as an existing user</th>
+    </tr>
+    {% for u in previous_users %}
+      <tr class="{% if u.id == user.id %}current {% endif %}user">
+        <td class="sign-in"
+            onclick="login(this, '{{u.id}}:{{u.domain|default:""}}:{{u.email}}')">
+          <div class="button">
+            {% if u.id == user.id %}Signed in{% else %}Sign in{% endif %}
+          </div><div class="arrow"></div>
+        </td>
+        <td><span class="label">id:</span> {{u.id}}</td>
+        <td>
+          <span class="label">domain:</span>
+          {{u.domain|default:'<span class="none">none</span>'}}
+        </td>
+        <td><span class="label">email:</span> {{u.email}}</td>
+        <td style="width:100%"></td>
+      </tr>
+    {% endfor %}
+  {% endif %}
+  <tr>
+    <th colspan=5>Sign in as a new user</th>
+  </tr>
+  {% for u in new_users %}
+    <tr class="user">
+      <td class="sign-in"
+          onclick="login(this, '{{u.id}}:{{u.domain|default:""}}:{{u.email}}')">
+        <div class="button">Sign in</div><div class="arrow"></div>
+      </td>
+      <td><span class="label">id:</span> {{u.id}}</td>
+      <td>
+        <span class="label">domain:</span>
+        {{u.domain|default:'<span class="none">none</span>'}}
+      </td>
+      <td><span class="label">email:</span> {{u.email}}</td>
+      <td style="width:100%"></td>
+    </tr>
+  {% endfor %}
+</table>
+
+<script>
+  function login(cell, cookie) {
+    var current = document.getElementsByClassName('current user');
+    if (current.length) {
+      current[0].className = 'user';
+    }
+    cell.parentNode.className = 'current user';
+    document.cookie = 'crisismap_login=' + cookie;
+    window.location.href = {{redirect_json|safe}};
+  }
+</script>
