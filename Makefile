@@ -16,9 +16,9 @@
 CLOSURE_DIR=$(HOME)/closure
 
 # Output files.
-# TODO(kpy): Putting the output under js/ convolutes the build process because
-# the build outputs get picked up as inputs.  Move them out of js/ someday, so
-# that js/ contains just the JavaScript source files.
+# TODO(kpy): Currently, js/ contains JavaScript source files and js/compiled/
+# contains the compiler output.  Putting output under js/ convolutes the build
+# because the outputs get picked up as inputs; move it out of js/ someday.
 OUT_DIR=js/compiled
 OUT=$(OUT_DIR)/crisismap_main__en.js
 OUT_OPT=$(OUT).opt
