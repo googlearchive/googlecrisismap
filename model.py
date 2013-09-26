@@ -148,6 +148,11 @@ class MapModel(db.Model):
   deleted = db.DateTimeProperty(default=NEVER)
   deleter = db.UserProperty()
 
+  # To mark a map as blocked, set this to anything other than NEVER; then only
+  # the first owner can view or edit the map, and the map cannot be published.
+  blocked = db.DateTimeProperty(default=NEVER)
+  blocker = db.UserProperty()
+
   # List of users who can set the flags and permission lists on this object.
   owners = db.StringListProperty()
 
@@ -173,10 +178,6 @@ class MapModel(db.Model):
 
   # Cache of the most recent MapVersion.
   current_version = db.ReferenceProperty(reference_class=MapVersionModel)
-
-  # TODO(kpy): This property is here just so that migrate_map_is_deleted.py can
-  # run.  After the migration is complete, it should be removed.
-  is_deleted = db.BooleanProperty(default=False)
 
 
 class CatalogEntryModel(db.Model):
@@ -319,6 +320,8 @@ class CatalogEntry(object):
     if ':' in domain:
       raise ValueError('Invalid domain %r' % domain)
     perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain)
+    perms.AssertAccess(perms.Role.MAP_VIEWER, map_object)
+    perms.AssertPublishable(map_object)
     model = CatalogEntryModel.Create(domain, label, map_object, is_listed)
 
     # We use '*' in the cache key for the list that includes all domains.
@@ -350,6 +353,21 @@ class CatalogEntry(object):
     cache.Delete([CatalogEntry, '*', 'listed'])
     cache.Delete([CatalogEntry, domain, 'all'])
     cache.Delete([CatalogEntry, domain, 'listed'])
+
+  # TODO(kpy): Make Delete and DeleteByMapId both take a user argument, and
+  # reuse Delete here by calling it with an admin user.
+  @staticmethod
+  def DeleteByMapId(map_id):
+    """NO ACCESS CHECK.  Deletes every CatalogEntry pointing at a given map."""
+    for entry in CatalogEntry.GetByMapId(map_id):
+      domain, label = str(entry.domain), entry.label
+      entry = CatalogEntryModel.Get(domain, label)
+      entry.delete()
+      # We use '*' in the cache key for the list that includes all domains.
+      cache.Delete([CatalogEntry, '*', 'all'])
+      cache.Delete([CatalogEntry, '*', 'listed'])
+      cache.Delete([CatalogEntry, domain, 'all'])
+      cache.Delete([CatalogEntry, domain, 'listed'])
 
   is_listed = property(
       lambda self: self.model.is_listed,
@@ -424,11 +442,15 @@ class Map(object):
   id = property(lambda self: str(self.model.key().name()))
 
   # Make the other properties of the underlying MapModel readable on the Map.
-  for x in ['created', 'creator', 'last_updated', 'last_updater',
-            'deleted', 'deleter',  # soon to be added here: 'blocked', 'blocker'
+  for x in ['creator', 'created', 'last_updated', 'last_updater',
+            'blocked', 'blocker', 'deleted', 'deleter',
             'title', 'description', 'current_version', 'world_readable',
             'owners', 'editors', 'viewers', 'domains', 'domain_role']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
+
+  # Handy Boolean access to the blocked or deleted status.
+  is_deleted = property(lambda self: self.deleted != NEVER)
+  is_blocked = property(lambda self: self.blocked != NEVER)
 
   @staticmethod
   def get(key):  # lowercase to match db.Model.get  # pylint: disable=g-bad-name
@@ -473,6 +495,13 @@ class Map(object):
       return map_object
 
   @staticmethod
+  def GetDeleted(key_name):
+    """Gets a deleted Map by its ID.  Returns None if no map or not deleted."""
+    perms.AssertAccess(perms.Role.ADMIN)
+    model = MapModel.get_by_key_name(key_name)
+    return model and model.deleted != NEVER and Map(model)
+
+  @staticmethod
   def Create(maproot_json, domain, owners=None, editors=None, viewers=None,
              domain_role=None, world_readable=False):
     """Stores a new map with the given properties and MapRoot JSON content."""
@@ -499,7 +528,7 @@ class Map(object):
 
   @staticmethod
   def _GetVersionByKey(key):
-    """Returns a map version by its datastore entity key.  NO ACCESS CHECK."""
+    """NO ACCESS CHECK.  Returns a map version by its datastore entity key."""
     return StructFromModel(MapVersionModel.get(key))
 
   def PutNewVersion(self, maproot_json):
@@ -536,8 +565,36 @@ class Map(object):
     self.AssertAccess(perms.Role.MAP_OWNER)
     self.model.deleted = datetime.datetime.utcnow()
     self.model.deleter = utils.GetCurrentUser()
+    CatalogEntry.DeleteByMapId(self.id)
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
+
+  def Undelete(self):
+    """Unmarks a map as deleted."""
+    self.AssertAccess(perms.Role.ADMIN)
+    self.model.deleted = NEVER
+    self.model.deleter = None
+    self.model.put()
+    cache.Delete([Map, self.id, 'json'])
+
+  def SetBlocked(self, block):
+    """Sets whether a map is blocked (private to one user and unpublishable)."""
+    perms.AssertAccess(perms.Role.ADMIN)
+    if block:
+      self.model.blocked = datetime.datetime.utcnow()
+      self.model.blocker = utils.GetCurrentUser()
+      CatalogEntry.DeleteByMapId(self.id)
+    else:
+      self.model.blocked = NEVER
+      self.model.blocker = None
+    self.model.put()
+    cache.Delete([Map, self.id, 'json'])
+
+  def Wipe(self):
+    """Permanently destroys a map."""
+    self.AssertAccess(perms.Role.ADMIN)
+    CatalogEntry.DeleteByMapId(self.id)
+    db.delete([self.model] + list(MapVersionModel.all().ancestor(self.model)))
 
   def GetCurrentJson(self):
     """Gets the current JSON for public viewing only."""

@@ -15,6 +15,7 @@ __author__ = 'rew@google.com (Becky Willrich)'
 import urllib
 
 import admin
+import model
 import perms
 import test_utils
 
@@ -88,6 +89,43 @@ class AdminTest(test_utils.BaseTest):
     self.assertFalse(admin.ValidateDomain('domain..org'))
     self.assertFalse(admin.ValidateDomain('.domain.org'))
 
+
+class AdminMapTest(test_utils.BaseTest):
+  def testNavigate(self):
+    test_utils.BecomeAdmin()
+    response = self.DoGet('/.admin?map=http://app.com/root/.maps/x', status=302)
+    self.assertEquals(
+        'http://app.com/root/.admin/x', response.headers['Location'])
+
+  def testGet(self):
+    map_object, _ = test_utils.CreateMapAsAdmin()
+    map_id = map_object.id
+    response = self.DoGet('/.admin/' + map_id)
+    self.assertTrue('xyz.com' in response.body)
+    self.assertTrue('title' in response.body)
+
+  def testBlock(self):
+    map_object, _ = test_utils.CreateMapAsAdmin()
+    map_id = map_object.id
+    self.DoPost('/.admin/' + map_id, 'block=1')
+    self.assertTrue(model.Map.Get(map_id).is_blocked)
+    self.DoPost('/.admin/' + map_id, 'unblock=1')
+    self.assertFalse(model.Map.Get(map_id).is_blocked)
+
+  def testDelete(self):
+    map_object, _ = test_utils.CreateMapAsAdmin()
+    map_id = map_object.id
+    self.DoPost('/.admin/' + map_id, 'delete=1')
+    self.assertTrue(model.Map.GetDeleted(map_id).is_deleted)
+    self.DoPost('/.admin/' + map_id, 'undelete=1')
+    self.assertFalse(model.Map.Get(map_id).is_deleted)
+
+  def testWipe(self):
+    map_object, _ = test_utils.CreateMapAsAdmin()
+    map_id = map_object.id
+    self.DoPost('/.admin/' + map_id, 'wipe=1')
+    self.assertEquals(None, model.Map.Get(map_id))
+    self.assertEquals(None, model.Map.GetDeleted(map_id))
 
 if __name__ == '__main__':
   test_utils.main()

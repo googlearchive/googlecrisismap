@@ -32,6 +32,13 @@ class AuthorizationError(Exception):
     self.target = target
 
 
+class NotPublishableError(Exception):
+  """Map is blocked and cannot be published."""
+
+  def __init__(self, target):
+    Exception.__init__(self, 'Map %r cannot be published.' % target.id)
+
+
 # Access role constants.
 # Role is capitalized like an enum class.  # pylint: disable=g-bad-name
 Role = utils.Struct(
@@ -227,6 +234,11 @@ class AccessPolicy(object):
                      or self.HasRoleAdmin(user))
 
   def _HasMapPermission(self, user, role, map_object):
+    # If the map is blocked, only the first owner can access it.
+    if map_object.is_blocked:
+      if not (user and [user.email()] == map_object.owners[:1]):
+        return False
+
     if role == Role.MAP_VIEWER and map_object.world_readable:
       return True
     if not user:
@@ -350,3 +362,9 @@ def AssertAccess(role, target=None, user=None, policy=None):
   user = user or utils.GetCurrentUser()  # ensure user is set in error message
   if not CheckAccess(role, target=target, user=user, policy=policy):
     raise AuthorizationError(user, role, target)
+
+
+def AssertPublishable(map_object):
+  """Requires that the given map be publishable."""
+  if map_object.is_blocked:
+    raise NotPublishableError(map_object)

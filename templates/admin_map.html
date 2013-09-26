@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+{% block content %}
+<h2>Map administration (map ID: {{map.id}})</h2>
+<h3>Details on this map</h3>
+<table class="cm-map-details">
+  <tr>
+    <th>Permanent ID:</th>
+    <td>{{map.id}}</td>
+  </tr>
+  <tr>
+    <th>Domain:</th>
+    <td>{{map.domains.0}}</td>
+  </tr>
+  <tr>
+    <th>Title:</th>
+    <td>{{map.title}}</td>
+  </tr>
+  <tr>
+    <th>Created by:</th>
+    <td><span class="cm-user">{{map.creator}}</span>
+    at {{map.created}} UTC</td>
+  </tr>
+  <tr>
+    <th>Last updated by:</th>
+    <td><span class="cm-user">{{map.last_updater}}</span>
+    at {{map.last_updated}} UTC</td>
+  </tr>
+</table>
+
+<form method="post">
+{% if map.is_deleted %}
+  <div class="cm-warning">
+    <strong>This map is marked as deleted</strong>.
+    <p>
+    It cannot be accessed by anyone.
+    The permissions below do not apply;
+    they will take effect again if the map is undeleted.
+  </div>
+  <input type="submit" name="undelete" value="Undelete this map"
+      class="cm-button cm-submit">
+{% else %}
+  {% if map.is_blocked %}
+    <div class="cm-warning">
+      <strong>This map was blocked</strong>
+      by {{map.blocker}} at {{map.blocked}} UTC.
+      <p>
+      Only {{map.owners.0}} or an administrator can view or edit it,
+      and it cannot be published.
+      The permissions below do not apply;
+      they will take effect again if the map is unblocked.
+    </div>
+    <input type="submit" name="unblock" value="Unblock this map"
+        class="cm-button cm-submit">
+  {% endif %}
+{% endif %}
+
+<h3>Permissions on this map</h3>
+<table class="cm-map-details {{map.is_blocked|yesno:"cm-disabled,"}}
+    {{map.is_deleted|yesno:"cm-disabled,"}}">
+  <tr>
+    <th title="Owners can edit the lists of owners, editors, and viewers."
+      style="cursor: help">Owners (can set permissions):</th>
+    <td>{% if map.owners %}{{map.owners|join:", "}}
+        {% else %}<span class="cm-none">none</span>{% endif %}</td>
+  </tr>
+  <tr>
+    <th title="Editors can edit the content of the map."
+      style="cursor: help">Editors (can edit map):</th>
+    <td>{% if map.editors %}{{map.editors|join:", "}}
+        {% else %}<span class="cm-none">none</span>{% endif %}</td>
+  </tr>
+  <tr>
+    <th title="Viewers can view the content of the map."
+      style="cursor: help">Viewers (can view map):</th>
+    <td>{% if map.viewers %}{{map.viewers|join:", "}}
+        {% else %}<span class="cm-none">none</span>{% endif %}</td>
+  </tr>
+  <tr>
+    <th>Additional access:</th>
+    <td>
+      {% if map.domain_role %}
+        All users in {{map.domains.0}} also have {{map.domain_role}} access.
+      {% endif %}
+      {% if map.world_readable %}
+        This map can be viewed by anyone.
+      {% endif %}
+      {% if not map.domain_role and not map.world_readable %}
+        <span class="cm-none">none</span>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+
+{% if not map.is_deleted and not map.is_blocked %}
+  <h3>Block this map</h3>
+  Blocking the map makes it accessible to only the first owner
+  regardless of other permission settings,
+  and also makes the map unpublishable.
+  <p>
+  <input type="submit" name="block" value="Block this map (reversible)"
+      class="cm-button cm-submit">
+{% endif %}
+
+{% if not map.is_deleted %}
+  <h3>Delete this map</h3>
+  Deleting the map makes it inaccessible to everyone.
+  After you delete, you can undelete.
+  <p>
+  <input type="submit" name="delete" value="Delete this map (reversible)"
+      class="cm-button cm-submit">
+{% endif %}
+
+<h3>Wipe this map</h3>
+  <div class="cm-warning">
+  Wiping a map is <strong>permanent</strong> and unrecoverable.
+  </div>
+  <input type="submit" name="wipe" value="Permanently wipe this map"
+      class="cm-button cm-wipe" onclick="return confirm('Wiping a map is PERMANENT and unrecoverable.  Are you sure you want to wipe this map?')">
+</form>
+{% endblock %}

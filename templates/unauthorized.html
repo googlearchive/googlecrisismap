@@ -16,7 +16,7 @@ specific language governing permissions and limitations under the License.
 {% block content %}
   <div class="cm-error-box">
     {% if exception.user %}
-      {% if exception.object %}
+      {% if exception.target %}
         You're signed in as {{exception.user}},
         but you don't have {{exception.role}} access to that map.
         (You could try asking the owner of the map for access,
@@ -28,7 +28,7 @@ specific language governing permissions and limitations under the License.
         or try <a href="{{login_url}}">signing in as a different user</a>.)
       {% endif %}
     {% else %}
-      {% if exception.object %}
+      {% if exception.target %}
         Please <a href="{{login_url}}">sign in</a>
         to get {{exception.role}} access to that map.
       {% else %}

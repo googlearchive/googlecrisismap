@@ -33,6 +33,7 @@ specific language governing permissions and limitations under the License. */
 }
 .cm-content {
   margin-left:182px; /* cm-navbar width + left padding + right padding */
+  margin-right: 16px;
 }
 
 /* Map listing page */
@@ -70,6 +71,34 @@ specific language governing permissions and limitations under the License. */
 .cm-map-list .cm-publish-age {
   color:#888;
   font-size:11px;
+}
+
+/* Map admin page */
+h3 {
+  margin: 2em 0 1em;
+}
+h2 + h3 {
+  margin-top: 0;
+}
+.cm-map-details {
+  width:100%;
+  border-collapse:collapse;
+}
+.cm-map-details th {
+  text-align: left;
+  font-weight: normal;
+  color: #666;
+  width: 14em;
+}
+.cm-disabled, .cm-none {
+  color: #aaa;
+}
+.cm-map-details .cm-user {
+  color: #06c;
+}
+.cm-warning {
+  color: #c00;
+  margin: 1em 0;
 }
 
 /* Error page */

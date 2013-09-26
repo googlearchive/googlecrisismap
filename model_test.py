@@ -187,13 +187,6 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals(['xyz.com'], m.model.domains)
     self.assertEquals(m.model.world_readable, False)
 
-  def testDelete(self):
-    """Tests whether map deletion works properly."""
-    m, _ = test_utils.CreateMapAsAdmin()
-    self.assertEquals(m, model.Map.Get(m.id))
-    m.Delete()
-    self.assertEquals(None, model.Map.Get(m.id))
-
   def testMapCache(self):
     """Tests caching of current JSON data."""
     # Verify the default values from Map.Create.
@@ -344,8 +337,8 @@ class CatalogEntryTests(test_utils.BaseTest):
     m, _ = test_utils.CreateMapAsAdmin(owners=['owner@example.com'],
                                        editors=['editor@example.com'],
                                        viewers=['viewer@example.com'])
+    model.CatalogEntry.Create('foo.com', 'label', m, is_listed=True)
     map_id = m.id
-    delete_datetime = self.SetTime(1234567890)
 
     # Non-owners should not be able to delete the map.
     test_utils.SetUser('editor@example.com')
@@ -360,8 +353,86 @@ class CatalogEntryTests(test_utils.BaseTest):
     test_utils.SetUser('owner@example.com')
     m = model.Map.Get(map_id)
     m.Delete()
-    self.assertEquals(delete_datetime, m.deleted)
+    self.assertTrue(m.is_deleted)
     self.assertEquals('owner@example.com', m.deleter.email())
+
+    # The catalog entry should be gone.
+    self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'label'))
+
+    # The map should no longer be retrievable by Get and GetAll.
+    self.assertEquals(None, model.Map.Get(map_id))
+    self.assertEquals([], list(model.Map.GetViewable(utils.GetCurrentUser())))
+
+    # Non-admins (even the owner) should not be able to retrieve deleted maps.
+    self.assertRaises(perms.AuthorizationError, model.Map.GetDeleted, map_id)
+
+    # Admins should be able to undelete.
+    test_utils.BecomeAdmin()
+    m = model.Map.GetDeleted(map_id)
+    m.Undelete()
+
+    test_utils.SetUser('viewer@example.com')
+    self.assertTrue(model.Map.Get(map_id))
+
+  def testMapBlock(self):
+    m, _ = test_utils.CreateMapAsAdmin(owners=['owner@example.com'],
+                                       editors=['editor@example.com'],
+                                       viewers=['viewer@example.com'])
+    model.CatalogEntry.Create('foo.com', 'label', m, is_listed=True)
+    map_id = m.id
+
+    # Non-admins should not be able to block the map.
+    test_utils.SetUser('owner@example.com')
+    m = model.Map.Get(map_id)
+    self.assertRaises(perms.AuthorizationError, m.SetBlocked, True)
+
+    # Admins should be able to block the map.
+    test_utils.BecomeAdmin()
+    m.SetBlocked(True)
+    self.assertTrue(m.is_blocked)
+    self.assertEquals('admin@google.com', m.blocker.email())
+
+    # The catalog entry should be gone.
+    self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'label'))
+
+    # The map should no longer be accessible by non-owners.
+    test_utils.SetUser('viewer@example.com')
+    self.assertRaises(perms.AuthorizationError, model.Map.Get, map_id)
+
+    test_utils.SetUser('editor@example.com')
+    self.assertRaises(perms.AuthorizationError, model.Map.Get, map_id)
+
+    # The map should still be accessible by the owner.
+    test_utils.SetUser('owner@example.com')
+    m = model.Map.Get(map_id)
+
+    # Even the owner should not be able to publish the map.
+    perms.Grant('owner@example.com', perms.Role.CATALOG_EDITOR, 'example.com')
+    self.assertRaises(perms.NotPublishableError,
+                      model.CatalogEntry.Create, 'example.com', 'foo', m)
+
+  def testMapWipe(self):
+    m, _ = test_utils.CreateMapAsAdmin(owners=['owner@example.com'],
+                                       editors=['editor@example.com'],
+                                       viewers=['viewer@example.com'])
+    model.CatalogEntry.Create('foo.com', 'label', m, is_listed=True)
+    map_id = m.id
+
+    # Non-admins should not be able to wipe the map.
+    test_utils.SetUser('owner@example.com')
+    m = model.Map.Get(map_id)
+    self.assertRaises(perms.AuthorizationError, m.Wipe)
+
+    # Admins should be able to wipe the map.
+    test_utils.BecomeAdmin()
+    m.Wipe()
+
+    # The catalog entry should be gone.
+    self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'label'))
+
+    # The map should be totally gone.
+    self.assertEquals(None, model.Map.Get(map_id))
+    self.assertEquals(None, model.Map.GetDeleted(map_id))
 
 
 if __name__ == '__main__':

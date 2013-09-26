@@ -14,74 +14,10 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 
 {% block content %}
-<p>Hello {{admin}}!
-<p>This is the administrative page for domain {{domain}}.
+<h2>Site administration</h2>
 
-<form method="post">
-
-  <h1>Users</h1>
-  <table title="Users" border=1>
-    <tr>
-      <th scope="col">User</th>
-      <th scope="col">Can create maps</th>
-      <th scope="col">Can edit the catalog</th>
-      <th scope="col">Has admin permissions</th>
-    </tr>
-    {% for user in users %}
-    <tr>
-      <td>{{user.0}}</td>
-      <td>
-        <input type="checkbox" name="{{user.0}}.MAP_CREATOR"
-               {% if 'MAP_CREATOR' in user.1 %} checked{% endif %}>
-      </td>
-      <td>
-        <input type="checkbox" name="{{user.0}}.CATALOG_EDITOR"
-               {% if 'CATALOG_EDITOR' in user.1 %}checked{% endif %}>
-      </td>
-      <td>
-        <input type="checkbox" name="{{user.0}}.DOMAIN_ADMIN"
-               {% if 'DOMAIN_ADMIN' in user.1 %}checked{% endif %}>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-
-  <h1>Domains</h1>
-  <table title="Domains" border=1>
-    <tr>
-      <th>Domain</th>
-      <th>Can create maps</th>
-      <th>Can edit the catalog</th>
-      <th>Has admin permissions</th>
-    </tr>
-    {% for domain in domains %}
-    <tr>
-      <td>{{domain.0}}</td>
-      <td>
-        <input type="checkbox" name="{{domain.0}}.MAP_CREATOR"
-               {%if 'MAP_CREATOR' in domain.1 %}checked{%endif%}>
-      </td>
-      <td>
-        <input type="checkbox" name="{{domain.0}}.CATALOG_EDITOR"
-               {% if 'CATALOG_EDITOR' in domain.1 %}checked{%endif%}>
-      </td>
-      <td>
-        <input type="checkbox" name="{{domain.0}}.DOMAIN_ADMIN"
-               {% if 'DOMAIN_ADMIN' in domain.1 %}checked{%endif%}>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-
-  <h1>Add user or domain</h1>
-  <p>User's email or domain name:
-    <input type="text" name="new_email" label="Email">
-  <p>Can create maps:
-    <input type="checkbox" name="new_email.MAP_CREATOR" label="Map Creator">
-  <p>Can edit the catalog:
-    <input type="checkbox" name="new_email.CATALOG_EDITOR" label="Catalog Editor">
-  <p>Can administer the domain:
-    <input type="checkbox" name="new_email.DOMAIN_ADMIN" label="Domain Admin"><br>
-  <p><input type="submit" title="Update">
+<form method="get">
+Map ID or draft URL: <input type="text" name="map" size=80>
+<input type="submit" value="Go">
 </form>
 {% endblock %}

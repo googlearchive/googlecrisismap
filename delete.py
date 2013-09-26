@@ -18,21 +18,13 @@ import base_handler
 import model
 
 
-def DeleteMap(map_id):
-  # This method is not transactional because cross-entity group transactions
-  # are limited and slow. Besides, if the method fail and some catalog
-  # entries are not successfully deleted, the user can see this and try to
-  # delete the map once again.
-  entries = model.CatalogEntry.GetByMapId(map_id)
-  for entry in entries:
-    entry.Delete(entry.domain, entry.label)
-  map_object = model.Map.Get(map_id)
-  map_object.Delete()
-
-
 class Delete(base_handler.BaseHandler):
   """Handler for deleting a map and its related entities."""
 
   def Post(self, user, domain=''):  # pylint: disable=unused-argument
-    DeleteMap(self.request.get('map'))
+    map_id = self.request.get('map')
+    map_object = model.Map.Get(map_id)
+    if not map_object:
+      raise base_handler.Error(404, 'Map %r not found.' % map_id)
+    map_object.Delete()
     self.redirect('.maps')

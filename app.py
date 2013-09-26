@@ -90,6 +90,7 @@ app = webapp2.WSGIApplication([
             Route('/<label>', 'maps.MapByLabel'),
 
             Route('/.admin', 'admin.Admin'),
+            Route('/.admin/<map_id>', 'admin.AdminMap'),
             Route('/.catalog', 'catalog.Catalog'),
             Route('/.create', 'create.Create'),
             Route('/.delete', 'delete.Delete'),

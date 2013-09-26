@@ -151,6 +151,11 @@ class BaseHandler(webapp2.RequestHandler):
           'exception': exception,
           'login_url': users.create_login_url(self.request.url)
       }))
+    except perms.NotPublishableError as exception:
+      self.response.set_status(403, message=exception.message)
+      self.response.out.write(self.RenderTemplate('error.html', {
+          'exception': exception
+      }))
     except Error as exception:
       self.response.set_status(exception.status, message=exception.message)
       self.response.out.write(self.RenderTemplate('error.html', {
