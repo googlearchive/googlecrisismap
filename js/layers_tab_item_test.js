@@ -136,9 +136,9 @@ LayersTabItemTest.prototype.testRemoveLayer = function() {
   var layerModel2 = this.addLayer_('layer2', 'Layer Two');
 
   var layerEntry1 = this.expectNew_(
-      'cm.LayerEntryView', _, layerModel1, _, _, this.config_, _);
+      'cm.LayerEntryView', _, layerModel1, _, _, this.config_, _, false);
   var layerEntry2 = this.expectNew_(
-      'cm.LayerEntryView', _, layerModel2, _, _, this.config_, _);
+      'cm.LayerEntryView', _, layerModel2, _, _, this.config_, _, false);
   var layersTab = this.createLayersTabItem_();
 
   // Remove both layers.
@@ -186,4 +186,14 @@ LayersTabItemTest.prototype.testFilterLayers_notConfigured = function() {
   this.config_ = {'enable_layer_filter': false};
   var layersTab = this.createLayersTabItem_();
   expectNoDescendantOf(layersTab.getContent(), withClass(cm.css.LAYER_FILTER));
+};
+
+/** Tests that the legend has been omitted from the layers tab. */
+LayersTabItemTest.prototype.testNoLegends = function() {
+  var legendLayer = this.addLayer_(
+      'testNoLegends', 'Layer with a legend');
+  legendLayer.set(
+      'legend', cm.Html.fromSanitizedHtml('<b>Look!</b><br/>A legend!<br/>'));
+  var layersTab = this.createLayersTabItem_();
+  expectNoDescendantOf(layersTab.getContent(), withClass(cm.css.LAYER_LEGEND));
 };

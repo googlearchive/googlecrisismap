@@ -40,10 +40,13 @@ goog.require('goog.ui.Slider');
  *     enable_editing: Allow any editing at all?
  * @param {number} opt_index The index into the parent element's child list at
  *     which to insert the layer entry.
+ * @param {boolean=} opt_includeLegend Whether the view should include the
+ *     layer's legend in its content; true by default.
  * @constructor
  */
-cm.LayerEntryView = function(parentElem, model, metadataModel,
-                             appState, opt_config, opt_index) {
+cm.LayerEntryView = function(
+    parentElem, model, metadataModel, appState, opt_config, opt_index,
+    opt_includeLegend) {
   /**
    * @type goog.i18n.DateTimeFormat
    * @private
@@ -161,13 +164,13 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   this.descriptionElem_;
 
   /**
-   * @type Element
+   * @type ?Element
    * @private
    */
   this.legendBoxElem_;
 
   /**
-   * @type Element
+   * @type ?Element
    * @private
    */
   this.legendElem_;
@@ -250,6 +253,12 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   var layerLinks = [editLink, enableEditing && cm.ui.SEPARATOR_DOT, deleteLink,
                     this.zoomElem_, this.downloadElem_];
 
+  // TODO(rew): remove the opt_includeLegend argument (and all code paths
+  // that include the legend) when the config use_tab_panel goes away; from
+  // that time forward, the legend should always be omitted.
+  this.initializeLegendUi_(
+      opt_includeLegend === undefined ? true : opt_includeLegend);
+
   // Create the panel entry.
   this.entryElem_ = cm.ui.create('div', {'class': cm.css.LAYER_ENTRY},
       this.headerElem_ = cm.ui.create('div', {'class': cm.css.HEADER},
@@ -270,12 +279,7 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
               {'title': cm.MSG_OPACITY_TOOLTIP, 'class': cm.css.SLIDER}),
           cm.ui.create('div', {}, layerLinks),
           this.warningElem_ = cm.ui.create('div', {'class': cm.css.WARNING}),
-          this.legendBoxElem_ = cm.ui.create('div',
-              {'class': cm.css.LAYER_LEGEND_BOX},
-              cm.ui.create('fieldset', undefined,
-                  cm.ui.create('legend', undefined, cm.MSG_LEGEND),
-                  this.legendElem_ = cm.ui.create('div',
-                      {'class': cm.css.LAYER_LEGEND}))),
+          this.legendBoxElem_,
           this.descriptionElem_ = cm.ui.create('div',
               {'class': cm.css.LAYER_DESCRIPTION}),
           this.timeElem_ = cm.ui.create('div', {'class': cm.css.TIMESTAMP})
@@ -303,7 +307,6 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   // Initialize the entry with the current values.
   this.updateTitle_();
   this.updateDescription_();
-  this.updateLegend_();
   this.updateDownloadLink_();
   this.updateEnabled_();
   this.updateFolderDecorator_();
@@ -317,7 +320,6 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   // layer model, the metadata model, and the AppState.
   cm.events.onChange(model, ['title', 'folder_type'], this.updateTitle_, this);
   cm.events.onChange(model, 'description', this.updateDescription_, this);
-  cm.events.onChange(model, 'legend', this.updateLegend_, this);
   cm.events.onChange(model,
                      ['suppress_download_link', 'type', 'url', 'ft_from'],
                      this.updateDownloadLink_, this);
@@ -382,6 +384,28 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
                       cm.events.DELETE_LAYER, {id: id});
   }
 
+};
+
+/**
+ * Initialize the UI around displaying and managing the legend.
+ * @param {boolean} enableLegend Whether the legend should be displayed.
+ * @private
+ */
+cm.LayerEntryView.prototype.initializeLegendUi_ = function(enableLegend) {
+  if (!enableLegend) {
+    this.legendBoxElem_ = null;
+    this.legendElem_ = null;
+    return;
+  }
+  this.legendElem_ = cm.ui.create('div', {'class': cm.css.LAYER_LEGEND});
+  this.legendBoxElem_ = cm.ui.create(
+      'div', {'class': cm.css.LAYER_LEGEND_BOX},
+      cm.ui.create(
+          'fieldset', undefined,
+          cm.ui.create('legend', undefined, cm.MSG_LEGEND),
+          this.legendElem_));
+  cm.events.onChange(this.model_, 'legend', this.updateLegend_, this);
+  this.updateLegend_();
 };
 
 /**
@@ -576,7 +600,8 @@ cm.LayerEntryView.prototype.updateFade_ = function() {
 cm.LayerEntryView.prototype.setFade_ = function(faded, opt_fadeReason) {
   var opacity = !faded ? 1.0 : 0.5;
   var elements = [this.headerElem_, this.warningElem_, this.descriptionElem_,
-      this.legendElem_, this.timeElem_, this.sliderDiv_, this.sublayersElem_];
+      this.timeElem_, this.sliderDiv_, this.sublayersElem_];
+  if (this.legendElem_) elements.push(this.legendElem_);
   for (var key in elements) {
     elements[key] && goog.style.setOpacity(elements[key], opacity);
   }

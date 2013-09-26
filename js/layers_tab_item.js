@@ -121,7 +121,7 @@ cm.LayersTabItem.prototype.addLayer_ = function(layer, index) {
   var id = /** @type string */(layer.get('id'));
   this.layerEntryViews_[id] = new cm.LayerEntryView(
       this.panelLayers_, layer, this.metadataModel_, this.appState,
-      this.config, index);
+      this.config, index, false);
   var view = this.layerEntryViews_[id];
   cm.events.listen(view, cm.events.DELETE_LAYER, function(e) {
     cm.events.emit(goog.global, cm.events.DELETE_LAYER,

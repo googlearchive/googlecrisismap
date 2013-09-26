@@ -1263,7 +1263,7 @@ cm.TestBase.verifyCallCount_ = function(record, errString) {
  * @param {boolean=} opt_folder Pass true if this layer should be a folder.
  * @param {string=} opt_source The return value for getSourceAddress.
  * @param {string=} opt_singleSelect The return value for isSingleSelect.
- * @return {google.maps.MVCArray} The new layer.
+ * @return {google.maps.MVCObject} The new layer.
  */
 cm.TestBase.prototype.createFakeLayer = function(id, opt_folder,
   opt_source, opt_singleSelect) {

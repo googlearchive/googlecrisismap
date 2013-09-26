@@ -49,20 +49,24 @@ registerTestSuite(LayerEntryViewTest);
  *     the parent element, including the new entry. If not given,
  *     defaults to opt_index + 1. If opt_index is not given, defaults
  *     to 1.
+ * @param {boolean=} opt_includeLegend Whether to include the legend
+ *   from the view; defaults to true.
  * @return {Element} An element containing the new LayerEntryView.
  * @private
  */
 LayerEntryViewTest.prototype.createView_ = function(
-    opt_config, opt_index, opt_childCount) {
+    opt_config, opt_index, opt_childCount, opt_includeLegend) {
   var parent = new FakeElement('div');
   var index = opt_index || 0;
   var childCount = opt_childCount || index + 1;
   for (var i = 0; i < childCount - 1; i++) {
     parent.appendChild(new FakeElement('div', {'class': cm.css.LAYER_ENTRY}));
   }
+  opt_includeLegend =
+      opt_includeLegend === undefined ? true : opt_includeLegend;
   this.view_ = new cm.LayerEntryView(parent, this.layerModel_,
                                      this.metadataModel_, this.appState_,
-                                     opt_config, index);
+                                     opt_config, index, opt_includeLegend);
   return parent;
 };
 
@@ -838,6 +842,13 @@ LayerEntryViewTest.prototype.dispose = function() {
   var parent = this.createView_();
   this.view_.dispose();
   expectNoDescendantOf(parent, withClass(cm.css.LAYER_ENTRY));
+};
+
+/** Tests that the legend is omitted when requested. */
+LayerEntryViewTest.prototype.testNoLegend = function() {
+  var parent = this.createView_(undefined, undefined, undefined, false);
+  expectNoDescendantOf(parent, withClass(cm.css.LAYER_LEGEND));
+  expectNoDescendantOf(parent, withClass(cm.css.LAYER_LEGEND_BOX));
 };
 
 /* Would be good to have a test here to verify that tne analytics event
