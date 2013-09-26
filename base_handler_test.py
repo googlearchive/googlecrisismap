@@ -21,22 +21,30 @@ import test_utils
 class BaseHandlerTest(test_utils.BaseTest):
   """Tests for base_handler.py."""
 
-  def testActivateLanguage(self):
+  def testSelectLanguage(self):
     """Tests the selection of the UI language."""
-    self.assertEquals('en', base_handler.ActivateLanguage(None, None))
+    self.assertEquals('en', base_handler.SelectLanguage(None, None))
 
     # "ja" is a supported language.
-    self.assertEquals('ja', base_handler.ActivateLanguage('ja', None))
-    self.assertEquals('ja', base_handler.ActivateLanguage(None, 'ja'))
+    self.assertEquals('ja', base_handler.SelectLanguage('ja', None))
+    self.assertEquals('ja', base_handler.SelectLanguage(None, 'ja'))
 
     # "zz" is not a supported language.
-    self.assertEquals('en', base_handler.ActivateLanguage('zz', None))
+    self.assertEquals('en', base_handler.SelectLanguage('zz', None))
 
     # "in" is a deprecated code for Indonesian; the proper code is "id".
-    self.assertEquals('id', base_handler.ActivateLanguage('in', None))
+    self.assertEquals('id', base_handler.SelectLanguage('in', None))
 
-    # The hl parameter takes precedence over the Accept-Language header.
-    self.assertEquals('tr', base_handler.ActivateLanguage('tr', 'th'))
+    # The first parameter takes precedence over the second.
+    self.assertEquals('tr', base_handler.SelectLanguage('tr', 'th'))
+
+    # Can handle variable number of args, and chooses the first valid one.
+    self.assertEquals('de', base_handler.SelectLanguage(
+        'xoxo', None, 'de', 'fr'))
+
+    # Each argument can actually be a comma-separated list of codes.
+    self.assertEquals('de', base_handler.SelectLanguage(
+        'xoxo,oxox', None, 'yoyo,oyoy,de', 'fr'))
 
   def testJsonXssVulnerability(self):
     """Verifies that ToHtmlSafeJson is safe against XSS."""

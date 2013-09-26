@@ -54,13 +54,13 @@ def SelectSupportedLanguage(language_codes):
   """Selects a supported language based on a list of preferred languages.
 
   Checks through the user-supplied list of languages, and picks the first
-  one that we support. If none are supported, returns the default language.
+  one that we support. If none are supported, returns None.
 
   Args:
     language_codes: A string, a comma-separated list of BCP 47 language codes.
 
   Returns:
-    The BCP 47 language code of a supported UI language.
+    The BCP 47 language code of a supported UI language or None.
   """
   for lang in map(NormalizeLang, language_codes.split(',')):
     if lang in ALL_LANGUAGES:
@@ -68,30 +68,33 @@ def SelectSupportedLanguage(language_codes):
     first = lang.split('_')[0]
     if first in ALL_LANGUAGES:
       return first
-  return DEFAULT_LANGUAGE
+  return None
 
 
-def ActivateLanguage(hl_param, accept_lang):
+def SelectLanguage(*langs):
   """Determines the UI language to use.
 
-  This function takes as input the hl query parameter and the Accept-Language
-  header, decides what language the UI should be rendered in, and activates
-  Django translations for that language.
+  This function expects a variable-length parameter list, each of which is
+  either a language code or a comma-separated list of language codes.
+  After flattening the list, this returns the first valid language encountered,
+  so the caller should supply the language parameters in order of decreasing
+  priority.
 
   Args:
-    hl_param: A string or None (the hl query parameter).
-    accept_lang: A string or None (the value of the Accept-Language header).
+    *langs: A variable length list of language codes, or comma-separated lists
+            of language codes (some or all may be None).
 
   Returns:
-    A language code indicating the UI language to use.
+    A language code indicating the UI language to use. Defaults to
+    DEFAULT_LANGUAGE if all parameters are invalid codes or None.
   """
-  if hl_param:
-    lang = SelectSupportedLanguage(hl_param)
-  elif accept_lang:
-    lang = SelectSupportedLanguage(accept_lang)
-  else:
-    lang = DEFAULT_LANGUAGE
-  return lang
+  for lang in langs:
+    if lang:
+      supported_lang = SelectSupportedLanguage(lang)
+      if supported_lang:
+        return supported_lang
+  # All arguments were None or invalid.
+  return DEFAULT_LANGUAGE
 
 
 def ToHtmlSafeJson(data, **kwargs):
@@ -196,7 +199,7 @@ class BaseHandler(webapp2.RequestHandler):
           return self.redirect(root_path + '/.maps')
 
       # Fill in some useful request variables.
-      self.request.lang = ActivateLanguage(
+      self.request.lang = SelectLanguage(
           self.request.get('hl'), self.request.headers.get('accept-language'))
       self.request.root_path = root_path
 

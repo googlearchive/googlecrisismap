@@ -16,6 +16,8 @@
  */
 goog.provide('cm.util');
 
+goog.require('goog.locale');
+
 /** @return {boolean} True if the browser supports touch events. */
 cm.util.browserSupportsTouch = function() {
   return cm.util.browserSupportsEvent('ontouchstart') &&
@@ -186,3 +188,69 @@ cm.util.formatFileSize = function(size) {
       size >= 9.5e2 ? (size / 1e3 + 1e-9).toFixed(size < 9.5e3) + ' k' :
       size + ' byte' + (size == 1 ? '' : 's');
 };
+
+/**
+ * Translates a BCP 47 language code into the native language name, including
+ * the region in parentheses, e.g. 'en_US' returns 'English (United States)'.
+ * If there is no region subtag, then just the language name given by
+ * goog.locale.getNativeLanguageName() is returned.
+ * Special cases (we support these languages in other regions as well
+ * and add the region to avoid ambiguity):
+ *   en -> English (United States)
+ *   fr -> français (France)
+ *   es -> español (España)
+ * Special cases (special names for some Chinese language codes):
+ *   zh-CN -> Simplified Chinese (in Chinese characters)
+ *   zh-TW -> Traditional Chinese (in Chinese characters)
+ * @param {string} langCode the BCP 47 language code to name.
+ * @return {string} The native language name, or the original code
+ *   if that language is not recognized by Closure.
+ */
+cm.util.getNativeLanguageAndRegionName = function(langCode) {
+  var nativeName = goog.locale.getNativeLanguageName(langCode);
+  // Manually handle ambigious languages which don't have regions by default.
+  var regionSubTag;
+  switch (langCode) {
+    case 'en':
+      regionSubTag = 'US';
+      break;
+    case 'fr':
+      regionSubTag = 'FR';
+      break;
+    case 'es':
+      regionSubTag = 'ES';
+      break;
+    default:
+      regionSubTag = goog.locale.getRegionSubTag(langCode);
+  }
+  if (regionSubTag !== '') {
+    // getNativeCountryName needs all region subtags to be uppercase,
+    // so we have to reformat the language code accordingly.
+    var langSubTag = goog.locale.getLanguageSubTag(langCode);
+    var newLangCode = langSubTag + '_' + regionSubTag.toUpperCase();
+    switch (newLangCode) {
+      case 'zh_CN':
+        nativeName = '\u7b80\u4f53\u4e2d\u6587';
+        break;
+      case 'zh_TW':
+        nativeName = '\u7e41\u9ad4\u4e2d\u6587';
+        break;
+      // Spaced out parentheses for Chinese (Hong Kong).
+      case 'zh_HK':
+        nativeName = '\u4e2d\u6587\uff08\u9999\u6e2f\uff09';
+        break;
+      default:
+        var countryName = goog.locale.getNativeCountryName(newLangCode);
+        // getNativeCountryName doesn't handle region numbers.
+        if (regionSubTag === '419') {
+          countryName = 'Latinoam\u00e9rica';
+        }
+        // Make sure the region is actually supported.
+        if (countryName !== newLangCode) {
+          nativeName = nativeName + ' (' + countryName + ')';
+        }
+    }
+  }
+  return nativeName;
+};
+

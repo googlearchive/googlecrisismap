@@ -209,3 +209,28 @@ UtilTest.prototype.testFormatFileSize = function() {
   expectEq('', cm.util.formatFileSize(null));
   expectEq('', cm.util.formatFileSize(undefined));
 };
+
+/* Tests cm.util.fn */
+UtilTest.prototype.testGetNativeLanguageAndRegionName = function() {
+  // Shorten the d**n name.
+  var fn = cm.util.getNativeLanguageAndRegionName;
+  // Basic (Bengali).
+  expectEq('\u09ac\u09be\u0982\u09b2\u09be', fn('bn'));
+
+  // Region subtag case and underscore vs. dash shouldn't matter.
+  expectEq('English (United Kingdom)', fn('en_GB'));
+  expectEq('English (United Kingdom)', fn('en-gb'));
+  // Returns the code when the language is not supported.
+  expectEq('xo_US', fn('xo_US'));
+  // Drops region when it's not supported.
+  expectEq('\u09ac\u09be\u0982\u09b2\u09be', fn('bn-xo'));
+
+  // Special cases for ambigious languages.
+  expectEq('English (United States)', fn('en'));
+  expectEq('espa\u00f1ol (Espa\u00f1a)', fn('es'));
+  expectEq('espa\u00f1ol (Latinoam\u00e9rica)', fn('es-419'));
+  expectEq('fran\u00e7ais (France)', fn('fr'));
+  // Special cases for Chinese.
+  expectEq('\u7b80\u4f53\u4e2d\u6587', fn('zh-cn'));
+  expectEq('\u7e41\u9ad4\u4e2d\u6587', fn('zh-tw'));
+};

@@ -215,16 +215,16 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   # Fill the cm_config dictionary.
   root = request.root_path
   result = {
-      'ui_lang': request.lang,
       'dev_mode': dev_mode,
-      'user_email': users.GetCurrent() and users.GetCurrent().email,
+      'langs': base_handler.ALL_LANGUAGES,
+      # Each endpoint that the JS client code uses gets an entry in config.
+      'js_root': root,  # TODO(kpy): Change this to root + '/.js'
+      'json_proxy_url': root + '/.jsonp',
       'login_url': users.GetLoginUrl(request.url),
       'logout_url': users.GetLogoutUrl(request.url),
       'map_catalog': map_catalog,
       'maps_api_url': maps_api_url,
-      # Each endpoint that the JS client code uses gets an entry in config.
-      'js_root': root,  # TODO(kpy): Change this to root + '/.js'
-      'json_proxy_url': root + '/.jsonp',
+      'user_email': users.GetCurrent() and users.GetCurrent().email,
       'wms_configure_url': root + '/.wms/configure',
       'wms_tiles_url': root + '/.wms/tiles'
   }
@@ -235,15 +235,25 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
 
   # Add the MapRoot data and other map-specific information.
   if catalog_entry:  # published map
-    result['map_root'] = json.loads(catalog_entry.maproot_json)
+    maproot_json = json.loads(catalog_entry.maproot_json)
+    result['map_root'] = maproot_json
     result['map_id'] = catalog_entry.map_id
+    result['ui_lang'] = base_handler.SelectLanguage(
+        request.get('hl'),
+        request.headers.get('accept-language'),
+        maproot_json.get('default_language'))
     result['label'] = catalog_entry.label
     result['publisher_name'] = catalog_entry.publisher_name
     key = catalog_entry.map_version_key
   elif map_object:  # draft map
     xsrf_qs = '?xsrf_token=' + xsrf_token  # needed for all POST URLs
-    result['map_root'] = json.loads(map_object.GetCurrentJson())
+    maproot_json = json.loads(map_object.GetCurrentJson())
+    result['map_root'] = maproot_json
     result['map_id'] = map_object.id
+    result['ui_lang'] = base_handler.SelectLanguage(
+        request.get('hl'),
+        request.headers.get('accept-language'),
+        maproot_json.get('default_language'))
     result['map_list_url'] = root + '/.maps'
     result['diff_url'] = root + '/.diff/' + map_object.id + xsrf_qs
     result['save_url'] = root + '/.api/maps/' + map_object.id + xsrf_qs
@@ -297,7 +307,7 @@ class MapByLabel(base_handler.BaseHandler):
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
         'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
-        'ui_lang': self.request.lang,
+        'ui_lang': cm_config['ui_lang'],
         'maps_api_url': cm_config['maps_api_url'],
         'hide_footer': cm_config.get('hide_footer', False),
         'embedded': self.request.get('embedded', False)
@@ -332,7 +342,7 @@ class MapById(base_handler.BaseHandler):
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
         'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
-        'ui_lang': self.request.lang,
+        'ui_lang': cm_config['ui_lang'],
         'maps_api_url': cm_config['maps_api_url'],
         'hide_footer': cm_config.get('hide_footer', False),
         'embedded': self.request.get('embedded', False)
@@ -364,3 +374,4 @@ class MapList(base_handler.BaseHandler):
         'catalog_domains': sorted(perms.GetAccessibleDomains(
             user, perms.Role.CATALOG_EDITOR))
     }))
+
