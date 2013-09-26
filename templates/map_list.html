@@ -91,7 +91,11 @@ specific language governing permissions and limitations under the License.
                 {% else %}
                   <select id="domain-{{m.id}}">
                     {% for domain in catalog_domains %}
-                      <option value="{{domain}}">{{domain}}/</option>
+                      <option value="{{domain}}"
+                        {% if domain == user.email_domain %}
+                          selected
+                        {% endif %}
+                      >{{domain}}/</option>
                     {% endfor %}
                   </select
                   ><input type="text" id="label-{{m.id}}"

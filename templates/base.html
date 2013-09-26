@@ -64,7 +64,9 @@ specific language governing permissions and limitations under the License.
           <div class="cm-domain-select">
             <select id="domain">
               {% for domain in navbar.creator_domains %}
-                <option value="{{domain}}">{{domain}}</option>
+                <option value="{{domain}}"
+                  {% if domain == user.email_domain %} selected {% endif %}
+                >{{domain}}</option>
               {% endfor %}
             </select>
           </div>
