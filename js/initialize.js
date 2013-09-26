@@ -12,9 +12,14 @@
 /**
  * @fileoverview Initializes the map.
  */
+
+goog.provide('MIN_DOCUMENT_WIDTH_FOR_SIDEBAR');
+
 goog.require('cm.Analytics');
 goog.require('cm.AppState');
 goog.require('cm.BuildInfoView');
+goog.require('cm.ExtraView');
+goog.require('cm.ExtraViewsPlugin');
 goog.require('cm.FooterView');
 goog.require('cm.LayersButton');
 goog.require('cm.LoginView');
@@ -54,9 +59,14 @@ goog.require('goog.ui.Component');
  * @param {Element} footerElem The footer element.
  * @param {cm.PanelView} panelView The panel view.
  * @param {Element} panelElem The panel element.
+ * @param {Array.<cm.ExtraViewsPlugin>} extraViewsPlugins An array of
+ *     cm.ExtraViewsPlugin instances to be set up by this method.
+ * @param {!Object.<string, cm.ExtraView>} extraViews A map of ExtraView
+ *     short names to ExtraView instances. This can be empty but not null.
  */
 function sizeComponents(map, container, searchbox, embedded, touch, preview,
-                        mapWrapperElem, footerElem, panelView, panelElem) {
+                        mapWrapperElem, footerElem, panelView, panelElem,
+                        extraViewsPlugins, extraViews) {
 
   /**
    * Returns the value of the given style property for an element.  Assumes the
@@ -112,12 +122,27 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
   var floating = goog.dom.classes.has(container, cm.css.PANEL_FLOAT);
   goog.dom.classes.enable(container, cm.css.PANEL_DOCK, !embedded && !floating);
 
+  var collapsed = goog.dom.classes.has(container, cm.css.PANEL_COLLAPSED);
+
   mapWrapperElem.style.height = getMapHeight() + 'px';
 
   // In floating or embedded mode, the panel has variable height based on its
   // content, but we need to limit its maximum height to fit over the map.
   var floatMaxHeight = getMapHeight() - 10;  // allow 5px top and bottom margin
   panelView.setMaxHeight(embedded || floating ? floatMaxHeight : null);
+
+  if (extraViewsPlugins) {
+    var panelViewPosition = {
+            isPanelCollapsed: collapsed,
+            isPanelFloating: floating,
+            isPanelPopup: embedded,
+            floatMaxHeight: floatMaxHeight
+    };
+    goog.array.forEach(extraViewsPlugins, function(plugin) {
+      plugin.sizeComponentsWithExtraViews(container, panelView,
+        panelViewPosition, extraViews);
+    });
+  }
 
   // TODO(kpy): Rework this value.  The relevant Maps API bug, which hid the
   // searchbox behind other controls, has since been fixed.
@@ -194,8 +219,8 @@ function installHtmlSanitizer(html) {
  * @param {string=} opt_mapName The (optional) map_name for Analytics logging.
  * @param {string} opt_language The (optional) BCP 47 language code.
  */
-function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
-                    opt_config, opt_mapName, opt_language) {
+function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
+                    opt_mapName, opt_language) {
   var config = opt_config || {};
 
   // Initialize the dynamic module loader and tell it how to find module URLs.
@@ -298,6 +323,8 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
   }
   if (config['panel_side'] === 'left') {
     goog.dom.classes.add(frameElem, cm.css.PANEL_LEFT);
+  } else {
+    goog.dom.classes.add(frameElem, cm.css.PANEL_RIGHT);
   }
   if (config['show_login']) {
     new cm.LoginView(panelElem, config);
@@ -313,18 +340,25 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
                                      config['publisher_name']);
   goog.style.setElementShown(footerElem, !config['hide_footer'] && !preview);
 
+  var extraViewsPlugins = /** @type {Array.<cm.ExtraViewsPlugin>} */
+      (config['extra_views_plugins']);
+  var extraViews =
+      cm.ExtraViewsPlugin.initAll(frameElem, config, extraViewsPlugins);
+
   new cm.BuildInfoView(mapElem);
 
   // Lay out the UI components.  This needs to happen (in order to determine
   // the size of the map's DOM element) before we set up the viewport.
   sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
-                 preview, mapWrapperElem, footerElem, panelView, panelElem);
+                 preview, mapWrapperElem, footerElem, panelView, panelElem,
+                 extraViewsPlugins, extraViews);
   // We readjust the layout whenever the ViewportSizeMonitor detects that the
   // window resized, and also when anything emits 'resize' on goog.global.
   cm.events.forward(new goog.dom.ViewportSizeMonitor(), 'resize', goog.global);
   cm.events.listen(goog.global, 'resize', function() {
     sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
-                   preview, mapWrapperElem, footerElem, panelView, panelElem);
+                   preview, mapWrapperElem, footerElem, panelView, panelElem,
+                   extraViewsPlugins, extraViews);
   });
 
   // If allowed, pass the google.maps.Map element to the parent frame.

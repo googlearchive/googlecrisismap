@@ -30,6 +30,7 @@ goog.require('goog.array');
 goog.require('goog.dom.classes');
 goog.require('goog.events.EventType');
 goog.require('goog.module');
+goog.require('goog.style');
 
 /** @const @type string */
 var EMPTY_PNG = '//maps.gstatic.com/mapfiles/transparent.png';
@@ -379,4 +380,14 @@ cm.PanelView.prototype.removeLayer_ = function(layer) {
     this.layerEntryViews_[id].dispose();
     delete this.layerEntryViews_[id];
   }
+};
+
+/**
+ * Get the bounds of the Element into which the PanelView was rendered. (This is
+ * the same Element that was passed to the constructor via the parentlElem.)
+ * @return {goog.math.Rect} The position and size of the Element containing the
+ *     PanelView.
+ */
+cm.PanelView.prototype.getBounds = function() {
+  return goog.style.getBounds(this.parentElem_);
 };

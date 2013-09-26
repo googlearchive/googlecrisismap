@@ -86,16 +86,16 @@ html, body {
 .cm-popup h2 + a {
   float:right;
 }
-.cm-panel a, .cm-footer a, .cm-popup a {
+.cm-panel a, .cm-footer a, .cm-popup a, .cm-nav-list a {
   text-decoration:none;
 }
-.cm-panel a:link, .cm-footer a:link, .cm-popup a:link {
+.cm-panel a:link, .cm-footer a:link, .cm-popup a:link, .cm-nav-list a:link {
   color:#1155cc;
 }
-.cm-panel a:visited, .cm-footer a:visited, .cm-popup a:visited {
+.cm-panel a:visited, .cm-footer a:visited, .cm-popup a:visited, .cm-nav-list a:visited {
   color:#6611cc;
 }
-.cm-panel a:hover, .cm-footer a:hover, .cm-popup a:hover {
+.cm-panel a:hover, .cm-footer a:hover, .cm-popup a:hover, .cm-nav-list a:hover {
   text-decoration:underline;
 }
 
@@ -153,7 +153,7 @@ html, body {
   height:19px;
   text-align:center;
   background:#fff;
-  z-index:3;
+  z-index:4;
 }
 .cm-collapse {
   right:0;
@@ -208,7 +208,7 @@ html, body {
   height:auto !important;
   max-height:98%;
   overflow-y:hidden;
-  z-index:1;
+  z-index:2;
   opacity:0.90;
   box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
   -moz-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
@@ -369,7 +369,7 @@ html, body {
   float:none;
   position:absolute;
   width:100%;
-  z-index:1;
+  z-index:2;
   max-width:500px;
   opacity:0.90;
   filter:alpha(opacity=90);
@@ -1435,4 +1435,116 @@ textarea.cm-legend-text {
   text-align:center;
   width:100px;
   white-space:nowrap;
+}
+
+/* Navigation links */
+.cm-nav-list {
+  background-color: white;
+  border-right: 1px solid #ccc;
+  bottom: 25px;
+  -moz-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  color: #222;
+  font-size: 13px;
+  list-style-type: none;
+  margin: 0;
+  opacity: 0.9;
+  padding: 10px 20px;
+  position: absolute;
+  width: 266px; /* + padding & border = 307px, to match .cm-panel's width */
+  z-index: 2;
+}
+
+.cm-panel-right .cm-nav-list {
+  right: 312px;
+}
+
+/* If the panel is docked on the right, and is currently collapsed or embedded,
+   move the navigation view to the right side of the viewport. */
+.cm-panel-right.cm-embedded .cm-nav-list,
+.cm-panel-right.cm-panel-collapsed .cm-nav-list {
+    right: 5px;
+}
+
+.cm-panel-left.cm-panel-dock .cm-nav-list {
+  left: 312px;
+}
+
+.cm-panel-left.cm-panel-dock .cm-nav-list.cm-above-attribution {
+  bottom: 25px;
+}
+
+.cm-panel-left.cm-embedded .cm-nav-list,
+.cm-panel-left.cm-panel-collapsed .cm-nav-list,
+.cm-panel-left.cm-panel-float .cm-nav-list {
+  left: 5px;
+}
+
+.cm-nav-item {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.cm-nav-item.cm-nav-item-undelimited {
+  margin-left: 10px;
+}
+
+.cm-nav-compact .cm-nav-item {
+  display: block;
+}
+
+.cm-nav-item.cm-nav-item-undelimited:first-child {
+  margin-left: 0;
+}
+
+.cm-nav-compact {
+  font-size: 11px;
+  padding: 4px 8px;
+  width: 220px;
+}
+
+.cm-nav-list.cm-nav-compact {
+  display: block;
+  width: 120px;
+}
+
+.cm-nav-compact .cm-nav-item.cm-nav-item-undelimited {
+  margin-left: 0;
+}
+
+.cm-nav-item.cm-nav-item-undelimited .cm-nav-item-separator,
+.cm-nav-compact .cm-nav-item .cm-nav-item-separator {
+  display: none;
+}
+
+/* Indent word-wrapped lines of link text, if any. */
+.cm-nav-compact .cm-nav-item a {
+  display: block;
+  padding-left: 10px;
+  text-indent: -10px;
+}
+
+/* Render the logo in the bottom left corner of the visible map. */
+.cm-logo-watermark {
+  bottom: 5px;
+  left: 35px;
+  position: absolute;
+  z-index: 1;
+}
+
+/* If the panel is docked on the left, place the logo to the right of the
+   panel, in the bottom left corner of the visible map. */
+.cm-panel-left .cm-logo-watermark {
+  left: 312px;
+}
+
+
+/* If the panel is docked on the left and is currently embedded, collapsed,
+   or floating, move the logo view to the left side of the viewport. */
+.cm-panel-left.cm-embedded .cm-logo-watermark,
+.cm-panel-left.cm-panel-collapsed .cm-logo-watermark,
+.cm-panel-left.cm-panel-float .cm-logo-watermark {
+  left: 5px;
 }
