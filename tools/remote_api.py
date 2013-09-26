@@ -56,7 +56,7 @@ def parse_url(url):
     # Determine the protocol, host, port, and path from the URL argument.
     if '//' not in url:
         url = '//' + url
-    scheme, netloc, path, query, fragment = urlparse.urlsplit(url)
+    scheme, netloc, path, query, _ = urlparse.urlsplit(url)
     host, port = urllib2.splitport(netloc)
     port = int(port or (scheme == 'http' and 80 or 443))  # default to https
     secure = (port == 443)
@@ -163,7 +163,7 @@ protocol or port number, the default protocol is HTTPS.  The default path is
         exec options.command
     elif args:
         sys.argv[:] = args
-        execfile(args[0], {})
+        execfile(args[0], {'__name__': '__main__'})
     else:
         code.interact(banner, None, locals())
 
