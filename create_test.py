@@ -14,7 +14,7 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import config
+import domains
 import model
 import perms
 import test_utils
@@ -41,9 +41,15 @@ class CreateTest(test_utils.BaseTest):
     self.DoPost('/xyz.com/.create', '', status=403)
 
   def testDomainRole(self):
+    # Start with initial_domain_role == None for our domain
+    test_utils.BecomeAdmin()
+    domain = domains.Domain.Get('xyz.com')
+    domain.initial_domain_role = None
+    domain.Put()
     # Grant MAP_CREATOR permission to foo@xyz.com
     user = 'foo@xyz.com'
     perms.Grant(user, perms.Role.MAP_CREATOR, 'xyz.com')
+    perms.Grant(user, perms.Role.DOMAIN_ADMIN, 'xyz.com')
     # foo@xyz.com should be able to create a map.
     test_utils.SetUser(user)
     response = self.DoPost('/xyz.com/.create', '', status=302)
@@ -56,7 +62,8 @@ class CreateTest(test_utils.BaseTest):
     self.assertEquals(None, map_object.domain_role)
 
     # Now set the initial_domain_role for xyz.com.
-    config.Set('initial_domain_role:xyz.com', perms.Role.MAP_EDITOR)
+    domain.initial_domain_role = perms.Role.MAP_EDITOR
+    domain.Put()
     # Create another map.
     test_utils.SetUser(user)
     response = self.DoPost('/.create?domain=xyz.com', '', status=302)

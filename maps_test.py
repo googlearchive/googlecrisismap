@@ -15,6 +15,7 @@
 __author__ = 'shakusa@google.com (Steve Hakusa)'
 
 import config
+import domains
 import maps
 import model
 import test_utils
@@ -146,6 +147,8 @@ class MapListTest(test_utils.BaseTest):
   def testGet(self):
     """Tests the map listing page."""
     test_utils.BecomeAdmin()
+    domains.Domain.Create('cows.net')
+    domains.Domain.Create('dogs.org')
     m1 = model.Map.Create('{"title": "Moo"}', 'cows.net', viewers=['x@y.com'])
     m2 = model.Map.Create('{"title": "Arf"}', 'dogs.org', viewers=['x@y.com'])
     test_utils.SetUser('x@y.com')

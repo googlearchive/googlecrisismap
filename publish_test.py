@@ -14,6 +14,7 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
+import domains
 import model
 import test_utils
 
@@ -73,6 +74,8 @@ class PublishTest(test_utils.BaseTest):
 
   def testRemove(self):
     """Tests removal of a catalog entry."""
+    test_utils.BecomeAdmin()
+    domains.Domain.Create('foo.com')
     model.CatalogEntry.Create('foo.com', 'abc', self.map_object)
     self.assertNotEqual(None, model.CatalogEntry.Get('foo.com', 'abc'))
     self.DoPost('/foo.com/.publish', 'label=abc&remove=1')

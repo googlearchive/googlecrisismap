@@ -14,6 +14,7 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
+import domains
 import model
 import perms
 import test_utils
@@ -28,12 +29,6 @@ class MapTests(test_utils.BaseTest):
 
   def setUp(self):
     super(MapTests, self).setUp()
-
-  def testInitialDomainRole(self):
-    self.assertEquals(None, model.GetInitialDomainRole('xyz.com'))
-    model.SetInitialDomainRole('xyz.com', perms.Role.MAP_VIEWER)
-    self.assertEquals(perms.Role.MAP_VIEWER,
-                      model.GetInitialDomainRole('xyz.com'))
 
   def testVersions(self):
     """Verifies that creating and setting versions works properly."""
@@ -256,7 +251,9 @@ class CatalogEntryTests(test_utils.BaseTest):
 
   def testCatalogDelete(self):
     mm, _ = test_utils.CreateMapAsAdmin(viewers=['random_user@gmail.com'])
+    test_utils.BecomeAdmin()
     model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
+    domains.Domain.Create('foo.com')
 
     # Validate that CatalogEntry is created successfully.
     self.assertEquals('title', model.CatalogEntry.Get('foo.com', 'label').title)
@@ -274,6 +271,25 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'label'))
     # A CatalogEntry cannot be deleted twice.
     self.assertRaises(ValueError, model.CatalogEntry.Delete, 'foo.com', 'label')
+
+  def testCatalogDelete_PublisherPolicy(self):
+    # Under the publisher policy, even catalog editors should not be able
+    # to delete catalog entries if they are not the owner.
+    mm, _ = test_utils.CreateMapAsAdmin(
+        viewers=['random_user@gmail.com', 'creator@gmail.com'])
+    test_utils.BecomeAdmin()
+
+    domains.Domain.Create('foo.com', has_sticky_catalog_entries=True)
+    perms.Grant('random_user@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
+    perms.Grant('creator@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
+
+    test_utils.SetUser('creator@gmail.com')
+    model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
+    test_utils.SetUser('random_user@gmail.com')
+    self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Delete,
+                      'foo.com', 'label')
+    test_utils.SetUser('creator@gmail.com')
+    model.CatalogEntry.Delete('foo.com', 'label')
 
   def testUpdate(self):
     """Tests modification and update of an existing CatalogEntry."""

@@ -12,6 +12,7 @@
 
 """Unit tests for perms.py."""
 
+import domains
 import model
 import mox
 import perms
@@ -32,11 +33,9 @@ class PermsTests(test_utils.BaseTest):
   def testUserRoles(self):
     """Verifies that user access permissions restrict actions correctly."""
     # Check admin roles.
-    test_utils.BecomeAdmin()
-    m = model.Map.Create('{}', 'xyz.com',
-                         owners=['owner@gmail.com'],
-                         editors=['editor@gmail.com'],
-                         viewers=['viewer@gmail.com'])
+    m, _ = test_utils.CreateMapAsAdmin(owners=['owner@gmail.com'],
+                                       editors=['editor@gmail.com'],
+                                       viewers=['viewer@gmail.com'])
     self.assertEquals(set(['ADMIN', 'MAP_OWNER', 'MAP_EDITOR', 'MAP_VIEWER']),
                       GetRolesForMap(m))
 
@@ -116,7 +115,12 @@ class PermsTests(test_utils.BaseTest):
   def testDomainRoles(self):
     """Verifies that domain access permissions restrict actions correctly."""
     test_utils.BecomeAdmin()
-    m = model.Map.Create('{}', 'foo.com', domain_role='MAP_OWNER')
+    domain = domains.Domain.Get('foo.com')
+    if not domain:
+      domain = domains.Domain.Create('foo.com')
+    domain.initial_domain_role = 'MAP_OWNER'
+    domain.Put()
+    m = model.Map.Create('{}', 'foo.com')
 
     # Verify that user@foo.com gets the domain role for foo.com.
     test_utils.SetUser('user@foo.com')
@@ -201,8 +205,6 @@ class PermsTests(test_utils.BaseTest):
     # Zarg is a map creator at unimportant.org
     perms.SetDomainRoles('zarg@unimportant.org', 'unimportant.org',
                          [perms.Role.MAP_CREATOR])
-    # Ensure other values stored in Config don't interfere
-    model.SetInitialDomainRole('xyz.com', perms.Role.MAP_VIEWER)
 
     self.assertEqualDomainPerms(
         {'xyz.com': [perms.Role.MAP_CREATOR],

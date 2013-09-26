@@ -18,15 +18,20 @@ import urllib
 
 import base_handler
 import config
+import domains
 
 
-def GetDestination(request):
+def GetDestination(request, domain_name):
   """Based on the request, determines the map URL to redirect to."""
-
   # For backward compatibility, support the id= and crisis= parameters.
-  label = (request.get('id') or request.get('crisis') or
-           config.Get('default_label') or 'empty')
-  url = request.root_path + '/' + label
+  label = request.get('id') or request.get('crisis')
+  if not label:
+    domain = domains.Domain.Get(domain_name)
+    label = domain and domain.default_label or 'empty'
+  if domain_name:
+    url = request.root_path + '/' + domain_name + '/' + label
+  else:
+    url = request.root_path + '/' + label
 
   # Preserve all the query parameters except those that set the label.
   params = dict((key, value) for (key, value) in request.GET.items()
@@ -37,6 +42,6 @@ def GetDestination(request):
 class Index(base_handler.BaseHandler):
   """Redirector from '/' or '/crisismap' to the appropriate map page."""
 
-  def Get(self, domain=''):  # pylint: disable=unused-argument
-    # TODO(kpy): When domain is specified, redirect to domain's default label.
-    self.redirect(str(GetDestination(self.request)))  # non-Unicode is required
+  def Get(self, domain=''):
+    self.redirect(
+        str(GetDestination(self.request, domain)))  # non-Unicode is required

@@ -21,7 +21,7 @@ import os
 import random
 
 import cache
-import config
+import domains
 import perms
 import utils
 
@@ -60,28 +60,6 @@ def ResultIterator(query):
   """Returns a generator that yields structs."""
   for result in query:
     yield StructFromModel(result)
-
-
-def SetInitialDomainRole(domain, role):
-  """Sets the domain_role to apply to newly created maps for a given domain.
-
-  Args:
-    domain: A domain name.
-    role: A Role constant, or None.
-  """
-  config.Set('initial_domain_role:' + domain, role)
-
-
-def GetInitialDomainRole(domain):
-  """Gets the domain_role to apply to newly created maps for a given domain.
-
-  Args:
-    domain: A domain name.
-
-  Returns:
-    A Role constant, or None.
-  """
-  return config.Get('initial_domain_role:' + domain)
 
 
 def DoAsAdmin(function, *args, **kwargs):
@@ -332,27 +310,36 @@ class CatalogEntry(object):
     return CatalogEntry(model)
 
   @staticmethod
-  def Delete(domain, label):
+  def Delete(domain_name, label):
     """Deletes an existing CatalogEntry.
 
     Args:
-      domain: The domain to which the CatalogEntry belongs.
+      domain_name: The domain to which the CatalogEntry belongs.
       label: The publication label.
 
     Raises:
       ValueError: if there's no CatalogEntry with the given domain and label.
     """
-    domain = str(domain)  # accommodate Unicode strings
-    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain)
-    entry = CatalogEntryModel.Get(domain, label)
+    domain_name = str(domain_name)  # accommodate Unicode strings
+    domain = domains.Domain.Get(domain_name)
+    entry = CatalogEntryModel.Get(domain_name, label)
     if not entry:
-      raise ValueError('No CatalogEntry %r in domain %r' % (label, domain))
+      raise ValueError('No CatalogEntry %r in domain %r' % (label, domain_name))
+    if not domain:
+      raise ValueError('Unknown domain %r' % domain_name)
+    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain_name)
+    if domain.has_sticky_catalog_entries:
+      # When catalog entries are sticky, only the label creator or a
+      # domain admin may delete a label
+      email = utils.GetCurrentUserEmail()
+      if email != utils.NormalizeEmail(entry.creator.email()):
+        perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain_name)
     entry.delete()
     # We use '*' in the cache key for the list that includes all domains.
     cache.Delete([CatalogEntry, '*', 'all'])
     cache.Delete([CatalogEntry, '*', 'listed'])
-    cache.Delete([CatalogEntry, domain, 'all'])
-    cache.Delete([CatalogEntry, domain, 'listed'])
+    cache.Delete([CatalogEntry, domain_name, 'all'])
+    cache.Delete([CatalogEntry, domain_name, 'listed'])
 
   # TODO(kpy): Make Delete and DeleteByMapId both take a user argument, and
   # reuse Delete here by calling it with an admin user.
@@ -503,11 +490,18 @@ class Map(object):
 
   @staticmethod
   def Create(maproot_json, domain, owners=None, editors=None, viewers=None,
-             domain_role=None, world_readable=False):
+             world_readable=False):
     """Stores a new map with the given properties and MapRoot JSON content."""
     # maproot_json must be syntactically valid JSON, but otherwise any JSON
     # object is allowed; we don't check for MapRoot validity here.
-    perms.AssertAccess(perms.Role.MAP_CREATOR, domain)
+
+    # TODO(rew): Change the domain argument to take a domains.Domain instead
+    # of a string
+    domain_obj = domains.Domain.Get(domain)
+    if not domain_obj:
+      raise domains.UnknownDomainError(domain)
+    domain = domain_obj
+    perms.AssertAccess(perms.Role.MAP_CREATOR, domain.name)
     if owners is None:
       # TODO(kpy): Take user as an argument instead of calling GetCurrentUser.
       owners = [utils.GetCurrentUserEmail()]
@@ -515,14 +509,24 @@ class Map(object):
       editors = []
     if viewers is None:
       viewers = []
+    if domain.initial_domain_role != domains.NO_ROLE:
+      map_creators = [p.subject for p
+                      in perms.Query(None, perms.Role.MAP_CREATOR, domain.name)]
+      if domain.initial_domain_role == perms.Role.MAP_OWNER:
+        owners = list(set(owners + map_creators))
+      elif domain.initial_domain_role == perms.Role.MAP_EDITOR:
+        editors = list(set(editors + map_creators))
+      else:
+        viewers = list(set(viewers + map_creators))
+
     # urlsafe_b64encode encodes 12 random bytes as exactly 16 characters,
     # which can include digits, letters, hyphens, and underscores.  Because
     # the length is a multiple of 4, it won't have trailing "=" signs.
     map_object = Map(MapModel(
         key_name=base64.urlsafe_b64encode(
             ''.join(chr(random.randrange(256)) for i in xrange(12))),
-        owners=owners, editors=editors, viewers=viewers, domains=[domain],
-        domain_role=domain_role, world_readable=world_readable))
+        owners=owners, editors=editors, viewers=viewers, domains=[domain.name],
+        domain_role=domain.initial_domain_role, world_readable=world_readable))
     map_object.PutNewVersion(maproot_json)  # also puts the MapModel
     return map_object
 

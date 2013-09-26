@@ -25,6 +25,7 @@ import webapp2
 import webob
 
 import config
+import domains
 import model
 import mox
 
@@ -38,6 +39,7 @@ mox.ANY = mox.IgnoreArg()
 # For tests, assume the app resides under this URL.
 ROOT_URL = 'http://app.com/root'
 ROOT_PATH = urlparse.urlsplit(ROOT_URL).path
+DEFAULT_DOMAIN = 'xyz.com'
 
 
 def DispatchRequest(request):
@@ -102,7 +104,8 @@ def DatetimeWithUtcnow(now):
 def CreateMapAsAdmin(**kwargs):
   BecomeAdmin()
   map_object = model.Map.Create(
-      '{"description": "description", "title": "title"}', 'xyz.com', **kwargs)
+      '{"description": "description", "title": "title"}',
+      DEFAULT_DOMAIN, **kwargs)
   return map_object, map_object.GetCurrent().id
 
 
@@ -129,6 +132,8 @@ class BaseTest(unittest.TestCase):
     self.testbed.init_user_stub()
     self.testbed.init_taskqueue_stub(root_path=root)
     config.Set('root_path', ROOT_PATH)
+    config.Set('default_domain', DEFAULT_DOMAIN)
+    domains.Domain.Create(DEFAULT_DOMAIN)
 
     self.mox.stubs.Set(webapp2.RequestHandler, 'redirect', TestRedirect)
 
