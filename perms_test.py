@@ -13,6 +13,7 @@
 """Unit tests for perms.py."""
 
 import model
+import mox
 import perms
 import test_utils
 import utils
@@ -136,14 +137,13 @@ class PermsTests(test_utils.BaseTest):
   def testMapCreatorDomains(self):
     """Verifies that the map_creator_domains setting is respected."""
     test_utils.BecomeAdmin()
-    perms.SetGlobalRoles('foo.com', [[perms.Role.MAP_CREATOR, 'xyz.com']])
+    perms.Grant('foo.com', perms.Role.MAP_CREATOR, 'xyz.com')
 
     # bar@foo.com has the CREATOR role.
     current_user = test_utils.SetUser('bar@foo.com')
     access_policy = perms.AccessPolicy()
-    self.assertTrue(
-        access_policy.HasGlobalRole(
-            current_user, [perms.Role.MAP_CREATOR, 'xyz.com']))
+    self.assertTrue(perms.CheckAccess(
+        perms.Role.MAP_CREATOR, 'xyz.com', current_user, access_policy))
     self.assertTrue(
         perms.CheckAccess(perms.Role.MAP_CREATOR, 'xyz.com'),
         'user %s in domain %s failed CheckAccess for %s' % (
@@ -162,9 +162,8 @@ class PermsTests(test_utils.BaseTest):
 
   def testDomainAdminRole(self):
     test_utils.BecomeAdmin()
-    perms.SetGlobalRoles('xyz.com', [[perms.Role.DOMAIN_ADMIN, 'xyz.com']])
-    perms.SetGlobalRoles(
-        'foo@not-xyz.com', [[perms.Role.DOMAIN_ADMIN, 'xyz.com']])
+    perms.Grant('xyz.com', perms.Role.DOMAIN_ADMIN, 'xyz.com')
+    perms.Grant('foo@not-xyz.com', perms.Role.DOMAIN_ADMIN, 'xyz.com')
     test_utils.SetUser('foo@xyz.com')
     self.assertTrue(
         perms.CheckAccess(perms.Role.DOMAIN_ADMIN, 'xyz.com'))
@@ -216,6 +215,24 @@ class PermsTests(test_utils.BaseTest):
          'sally@xyz.com': [perms.Role.MAP_CREATOR]},
         perms.GetSubjectsInDomain('abc.com'))
 
+    # Revoke a permission
+    perms.SetDomainRoles(
+        'sally@xyz.com', 'xyz.com', [perms.Role.CATALOG_EDITOR])
+    self.assertEqual(
+        [perms.Role.CATALOG_EDITOR],
+        perms.GetDomainRoles('sally@xyz.com', 'xyz.com'))
+
+  def testGetDomainsWithRole(self):
+    perms.SetDomainRoles('sally@xyz.com', 'xyz.com',
+                         [perms.Role.DOMAIN_ADMIN, perms.Role.CATALOG_EDITOR])
+    perms.SetDomainRoles('sally@xyz.com', 'abc.com', [perms.Role.MAP_CREATOR])
+    perms.SetDomainRoles('xyz.com', 'xyz.com', [perms.Role.MAP_CREATOR])
+    test_utils.SetUser('sally@xyz.com')
+    self.assertEqual(['abc.com', 'xyz.com'],
+                     perms.GetDomainsWithRole(perms.Role.MAP_CREATOR))
+    self.assertEqual(['xyz.com'],
+                     perms.GetDomainsWithRole(perms.Role.DOMAIN_ADMIN))
+
   def testCheckAccessRaisesOnBadTarget(self):
     my_map, _ = test_utils.CreateMapAsAdmin()
 
@@ -235,6 +252,46 @@ class PermsTests(test_utils.BaseTest):
   def testCheckAssertRaisesOnUnknownRole(self):
     self.assertFalse('NotARole' in perms.Role)
     self.assertRaises(ValueError, perms.CheckAccess, 'NotARole')
+
+  def testUnknownUser(self):
+    m, _ = test_utils.CreateMapAsAdmin()
+    self.mox.StubOutWithMock(utils, 'GetCurrentUser')
+    utils.GetCurrentUser().AndReturn(None)
+    self.mox.ReplayAll()
+    self.assertFalse(perms.CheckAccess(perms.Role.MAP_EDITOR, target=m))
+    self.mox.VerifyAll()
+
+  def testCaching(self):
+    subject, role, target = 'admin@xyz.com', perms.Role.DOMAIN_ADMIN, 'xyz.com'
+    self.assertFalse(perms.Query(None, None, None))
+    perms.Grant(subject, role, target)
+    perms.Get(subject, role, target)
+
+    self.mox.StubOutWithMock(perms, '_LoadPermissions')
+    perms._LoadPermissions(
+        mox.IgnoreArg(), mox.IgnoreArg()).AndRaise(ValueError)
+
+    self.mox.ReplayAll()
+    my_perm = perms.Get(subject, role, target)
+    self.assertTrue(my_perm)
+    perms.Revoke(subject, role, target)
+    try:
+      # This should hit our mock because the cached entry should be gone
+      perms.Get(subject, role, target)
+    except ValueError:
+      pass
+    self.mox.VerifyAll()
+
+  def testRevoke(self):
+    subject, role, target = 'edit@xyz.com', perms.Role.CATALOG_EDITOR, 'xyz.com'
+    self.assertFalse(perms.Query(None, None, None))
+    perms.Grant(subject, role, target)
+    test_utils.SetUser(subject)
+    self.assertTrue(perms.CheckAccess(role, target))
+    my_perm = perms.Get(subject, role, target)
+    self.assertTrue(my_perm)
+    perms.Revoke(subject, role, target)
+    self.assertFalse(perms.CheckAccess(role, target))
 
 
 if __name__ == '__main__':

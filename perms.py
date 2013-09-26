@@ -14,10 +14,12 @@
 
 import collections
 
+import cache
 import model
 import utils
 
 from google.appengine.api import users
+from google.appengine.ext import db
 
 
 class AuthorizationError(Exception):
@@ -48,35 +50,80 @@ Role = utils.Struct(
     MAP_VIEWER='MAP_VIEWER',  # can view current version of a map
 )
 
-# Prefix used when setting a config for a user/domain's roles
-ROLE_PREFIX = 'global_roles:'
+# Only used for role ADMIN
+GLOBAL_TARGET = '__GLOBAL__'
 
 
-def SetGlobalRoles(subject, roles):
-  """Sets the access roles for a given user or domain that apply to all maps.
+class PermissionModel(db.Model):
 
-  Args:
-    subject: A string, either an e-mail address or a domain name.
-    roles: A list of roles (see Role) that the user or domain should have.
-        The CATALOG_EDITOR, MAP_CREATOR, and DOMAIN_ACCESS roles for a
-        particular domain should be specified as a two-item
-        list, e.g., [Role.CATALOG_EDITOR, domain].
-  """
-  model.Config.Set(ROLE_PREFIX + subject, roles)
+  # The entity (either e-mail address or a domain) granted a
+  # particular role
+  subject = db.StringProperty()
+  # The role being granted
+  role = db.StringProperty()
+  # The thing to which access is being granted; typically a map,
+  # a domain, or the global target
+  target = db.StringProperty()
+
+_Permission = collections.namedtuple(
+    '_Permission', ['subject', 'role', 'target'])
 
 
-def GetGlobalRoles(subject):
-  """Gets the access roles for a given user or domain that apply to all maps.
+def _PermissionCachePath(subject=None, target=None):
+  return [_Permission, subject or '*', target or '*']
 
-  Args:
-    subject: An e-mail address or a domain name.
 
-  Returns:
-    The list of global roles (see Role) that the user or domain has.
-    The CATALOG_EDITOR access role for a particular domain is specified as
-    a two-item list: [Role.CATALOG_EDITOR, domain].
-  """
-  return model.Config.Get(ROLE_PREFIX + subject, [])
+def _PermissionKey(perm):
+  return cache.ToCacheKey([_Permission, perm.subject, perm.role, perm.target])
+
+
+def _FlushRelated(perm):
+  for subject in [perm.subject, None]:
+    for target in [perm.target, None]:
+      cache.Delete(_PermissionCachePath(subject=subject, target=target))
+
+
+def _LoadPermissions(subject, target):
+  # No role arg because we never wish to load by role; we always load more
+  # (by subject or target), then filter by role.
+  models = PermissionModel.all()
+  if subject:
+    models.filter('subject =', subject)
+  if target:
+    models.filter('target =', target)
+  return [_Permission(m.subject, m.role, m.target) for m in models]
+
+
+def Query(subject, role, target):
+  perms = cache.Get(_PermissionCachePath(subject=subject, target=target),
+                    make_value=lambda: _LoadPermissions(subject, target))
+  return [p for p in perms if p.role == role] if role else perms
+
+
+def Get(subject, role, target):
+  perms = Query(subject, role, target)
+  return perms[0] if perms else None
+
+
+def Grant(subject, role, target):
+  """Grants the given role to the subject for the target."""
+  perm = _Permission(subject, role, target)
+  perm_model = PermissionModel(
+      subject=subject, role=role, target=target,
+      key_name=_PermissionKey(perm))
+  perm_model.put()
+  _FlushRelated(perm)
+
+
+def _Revoke(perm):
+  perm_model = PermissionModel.get_by_key_name(_PermissionKey(perm))
+  if perm_model:
+    perm_model.delete()
+    _FlushRelated(perm)
+
+
+def Revoke(subject, role, target):
+  _Revoke(_Permission(subject, role, target))
 
 
 def SetDomainRoles(subject, domain, new_roles):
@@ -89,16 +136,19 @@ def SetDomainRoles(subject, domain, new_roles):
     new_roles: The list of roles the subject should receive; if the subject
         currently has roles that are not in new_roles, they will be revoked.
   """
-  global_roles = [role for role in GetGlobalRoles(subject)
-                  if not isinstance(role, list) or role[1] != domain]
-  global_roles += [[role, domain] for role in new_roles]
-  SetGlobalRoles(subject, global_roles)
+  perms = Query(subject, None, domain)
+  for perm in perms:
+    if perm.role not in new_roles:
+      _Revoke(perm)
+  old_roles = [perm.role for perm in perms]
+  for role in new_roles:
+    if role not in old_roles:
+      Grant(subject, role, domain)
 
 
 def GetDomainRoles(subject, domain):
   """Returns the list of roles held by subject in domain."""
-  global_roles = GetGlobalRoles(subject)
-  return [r[0] for r in global_roles if isinstance(r, list) and r[1] == domain]
+  return [perm.role for perm in Query(subject, None, domain)]
 
 
 def GetDomainsWithRole(role, user=None):
@@ -115,11 +165,9 @@ def GetDomainsWithRole(role, user=None):
   """
   email = user and user.email() or utils.GetCurrentUserEmail()
   domain = user and utils.GetUserDomain(user) or utils.GetCurrentUserDomain()
-  domains = set()
-  for item in GetGlobalRoles(email) + GetGlobalRoles(domain):
-    if isinstance(item, list) and item[0] == role:
-      domains.add(item[1])
-  return sorted(domains)
+  return sorted(
+      [p.target for p in Query(email, role, None)] +
+      [p.target for p in Query(domain, role, None)])
 
 
 def GetSubjectsInDomain(domain):
@@ -133,15 +181,10 @@ def GetSubjectsInDomain(domain):
     permissions.  Note that permissions they inherit from their domain
     are NOT returned.
   """
-  all_perms = model.Config.GetAll()
-  result = collections.defaultdict(list)
-  for key, value in all_perms.iteritems():
-    if not key.startswith(ROLE_PREFIX):
-      continue
-    user = key[len(ROLE_PREFIX):]
-    for perm in value:
-      if isinstance(perm, list) and perm[1] == domain:
-        result[user].append(perm[0])
+  all_perms = Query(None, None, domain)
+  result = {}
+  for perm in all_perms:
+    result.setdefault(perm.subject, []).append(perm.role)
   return result
 
 
@@ -152,73 +195,85 @@ class AccessPolicy(object):
     """Returns True if a user should get ADMIN access."""
     # Users get admin access if they have global admin access or if they
     # have App Engine administrator permission for this app.
-    return user and (self.HasGlobalRole(user, Role.ADMIN) or
+    return user and (Get(user.email(), Role.ADMIN, GLOBAL_TARGET) or
                      (user == users.get_current_user() and
                       users.is_current_user_admin()))
+
+  def _HasDomainPermission(self, user, role, domain):
+    return (Get(user.email(), role, domain) or
+            Get(utils.GetUserDomain(user), role, domain))
 
   def HasRoleDomainAdmin(self, user, domain):
     """Returns True if the user should get DOMAIN_ADMIN access for a domain."""
     # Users get domain administration access if they have DOMAIN_ADMIN access
     # to the domain, or if they have admin access.
-    return user and (self.HasGlobalRole(user, [Role.DOMAIN_ADMIN, domain]) or
-                     self.HasRoleAdmin(user))
+    return user and (self._HasDomainPermission(user, Role.DOMAIN_ADMIN, domain)
+                     or self.HasRoleAdmin(user))
 
   def HasRoleCatalogEditor(self, user, domain):
     """Returns True if a user should get CATALOG_EDITOR access for a domain."""
     # Users get catalog editor access if they have catalog editor access to the
     # specified domain, if they have catalog editor access to all domains, or
     # if they have admin access.
-    return user and (self.HasGlobalRole(user, [Role.CATALOG_EDITOR, domain]) or
-                     self.HasGlobalRole(user, Role.CATALOG_EDITOR) or
-                     self.HasRoleAdmin(user))
+    return user and (Get(user.email(), Role.CATALOG_EDITOR, domain)
+                     or Get(
+                         utils.GetUserDomain(user), Role.CATALOG_EDITOR, domain)
+                     or self.HasRoleAdmin(user))
 
   def HasRoleMapCreator(self, user, domain):
     """Returns True if a user should get MAP_CREATOR access."""
     # Users get creator access if they have global map creator access or if
     # they have admin access.
-    return user and (self.HasGlobalRole(user, [Role.MAP_CREATOR, domain]) or
-                     self.HasRoleAdmin(user))
+    return user and (self._HasDomainPermission(user, Role.MAP_CREATOR, domain)
+                     or self.HasRoleAdmin(user))
+
+  def _HasMapPermission(self, user, role, map_object):
+    if role == Role.MAP_VIEWER and map_object.world_readable:
+      return True
+    if not user:
+      return False
+    domain_role = (utils.GetUserDomain(user) in map_object.domains and
+                   map_object.domain_role or None)
+
+    # Map permissions exist in a hierarchy - editors can always view;
+    # owners can always edit.
+    if domain_role == Role.MAP_OWNER or user.email() in map_object.owners:
+      return True
+    if role == Role.MAP_OWNER:
+      return False
+
+    if domain_role == Role.MAP_EDITOR or user.email() in map_object.editors:
+      return True
+    if role == Role.MAP_EDITOR:
+      return False
+
+    if domain_role == Role.MAP_VIEWER or user.email() in map_object.viewers:
+      return True
+    return False
 
   def HasRoleMapOwner(self, user, map_object):
     """Returns True if a user should get MAP_OWNER access to a given map."""
     # Users get owner access if they are in the owners list for the map, if
     # their domain is an owner of the map, if they have global owner access
     # to all maps, or if they have admin access.
-    return user and (user.email() in map_object.owners or
-                     self.HasDomainRole(user, Role.MAP_OWNER, map_object) or
-                     self.HasGlobalRole(user, Role.MAP_OWNER) or
-                     self.HasRoleAdmin(user))
+    return (self._HasMapPermission(user, Role.MAP_OWNER, map_object) or
+            self.HasRoleAdmin(user))
 
   def HasRoleMapEditor(self, user, map_object):
     """Returns True if a user should get MAP_EDITOR access to a given map."""
     # Users get editor access if they are in the editors list for the map, if
     # their domain is an editor of the map, if they have global editor access
     # to all maps, or if they have owner access.
-    return user and (user.email() in map_object.editors or
-                     self.HasDomainRole(user, Role.MAP_EDITOR, map_object) or
-                     self.HasGlobalRole(user, Role.MAP_EDITOR) or
-                     self.HasRoleMapOwner(user, map_object))
+    return (self._HasMapPermission(user, Role.MAP_EDITOR, map_object) or
+            self.HasRoleMapOwner(user, map_object))
 
   def HasRoleMapViewer(self, user, map_object):
     """Returns True if the user has MAP_VIEWER access to a given map."""
     # Users get viewer access if the map is world-readable, if they are in the
     # viewers list for the map, if their domain is a viewer of the map, if they
     # have global viewer access to all maps, or if they have editor access.
-    return (map_object.world_readable or
-            user and (user.email() in map_object.viewers or
-                      self.HasDomainRole(user, Role.MAP_VIEWER, map_object) or
-                      self.HasGlobalRole(user, Role.MAP_VIEWER) or
-                      self.HasRoleMapEditor(user, map_object)))
-
-  def HasDomainRole(self, user, role, map_object):
-    """Returns True if the user's domain has the given access to the map."""
-    return user and (utils.GetUserDomain(user) in map_object.domains and
-                     role == map_object.domain_role)
-
-  def HasGlobalRole(self, user, role):
-    """Returns True if the user or user's domain has the given role globally."""
-    return user and (role in GetGlobalRoles(user.email()) or
-                     role in GetGlobalRoles(utils.GetUserDomain(user)))
+    return (self._HasMapPermission(user, Role.MAP_VIEWER, map_object) or
+            self.HasRoleMapEditor(user, map_object))
 
 
 def CheckAccess(role, target=None, user=None, policy=None):
@@ -245,6 +300,8 @@ def CheckAccess(role, target=None, user=None, policy=None):
     if not isinstance(target, required_cls):
       raise ValueError('For role %r, target must be a %s' % (role, cls_desc))
 
+  if role not in Role:
+    raise ValueError('Invalid role %r' % role)
   policy = policy or AccessPolicy()
   user = user or utils.GetCurrentUser()
 
@@ -272,8 +329,6 @@ def CheckAccess(role, target=None, user=None, policy=None):
   if role == Role.MAP_VIEWER:
     return policy.HasRoleMapViewer(user, target)
 
-  raise ValueError('Invalid role %r' % role)
-
 
 def AssertAccess(role, target=None, user=None, policy=None):
   """Requires that the given user has the specified access role.
@@ -292,5 +347,5 @@ def AssertAccess(role, target=None, user=None, policy=None):
     AuthorizationError: If the user lacks the given access permission.
   """
   user = user or utils.GetCurrentUser()  # ensure user is set in error message
-  if not CheckAccess(role, target, user, policy):
+  if not CheckAccess(role, target=target, user=user, policy=policy):
     raise AuthorizationError(user, role, target)

@@ -256,7 +256,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Create,
                       'foo.com', 'label', mm, is_listed=True)
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Create should work.
-    perms.SetGlobalRoles('random_user@gmail.com', [perms.Role.CATALOG_EDITOR])
+    perms.Grant('random_user@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
     mc = model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
 
     self.assertEquals('foo.com', mc.domain)
@@ -281,7 +281,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Delete,
                       'foo.com', 'label')
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Delete should work.
-    perms.SetGlobalRoles('random_user@gmail.com', [perms.Role.CATALOG_EDITOR])
+    perms.Grant('random_user@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
     model.CatalogEntry.Delete('foo.com', 'label')
 
     # Assert that the entry is successfully deleted.
@@ -307,7 +307,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     test_utils.SetUser('random_user@gmail.com')
     self.assertRaises(perms.AuthorizationError, mc.Put)
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Put should work.
-    perms.SetGlobalRoles('random_user@gmail.com', [perms.Role.CATALOG_EDITOR])
+    perms.Grant('random_user@gmail.com', perms.Role.CATALOG_EDITOR, 'foo.com')
     mc.Put()
 
     # The CatalogEntry should now point at the new MapVersion.

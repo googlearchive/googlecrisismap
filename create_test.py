@@ -25,8 +25,7 @@ class CreateTest(test_utils.BaseTest):
 
   def testCreate(self):
     # Grant google.com MAP_CREATOR permission for the test domain
-    perms.SetGlobalRoles('google.com',
-                         [[perms.Role.MAP_CREATOR, 'xyz.com']])
+    perms.Grant('google.com', perms.Role.MAP_CREATOR, 'xyz.com')
     # foo@google.com should be able to create a map.
     test_utils.SetUser('foo@google.com')
     handler = test_utils.SetupHandler(
@@ -48,7 +47,7 @@ class CreateTest(test_utils.BaseTest):
   def testDomainRole(self):
     # Grant MAP_CREATOR permission to foo@xyz.com
     user = 'foo@xyz.com'
-    perms.SetGlobalRoles(user, [[perms.Role.MAP_CREATOR, 'xyz.com']])
+    perms.Grant(user, perms.Role.MAP_CREATOR, 'xyz.com')
     # foo@xyz.com should be able to create a map.
     test_utils.SetUser(user)
     handler = test_utils.SetupHandler(
