@@ -160,7 +160,7 @@ LayerModelTest.prototype.newFromMapRootLayerTypes = function() {
  * Tests that a suitable description of a Maps Engine layer is built
  * and stored on the model for external Map Engine layers.
  */
-LayerModelTest.prototype.newExternalMapDataLayerFromMapRoot = function() {
+LayerModelTest.prototype.newExternalMapsEngineLayerFromMapRoot = function() {
   var maproot = {
     'title': 'A map',
     'layers': [{
@@ -203,7 +203,7 @@ LayerModelTest.prototype.newExternalMapDataLayerFromMapRoot = function() {
  * Tests that the application gracefully handles a poorly formed Maps Engine
  * layer description.
  */
-LayerModelTest.prototype.handlesMissingMapDataLayerDescription = function() {
+LayerModelTest.prototype.handlesMissingMapsEngineLayerDescription = function() {
   var maproot = {
     'title': 'A map',
     'layers': [{

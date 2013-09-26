@@ -109,7 +109,7 @@ MapViewTest.OVERLAY_CLASSES = [
   'cm.TileOverlay',
   'google.maps.FusionTablesLayer',
   'google.maps.KmlLayer',
-  'google.maps.visualization.MapDataLayer',
+  'google.maps.visualization.MapsEngineLayer',
   'google.maps.TrafficLayer',
   'google.maps.TransitLayer',
   'google.maps.weather.WeatherLayer',
@@ -279,8 +279,11 @@ MapViewTest.prototype.addOverlayKml = function() {
   });
   this.stubReturnVisibleLayerIds_(['chocolate']);
 
-  var overlay = this.expectNew_('google.maps.KmlLayer', 'http://chocolate.com',
-      {preserveViewport: true, suppressInfoWindows: true});
+  var overlay = this.expectNew_('google.maps.KmlLayer', {
+      url: 'http://chocolate.com',
+      preserveViewport: true,
+      suppressInfoWindows: true
+  });
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -293,8 +296,11 @@ MapViewTest.prototype.addOverlayGeoRss = function() {
   });
   this.stubReturnVisibleLayerIds_(['vanilla']);
 
-  var overlay = this.expectNew_('google.maps.KmlLayer', 'http://vanilla.com.au',
-      {preserveViewport: true, suppressInfoWindows: true});
+  var overlay = this.expectNew_('google.maps.KmlLayer', {
+      url: 'http://vanilla.com.au',
+      preserveViewport: true,
+      suppressInfoWindows: true
+  });
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -401,8 +407,8 @@ MapViewTest.prototype.addOverlayKmlWithoutUrl = function() {
                  this.metadataModel_, false);
 };
 
-/** Tests adding an overlay of GEB layer using the public interface. */
-MapViewTest.prototype.addOverlayMapDataExternal = function() {
+/** Tests adding an overlay of GME layer using the public interface. */
+MapViewTest.prototype.addOverlayMapsEngineExternal = function() {
   this.addLayer_({
     'id': 'rockyroad',
     'type': cm.LayerModel.Type.MAP_DATA,
@@ -412,7 +418,7 @@ MapViewTest.prototype.addOverlayMapDataExternal = function() {
   });
   this.stubReturnVisibleLayerIds_(['rockyroad']);
 
-  var overlay = this.expectNew_('google.maps.visualization.MapDataLayer', {
+  var overlay = this.expectNew_('google.maps.visualization.MapsEngineLayer', {
     mapId: 'frotz',
     layerId: 'igram',
     suppressInfoWindows: true
@@ -423,11 +429,11 @@ MapViewTest.prototype.addOverlayMapDataExternal = function() {
 };
 
 /**
- * Tests adding an overlay of GEB layer using the public interface, using
- * the layer_id field rather than the key field from the maproot. This interface
+ * Tests adding a GME layer overlay using the public interface, using the
+ * layer_id field rather than the key field from the maproot. This interface
  * is used by older maproot files.
  * */
-MapViewTest.prototype.addOverlayMapDataExternalLegacyIdScheme = function() {
+MapViewTest.prototype.addOverlayMapsEngineExternalLegacyIdScheme = function() {
   this.addLayer_({
     'id': 'rockyroad',
     'type': cm.LayerModel.Type.MAP_DATA,
@@ -437,7 +443,7 @@ MapViewTest.prototype.addOverlayMapDataExternalLegacyIdScheme = function() {
   });
   this.stubReturnVisibleLayerIds_(['rockyroad']);
 
-  var overlay = this.expectNew_('google.maps.visualization.MapDataLayer', {
+  var overlay = this.expectNew_('google.maps.visualization.MapsEngineLayer', {
     mapId: 'frotz',
     layerId: 'word',
     suppressInfoWindows: true
@@ -472,9 +478,11 @@ MapViewTest.prototype.addCacheBuster = function() {
   var date = this.expectNew_('Date');
   date.getTime = function() { return 1500000; };
 
-  var overlay = this.expectNew_(
-      'google.maps.KmlLayer',
-      'http://example.com?foo=bar&baz=123&cm.cache_time=5', _);
+  var overlay = this.expectNew_('google.maps.KmlLayer', {
+      url: 'http://example.com?foo=bar&baz=123&cm.cache_time=5',
+      preserveViewport: _,
+      suppressInfoWindows: _
+  });
   expectCall(overlay.setMap)(null);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -489,8 +497,11 @@ MapViewTest.prototype.doNotAddCacheBuster = function() {
   var date = this.expectNew_('Date');
   date.getTime = function() { return 1500000; };
 
-  var overlay = this.expectNew_('google.maps.KmlLayer',
-                                'http://example.com?foo=bar', _);
+  var overlay = this.expectNew_('google.maps.KmlLayer', {
+      url: 'http://example.com?foo=bar',
+      preserveViewport: _,
+      suppressInfoWindows: _
+  });
   expectCall(overlay.setMap)(null);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -500,7 +511,7 @@ MapViewTest.prototype.doNotAddCacheBuster = function() {
 MapViewTest.prototype.propertiesChanged = function() {
   var model = this.addLayer_(
       {id: 'cotton-candy', type: cm.LayerModel.Type.KML, url: 'url'});
-  var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay = this.expectNew_('google.maps.KmlLayer', _);
   expectCall(overlay.setMap)(null);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -584,7 +595,7 @@ MapViewTest.prototype.layersAddedEvent = function() {
   // Emit a LAYERS_ADDED event with 2 layers
   var layer1 = this.addLayer_({id: 'mango',
                               type: cm.LayerModel.Type.KML, url: 'url'});
-  var overlay1 = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay1 = this.expectNew_('google.maps.KmlLayer', _);
   expectCall(overlay1.setMap)(this.map_);
   var layer2 = this.addLayer_({id: 'banana',
                               type: cm.LayerModel.Type.TILE});
@@ -603,7 +614,7 @@ MapViewTest.prototype.layersAddedEvent = function() {
 MapViewTest.prototype.layersRemovedEvent = function() {
   var layer1 = this.addLayer_({id: 'mango',
                               type: cm.LayerModel.Type.KML, url: 'url'});
-  var overlay1 = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay1 = this.expectNew_('google.maps.KmlLayer', _);
   expectCall(overlay1.setMap)(this.map_);
   var layer2 = this.addLayer_({id: 'banana',
                               type: cm.LayerModel.Type.TILE});
@@ -626,7 +637,7 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
   this.addLayer_({id: 'bubble-gum', type: cm.LayerModel.Type.KML, url: 'url'});
   this.stubReturnVisibleLayerIds_(['bubble-gum']);
 
-  var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay = this.expectNew_('google.maps.KmlLayer', _);
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -670,7 +681,7 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
   this.addLayer_({id: 'bubble-gum', type: cm.LayerModel.Type.KML, url: 'url'});
   this.stubReturnVisibleLayerIds_(['bubble-gum']);
 
-  var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay = this.expectNew_('google.maps.KmlLayer', _);
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -700,7 +711,7 @@ MapViewTest.prototype.updateVisibility = function() {
   this.stubReturnVisibleLayerIds_(['hazelnut', 'gianduia']);
 
   // ...expect two layers to be created and added to the map...
-  var overlay1 = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay1 = this.expectNew_('google.maps.KmlLayer', _);
   var overlay2 = this.expectNew_('google.maps.TrafficLayer');
   expectCall(overlay1.setMap)(this.map_);
   expectCall(overlay2.setMap)(this.map_);
@@ -784,8 +795,11 @@ MapViewTest.prototype.zoomToKMLLayerModelViewport = function() {
   });
   this.stubReturnVisibleLayerIds_(['green-tea']);
 
-  var overlay = this.expectNew_('google.maps.KmlLayer', 'http://green-tea.com',
-      {preserveViewport: true, suppressInfoWindows: true});
+  var overlay = this.expectNew_('google.maps.KmlLayer', {
+    url: 'http://green-tea.com',
+    preserveViewport: true,
+    suppressInfoWindows: true
+  });
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -813,7 +827,7 @@ MapViewTest.prototype.zoomToGeoRSSLayerModelViewport = function() {
   });
   this.stubReturnVisibleLayerIds_(['guava']);
 
-  var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay = this.expectNew_('google.maps.KmlLayer', _);
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -841,7 +855,7 @@ MapViewTest.prototype.zoomToLayerDefaultViewport = function() {
   });
   this.stubReturnVisibleLayerIds_(['chocolate']);
 
-  var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay = this.expectNew_('google.maps.KmlLayer', _);
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -870,7 +884,7 @@ MapViewTest.prototype.zoomToLayerDefaultViewportNotInitialized =
   this.stubReturnVisibleLayerIds_(['vanilla']);
 
   // Expect one overlay to be created and added to the map...
-  var overlay = this.expectNew_('google.maps.KmlLayer', _, _);
+  var overlay = this.expectNew_('google.maps.KmlLayer', _);
   expectCall(overlay.setMap)(this.map_);
 
   // When a new cm.MapView is created.

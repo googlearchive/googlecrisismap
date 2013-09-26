@@ -301,25 +301,11 @@ cm.LayerModel.prototype.toMapRoot = function() {
       };
       break;
     case cm.LayerModel.Type.MAP_DATA:
-      if (this.get('layer_type')) {
-        // This is an internal MapDataLayer.
-        source['google_map_data'] = {
-          'sub_type': this.get('layer_type'),
-          'asset_id': this.get('asset_id'),
-          'table_id': this.get('table_id'),
-          'style_id': this.get('style_id'),
-          'balloon_template_id': this.get('template_id'),
-          'tile_auth_token': {
-            'token': this.get('ft_token')
-          }
-        };
-      } else {
-        source['google_map_data'] = {
-          'layer_id': this.get('maps_engine_layer_id'),
-          'layer_key': this.get('maps_engine_layer_key'),
-          'map_id': this.get('maps_engine_map_id')
-        };
-      }
+      source['google_map_data'] = {
+        'layer_id': this.get('maps_engine_layer_id'),
+        'layer_key': this.get('maps_engine_layer_key'),
+        'map_id': this.get('maps_engine_map_id')
+      };
       break;
     case cm.LayerModel.Type.WEATHER:
       source['weather'] = {

@@ -237,7 +237,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
 };
 goog.inherits(cm.MapView, google.maps.MVCObject);
 
-/** @typedef {google.maps.KmlLayer|google.maps.visualization.MapDataLayer|
+/** @typedef {google.maps.KmlLayer|google.maps.visualization.MapsEngineLayer|
               google.maps.FusionTablesLayer|
               cm.TileOverlay|
               google.maps.TrafficLayer|
@@ -454,7 +454,8 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       var url = /** @type string */(layer.get('url'));
       if (url) {
         url = this.maybeAddCacheBuster_(url);
-        this.overlays_[id] = new google.maps.KmlLayer(url, {
+        this.overlays_[id] = new google.maps.KmlLayer({
+          'url': url,
           'preserveViewport': true,
           'suppressInfoWindows': true  // we handle InfoWindows, not Maps API
         });
@@ -488,7 +489,7 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       };
 
 
-      // Use the public interface to MapDataLayer to load the layer. This
+      // Use the public interface to MapsEngineLayer to load the layer. This
       // only works for public layers.
       options['mapId'] = layer.get('maps_engine_map_id');
 
@@ -499,7 +500,7 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
 
       if (options['mapId'] && options['layerId']) {
         this.overlays_[id] =
-            new google.maps.visualization.MapDataLayer(options);
+            new google.maps.visualization.MapsEngineLayer(options);
       }
       break;
 

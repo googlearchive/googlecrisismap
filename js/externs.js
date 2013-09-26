@@ -14,12 +14,3 @@
  * @author shakusa@google.com (Steve Hakusa)
  */
 
-// TODO(kpy): Remove this when MapDataLayer is in the standard externs file.
-google.maps.visualization = {};
-
-/**
- * @constructor
- * @extends {google.maps.MVCObject}
- * @param {Object.<string, *>=} opt_opts
- */
-google.maps.visualization.MapDataLayer = function(opt_opts) {};
