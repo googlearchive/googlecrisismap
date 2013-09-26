@@ -226,16 +226,16 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   # Add the MapRoot data and other map-specific information.
   if catalog_entry:  # published map
     maproot_json = json.loads(catalog_entry.maproot_json)
+    maproot_json['id'] = catalog_entry.map_id
     result['map_root'] = maproot_json
-    result['map_id'] = catalog_entry.map_id
     result['label'] = catalog_entry.label
     result['publisher_name'] = catalog_entry.publisher_name
     key = catalog_entry.map_version_key
   elif map_object:  # draft map
     xsrf_qs = '?xsrf_token=' + xsrf_token  # needed for all POST URLs
     maproot_json = json.loads(map_object.GetCurrentJson())
+    maproot_json['id'] = map_object.id
     result['map_root'] = maproot_json
-    result['map_id'] = map_object.id
     result['map_list_url'] = root + '/.maps'
     result['diff_url'] = root + '/.diff/' + map_object.id + xsrf_qs
     result['save_url'] = root + '/.api/maps/' + map_object.id + xsrf_qs

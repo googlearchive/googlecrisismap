@@ -150,6 +150,24 @@ class MapTest(test_utils.BaseTest):
       cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m2.id), m2)
       self.assertTrue('region=in' in cm_config['maps_api_url'])
 
+  def testMapIdInConfig_DraftMap(self):
+    """Verifies the map ID is added to the map_root always."""
+    with test_utils.RootLogin():
+      my_map = test_utils.CreateMap()
+      cfg = maps.GetConfig(test_utils.SetupRequest('/.maps/' + my_map.id),
+                           my_map)
+    self.assertEqual(my_map.id, cfg['map_root']['id'])
+
+  def testMapIdInConfig_PublishedMap(self):
+    with test_utils.RootLogin():
+      my_map = test_utils.CreateMap()
+      my_entry = model.CatalogEntry.Create(
+          test_utils.DEFAULT_DOMAIN, 'label', my_map)
+      cfg = maps.GetConfig(
+          test_utils.SetupRequest('/a/%s/label' % test_utils.DEFAULT_DOMAIN),
+          catalog_entry=my_entry)
+    self.assertEqual(my_map.id, cfg['map_root']['id'])
+
   def testToPlainText(self):
     self.assertEquals('', maps.ToPlainText(None))
     self.assertEquals('', maps.ToPlainText(''))
@@ -193,4 +211,3 @@ class MapListTest(test_utils.BaseTest):
 
 if __name__ == '__main__':
   test_utils.main()
-
