@@ -47,7 +47,7 @@ specific language governing permissions and limitations under the License.
       </li>
       <li>
         <span class="cm-perms-setting-label">
-          When a new map is created, people in this domain should:
+          When a new map is created, users in this domain should:
         </span>
         <span class="cm-perms-setting-value">
           <select name="initial_domain_role">
@@ -72,39 +72,42 @@ specific language governing permissions and limitations under the License.
     <table title="Users" border=1>
       <tr>
         <th scope="col">User</th>
-        {% for choice in user_permission_choices %}
-          <th scope="col">{{choice.1}}</th>
-        {% endfor %}
+        <th scope="col">Permissions</th>
+        <th scope="col">Delete</th>
       </tr>
       {% for user_role in user_roles %}
         <tr>
           <td class="cm-perms-subject">{{user_role.0.email}}</td>
-          {% for choice in user_permission_choices %}
-            <td>
-              <input type="checkbox" name="{{user_role.0.id}}.{{choice.0}}"
-                  {% if choice.0 in user_role.1 %}checked{% endif %}>
-            </td>
-          {% endfor %}
+          <td>
+            <select name="{{user_role.0.id}}.permission">
+              {% for choice in user_permission_choices %}
+                <option value="{{choice.0}}"
+                    {% if choice.0 == user_role.1 %}selected{% endif %}>
+                  {{choice.1}}
+                </option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <input type="checkbox" name="{{user_role.0.id}}.delete">
+          </td>
         </tr>
     {% endfor %}
+      <tr>
+        <td class="cm-perms-subject">
+          <input name="new_user" type="text" placeholder="New user" >
+        </td>
+        <td>
+          <select name="new_user.permission">
+            {% for choice in user_permission_choices %}
+              <option value="{{choice.0}}">{{choice.1}}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>&nbsp;</td>
+      </tr>
     </table>
     <input type="submit" value="Save Permissions" class="cm-button cm-submit">
-  </form>
-</div>
-
-<h3 class="cm-perms-subheading">Add new user</h3>
-<div class="cm-perms-new-user-form">
-  <form method="post">
-    <input type="hidden" name="form" value="add-user">
-    <p>User's email:
-      <input type="text" name="new_email" label="Email">
-    <p>Can create maps:
-      <input type="checkbox" name="new_email.MAP_CREATOR" label="Map Creator">
-    <p>Can edit the catalog:
-      <input type="checkbox" name="new_email.CATALOG_EDITOR" label="Catalog Editor">
-    <p>Can administer the domain:
-      <input type="checkbox" name="new_email.DOMAIN_ADMIN" label="Domain Admin"><br>
-    <p><input type="submit" value="Add User" class="cm-button cm-submit">
   </form>
 </div>
 

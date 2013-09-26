@@ -32,8 +32,19 @@ INITIAL_DOMAIN_ROLE_CHOICES = (
 USER_PERMISSION_CHOICES = (
     (perms.Role.MAP_CREATOR, 'Can create maps'),
     (perms.Role.CATALOG_EDITOR, 'Can publish maps'),
-    (perms.Role.DOMAIN_ADMIN, 'Can manage users'),
+    (perms.Role.DOMAIN_ADMIN, 'Can manage domain'),
 )
+
+# _MaxRole relies on these being in order from weakest to strongest.
+DOMAIN_PERMISSIONS = [s for s, _ in reversed(USER_PERMISSION_CHOICES)]
+
+
+# TODO(rew): This goes away once we migrate the perms data to store only the
+# strongest permsision per subject
+def _MaxRole(roles):
+  for role in DOMAIN_PERMISSIONS:
+    if role in roles:
+      return role
 
 
 def SetRolesForDomain(subject_roles, domain_name):
@@ -77,8 +88,8 @@ class Admin(base_handler.BaseHandler):
     if not domain:
       raise base_handler.Error(404, 'Unknown domain %r.' % domain_name)
     subject_roles = perms.GetSubjectsForTarget(domain_name).items()
-    user_roles = [(users.Get(s), r)
-                  for (s, r) in subject_roles if perms.IsUserId(s)]
+    user_roles = [(users.Get(subj), _MaxRole(r))
+                  for (subj, r) in subject_roles if perms.IsUserId(subj)]
     user_roles.sort(key=lambda (u, r): u.email)
     labels = sorted(e.label for e in model.CatalogEntry.GetAll(domain_name))
     self.response.out.write(self.RenderTemplate('admin_domain.html', {
@@ -107,10 +118,10 @@ class Admin(base_handler.BaseHandler):
     elif which == 'create-domain':
       self.CreateDomain(domain, user)
       target += '?welcome=1'
-    elif which == 'add-user':
-      self.AddUser(self.request.POST, domain)
     else:  # user or domain permissions
-      SetRolesForDomain(self.FindNewPerms(self.request.POST, domain), domain)
+      inputs = dict(self.request.POST)
+      self.AddNewUserIfPresent(inputs, domain)
+      SetRolesForDomain(self.FindNewPerms(inputs), domain)
     self.redirect(target)
 
   def UpdateDomainSettings(self, inputs, domain_name):
@@ -121,32 +132,34 @@ class Admin(base_handler.BaseHandler):
         'initial_domain_role', perms.Role.MAP_VIEWER)
     domain.Put()
 
-  def AddUser(self, inputs, domain):
+  def AddNewUserIfPresent(self, inputs, domain):
     """Grants domain roles to a new user."""
-    new_email = inputs.get('new_email').strip()
+    new_email = inputs.pop('new_user').strip()
+    new_role = inputs.pop('new_user.permission')
+    if not new_email or not new_role:
+      return
     if not utils.IsValidEmail(new_email):
       raise base_handler.Error(400, 'Invalid e-mail address: %r.' % new_email)
     user = users.GetForEmail(new_email)
-    for role, _ in USER_PERMISSION_CHOICES:
-      if inputs.get('new_email.%s' % role):
-        perms.Grant(user.id, role, domain)
+    perms.Grant(user.id, new_role, domain)
 
-  def FindNewPerms(self, inputs, domain):
+  def FindNewPerms(self, inputs):
     """Looks at inputs and determines the new permissions for all users.
 
     Args:
       inputs: a dictionary of the form inputs
-      domain: the name of the domain whose permissions are being computed
 
     Returns:
       A dictionary keyed by user/domain.  Values are sets of the roles
       that the key should have.
     """
-    subjects = perms.GetSubjectsForTarget(domain)
-    new_perms = dict((s, set()) for s in subjects if perms.IsUserId(s))
+    new_perms = {}
     for key in inputs:
-      uid, role = key.rsplit('.', 1)
-      new_perms.setdefault(uid, set()).add(role)
+      uid, input_name = key.rsplit('.', 1)
+      if input_name == 'permission' and uid + '.delete' not in inputs:
+        new_perms[uid] = {inputs[key]}
+      elif input_name == 'delete':
+        new_perms[uid] = set()
     return new_perms
 
   def CreateDomain(self, domain_name, user):
