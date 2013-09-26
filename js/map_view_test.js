@@ -1123,16 +1123,15 @@ MapViewTest.prototype.testZoomChanged = function() {
   expectTrue(eventFiredCorrectly);
 };
 
-/** Tests that custom base map styles are applied correctly. */
-MapViewTest.prototype.testCustomMapType = function() {
+/** A map with invalid custom style JSON should fall back to an empty style. */
+MapViewTest.prototype.testInvalidCustomStyle = function() {
   var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                                this.metadataModel_, false);
   expectCall(this.mapModel_.get)('base_map_style_name')
       .willRepeatedly(returnWith('foostylea'));
 
-  // Custom map with wrongly formatted style JSON falls back to empty style.
   expectCall(this.map_.setOptions)({mapTypeControlOptions: {
-      mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat(['cm.custom']),
+    mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat(['cm.custom']),
     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
   }});
   var styledMap = this.expectNew_('google.maps.StyledMapType',
@@ -1144,15 +1143,23 @@ MapViewTest.prototype.testCustomMapType = function() {
   expectCall(this.mapModel_.get)('base_map_style')
       .willRepeatedly(returnWith('{\"invalid\": \"json'));
   cm.events.emit(this.mapModel_, 'base_map_style_changed');
+};
 
-  // Custom map with correctly formatted style JSON activates the custom style.
+/** A map with valid custom style JSON should use the custom style. */
+MapViewTest.prototype.testValidCustomStyle = function() {
+  var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                               this.metadataModel_, false);
+  expectCall(this.mapModel_.get)('base_map_style_name')
+      .willRepeatedly(returnWith('foostylea'));
+
+  expectCall(this.map_.setOptions)({mapTypeControlOptions: {
+    mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat(['cm.custom']),
+    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
+  }});
   var styledMap = this.expectNew_('google.maps.StyledMapType',
       [{featureType: 'all', stylers: [{saturation: 10}]}],
       {name: 'foostylea'});
   expectCall(this.map_.mapTypes.set)('cm.custom', styledMap);
-  expectCall(this.map_.setOptions)({mapTypeControlOptions: {
-      mapTypeIds: DEFAULT_MAP_TYPE_IDS.concat(['cm.custom']),
-      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU}});
 
   expectCall(this.appState_.get)('map_type')
       .willRepeatedly(returnWith(cm.MapModel.Type.CUSTOM));
@@ -1161,9 +1168,18 @@ MapViewTest.prototype.testCustomMapType = function() {
           '[{"featureType": "all", "stylers": [{"saturation": 10}]}]'
   ));
   cm.events.emit(this.appState_, 'map_type_changed');
+};
 
-  // If the map's type is not custom, even if it has a valid style, cm.MapView
-  // should use the specified map type and ignore the custom styling.
+/**
+ * A map with custom style JSON, but something other than Type.CUSTOM as the
+ * map type, should use the specified map type and ignore the custom styling.
+ */
+MapViewTest.prototype.testCustomStyleNotActive = function() {
+  var mapView = new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                               this.metadataModel_, false);
+  expectCall(this.mapModel_.get)('base_map_style_name')
+      .willRepeatedly(returnWith('foostylea'));
+
   expectEq('foostylea', this.mapModel_.get('base_map_style_name'));
   expectCall(this.map_.setOptions)({mapTypeControlOptions: {
     mapTypeIds: DEFAULT_MAP_TYPE_IDS,

@@ -151,6 +151,11 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   this.set('center', new google.maps.LatLng(0, 0));
   this.set('zoom', 0);
 
+  // Setting this flag tells the Maps API that we want the new look (the "Maps
+  // API visual refresh"), as our map UI is styled to suit the new look.  When
+  // the new look becomes the default (est. Nov 2013) we can remove this line.
+  google.maps['visualRefresh'] = true;
+
   this.map_ = new google.maps.Map(parentElem, mapOptions);
   this.map_.bindTo('mapTypeId', this);
   this.map_.bindTo('center', this);
@@ -183,13 +188,9 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
                      this.updateMapTypeMenu, this);
   // When the map type changes to custom or OSM, the menu may need updating.
   cm.events.onChange(appState, 'map_type', this.updateMapTypeMenu, this);
+  // The menu needs an update just after initial load if the map type is OSM.
+  cm.events.listen(this.map_, 'idle', this.updateMapTypeMenu, this);
   this.updateMapTypeMenu();
-
-  // The map type menu has to be forced to a larger width when OSM is an
-  // available option -- once just after the map finishes loading, and then
-  // again whenever the map type changes.
-  cm.events.listen(this.map_, 'idle', this.updateMapTypeMenuWidth, this);
-  cm.events.onChange(this.map_, 'mapTypeId', this.updateMapTypeMenuWidth, this);
 
   // Expose our 'viewport' property as a property of the AppState.
   this.bindTo('viewport', appState);
@@ -376,18 +377,16 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
       'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
     }
   });
-};
-/**
- * Forces the map type menu to be wide enough to contain the "OpenStreetMap"
- * label, when OSM is an available option in the menu.
- */
-cm.MapView.prototype.updateMapTypeMenuWidth = function() {
+
+  // Make the map type menu wide enough to contain the "OpenStreetMap" label,
+  // if necessary.  setOptions() resets the menu to the narrower width, so we
+  // apply this fix-up just after calling setOptions().
   var controls = this.map_.controls[google.maps.ControlPosition.TOP_RIGHT];
   var controlParent = (controls.getAt(0) || {}).parentNode;
   if (controlParent) {  // controls may be empty during initialization
     if (this.map_.mapTypes.get(/** @type string */(
         cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]))) {
-      controlParent.lastChild.style.width = '125px';
+      controlParent.lastChild.style.width = '105px';
       // Trigger a layout update so the controls don't overlap.
       controls.push(cm.ui.create('div', {'index': -1}));
       controls.pop();
@@ -401,7 +400,6 @@ cm.MapView.prototype.updateMapCopyright = function() {
   if (this.map_.get('mapTypeId') ===
       cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]) {
     this.copyrightDiv_.innerHTML = cm.MSG_OSM_COPYRIGHT_HTML;
-    cm.ui.append(this.copyrightDiv_, ' - ');
   }
 };
 

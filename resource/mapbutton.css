@@ -9,39 +9,39 @@ uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
 OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 specific language governing permissions and limitations under the License. */
 
-/**
- * CSS for maps style buttons. From
- * http://code.google.com/p/gmaps-samples-v3/source/browse/trunk/controls/
- */
+/* Buttons are styled to match the Maps API Visual Refresh. */
 .cm-mapbutton {
-  margin:5px;
-  cursor:pointer;
-  font-family:Arial,sans-serif;
-  font-size:13px;
-  overflow:hidden;
-  text-align:center;
-  border:1px solid #717B87;
-  background:white;
-  color:#333;
-  padding:1px 7px;
-  box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
-  -moz-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
-  -webkit-box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
-  -webkit-user-select:none;
-  -moz-user-select:none;
-}
-
-.cm-mapbutton.cm-selected {
-  padding:1px 6px;
-  font-weight:bold;
+  font-family:Roboto,Arial,sans-serif;
+  font-size:11px;
   color:#000;
+  text-align:center;
+  margin:5px;
+  padding:1px 6px;
+  overflow:hidden;
+  background:white;
+  background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+  border:1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+  box-shadow:0 1px 4px -1px rgba(0, 0, 0, 0.3);
+  -moz-box-shadow:0 1px 4px -1px rgba(0, 0, 0, 0.3);
+  -webkit-box-shadow:0 1px 4px -1px rgba(0, 0, 0, 0.3);
+  cursor:pointer;
+  user-select:none;
+  -moz-user-select:none;
+  -webkit-user-select:none;
 }
 
 .cm-mapbutton:hover {
-  /* @alternate */ background:#E6E6E6;
-  /* @alternate */ background:-moz-linear-gradient(top, #FFF 0%, #E6E6E6 100%);
-  /* @alternate */ background:-webkit-gradient(linear, left top, left bottom, from(#FFF), to(#E6E6E6));
-  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFFFF', endColorstr='#E6E6E6',GradientType=0);
+  background-color:#ebebeb;
+}
+
+.cm-mapbutton.cm-selected,
+.cm-mapbutton.cm-selected :hover {
+  background-color:#e0e0e0;
+  box-shadow:0 1px 4px -2px rgba(0, 0, 0, 0.3);
+  -moz-box-shadow:0 1px 4px -2px rgba(0, 0, 0, 0.3);
+  -webkit-box-shadow:0 1px 4px -2px rgba(0, 0, 0, 0.3);
 }
 
 .cm-touch .cm-mapbutton {

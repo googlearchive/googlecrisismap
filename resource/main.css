@@ -408,13 +408,15 @@ html, body {
   height:100%;
 }
 .cm-map-copyright {
+  font-family:Roboto, Arial, sans-serif;
   font-size:10px;
-  background-image:-webkit-linear-gradient(right,rgba(255,255,255,0) 0px,rgba(255,255,255,0.5) 40px,rgba(255,255,255,0.5) 140px,rgba(255,255,255,0));
-  padding:4px 4px 4px 30px;
-  margin-right:-50px;
+  background:#f5f5f5;
+  opacity:0.7;
+  padding:0 5px;
+  margin-right:-12px;
 }
 .cm-map-copyright, .cm-map-copyright a {
-  color:#444;
+  color:#000;
 }
 
 /* Popups and dialogs */
@@ -551,8 +553,8 @@ div.cm-social {
 
 /* "Enter an address" autocomplete box */
 .cm-mapbutton input {
-  font-family:Arial,sans-serif;
-  font-size:14px;
+  font-family:Roboto,Arial,sans-serif;
+  font-size:12px;
   border:0;
   width:250px;
 }

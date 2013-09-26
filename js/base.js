@@ -270,7 +270,7 @@ cm.MSG_REVERT = goog.getMsg('Revert');
 cm.MSG_OSM_COPYRIGHT_HTML = goog.getMsg(
     'Map data \u00a9 ' +
     '<a href="http://www.openstreetmap.org/copyright" target="_blank">' +
-    '<b>OpenStreetMap</b></a> contributors');
+    'OpenStreetMap</a> contributors');
 
 
 // Panel view
