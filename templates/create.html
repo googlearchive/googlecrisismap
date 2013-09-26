@@ -71,8 +71,31 @@ specific language governing permissions and limitations under the License.
     <div class="cm-button-area">
       <input type="submit" class="cm-submit cm-button" value="Create Map"
           id="create-popup-submit" onclick="submitCreatePopup()">
-      <input type="button" class="cm-button" value="Cancel"
-          onclick="hide($('create-popup'))">
+      <a href="{{login_url}}">
+        <input type="button" class="cm-button" value="Cancel"
+               onclick="hide($('create-popup'))">
+      </a>
     </div>
   </form>
+</div>
+
+<div class="cm-popup" id="create-domain-popup" style="display:none">
+  <h2>Setting up {{navbar.user_domain}}</h2>
+  <div class="cm-p">
+    It looks like no one has set up <b>{{navbar.user_domain}}</b> in Google
+    Crisis Map yet. Google Crisis Map organizes maps under <b>domains</b>
+    to allow for easy collaboration with your colleagues. You are logged in
+    as <b>{{navbar.user}}</b>, so your domain is <b>{{navbar.user_domain}}</b>;
+    to create a map, you need to first set up that domain.
+  </div>
+  <div class="cm-p">
+    You can set up {{navbar.user_domain}} now or switch to a different account.
+    (Domain setup is not required for gmail.com accounts.)
+  </div>
+  <div class="cm-button-area">
+    <input type="submit" class="cm-submit cm-button" value="Set up {{navbar.user_domain}}" onclick="$('create-domain-form').submit()">
+    <a href="{{navbar.logout_url}}">
+      <input type="button" class="cm-button" value="Log out and switch to another account">
+    </a>
+  </div>
 </div>

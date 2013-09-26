@@ -75,3 +75,8 @@ function showCreatePopup() {
 function submitCreatePopup() {
   $('create-popup-domain').value = $('domain').value;
 }
+
+/** Display popup that prompts for creating a domain. */
+function showCreateDomainPopup() {
+  showPopup($('create-domain-popup'));
+}

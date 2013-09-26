@@ -196,10 +196,12 @@ class BaseHandler(webapp2.RequestHandler):
     email = utils.GetCurrentUserEmail()
     domain_name = utils.GetCurrentUserDomain()
     return {
+        'user': email,
         'user_domain': domain_name,
         'admin_domains': perms.GetDomains(email, perms.Role.DOMAIN_ADMIN),
         'catalog_domains': perms.GetDomains(email, perms.Role.CATALOG_EDITOR),
         'creator_domains': perms.GetDomainsWithRole(perms.Role.MAP_CREATOR),
         'add_domain_create_link': domains.Domain.Get(domain_name) is None,
         'is_admin': perms.CheckAccess(perms.Role.ADMIN, perms.GLOBAL_TARGET),
+        'logout_url': users.create_logout_url(self.request.url)
     }

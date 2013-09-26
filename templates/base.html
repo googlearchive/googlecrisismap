@@ -58,7 +58,13 @@ specific language governing permissions and limitations under the License.
             <input type="hidden" id="domain" value="{{navbar.creator_domains.0}}">
           {% endif %}
         {% endif %}
-        <input type="button" class="cm-create cm-button" onclick="showCreatePopup()"
+        <input type="button" class="cm-create cm-button" 
+               onclick=
+               {% if navbar.creator_domains %}
+                 "showCreatePopup()"
+               {% else %}
+                 "showCreateDomainPopup()"
+               {% endif %}
                title="Create a new map" value="Create map">
       </form>
     </div>
@@ -75,7 +81,8 @@ specific language governing permissions and limitations under the License.
 
         {% if navbar.add_domain_create_link %}
           <li>
-            <form method="post" action="{{root}}/{{navbar.user_domain}}/.admin">
+            <form id="create-domain-form" method="post"
+                  action="{{root}}/{{navbar.user_domain}}/.admin">
               <input type="hidden" name="form" value="create-domain">
               <a href="#" onclick="this.parentNode.submit()">
                 Create domain {{navbar.user_domain}}
