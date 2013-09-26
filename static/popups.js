@@ -23,7 +23,7 @@ function $(id) {
 }
 
 /**
- * Hide an element.
+ * Hides an element.
  * @param {Element} element A DOM element to hide.
  */
 function hide(element) {
@@ -31,7 +31,7 @@ function hide(element) {
 }
 
 /**
- * Show an element as a centered popup window.
+ * Shows an element as a centered popup window.
  * @param {Element} popup A DOM element to show as a popup.
  */
 function showPopup(popup) {
@@ -42,7 +42,7 @@ function showPopup(popup) {
   popup.style.top = Math.round(y) + 'px';
 }
 
-/** Update the UI of the map create popup. */
+/** Updates the UI of the map create popup. */
 function updateCreatePopup() {
   $('create-popup-submit').removeAttribute('disabled');
   // Require organization name only if the acceptable_org checkbox is checked.
@@ -60,7 +60,7 @@ function updateCreatePopup() {
   }
 }
 
-/** Display the popup required before creating a map. */
+/** Displays the popup required before creating a map. */
 function showCreatePopup() {
   showPopup($('create-popup'));
   var inputs = $('create-popup').getElementsByTagName('input');
@@ -71,17 +71,12 @@ function showCreatePopup() {
   updateCreatePopup();
 }
 
-/** Handle clicking on 'Create map' in the popup. */
+/** Handles clicking on 'Create map' in the popup. */
 function submitCreatePopup() {
   $('create-popup-domain').value = $('domain').value;
 }
 
-/** Display popup that prompts for creating a domain. */
-function showCreateDomainPopup() {
-  showPopup($('create-domain-popup'));
-}
-
-/** Update the UI of the publish popup. */
+/** Updates the UI of the publish popup. */
 function updatePublishPopup() {
   $('publish-popup-submit').removeAttribute('disabled');
   if ($('publisher-name').value.replace(/^\s*/g, '') === '') {
@@ -90,7 +85,7 @@ function updatePublishPopup() {
 }
 
 /**
- * Display the popup required before publishing a map.
+ * Displays the popup required before publishing a map.
  * @param {string} mapid The map ID.
  */
 function showPublishPopup(mapid) {
@@ -101,4 +96,15 @@ function showPublishPopup(mapid) {
   $('publish-popup-domain').value = $('domain-' + mapid).value;
   $('publish-popup-label').value = $('label-' + mapid).value;
   updatePublishPopup();
+}
+
+/**
+ * Displays the welcome popup if this is the first time this function has
+ * been called in the current session within the last hour.
+ */
+function showWelcomePopup() {
+  if (!(';' + document.cookie).match(/; *welcome_popup_shown=/)) {
+    showPopup($('welcome-popup'));
+  }
+  document.cookie = 'welcome_popup_shown=1; max-age=3600';
 }

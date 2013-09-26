@@ -45,7 +45,7 @@ specific language governing permissions and limitations under the License.
   <div class="cm-header">
     {# Header above page content #}
     {% block header %}
-      <a href="{{root}}"><h1>Google Crisis Map <sup>BETA</sup></h1></a>
+      <a href="{{root}}/.maps"><h1>Google Crisis Map <sup>BETA</sup></h1></a>
     {% endblock header %}
   </div>
 
@@ -55,25 +55,35 @@ specific language governing permissions and limitations under the License.
     {% include "create.html" %}
     <div class="cm-button-area">
       <form>
-        {% if navbar.creator_domains|length > 1 %}
-          <select id="domain" style="margin-bottom:6px;">
-            {% for domain in navbar.creator_domains %}
-              <option value="{{domain}}">{{domain}}</option>
-            {% endfor %}
-          </select>
-        {% else %}
-          {% if navbar.creator_domains %}
-            <input type="hidden" id="domain" value="{{navbar.creator_domains.0}}">
+        {% if navbar.creator_domains %}
+          {% if navbar.creator_domains|length > 1 %}
+            <select id="domain" style="margin-bottom:6px;">
+              {% for domain in navbar.creator_domains %}
+                <option value="{{domain}}">{{domain}}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <input type="hidden" id="domain"
+                value="{{navbar.creator_domains.0}}">
           {% endif %}
+          <input type="button" class="cm-create cm-button"
+              title="Create a new map" value="Create map"
+              onclick="showCreatePopup()">
+        {% else %}
+          <input type="button" class="cm-create cm-button"
+              title="Create a new map" value="Create map"
+              onclick={% if user.domain and not navbar.domain_exists %}
+                        "showPopup($('create-domain-popup')"
+                      {% else %}
+                        {% comment %}
+                          This message covers both cases:
+                          (a) Domain exists but user lacks MAP_CREATOR
+                          (b) User account is not a Google Apps account
+                        {% endcomment %}
+                        "showPopup($('cannot-create-map-popup'))"
+                      {% endif %}
+          >
         {% endif %}
-        <input type="button" class="cm-create cm-button" 
-               onclick=
-               {% if navbar.creator_domains %}
-                 "showCreatePopup()"
-               {% else %}
-                 "showCreateDomainPopup()"
-               {% endif %}
-               title="Create a new map" value="Create map">
       </form>
     </div>
     <ul>
@@ -87,7 +97,7 @@ specific language governing permissions and limitations under the License.
           </a></li>
         {% endfor %}
 
-        {% if navbar.add_domain_create_link %}
+        {% if user.domain and not navbar.domain_exists %}
           <li>
             <form id="create-domain-form" method="post"
                   action="{{root}}/{{user.domain}}/.admin">

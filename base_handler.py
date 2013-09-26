@@ -185,7 +185,9 @@ class BaseHandler(webapp2.RequestHandler):
     path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
     user = users.GetCurrent()
     context = dict(context, root=config.Get('root_path') or '',
-                   user=user, email_username=user and user.email.split('@')[0],
+                   user=user,
+                   email_username=user and user.email.split('@')[0],
+                   email_domain=user and user.email.split('@')[1],
                    login_url=users.GetLoginUrl(self.request.url),
                    logout_url=users.GetLogoutUrl(self.request.url),
                    navbar=self._GetNavbarContext(user))
@@ -203,12 +205,11 @@ class BaseHandler(webapp2.RequestHandler):
       self.response.out.write(output)
 
   def _GetNavbarContext(self, user):
-    get_domains = lambda role: perms.GetAccessibleDomains(user, role)
+    get_domains = lambda role: sorted(perms.GetAccessibleDomains(user, role))
     return user and {
         'admin_domains': get_domains(perms.Role.DOMAIN_ADMIN),
         'catalog_domains': get_domains(perms.Role.CATALOG_EDITOR),
         'creator_domains': get_domains(perms.Role.MAP_CREATOR),
-        'add_domain_create_link': (user.domain and
-                                   not domains.Domain.Get(user.domain)),
+        'domain_exists': user.domain and domains.Domain.Get(user.domain),
         'is_admin': perms.CheckAccess(perms.Role.ADMIN)
     } or {}

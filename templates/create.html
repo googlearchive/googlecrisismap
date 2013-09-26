@@ -71,10 +71,8 @@ specific language governing permissions and limitations under the License.
     <div class="cm-button-area">
       <input type="submit" class="cm-submit cm-button" value="Create map"
           id="create-popup-submit" onclick="submitCreatePopup()">
-      <a href="{{login_url}}">
-        <input type="button" class="cm-button" value="Cancel"
-               onclick="hide($('create-popup'))">
-      </a>
+      <input type="button" class="cm-button" value="Cancel"
+          onclick="hide($('create-popup'))">
     </div>
   </form>
 </div>
@@ -95,9 +93,38 @@ specific language governing permissions and limitations under the License.
     </div>
   </div>
   <div class="cm-button-area">
-    <input type="submit" class="cm-submit cm-button" value="Set up {{user.domain}}" onclick="$('create-domain-form').submit()">
-    <a href="{{navbar.logout_url}}">
-      <input type="button" class="cm-button" value="Log out and switch to another account">
+    <input type="submit" class="cm-submit cm-button"
+        value="Set up {{user.domain}}"
+        onclick="$('create-domain-form').submit()">
+    <a href="{{logout_url}}">
+      <input type="button" class="cm-button"
+          value="Log out and switch to another account">
+    </a>
+  </div>
+</div>
+
+<div class="cm-popup" id="cannot-create-map-popup" style="display:none">
+  <h2>Not permitted to create maps in {{email_domain}}</h2>
+  <div class="cm-section">
+    <div class="cm-p">
+      Google Crisis Map organizes maps under <b>domains</b>
+      to allow for easy collaboration with your colleagues.
+      You are signed in as <b>{{user.email}}</b>,
+      but you don't have permission to create maps in the domain
+      <b>{{email_domain}}</b>.
+    </div>
+    <div class="cm-p">
+      You can ask any domain administrator to grant you permission,
+      or switch to a different account.
+      (All gmail.com accounts can create maps.)
+    </div>
+  </div>
+  <div class="cm-button-area">
+    <input type="button" class="cm-submit cm-button" value="OK"
+      onclick="hide($('cannot-create-map-popup'))">
+    <a href="{{logout_url}}">
+      <input type="button" class="cm-button"
+          value="Log out and switch to another account">
     </a>
   </div>
 </div>
