@@ -22,8 +22,12 @@ specific language governing permissions and limitations under the License.
     <label for="acceptable-purpose">I am creating a map to be used for crisis, humanitarian, social good, or testing purposes.</label><br><br>
     <input type="checkbox" name="acceptable_org" id="acceptable-org" onchange="updateCreatePopup()">
     <label for="acceptable-org">I am acting on behalf of a U.S. 501(c)(3) or international non-profit organization.</label><br><br>
-    <input type="text" style="width:400px" name="organization" id="org-name" placeholder=" Enter the name of your organization, if applicable." onchange="updateCreatePopup()" onkeyup="updateCreatePopup()"><span id="required" style="color:#dd4b39">&nbsp;Required</span><br><br>
-    <span>Note: Google.org reserves the right to take down any map that violates the acceptable use policy. For situations not addressed above, please <a href="" target="_blank">apply for permission</a> to create a map.</span><br><br>
+    <input type="text" style="width:400px" name="organization" id="org-name" placeholder=" Enter the name of your organization, if applicable." onchange="updateCreatePopup()" onkeyup="updateCreatePopup()"><div id="required" style="display:inline;color:#dd4b39">&nbsp;Required<br></div>
+    <span>Note: Google.org reserves the right to take down any map that violates the acceptable use policy. For situations not addressed above, please <a href="https://docs.google.com/forms/d/1bJTGaQ_gZUOrlF48WtOWR7rBlaeADRSosCuUWa5Etek/viewform" target="_blank">apply for permission</a> to create a map.</span><br><br>
+    {% if not marketing_consent_answered %}
+      <input type="checkbox" name="marketing_consent" id="marketing" checked>
+      <label for="marketing">I would like to receive email about other Google products and services related to Google Crisis Map.</label><br>
+    {% endif %}
     <div class="cm-button-area">
       <input type="submit" class="cm-submit cm-button" title="Create Map" value="Create Map" id="create-from-popup" onclick="handleCreate()">
       <input type="button" class="cm-button" title="Cancel" value="Cancel" onclick="hideCreatePopup()">

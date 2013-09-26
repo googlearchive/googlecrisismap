@@ -31,37 +31,6 @@ from google.appengine.ext import db
 NEVER = datetime.datetime.utcfromtimestamp(0)
 
 
-def StructFromModel(model):
-  """Copies the properties of the given db.Model into a Struct.
-
-    Note that we use Property.get_value_for_datastore to prevent fetching
-    of referenced objects into the struct.  The other effect of using
-    get_value_for_datastore is that all date/time methods return
-    datetime.datetime values.
-
-  Args:
-    model: A db.Model entity, or None.
-
-  Returns:
-    A Struct containing the properties of the given db.Model, with additional
-    'key', 'name', and 'id' properties for the entity's key(), key().name(),
-    and key().id().  Returns None if 'model' is None.
-  """
-  if model:
-    return utils.Struct(
-        id=model.key().id(),
-        name=model.key().name(),
-        key=model.key(),
-        **dict((name, prop.get_value_for_datastore(model))
-               for (name, prop) in model.properties().iteritems()))
-
-
-def ResultIterator(query):
-  """Returns a generator that yields structs."""
-  for result in query:
-    yield StructFromModel(result)
-
-
 def DoAsAdmin(function, *args, **kwargs):
   """Executes a function with admin privileges for the duration of the call."""
   original_info = {
@@ -533,7 +502,7 @@ class Map(object):
   @staticmethod
   def _GetVersionByKey(key):
     """NO ACCESS CHECK.  Returns a map version by its datastore entity key."""
-    return StructFromModel(MapVersionModel.get(key))
+    return utils.StructFromModel(MapVersionModel.get(key))
 
   def PutNewVersion(self, maproot_json):
     """Stores a new MapVersionModel object for this Map and returns its ID."""
@@ -562,7 +531,7 @@ class Map(object):
       order, and are unique within a particular Map but not across all Maps.)
     """
     self.AssertAccess(perms.Role.MAP_VIEWER)
-    return self.current_version and StructFromModel(self.current_version)
+    return self.current_version and utils.StructFromModel(self.current_version)
 
   def Delete(self):
     """Marks a map as deleted (so it won't be returned by Get or GetAll)."""
@@ -610,13 +579,13 @@ class Map(object):
     """Yields all versions of this map in order from newest to oldest."""
     self.AssertAccess(perms.Role.MAP_EDITOR)
     query = MapVersionModel.all().ancestor(self.model).order('-created')
-    return ResultIterator(query)
+    return utils.ResultIterator(query)
 
   def GetVersion(self, version_id):
     """Returns a specific version of this map."""
     self.AssertAccess(perms.Role.MAP_EDITOR)
     version = MapVersionModel.get_by_id(version_id, parent=self.model.key())
-    return StructFromModel(version)
+    return utils.StructFromModel(version)
 
   def SetWorldReadable(self, world_readable):
     """Sets whether the map is world-readable."""

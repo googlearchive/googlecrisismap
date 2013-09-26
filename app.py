@@ -96,6 +96,7 @@ app = webapp2.WSGIApplication([
             Route('/.delete', 'delete.Delete'),
             Route('/.maps', 'maps.MapList'),
             Route('/.maps/<map_id>', 'maps.MapById'),
+            Route('/.prefs', 'prefs.Prefs'),
             Route('/.publish', 'publish.Publish'),
             Route('/.redirect/<label>', 'redirect.Redirect'),
             Route('/.wms/tiles/<tileset_id>/<z>/<x>/<y>.png',

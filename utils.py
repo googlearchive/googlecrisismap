@@ -25,6 +25,37 @@ class Struct(object):
     return iter(self.__dict__)
 
 
+def StructFromModel(model):
+  """Copies the properties of the given db.Model into a Struct.
+
+    Note that we use Property.get_value_for_datastore to prevent fetching
+    of referenced objects into the Struct.  The other effect of using
+    get_value_for_datastore is that all date/time methods return
+    datetime.datetime values.
+
+  Args:
+    model: A db.Model entity, or None.
+
+  Returns:
+    A Struct containing the properties of the given db.Model, with additional
+    'key', 'name', and 'id' properties for the entity's key(), key().name(),
+    and key().id().  Returns None if 'model' is None.
+  """
+  if model:
+    return Struct(
+        id=model.key().id(),
+        name=model.key().name(),
+        key=model.key(),
+        **dict((name, prop.get_value_for_datastore(model))
+               for (name, prop) in model.properties().iteritems()))
+
+
+def ResultIterator(query):
+  """Returns a generator that yields Struct objects."""
+  for result in query:
+    yield StructFromModel(result)
+
+
 def NormalizeEmail(email):
   """Normalizes an e-mail address for storage or comparison."""
   username, domain = email.split('@')

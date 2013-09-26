@@ -1,0 +1,31 @@
+{% extends "base.html" %} {# Django wants this first, even before comments #}
+
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+{% block content %}
+  <form method="post">
+    <table class="cm-map-list" summary="User preferences.">
+    <tr>
+      <th></th>
+      <th>Preference</th>
+    </tr>
+    <tr>
+      <th>
+        <input type="checkbox" name="marketing_consent" {% if pref_marketing_consent %} checked  {% endif %}>
+      </th>
+      <td>I would like to receive email about other Google products and services related to Google Crisis Map.</td>
+    </tr>
+    </table>
+    <input type="submit" value="Save changes">
+  </form>
+{% endblock content %}
