@@ -86,7 +86,7 @@ input[type="text"], textarea {
 
 /* Map listing page */
 .cm-map-list {
-  max-width:720px;
+  max-width:840px;
   border-collapse:collapse;
 }
 .cm-map-list th.cm-map-list-header {
