@@ -17,6 +17,7 @@ from pprint import *
 from model import *
 from perms import *
 from maps import *
+import domains, users
 "
 export USER_IS_ADMIN=1  # for editing a local datastore
 $PYTHON $TOOLS_DIR/remote_api.py "$@"
