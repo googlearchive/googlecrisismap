@@ -82,6 +82,7 @@ cm.MapModel.newFromMapRoot = function(maproot) {
   model.set('footer', new cm.Html(maproot['footer'] || ''));
   model.set('languages', maproot['languages'] || []);
   model.set('region', maproot['region'] || '');
+  model.set('thumbnail_url', maproot['thumbnail_url'] || '');
   model.set('viewport', cm.LatLonBox.fromMapRoot(
       (maproot['viewport'] || {})['lat_lon_alt_box']));
   model.set('full_extent', cm.LatLonBox.fromMapRoot(
@@ -251,6 +252,7 @@ cm.MapModel.prototype.toMapRoot = function() {
     'footer': this.get('footer').getUnsanitizedHtml() || null,
     'languages': languages && languages.length ? languages : null,
     'region': this.get('region') || null,
+    'thumbnail_url': this.get('thumbnail_url') || null,
     'viewport': viewport,
     'full_extent': fullExtent,
     'base_map_style': baseMapStyle ?

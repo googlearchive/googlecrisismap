@@ -18,6 +18,7 @@ var DRACULA_MAPROOT = {
   description: '<i>Deadly vampire</i> on the loose',
   footer: 'Brought to you by B. Stoker',
   region: 'xz',
+  thumbnail_url: 'http://vampireinvasion.com/vampires.png',
   base_map_style: {
     name: 'chic',
     definition: '[{"featureType": "all", "stylers": [{"saturation": 10}]}]'
@@ -120,6 +121,8 @@ MapModelTest.prototype.newFromMapRoot = function() {
   expectEq(DRACULA_MAPROOT.description,
            mapModel.get('description').getUnsanitizedHtml());
   expectEq(DRACULA_MAPROOT.footer, mapModel.get('footer').getUnsanitizedHtml());
+  expectEq(DRACULA_MAPROOT.region, mapModel.get('region'));
+  expectEq(DRACULA_MAPROOT.thumbnail_url, mapModel.get('thumbnail_url'));
   // The model's 'map_type' property is overriden if the
   // 'base_map_style' property is set.
   expectEq(DRACULA_MAPROOT.base_map_style['definition'],
