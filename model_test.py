@@ -137,6 +137,34 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals(['xyz.com'], m.model.domains)
     self.assertEquals(m.model.world_readable, False)
 
+  def testInitialDomainRole(self):
+    """Verifies that map creation sets up initial permissions properly."""
+    # Verify the default values from Map.Create.
+    perms.Grant('member', perms.Role.MAP_CREATOR, 'xyz.com')
+    domains.Domain.Create('xyz.com', initial_domain_role=perms.Role.MAP_OWNER)
+    m = test_utils.CreateMap()
+    self.assertEquals({'root', 'member'}, set(m.model.owners))
+    self.assertEquals([], m.model.editors)
+    self.assertEquals([], m.model.viewers)
+
+    domains.Domain.Create('xyz.com', initial_domain_role=perms.Role.MAP_EDITOR)
+    m = test_utils.CreateMap()
+    self.assertEquals(['root'], m.model.owners)
+    self.assertEquals(['member'], m.model.editors)
+    self.assertEquals([], m.model.viewers)
+
+    domains.Domain.Create('xyz.com', initial_domain_role=perms.Role.MAP_VIEWER)
+    m = test_utils.CreateMap()
+    self.assertEquals(['root'], m.model.owners)
+    self.assertEquals([], m.model.editors)
+    self.assertEquals(['member'], m.model.viewers)
+
+    domains.Domain.Create('xyz.com', initial_domain_role=None)
+    m = test_utils.CreateMap()
+    self.assertEquals(['root'], m.model.owners)
+    self.assertEquals([], m.model.editors)
+    self.assertEquals([], m.model.viewers)
+
   def testMapCache(self):
     """Tests caching of current JSON data."""
     # Verify the default values from Map.Create.

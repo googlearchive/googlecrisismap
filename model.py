@@ -558,13 +558,13 @@ class Map(object):
       editors = []
     if viewers is None:
       viewers = []
-    if domain.initial_domain_role != domains.NO_ROLE:
+    if domain.initial_domain_role:
       domain_subjects = set(perms.GetSubjectsForTarget(domain.name).keys())
       if domain.initial_domain_role == perms.Role.MAP_OWNER:
         owners = list(set(owners) | domain_subjects)
       elif domain.initial_domain_role == perms.Role.MAP_EDITOR:
         editors = list(set(editors) | domain_subjects)
-      else:
+      elif domain.initial_domain_role == perms.Role.MAP_VIEWER:
         viewers = list(set(viewers) | domain_subjects)
 
     # urlsafe_b64encode encodes 12 random bytes as exactly 16 characters,
