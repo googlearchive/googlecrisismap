@@ -75,9 +75,12 @@ export PYTHONPATH=\
 "$TOOLS_DIR":\
 "$APP_DIR":\
 "$APPENGINE_DIR":\
+"$APPENGINE_DIR/lib/django-1.2":\
 "$APPENGINE_DIR/lib/django_1_2":\
 "$APPENGINE_DIR/lib/fancy_urllib":\
+"$APPENGINE_DIR/lib/webapp2-2.3":\
 "$APPENGINE_DIR/lib/webapp2":\
+"$APPENGINE_DIR/lib/webob-1.1.1":\
 "$APPENGINE_DIR/lib/webob_1_1_1":\
 "$APPENGINE_DIR/lib/yaml/lib"
 
