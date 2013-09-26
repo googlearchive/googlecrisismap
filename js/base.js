@@ -79,6 +79,19 @@ cm.MSG_FULL_MAP_LINK = goog.getMsg('Full map');
  */
 cm.MSG_REPORT_ABUSE = goog.getMsg('Report abuse');
 
+/**
+ * @desc Label for a select element that lets users choose which language to
+ * show the page in.
+ */
+cm.MSG_SELECT_LANGUAGE = goog.getMsg('Select language');
+
+/**
+ * @desc Option in a drop down menu to choose the page's language. This option
+ * indicates the user would like to use the default language preferred by their
+ * browser.
+ */
+cm.MSG_LANGUAGE_DEFAULT = goog.getMsg('Default language');
+
 
 // Importer view
 

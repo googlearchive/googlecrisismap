@@ -588,6 +588,14 @@ span.cm-g-flag {
   padding:6px;
   min-height:0;
 }
+.cm-language-picker-icon {
+  display: inline-block;
+  height: 15px;
+  width: 15px;
+  margin: 0 5px;
+  vertical-align: text-top;
+  background-image: url('language_picker.png');
+}
 
 
 /* Standard Google checkbox styles */

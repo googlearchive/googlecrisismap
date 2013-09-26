@@ -234,3 +234,21 @@ UtilTest.prototype.testGetNativeLanguageAndRegionName = function() {
   expectEq('\u7b80\u4f53\u4e2d\u6587', fn('zh-cn'));
   expectEq('\u7e41\u9ad4\u4e2d\u6587', fn('zh-tw'));
 };
+
+UtilTest.prototype.testCreateLanguageChoices = function() {
+  var langs = ['en', 'fr', 'es-419', 'bn', 'zh-cn', 'en-GB', 'no', 'fil'];
+  var langChoices = cm.util.createLanguageChoices(langs);
+
+  // Expect ordering by (downcased) language+region name.
+  var i = 0; // So we can add items into the list easily.
+  expectEq('en-GB', langChoices[i++].value);
+  expectEq('en', langChoices[i++].value);
+  expectEq('es-419', langChoices[i++].value);
+  expectEq('fil', langChoices[i++].value);
+  expectEq('fr', langChoices[i++].value);
+  expectEq('no', langChoices[i++].value);
+  // Unicode for Bengali starts with 0; for Traditional Chinese starts with 7.
+  expectEq('bn', langChoices[i++].value);
+  expectEq('zh-cn', langChoices[i++].value);
+};
+

@@ -268,7 +268,6 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
   var uri = new goog.Uri(window.location);
   var embedded = !!uri.getParameterValue('embedded');
   var preview = !!uri.getParameterValue('preview');
-  var languageChoices = createLanguageChoices(config['langs']);
 
   // Forward model changes to global scope.
   cm.events.forward(mapModel, cm.events.MODEL_CHANGED, goog.global);
@@ -336,8 +335,12 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
     panelView.enableMapPicker(new cm.MapPicker(panelView.getHeader(),
                                                opt_menuItems));
   }
+  var footerParams = {
+    'publisher_name': config['publisher_name'],
+    'langs': config['langs']
+  };
   var footerView = new cm.FooterView(footerElem, mapWrapperElem, mapModel,
-                                     config['publisher_name']);
+                                     footerParams);
   goog.style.setElementShown(footerElem, !config['hide_footer'] && !preview);
 
   var extraViewsPlugins = /** @type {Array.<cm.ExtraViewsPlugin>} */
@@ -402,31 +405,6 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
   // Expose the google.maps.Map and the MapModel for testing and debugging.
   window['theMap'] = mapView.getMap();
   window['mapModel'] = mapModel;
-}
-
-/**
- * Build choices object for language-selection menus.
- * @param {Array.<string>} langCodes An array of BCP 47 language codes.
- * @return {Array.<{value: string, label: string}>} The option values and
- *     labels.
- */
-function createLanguageChoices(langCodes) {
-  var languageChoices = [];
-  if (goog.array.isEmpty(langCodes || [])) {
-    // Default to showing just English if languages don't load.
-    var enName = cm.util.getNativeLanguageAndRegionName('en');
-    languageChoices = [{value: 'en', label: enName}];
-  } else {
-    goog.array.forEach(langCodes, function(langCode) {
-      var nativeName = cm.util.getNativeLanguageAndRegionName(langCode);
-      languageChoices.push({value: langCode, label: nativeName});
-    });
-    // Sort languages by language name.
-    goog.array.sort(languageChoices, function(a, b) {
-      return goog.array.defaultCompare(a.label, b.label);
-    });
-  }
-  return languageChoices;
 }
 
 // window doesn't exist in gjstests

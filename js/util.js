@@ -199,7 +199,9 @@ cm.util.formatFileSize = function(size) {
  *   en -> English (United States)
  *   fr -> français (France)
  *   es -> español (España)
- * Special cases (special names for some Chinese language codes):
+ * Special cases (special names for some Chinese language codes). We special
+ * case these to force translation into 'Simplified' or 'Traditional' Chinese,
+ * which is what Google uses (instead of Chinese (China) and Chinese (Taiwan)).
  *   zh-CN -> Simplified Chinese (in Chinese characters)
  *   zh-TW -> Traditional Chinese (in Chinese characters)
  * @param {string} langCode the BCP 47 language code to name.
@@ -207,50 +209,57 @@ cm.util.formatFileSize = function(size) {
  *   if that language is not recognized by Closure.
  */
 cm.util.getNativeLanguageAndRegionName = function(langCode) {
-  var nativeName = goog.locale.getNativeLanguageName(langCode);
   // Manually handle ambigious languages which don't have regions by default.
-  var regionSubTag;
-  switch (langCode) {
-    case 'en':
-      regionSubTag = 'US';
-      break;
-    case 'fr':
-      regionSubTag = 'FR';
-      break;
-    case 'es':
-      regionSubTag = 'ES';
-      break;
-    default:
-      regionSubTag = goog.locale.getRegionSubTag(langCode);
-  }
-  if (regionSubTag !== '') {
+  var DEFAULT_REGIONS = {'en': 'US', 'fr': 'FR', 'es': 'ES'};
+  var SPECIAL_LANGUAGE_NAMES = {
+    'zh_CN': '\u7b80\u4f53\u4e2d\u6587',
+    'zh_TW': '\u7e41\u9ad4\u4e2d\u6587',
+    'zh_HK': '\u4e2d\u6587\uff08\u9999\u6e2f\uff09',
+    // getNativeLanguageName doesn't support region numbers,
+    // so we hard-code Latin America.
+    'es_419': 'espa\u00f1ol (Latinoam\u00e9rica)'
+  };
+  var languageName = goog.locale.getNativeLanguageName(langCode);
+  var regionSubTag = DEFAULT_REGIONS[langCode] ||
+    goog.locale.getRegionSubTag(langCode);
+  if (regionSubTag) {
     // getNativeCountryName needs all region subtags to be uppercase,
     // so we have to reformat the language code accordingly.
     var langSubTag = goog.locale.getLanguageSubTag(langCode);
     var newLangCode = langSubTag + '_' + regionSubTag.toUpperCase();
-    switch (newLangCode) {
-      case 'zh_CN':
-        nativeName = '\u7b80\u4f53\u4e2d\u6587';
-        break;
-      case 'zh_TW':
-        nativeName = '\u7e41\u9ad4\u4e2d\u6587';
-        break;
-      // Spaced out parentheses for Chinese (Hong Kong).
-      case 'zh_HK':
-        nativeName = '\u4e2d\u6587\uff08\u9999\u6e2f\uff09';
-        break;
-      default:
-        var countryName = goog.locale.getNativeCountryName(newLangCode);
-        // getNativeCountryName doesn't handle region numbers.
-        if (regionSubTag === '419') {
-          countryName = 'Latinoam\u00e9rica';
-        }
-        // Make sure the region is actually supported.
-        if (countryName !== newLangCode) {
-          nativeName = nativeName + ' (' + countryName + ')';
-        }
-    }
+    var countryName = goog.locale.getNativeCountryName(newLangCode);
+    // Check if newLangCode is special, and append the countryName only if the
+    // returned string is valid (an actual display name, not a language code).
+    languageName = SPECIAL_LANGUAGE_NAMES[newLangCode] ||
+      languageName + (countryName === newLangCode ? '' :
+      ' (' + countryName + ')');
   }
-  return nativeName;
+  return languageName;
+};
+
+/**
+ * Build choices object for language-selection menus.
+ * @param {Array.<string>} langCodes An array of BCP 47 language codes.
+ * @return {Array.<{value: string, label: string}>} The option values and
+ *     labels.
+ */
+cm.util.createLanguageChoices = function(langCodes) {
+  var languageChoices = [];
+  if (goog.array.isEmpty(langCodes)) {
+    // Default to showing just English if languages don't load.
+    var enName = cm.util.getNativeLanguageAndRegionName('en');
+    languageChoices = [{value: 'en', label: enName}];
+  } else {
+    goog.array.forEach(langCodes, function(langCode) {
+      var nativeName = cm.util.getNativeLanguageAndRegionName(langCode);
+      languageChoices.push({value: langCode, label: nativeName});
+    });
+    // Sort languages by (downcased) name.
+    goog.array.sort(languageChoices, function(a, b) {
+      return goog.array.defaultCompare(a.label.toLowerCase(),
+        b.label.toLowerCase());
+    });
+  }
+  return languageChoices;
 };
 

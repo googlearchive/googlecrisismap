@@ -33,10 +33,12 @@ var REPORT_ABUSE_BASE_URL =
  * @param {Element} popupContainer The DOM element on which to center the
  *     "Help" popup window.
  * @param {cm.MapModel} mapModel The map model.
- * @param {?string} publisherName The display name of the map publisher.
+ * @param {Object} footerParams Parameters necessary for footer rendering.
+ *     publisher_name: The publisher's name.
+ *     langs: A list of the BCP 47 codes of all supported languages.
  * @constructor
  */
-cm.FooterView = function(parentElem, popupContainer, mapModel, publisherName) {
+cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
   /**
    * @type cm.MapModel
    * @private
@@ -49,6 +51,13 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, publisherName) {
    */
   this.footerSpan_ = cm.ui.create('span');
 
+  /**
+   * @type Element
+   * @private
+   */
+  this.langSelect_;
+
+  var publisherName = footerParams['publisher_name'];
   if (publisherName) {
     /** @desc Indicates which person/company a map was published by. */
     var MSG_PUBLISHED_BY = goog.getMsg('Published by {$publisherName}',
@@ -58,8 +67,8 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, publisherName) {
   }
   cm.ui.append(parentElem, this.footerSpan_);
 
+  var uri = new goog.Uri(goog.global.location);
   if (window != window.top) {
-    var uri = new goog.Uri(goog.global.location);
     uri.removeParameter('embedded');
     var fullMapLink = cm.ui.createLink(cm.MSG_FULL_MAP_LINK, '' +
         uri, '_blank');
@@ -72,9 +81,34 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, publisherName) {
   cm.ui.append(parentElem, helpLink);
 
   var reportAbuseUri = new goog.Uri(REPORT_ABUSE_BASE_URL);
-  reportAbuseUri.setParameterValue('url', goog.global.location.href);
+  reportAbuseUri.setParameterValue('url', uri.toString());
   cm.ui.append(parentElem, cm.ui.SEPARATOR_DOT, cm.ui.createLink(
       cm.MSG_REPORT_ABUSE, reportAbuseUri.toString(), '_blank'));
+
+  // Show the language selector only on published maps.
+  var langs = footerParams['langs'];
+  this.langSelect_ = cm.ui.create('select');
+  // Add default as the first item.
+  var langChoices = [{'value': '',
+      'label': cm.MSG_LANGUAGE_DEFAULT}];
+  langChoices = goog.array.concat(langChoices,
+      cm.util.createLanguageChoices(langs));
+  goog.array.forEach(langChoices, function(langChoice) {
+      cm.ui.append(this.langSelect_, cm.ui.create('option',
+          {'value': langChoice.value}, langChoice.label));
+  }, this);
+  var hlParam = uri.getParameterValue('hl');
+  this.langSelect_.value = hlParam || '';
+  cm.ui.append(parentElem, cm.ui.SEPARATOR_DOT, cm.ui.create('div',
+     {'class': cm.css.LANGUAGE_PICKER_ICON}),
+    this.langSelect_);
+
+  // Change URL parameter and reload when another language is selected.
+  cm.events.listen(this.langSelect_, 'change', function(e) {
+      var newUri = (this.value === '') ? uri.removeParameter('hl') :
+          uri.setParameterValue('hl', this.value);
+      goog.global.location.replace(newUri.toString());
+  }, this.langSelect_);
 
   cm.events.onChange(mapModel, 'footer', this.updateFooter_, this);
   this.updateFooter_();
