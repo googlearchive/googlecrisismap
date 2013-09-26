@@ -42,7 +42,7 @@ cm.MenuEditor = function(parentElem, id, options) {
    * @type Element
    * @protected
    */
-  this.select_;
+  this.selectElem;
 
   /**
    * @type Array.<*>
@@ -62,18 +62,18 @@ cm.MenuEditor = function(parentElem, id, options) {
    */
   this.elementId = cm.ui.generateId('select');
 
-  cm.ui.append(parentElem, this.select_ = cm.ui.create(
+  cm.ui.append(parentElem, this.selectElem = cm.ui.create(
       'select', {'id': id, 'class': options && options.menu_class || null}));
   if (this.isMultiSelect_) {
-    this.select_.setAttribute('multiple', true);
+    this.selectElem.setAttribute('multiple', true);
   }
   for (var i = 0; i < options.choices.length; i++) {
     var choice = options.choices[i];
-    cm.ui.append(this.select_, cm.ui.create(
+    cm.ui.append(this.selectElem, cm.ui.create(
         'option', {'name': this.elementId}, choice.label));
     this.values.push(choice.value);
   }
-  cm.events.listen(this.select_, 'change', this.updateValue_, this);
+  cm.events.listen(this.selectElem, 'change', this.updateValue_, this);
 
   // Call updateUI to correct invalid values.
   this.updateUi(this.get('value'));
@@ -86,7 +86,7 @@ goog.inherits(cm.MenuEditor, cm.Editor);
  */
 cm.MenuEditor.prototype.updateValue_ = function() {
   var isSelected = goog.bind(function(v, index) {
-    return this.select_.options[index].selected;
+    return this.selectElem.options[index].selected;
   }, this);
   if (this.isMultiSelect_) {
     this.setValid(goog.array.filter(this.values, isSelected));
@@ -122,6 +122,6 @@ cm.MenuEditor.prototype.updateUi = function(value) {
   var valueSet = new goog.structs.Set(this.isMultiSelect_ ?
       /** @type Array.<*> */(value) : [value]);
   goog.array.forEach(this.values, function(v, index) {
-    this.select_.options[index].selected = valueSet.contains(v);
+    this.selectElem.options[index].selected = valueSet.contains(v);
   }, this);
 };

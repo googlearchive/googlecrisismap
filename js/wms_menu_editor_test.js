@@ -46,7 +46,7 @@ WmsMenuEditorTest.prototype.createEditor_ = function() {
  */
 WmsMenuEditorTest.prototype.expectSelected_ = function(selected) {
   goog.array.forEach(selected, function(s, i) {
-    expectEq(s, this.editor_.select_.options[i].selected);
+    expectEq(s, this.editor_.selectElem.options[i].selected);
   }, this);
 };
 
@@ -69,10 +69,10 @@ WmsMenuEditorTest.prototype.testValidReply = function() {
   this.draft_.set('url', 'http://some.wms/service');
   replyCallback({'layers': [{name: 'a', title: 'Choice A', crs: 'EPSG:3857'},
                             {name: 'b', title: 'Choice B', crs: 'EPSG:3857'}]});
-  expectEq(2, this.editor_.select_.options.length);
-  expectThat(this.editor_.select_.options[0],
+  expectEq(2, this.editor_.selectElem.options.length);
+  expectThat(this.editor_.selectElem.options[0],
              isElement(withText('Choice A (a)')));
-  expectThat(this.editor_.select_.options[1],
+  expectThat(this.editor_.selectElem.options[1],
              isElement(withText('Choice B (b)')));
 };
 
@@ -86,7 +86,7 @@ WmsMenuEditorTest.prototype.testInvalidService = function() {
   };
   this.draft_.set('url', 'http://invalid/service');
   errorCallback({garbage: 'garbage'});
-  expectEq(0, this.editor_.select_.options.length);
+  expectEq(0, this.editor_.selectElem.options.length);
 };
 
 /** Tests caching of layers. */

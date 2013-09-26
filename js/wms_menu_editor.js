@@ -186,11 +186,11 @@ cm.WmsMenuEditor.prototype.updateSelect_ = function(layers) {
               label: layer['title'] + ' (' + layer['name'] + ')'};
     }
   });
-  cm.ui.clear(this.select_);
+  cm.ui.clear(this.selectElem);
   goog.array.clear(this.values);
   for (var i = 0; i < choices.length; i++) {
     var choice = choices[i];
-    cm.ui.append(this.select_, cm.ui.create(
+    cm.ui.append(this.selectElem, cm.ui.create(
         'option', {'name': this.elementId}, choice.label));
     this.values.push(choice.value);
   }

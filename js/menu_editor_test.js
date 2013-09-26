@@ -43,7 +43,7 @@ MenuEditorTest.prototype.createEditor_ = function(opt_multi) {
  */
 MenuEditorTest.prototype.expectSelected_ = function(selected) {
   goog.array.forEach(selected, function(s, i) {
-    expectEq(s, this.editor_.select_.options[i].selected);
+    expectEq(s, this.editor_.selectElem.options[i].selected);
   }, this);
 };
 
@@ -65,14 +65,14 @@ MenuEditorTest.prototype.testConstructorMulti = function() {
 MenuEditorTest.prototype.buttonsUpdateValueProperty = function() {
   var parent = this.createEditor_();
 
-  this.editor_.select_.options[0].selected = false;
-  this.editor_.select_.options[1].selected = true;
-  cm.events.emit(this.editor_.select_, 'change');
+  this.editor_.selectElem.options[0].selected = false;
+  this.editor_.selectElem.options[1].selected = true;
+  cm.events.emit(this.editor_.selectElem, 'change');
   expectEq('y', this.editor_.get('value'));
 
-  this.editor_.select_.options[0].selected = true;
-  this.editor_.select_.options[1].selected = false;
-  cm.events.emit(this.editor_.select_, 'change');
+  this.editor_.selectElem.options[0].selected = true;
+  this.editor_.selectElem.options[1].selected = false;
+  cm.events.emit(this.editor_.selectElem, 'change');
   expectEq('x', this.editor_.get('value'));
 };
 
@@ -80,10 +80,10 @@ MenuEditorTest.prototype.buttonsUpdateValueProperty = function() {
 MenuEditorTest.prototype.buttonsUpdateValuePropertyMulti = function() {
   var parent = this.createEditor_(true);
 
-  this.editor_.select_.options[0].selected = false;
-  this.editor_.select_.options[1].selected = true;
-  this.editor_.select_.options[2].selected = true;
-  cm.events.emit(this.editor_.select_, 'change');
+  this.editor_.selectElem.options[0].selected = false;
+  this.editor_.selectElem.options[1].selected = true;
+  this.editor_.selectElem.options[2].selected = true;
+  cm.events.emit(this.editor_.selectElem, 'change');
   expectThat(this.editor_.get('value'), elementsAre(['y', 'z']));
 };
 
@@ -120,9 +120,9 @@ MenuEditorTest.prototype.testInvalidValue = function() {
   expectEq('x', this.editor_.get('value'));
   this.expectSelected_([true, false, false]);
 
-  this.editor_.select_.options[0].selected = false;
-  this.editor_.select_.options[1].selected = true;
-  this.editor_.select_.options[2].selected = false;
+  this.editor_.selectElem.options[0].selected = false;
+  this.editor_.selectElem.options[1].selected = true;
+  this.editor_.selectElem.options[2].selected = false;
   this.editor_.set('value', undefined);
   expectEq('x', this.editor_.get('value'));
   this.expectSelected_([true, false, false]);
