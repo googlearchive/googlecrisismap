@@ -26,8 +26,7 @@ function TileOverlayTest() {
   };
 
   this.projection_ = {};
-  expectCall(this.map_.getProjection)().willRepeatedly(
-      returnWith(this.projection_));
+  stub(this.map_.getProjection)().is(this.projection_);
   this.setForTest_('cm.geometry.computeOverlap', createMockFunction());
 }
 TileOverlayTest.prototype = new cm.TestBase();
@@ -118,8 +117,7 @@ TileOverlayTest.prototype.toggleUrlIsTileIndex = function() {
   // Turning on tile indexing should trigger the fetcher.
   var tileIndexFetcher = this.expectNew_('goog.net.Jsonp', _);
   var requestDescriptor = {};
-  expectCall(tileIndexFetcher.send)(null, _)
-      .willRepeatedly(returnWith(requestDescriptor));
+  stub(tileIndexFetcher.send)(null, _).is(requestDescriptor);
   this.layer_.set('url_is_tile_index', true);
 
   // Turning it on again should do nothing.

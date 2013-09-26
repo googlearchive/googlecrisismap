@@ -44,10 +44,9 @@ SearchboxTest.prototype.constructorTest = function() {
 SearchboxTest.prototype.autocompletePlaceChangedViewport = function() {
   var viewport = 'aabbccddee';
   var place = {geometry: {viewport: viewport}};
+  stub(this.autocomplete_.getPlace)().is(place);
 
   expectCall(this.marker_.setMap)(null);
-  expectCall(this.autocomplete_.getPlace)()
-      .willOnce(returnWith(place));
   expectCall(this.map_.fitBounds)(viewport);
 
   this.expectLogAction(cm.Analytics.MapAction.SEARCH_QUERY_ENTERED, null);
@@ -60,14 +59,12 @@ SearchboxTest.prototype.autocompletePlaceChangedLocation = function() {
   var location = 'aabbccddee';
   var place = {geometry: {location: location},
                types: ['banana', 'street_address']};
+  stub(this.autocomplete_.getPlace)().is(place);
 
   expectCall(this.marker_.setMap)(null);
-  expectCall(this.autocomplete_.getPlace)()
-      .willOnce(returnWith(place));
   expectCall(this.map_.setCenter)(location);
   expectCall(this.map_.setZoom)(15);
-  expectCall(this.marker_.setOptions)(
-      {'position': location, 'map': this.map_});
+  expectCall(this.marker_.setOptions)({'position': location, 'map': this.map_});
 
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };
@@ -82,12 +79,10 @@ SearchboxTest.prototype.autocompleteNoGeometryViewport = function() {
   var place = {name: name, types: ['banana', 'street_address']};
   var viewport = 'geocoded';
   var geocode = {geometry: {viewport: viewport}};
+  stub(this.map_.getBounds)().is(bounds);
+  stub(this.autocomplete_.getPlace)().is(place);
 
-  expectCall(this.map_.getBounds)()
-      .willOnce(returnWith(bounds));
   expectCall(this.marker_.setMap)(null);
-  expectCall(this.autocomplete_.getPlace)()
-      .willOnce(returnWith(place));
   expectCall(this.geocoder_.geocode)({address: name, bounds: bounds}, _)
       .willOnce(function(request, callback) {
           callback([geocode], google.maps.GeocoderStatus.OK);
@@ -108,12 +103,10 @@ SearchboxTest.prototype.autocompleteNoGeometryLocation = function() {
   var location = 'geocoded';
   var geocode = {geometry: {location: location},
                  location_type: google.maps.GeocoderLocationType.ROOFTOP};
+  stub(this.map_.getBounds)().is(bounds);
+  stub(this.autocomplete_.getPlace)().is(place);
 
-  expectCall(this.map_.getBounds)()
-      .willOnce(returnWith(bounds));
   expectCall(this.marker_.setMap)(null);
-  expectCall(this.autocomplete_.getPlace)()
-      .willOnce(returnWith(place));
   expectCall(this.geocoder_.geocode)({address: name, bounds: bounds}, _)
       .willOnce(function(request, callback) {
         callback([geocode], google.maps.GeocoderStatus.OK);
@@ -129,7 +122,7 @@ SearchboxTest.prototype.autocompleteNoGeometryLocation = function() {
 SearchboxTest.prototype.show = function() {
   var resize = createMockFunction('resize');
   cm.events.listen(this.span_, 'resize', resize);
-  expectCall(resize)(_).willOnce(returnWith(null));
+  expectCall(resize)(_);
 
   this.searchbox_.show();
   expectEq('block', this.span_.style.display);

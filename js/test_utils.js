@@ -755,36 +755,23 @@ function expectRef(expected, actual) {
 }
 
 /**
- * Creates a mock instance of a class with some of its methods stubbed out
- * to return constants.
- * @param {Function} constructor A constructor.
- * @param {Object} returnValues A map of method names to values.  The instance
- *     will accept any number of calls to these methods with any arguments,
- *     always returning the given values.  All other methods are mocked.
- * @return {Object} A mock instance of the given class with the specified
- *     methods stubbed out.
+ * Stubs out a function or method call to make it return a constant value.
+ * Use stub(func)(arg1, arg2, ...).is(returnValue) instead of expectCall(...)
+ * to express that you're setting up test inputs, not declaring an expectation
+ * (i.e. you don't care whether or how many times the function is called).
+ * @param {Function} func A function or method.
+ * @return {Function} A thing that should be immediately invoked as
+ *     stub(func)(arg1, arg2, ...).is(returnValue) in order to make the given
+ *     function return returnValue whenever it gets called with arguments that
+ *     match arg1, arg2, ... (arg1, arg2, ... can be actual values or matchers).
  */
-function stubInstance(constructor, returnValues) {
-  var stub = createMockInstance(constructor);
-  for (var methodName in returnValues) {
-    stub[methodName] = (function(value) {
-      return function() { return value; };
-    })(returnValues[methodName]);
-  }
-  return stub;
-}
-
-/**
- * Replaces a single method with a method that accepts any arguments and always
- * returns a constant.  Use this instead of expectCall(...) when you don't care
- * how many times the method is called.  (Only use this on objects that don't
- * linger from test to test, as the method is not restored on teardown.
- * @param {Object} object An object.
- * @param {string} methodName The name of a method on the object.
- * @param {*} returnValue The value that you want the method to return.
- */
-function stubReturn(object, methodName, returnValue) {
-  object[methodName] = function() { return returnValue; };
+function stub(func) {
+  return function() {
+    var args = arguments;
+    return {'is': function(value) {
+      expectCall(func).apply(null, args).willRepeatedly(returnWith(value));
+    }};
+  };
 }
 
 /**

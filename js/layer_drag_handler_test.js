@@ -131,10 +131,9 @@ LayerDragHandlerTest.prototype.createDraggableLayer_ = function(
  * @private
  */
 LayerDragHandlerTest.prototype.siblingIndexOf_ = function(element) {
-  return goog.array.findIndex(
-      element.parentNode.childNodes, function(elem) {
-        return elem === element;
-      });
+  return goog.array.findIndex(element.parentNode.childNodes, function(elem) {
+    return elem === element;
+  });
 };
 
 /**
@@ -145,19 +144,18 @@ LayerDragHandlerTest.prototype.siblingIndexOf_ = function(element) {
 LayerDragHandlerTest.prototype.expectDragStart_ = function(index) {
   var draggedElem = this.draggableElements_[index];
   var titleElem = draggedElem.firstChild;
-  stubReturn(titleElem, 'cloneNode', this.cloneElem_);
-  var dragger = this.draggers_[index];
+  var cloneElem = this.cloneElem_;
+  titleElem.cloneNode = function() { return cloneElem; };
 
   // Bounds of dragged element and inner and outer arranger elements.
-  expectCall(goog.style.getBounds)(draggedElem)
-      .willOnce(returnWith(this.layerSpecs_[index]['bounds']));
-  expectCall(goog.style.getBounds)(draggedElem.parentNode)
-      .willOnce(returnWith(new goog.math.Rect(100, 0, 1000, 1000)));
-  expectCall(goog.style.getBounds)(draggedElem.parentNode.parentNode)
-      .willOnce(returnWith(new goog.math.Rect(100, 0, 1000, 1000)));
+  stub(goog.style.getBounds)(draggedElem).is(this.layerSpecs_[index].bounds);
+  var bounds = new goog.math.Rect(100, 0, 1000, 1000);
+  stub(goog.style.getBounds)(draggedElem.parentNode).is(bounds);
+  stub(goog.style.getBounds)(draggedElem.parentNode.parentNode).is(bounds);
   // Cursor clone offset.
   this.cloneOffset_ = this.expectNew_('goog.math.Coordinate', _, _);
   // Dragger limits.
+  var dragger = this.draggers_[index];
   this.limits_ = new goog.math.Rect(0, 0, 1100, 1000);
   expectCall(dragger.setLimits)(this.limits_);
   // Fake limits member, since there is no getter for goog.fx.Dragger
@@ -179,16 +177,15 @@ LayerDragHandlerTest.prototype.expectDragStart_ = function(index) {
 LayerDragHandlerTest.prototype.expectComputeDropTarget_ = function(
     targetIndex, xOffset, yOffset) {
   for (var i = 0; i <= targetIndex; i++) {
-    expectCall(goog.style.getBounds)(this.draggableElements_[i].firstChild)
-        .willOnce(returnWith(this.layerSpecs_[i]['bounds']));
+    stub(goog.style.getBounds)(this.draggableElements_[i].firstChild)
+        .is(this.layerSpecs_[i]['bounds']);
   }
   this.expectNew_('goog.math.Coordinate', _, _);
   this.dragPoint_ = this.expectNew_('goog.math.Coordinate', _, _);
   if (targetIndex >= 0) {
     this.dragPoint_.x = this.layerSpecs_[targetIndex]['bounds'].left + xOffset;
     this.dragPoint_.y = this.layerSpecs_[targetIndex]['bounds'].top + yOffset;
-    expectCall(goog.style.getMarginBox)(_)
-        .willRepeatedly(returnWith(new goog.math.Box(10, 10, 10, 10)));
+    stub(goog.style.getMarginBox)(_).is(new goog.math.Box(10, 10, 10, 10));
   } else {
     this.dragPoint_.x = xOffset;
     this.dragPoint_.y = yOffset;

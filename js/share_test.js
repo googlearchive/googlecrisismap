@@ -55,10 +55,10 @@ SharePopupTest.prototype.createPopup_ = function(
   expectCall(this.popup_.setEnableCrossIframeDismissal)(false);
 
   // Create the cm.SharePopup.
-  stubReturn(goog.style, 'showElement', null);
-  var appState = stubInstance(cm.AppState, {'getUri': APPSTATE_URI_OBJECT});
-  expectCall(appState.get)('language')
-      .willRepeatedly(returnWith('en'));
+  goog.style.showElement = function() { return null; };
+  var appState = createMockInstance(cm.AppState);
+  stub(appState.getUri)().is(APPSTATE_URI_OBJECT);
+  stub(appState.get)('language').is('en');
   this.sharePopup_ = new cm.SharePopup(
       appState, cm.ui.create('button'), showFacebookButton,
       showGooglePlusButton, showTwitterButton);
@@ -179,10 +179,9 @@ ShareButtonTest.prototype = new cm.TestBase();
 registerTestSuite(ShareButtonTest);
 
 ShareButtonTest.prototype.createButton_ = function() {
-  var appState = stubInstance(cm.AppState, {'getUri': APPSTATE_URI_OBJECT});
-  expectCall(appState.get)('language').willRepeatedly(returnWith('en'));
-
-  var map = stubInstance(google.maps.Map);
+  var appState = createMockInstance(cm.AppState);
+  stub(appState.getUri)().is(APPSTATE_URI_OBJECT);
+  var map = createMockInstance(google.maps.Map);
   var mapControls = [];
   for (var key in google.maps.ControlPosition) {
     mapControls[google.maps.ControlPosition[key]] = [];
@@ -202,7 +201,7 @@ ShareButtonTest.prototype.createButton_ = function() {
 ShareButtonTest.prototype.testToggleOn = function() {
   this.createButton_();
 
-  expectCall(this.popup_.isVisible)().willOnce(returnWith(false));
+  stub(this.popup_.isVisible)().is(false);
   expectCall(this.popup_.show)();
   this.expectLogAction(cm.Analytics.MapAction.SHARE_TOGGLED_ON, null);
   cm.events.emit(this.button_, 'mousedown');
@@ -210,7 +209,7 @@ ShareButtonTest.prototype.testToggleOn = function() {
 
 ShareButtonTest.prototype.testToggleOff = function() {
   this.createButton_();
-  expectCall(this.popup_.isVisible)().willOnce(returnWith(true));
+  stub(this.popup_.isVisible)().is(true);
   this.expectLogAction(cm.Analytics.MapAction.SHARE_TOGGLED_OFF, null);
   cm.events.emit(this.button_, 'mousedown');
 };

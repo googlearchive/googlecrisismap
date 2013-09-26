@@ -192,14 +192,12 @@ InspectorViewTest.prototype.testCancelIfLayerDisabled = function() {
   this.openInspector_(false, new cm.LayerModel());
 
   // Enable layer0 and verify that the popup is still shown.
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willOnce(returnWith(true));
+  stub(this.appState_.getLayerEnabled)('layer0').is(true);
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectDescendantOf(cm.ui.document.body, this.popup_);
 
   // Disable layer0 and verify that the popup is not displayed.
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willRepeatedly(returnWith(false));
+  stub(this.appState_.getLayerEnabled)('layer0').is(false);
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
 

@@ -89,7 +89,7 @@ ToolbarViewTest.prototype.testAddFolderLink = function() {
 /** Verifies that the 'Diff/Show JSON' link works properly. */
 ToolbarViewTest.prototype.testDiffJsonLink = function() {
   var mapRoot = {'foo': 'bar'};
-  expectCall(this.mapModel_.toMapRoot)().willRepeatedly(returnWith(mapRoot));
+  stub(this.mapModel_.toMapRoot)().is(mapRoot);
   var diffPopup = null;
   this.setForTest_('cm.ui.showPopup', function(popup) {
     diffPopup = popup;

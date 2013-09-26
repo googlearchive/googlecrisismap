@@ -30,13 +30,10 @@ function LayerEntryViewTest() {
   this.metadataModel_ = new cm.MetadataModel();
 
   this.setForTest_('goog.style.setOpacity', createMockFunction());
-  expectCall(goog.style.setOpacity)(_, 1).willRepeatedly(returnWith(undefined));
 
   this.appState_ = createMockInstance(cm.AppState);
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willRepeatedly(returnWith(false));
-  expectCall(this.appState_.get)('layer_opacities')
-      .willRepeatedly(returnWith(undefined));
+  stub(this.appState_.getLayerEnabled)('layer0').is(false);
+  stub(this.appState_.get)('layer_opacities').is(undefined);
 }
 LayerEntryViewTest.prototype = new cm.TestBase();
 registerTestSuite(LayerEntryViewTest);
@@ -164,22 +161,21 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   // Change the layer to TILE, and verify the slider is created.
   var slider = this.expectNew_('goog.ui.Slider');
   this.fakeThumb_ = cm.ui.create('div');
+  stub(slider.getValueThumb)().is(this.fakeThumb_);
+  stub(this.appState_.get)('layer_opacities').is({});
+
   expectCall(slider.setMoveToPointEnabled)(true);
   expectCall(slider.render)(_);
-  expectCall(slider.getValueThumb)().
-      willOnce(returnWith(this.fakeThumb_));
-  expectCall(this.appState_.get)('layer_opacities').
-      willOnce(returnWith({}));
   expectCall(slider.setValue)(100);
-
   this.layerModel_.set('type', cm.LayerModel.Type.TILE);
+
   var sliderDot = expectDescendantOf(
       this.fakeThumb_, withClass(cm.css.SLIDER_DOT));
   expectEq(1, sliderDot.style.opacity);
 
   // Test that the slider's 'change' event fires a CHANGE_OPACITY event with the
   // correct opacity.
-  expectCall(slider.getValue)().willOnce(returnWith(50));
+  stub(slider.getValue)().is(50);
   // Also expect the corresponding analytics log
   this.expectLogAction(cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
                        this.layerModel_.get('id'));
@@ -194,8 +190,7 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   expectEq(50, opacity);
 
   // Test whether changes in the app state are reflected upon the slider.
-  expectCall(this.appState_.get)('layer_opacities')
-      .willRepeatedly(returnWith({'layer0': 40}));
+  stub(this.appState_.get)('layer_opacities').is({'layer0': 40});
   expectCall(slider.setValue)(40);
   cm.events.emit(this.appState_, 'layer_opacities_changed');
   expectEq(0.4, sliderDot.style.opacity);
@@ -215,10 +210,8 @@ LayerEntryViewTest.prototype.testSublayerPicker = function() {
   this.layerModel_.set('folder_type', cm.LayerModel.FolderType.SINGLE_SELECT);
   this.layerModel_.isSingleSelect = function() { return true; };
 
-  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
-      .willRepeatedly(returnWith(null));
-  var sublayerPicker = this.expectNew_('cm.SublayerPicker',
-                                       _, this.layerModel_, '');
+  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is(null);
+  this.expectNew_('cm.SublayerPicker', _, this.layerModel_, '');
   this.createView_();
 };
 
@@ -520,8 +513,7 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
     returnWith(''));
 
   // Enable the layer.
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willRepeatedly(returnWith(true));
+  stub(this.appState_.getLayerEnabled)('layer0').is(true);
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectTrue(checkbox.checked);
   // Warning element is hidden initially.
@@ -530,8 +522,7 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
        withClass(cm.css.CHECKBOX_FOLDER_DECORATION)])));
 
   // Disable the layer.
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willRepeatedly(returnWith(false));
+  stub(this.appState_.getLayerEnabled)('layer0').is(false);
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectFalse(checkbox.checked);
   // Warning element is already hidden, make sure some other is hidden too.
@@ -576,12 +567,9 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
     returnWith(''));
 
   // Initialize the single-select menu with a single enabled child.
-  expectCall(this.appState_.getLayerEnabled)('child1')
-      .willRepeatedly(returnWith(true));
-  expectCall(this.appState_.getLayerEnabled)('child2')
-      .willRepeatedly(returnWith(false));
-  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
-      .willRepeatedly(returnWith('child1'));
+  stub(this.appState_.getLayerEnabled)('child1').is(true);
+  stub(this.appState_.getLayerEnabled)('child2').is(false);
+  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is('child1');
 
   var parent = this.createView_();
   var child1 = this.view_.layerEntryViews_['child1'].getEntryElement();
@@ -592,8 +580,7 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
   expectFalse(checkbox.checked);
 
   // Enable the parent layer.
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willRepeatedly(returnWith(true));
+  stub(this.appState_.getLayerEnabled)('layer0').is(true);
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectTrue(checkbox.checked);
 
@@ -631,20 +618,16 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelectInEditor = function() {
     returnWith(''));
 
   // Initialize the single-select menu with a single enabled child.
-  expectCall(this.appState_.getLayerEnabled)('child1')
-      .willRepeatedly(returnWith(true));
-  expectCall(this.appState_.getLayerEnabled)('child2')
-      .willRepeatedly(returnWith(false));
-  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
-      .willRepeatedly(returnWith('child1'));
+  stub(this.appState_.getLayerEnabled)('child1').is(true);
+  stub(this.appState_.getLayerEnabled)('child2').is(false);
+  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is('child1');
 
   var parent = this.createView_({enable_editing: true});
   var child1 = this.view_.layerEntryViews_['child1'].getEntryElement();
   var child2 = this.view_.layerEntryViews_['child2'].getEntryElement();
 
   // Enable the parent layer.
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willRepeatedly(returnWith(true));
+  stub(this.appState_.getLayerEnabled)('layer0').is(true);
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
 
   // The selected sublayer's checkbox should not be shown.
@@ -682,14 +665,10 @@ LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
     returnWith(''));
 
   // Initialize the single-select menu with 'child2' and its parent enabled.
-  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
-      .willRepeatedly(returnWith('child2'));
-  expectCall(this.appState_.getLayerEnabled)('child1')
-      .willRepeatedly(returnWith(false));
-  expectCall(this.appState_.getLayerEnabled)('child2')
-      .willRepeatedly(returnWith(true));
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willRepeatedly(returnWith(true));
+  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is('child2');
+  stub(this.appState_.getLayerEnabled)('child1').is(false);
+  stub(this.appState_.getLayerEnabled)('child2').is(true);
+  stub(this.appState_.getLayerEnabled)('layer0').is(true);
   var parent = this.createView_();
   var childElem1 = this.view_.layerEntryViews_['child1'].getEntryElement();
   var childElem2 = this.view_.layerEntryViews_['child2'].getEntryElement();
@@ -706,8 +685,7 @@ LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
   expectEq(childElem1, notSelected);
 
   // Select the other sublayer and verify its class name.
-  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
-      .willRepeatedly(returnWith('child1'));
+  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is('child1');
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   selected = expectDescendantOf(parent,
                                 withClass(cm.css.LAYER_ENTRY),
@@ -726,10 +704,8 @@ LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
   this.layerModel_.set('folder_type', cm.LayerModel.FolderType.LOCKED);
 
   // When a locked folder and its sublayers are enabled...
-  expectCall(this.appState_.getLayerEnabled)('layer0')
-      .willRepeatedly(returnWith(true));
-  expectCall(this.appState_.getLayerEnabled)('child')
-      .willRepeatedly(returnWith(true));
+  stub(this.appState_.getLayerEnabled)('layer0').is(true);
+  stub(this.appState_.getLayerEnabled)('child').is(true);
   var parent = this.createView_();
   // ...the sublayers should be hidden.  We can't
   // use expectNoDescendantOf(parent, ...) because descendant layers'

@@ -24,8 +24,8 @@ function LegendEditorTest() {
   cm.TestBase.call(this);
   this.setForTest_('cm.Html.sanitize_', function(x) { return '*' + x + '*'; });
 
-  this.featurePalette_ = this.expectNew_('goog.ui.Palette');
-  this.colorPalette_ = this.expectNew_('goog.ui.ColorPalette');
+  this.featurePalette_ = this.expectNew_('goog.ui.Palette', _);
+  this.colorPalette_ = this.expectNew_('goog.ui.ColorPalette', _);
 
   this.parent_ = cm.ui.create('div', {'class': cm.css.LEGEND_EDITOR});
   this.draft_ = new google.maps.MVCObject();
@@ -44,11 +44,9 @@ registerTestSuite(LegendEditorTest);
  * @private
  */
 LegendEditorTest.prototype.createEditor_ = function() {
-  expectCall(goog.ui.Palette)(_).willOnce(returnWith(this.featurePalette_));
   expectCall(this.featurePalette_.setSize)(_);
   expectCall(this.featurePalette_.render)(isElement('div'));
 
-  expectCall(goog.ui.ColorPalette)(_).willOnce(returnWith(this.colorPalette_));
   expectCall(this.colorPalette_.setSize)(_);
   expectCall(this.colorPalette_.render)(isElement('div'));
 
