@@ -15,7 +15,6 @@
  *     quadTileOverlap, and nothing in this file is in the 'cm' namespace
  *     (b/7979024).
  * @author giencke@google.com (Pete Giencke)
- * @author sraub@google.com (Susannah Raub)
  */
 
 goog.provide('cm.geometry');

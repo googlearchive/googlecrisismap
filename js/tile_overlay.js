@@ -12,7 +12,6 @@
 /**
  * @fileoverview A custom map overlay rendered from image tiles.
  * @author giencke@google.com (Pete Giencke)
- * @author sraub@google.com (Susannah Raub)
  */
 goog.provide('cm.TileOverlay');
 

@@ -11,6 +11,7 @@
 
 /**
  * @fileoverview Utility functions for UI construction.
+ * @author kpy@google.com (Ka-Ping Yee)
  */
 goog.provide('cm.ui');
 

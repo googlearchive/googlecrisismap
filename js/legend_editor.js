@@ -236,7 +236,9 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
   cm.events.listen(addItemLink, 'click', goog.bind(
       this.showPaletteDialog_, this, addItemLink, goog.bind(
           function(selectedItem) {
-            this.setLegendItemGraphic_(this.createLegendItem_(), selectedItem);
+            this.setLegendItemGraphic_(
+                /** @type {!cm.LegendEditor.LegendItem_} */ (
+                    this.createLegendItem_()), selectedItem);
           }, this)));
   cm.events.listen(editHtmlLink, 'click',
                    goog.bind(this.showHtmlEditor_, this, true, undefined));

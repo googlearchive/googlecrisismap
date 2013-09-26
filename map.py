@@ -203,40 +203,6 @@ def GetMapsApiClientId(host_port):
 
 
 def GetConfig(request, map_object=None, catalog_entry=None):
-  """Gathers a dictionary of parameters to pass to the JavaScript code.
-
-  This object is exported as JSON and becomes visible as "cm_config" to
-  the crisismap.js library.
-
-  Args:
-    request: The webapp2 Request object.
-    map_object: The optional Map object to display.
-    catalog_entry: The optional CatalogEntry pointing at the map to display.
-        The caller should specify either map_object or catalog_entry; if
-        both are given, catalog_entry is ignored.
-
-  Returns:
-    A dictionary object containing the following keys:
-      - ui_lang: The BCP 47 language code for the user interface.
-      - user_email: The e-mail address of the currently user, if logged in.
-      - login_url: URL to the account login page.
-      - logout_url: URL to log the user out.
-      - map_root: The map content to display, in MapRoot format.
-      - map_id: The ID of the stored map from which map_root was loaded.
-      - maproot_url: URL of a MapRoot file to fetch (for development only).
-      - map_catalog: Dictionary of metadata for maps to list in the
-          map picker dropdown menu.
-      - maps_api_url: URL from which to load the Google Maps API.
-      - save_url: A URL to which to POST data to save the edited map.
-      - dev_mode: True if developer mode is enabled.
-      - get_module_url: A function for mapping the baseUrl, module name pair to
-          a url for the corresponding module.  Currently not set by crisismaps,
-          but its needed for Cartewheel.
-      - metadata: A dictionary mapping source addresses to metadata (see
-          metadata_fetch.py) for each source referenced in map_root.
-      - metadata_url: The URL for this map to make metadata requests. It
-          contains the relevant cache key as the "key" parameter.
-  """
   dev_mode = request.get('dev') and AllowDeveloperMode()
   user = users.get_current_user()
   map_catalog = GetMapMenuItems(catalog_entry and catalog_entry.domain or

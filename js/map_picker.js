@@ -11,6 +11,7 @@
 
 /**
  * @fileoverview A dropdown menu of links to other maps.
+ * @author kpy@google.com (Ka-Ping Yee)
  */
 goog.provide('cm.MapPicker');
 
