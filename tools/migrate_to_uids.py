@@ -13,10 +13,10 @@
 """Migrates user identities from e-mail addresses to uids (UserModels).
 
 To do a dry run: tools/console <server_url> migrate_to_uids.py
-To do actual migration: tools/console <server_url> migrate_to_uids.py -w
+To do actual migration: tools/console <server_url> migrate_to_uids.py -- -w
 
-To do a dry run of cleanup: tools/console <server_url> migrate_to_uids.py -c
-To do actual cleanup: tools/console <server_url> migrate_to_uids.py -c -w
+To do a dry run of cleanup: tools/console <server_url> migrate_to_uids.py -- -c
+To do actual cleanup: tools/console <server_url> migrate_to_uids.py -- -c -w
 """
 
 import sys
@@ -160,10 +160,10 @@ def Migrate(write_data=False):  # dry run by default
     if '@' in p.subject:
       np = perms.PermissionModel(
           subject=EmailToUid(p.subject), role=p.role, target=p.target)
-    print '\x1b[37msu=%s\x1b[0m -> su=%s / ro=%s / ta=%s' % (
-        p.subject, np.subject, np.role, np.target)
+      print '\x1b[37msu=%s\x1b[0m -> su=%s / ro=%s / ta=%s' % (
+          p.subject, np.subject, np.role, np.target)
 
-    to_write.append(np)
+      to_write.append(np)
 
   if write_data:
     db.put(to_write)
