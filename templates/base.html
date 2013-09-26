@@ -29,13 +29,17 @@ specific language governing permissions and limitations under the License.
 
 <body class="cm-body">
   <div class="cm-userbar">
-    {% if user.ga_domain %}
-      {{user.email_username}}@<b>{{user.ga_domain}}</b>
+    {% if user %}
+      {% if user.ga_domain %}
+        {{user.email_username}}@<b>{{user.ga_domain}}</b>
+      {% else %}
+        {{user.email}}
+      {% endif %}
+      &#xb7;
+      <a href="{{logout_url}}">Sign out</a>
     {% else %}
-      {{user.email}}
+      <a href="{{login_url}}">Sign in</a>
     {% endif %}
-    &#xb7;
-    <a href="{{logout_url}}">Sign out</a>
     &#xb7;
     <a href="{{root}}/.prefs">Preferences</a>
     &#xb7;
