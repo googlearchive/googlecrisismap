@@ -28,7 +28,7 @@ class Catalog(base_handler.BaseHandler):
 
   def get(self, domain):  # pylint: disable=g-bad-name
     """Displays the list of catalog entries."""
-    entries = model.CatalogEntry.GetAllInDomain(domain)
+    entries = model.CatalogEntry.GetAll(domain)
     self.response.out.write(self.RenderTemplate('catalog.html', {
         'domain': domain,
         'entries': list(entries),
@@ -37,7 +37,7 @@ class Catalog(base_handler.BaseHandler):
 
   def post(self, domain):  # pylint: disable=g-bad-name
     """Changes the visibility of catalog entries in Map Picker."""
-    entries = model.CatalogEntry.GetAllInDomain(domain)
+    entries = model.CatalogEntry.GetAll(domain)
     for entry in entries:
       # Only checked checkboxes' values are sent from the client.
       value = bool(self.request.get(entry.label))

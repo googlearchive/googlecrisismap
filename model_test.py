@@ -232,11 +232,15 @@ class MapTests(test_utils.BaseTest):
 
     all_maps = ModelKeys([m1, m2])
     public_maps = ModelKeys([m1])
-    self.assertEquals(all_maps, ModelKeys(list(model.Map.GetViewable())))
+
+    user = users.get_current_user()
+    self.assertEquals(all_maps, ModelKeys(list(model.Map.GetViewable(user))))
     self.assertEquals(all_maps, ModelKeys(list(model.Map.GetAll())))
+
     test_utils.SetUser('john.q.public@gmail.com')
+    user = users.get_current_user()
     self.assertRaises(perms.AuthorizationError, model.Map.GetAll)
-    self.assertEquals(public_maps, ModelKeys(model.Map.GetViewable()))
+    self.assertEquals(public_maps, ModelKeys(model.Map.GetViewable(user)))
 
 
 class CatalogEntryTests(test_utils.BaseTest):
@@ -313,18 +317,18 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertEquals(False, mc.is_listed)
 
   def testListedMaps(self):
-    """Tests CatalogEntry.GetAll{InDomain} and .GetListed{InDomain}."""
+    """Tests CatalogEntry.GetAll and CatalogEntry.GetListed."""
     mm, _ = test_utils.CreateMapAsAdmin()
     mc = model.CatalogEntry.Create('foo.com', 'abcd', mm, is_listed=False)
 
     self.assertEquals(0, len(model.CatalogEntry.GetListed()))
-    self.assertEquals(0, len(model.CatalogEntry.GetListedInDomain('foo.com')))
+    self.assertEquals(0, len(model.CatalogEntry.GetListed('foo.com')))
 
     maps = list(model.CatalogEntry.GetAll())
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 
-    maps = list(model.CatalogEntry.GetAllInDomain('foo.com'))
+    maps = list(model.CatalogEntry.GetAll('foo.com'))
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 
@@ -338,7 +342,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 
-    maps = model.CatalogEntry.GetListedInDomain('foo.com')
+    maps = model.CatalogEntry.GetListed('foo.com')
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
 

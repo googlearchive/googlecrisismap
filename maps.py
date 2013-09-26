@@ -183,12 +183,12 @@ def GetMapMenuItems(domain, root_path):
     if domain == model.Config.Get('primary_domain'):
       menu_items = [
           {'title': entry.title, 'url': root_path + entry.label}
-          for entry in list(model.CatalogEntry.GetListedInDomain(domain))]
+          for entry in list(model.CatalogEntry.GetListed(domain))]
     else:
       menu_items = [
           {'title': entry.title,
            'url': root_path + '%s/%s' % (entry.domain, entry.label)}
-          for entry in list(model.CatalogEntry.GetListedInDomain(domain))]
+          for entry in list(model.CatalogEntry.GetListed(domain))]
 
   # Return all the menu items sorted by title.
   return sorted(menu_items, key=lambda m: m['title'])
@@ -340,17 +340,16 @@ class MapList(base_handler.BaseHandler):
 
   def get(self, domain):  # pylint: disable=g-bad-name
     """Produces the map listing page."""
-    maps = list(model.Map.GetViewable())
+    maps = list(model.Map.GetViewable(users.get_current_user(), domain))
     creator_domains = perms.GetDomainsWithRole(perms.Role.MAP_CREATOR)
     catalog_domains = perms.GetDomainsWithRole(perms.Role.CATALOG_EDITOR)
     title = 'Maps for all domains'
     if domain:
       title = 'Maps for %s' % domain
-      maps = [m for m in maps if m.domains and m.domains[0] == domain]
       creator_domains = [domain]
 
-    # Attach to each Map a 'catalog_entries' attribute containing the
-    # CatalogEntry entities that link to it.
+    # Attach to each Map a 'catalog_entries' attribute with a list of the
+    # CatalogEntry objects that link to that Map.
     published = {}
     for entry in model.CatalogEntry.GetAll():
       published.setdefault(entry.map_id, []).append(entry)

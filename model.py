@@ -203,6 +203,7 @@ class MapModel(db.Model):
   viewers = db.StringListProperty()
 
   # List of domains that this map belongs to.
+  # TODO(kpy): Replace this with a single required StringProperty.
   # CAUTION: for not google domains this is potentially problematic,
   # since there may not be a google apps domain that corresponds to the
   # gaia ids (and hence no management).
@@ -271,24 +272,17 @@ class CatalogEntryModel(db.Model):
     return CatalogEntryModel.get_by_key_name(domain + ':' + label)
 
   @staticmethod
-  def All():
+  def GetAll(domain=None):
     """Yields all CatalogEntryModels in reverse update order."""
-    return CatalogEntryModel.all().order('-last_updated')
+    query = CatalogEntryModel.all().order('-last_updated')
+    if domain:
+      query = query.filter('domain =', domain)
+    return query
 
   @staticmethod
-  def AllListed():
-    """Yields all listed CatalogEntryModels in reverse update order."""
-    return CatalogEntryModel.All().filter('is_listed =', True)
-
-  @staticmethod
-  def AllInDomain(domain):
-    """Yields CatalogEntryModels in a domain in reverse update order."""
-    return CatalogEntryModel.All().filter('domain =', domain)
-
-  @staticmethod
-  def AllListedInDomain(domain):
-    """Yields listed CatalogEntryModels in a domain in reverse update order."""
-    return CatalogEntryModel.AllListed().filter('domain =', domain)
+  def GetListed(domain=None):
+    """Yields all the listed CatalogEntryModels in reverse update order."""
+    return CatalogEntryModel.GetAll(domain).filter('is_listed =', True)
 
   @staticmethod
   def Create(domain, label, map_object, is_listed=False):
@@ -329,47 +323,34 @@ class CatalogEntry(object):
     return model and CatalogEntry(model)
 
   @staticmethod
-  def GetAll():
-    """Gets all entries in all domains, in reverse update order."""
+  def GetAll(domain=None):
+    """Gets all entries, possibly filtered by domain."""
     # No access control; all catalog entries are publicly visible.
     # We use '*' in the cache key for the list that includes all domains.
-    return cache.Get([CatalogEntry, '*', 'all'],
-                     lambda: map(CatalogEntry, CatalogEntryModel.All()))
+    return cache.Get(
+        [CatalogEntry, domain or '*', 'all'],
+        lambda: map(CatalogEntry, CatalogEntryModel.GetAll(domain)))
 
   @staticmethod
-  def GetListed():
-    """Gets all the listed entries in all domains, in reverse update order."""
+  def GetListed(domain=None):
+    """Gets all entries marked listed, possibly filtered by domain."""
     # No access control; all catalog entries are publicly visible.
     # We use '*' in the cache key for the list that includes all domains.
-    return cache.Get([CatalogEntry, '*', 'listed'],
-                     lambda: map(CatalogEntry, CatalogEntryModel.AllListed()))
+    return cache.Get(
+        [CatalogEntry, domain or '*', 'listed'],
+        lambda: map(CatalogEntry, CatalogEntryModel.GetListed(domain)))
 
   @staticmethod
   def GetByMapId(map_id):
-    """Returns all entries that belong to a particular map."""
-    return map(CatalogEntry, CatalogEntryModel.All().filter('map_id =', map_id))
-
-  @staticmethod
-  def GetAllInDomain(domain):
-    """Gets all the entries in a domain, in reverse update order."""
-    # No access control; all catalog entries are publicly visible.
-    return cache.Get(
-        [CatalogEntry, domain, 'all'],
-        lambda: map(CatalogEntry, CatalogEntryModel.AllInDomain(domain)))
-
-  @staticmethod
-  def GetListedInDomain(domain):
-    """Gets all the listed entries in a domain, in reverse update order."""
-    # No access control; all catalog entries are publicly visible.
-    return cache.Get(
-        [CatalogEntry, domain, 'listed'],
-        lambda: map(CatalogEntry, CatalogEntryModel.AllListedInDomain(domain)))
+    """Returns all entries that point at a particular map."""
+    return [CatalogEntry(model)
+            for model in CatalogEntryModel.GetAll().filter('map_id =', map_id)]
 
   @staticmethod
   def Create(domain, label, map_object, is_listed=False):
     """Stores a new CatalogEntry with version set to the map's current version.
 
-    This method will overwrite an existing entry with the same name.
+    If a CatalogEntry already exists with the same label, it is overwritten.
 
     Args:
       domain: The domain in which to create the CatalogEntry.
@@ -464,7 +445,8 @@ class Map(object):
   has at least one version.
   """
 
-  # NOTE(kpy): Every public method should call self.AssertAccess(...) first!
+  # NOTE(kpy): Every public static method or public impure method should
+  # call self.AssertAccess(...) first!
 
   NAMESPACE = 'Map'  # cache namespace
 
@@ -499,27 +481,28 @@ class Map(object):
     return Map(MapModel.get(key))
 
   @staticmethod
-  def _GetAll():
-    """Yields all non-deleted maps in reverse update order.  NO ACCESS CHECK."""
-    for model in MapModel.all().order('-last_updated').filter(
-        'is_deleted = ', False):
+  def _GetAll(domain=None):
+    """NO ACCESS CHECK.  Yields all non-deleted maps; can filter by domain."""
+    query = MapModel.all().filter('is_deleted =', False)
+    if domain:
+      query = query.filter('domains =', domain)
+    for model in query.order('-last_updated'):
       yield Map(model)
 
   @staticmethod
-  def GetAll():
-    """Yields all maps in reverse update order."""
+  def GetAll(domain=None):
+    """Yields all non-deleted maps, possibly filtered by domain."""
     perms.AssertAccess(perms.Role.ADMIN)
-    return Map._GetAll()
+    return Map._GetAll(domain)
 
   @staticmethod
-  def GetViewable():
-    """Yields all maps visible to the user in the same order as GetAll."""
+  def GetViewable(user, domain=None):
+    """Yields all maps visible to the user, possibly filtered by domain."""
     # TODO(lschumacher): This probably won't scale to a large number of maps.
     # Also, we should only project the fields we want.
-    user = users.get_current_user()
     # Share the AccessPolicy object to avoid fetching access lists repeatedly.
     policy = perms.AccessPolicy()
-    for m in Map._GetAll():
+    for m in Map._GetAll(domain):
       if m.CheckAccess(perms.Role.MAP_VIEWER, user, policy=policy):
         yield m
 
@@ -595,10 +578,7 @@ class Map(object):
     return self.current_version and StructFromModel(self.current_version)
 
   def Delete(self):
-    """Deletes the map.
-
-    Sets a flag on the entity without actually removing it from the datastore.
-    """
+    """Marks a map as deleted (so it won't be returned by Get or GetAll)."""
     self.AssertAccess(perms.Role.MAP_OWNER)
     self.model.is_deleted = True
     self.model.put()

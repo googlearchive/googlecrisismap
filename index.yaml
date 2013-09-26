@@ -72,6 +72,13 @@ indexes:
 
 - kind: MapModel
   properties:
+  - name: domains
+  - name: is_deleted
+  - name: last_updated
+    direction: desc
+
+- kind: MapModel
+  properties:
   - name: is_deleted
   - name: created
     direction: desc
