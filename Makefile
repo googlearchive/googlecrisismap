@@ -53,6 +53,9 @@ SOURCE_DIR_OPTIONS=-p $(CLOSURE_DIR)/closure \
 
 # The final targets are initialize.js and any other *_module.js files.
 TARGET_OPTIONS := -i js/initialize.js \
+                  -i js/navigation_and_logo_plugin.js \
+                  -i js/navigation_view.js \
+                  -i js/logo_view.js \
                   $(shell for i in js/*_module.js; do echo '-i' $$i; done)
 
 
