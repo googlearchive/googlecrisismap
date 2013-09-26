@@ -101,6 +101,7 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
   tileDiv.tileData = {
     tileSrc: tileSrcUrl,
     tileCoords: tileCoords,
+    tilesetId: tileSrcUrl.replace(/^.*\/\.wms\//, '').split('/')[1],
     retries: 0,
     retryTimeout: null,
     startTime: new Date().getTime()
@@ -108,7 +109,7 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
 
 
   // TODO(arb): Create an "outstanding tiles" counter, and trigger the loading
-  // spinner.
+  // spinner (b/8755787)
 
   // Now set up the event handlers.
   cm.events.listen(tileImg, 'load', function(e) {
@@ -120,9 +121,9 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     if (!tileData) return;
     // Only log a succesful fetch if the loaded image is not a transparent tile.
     if (!TRANSPARENT_TILE_REGEXP.test(tileImg.src)) {
-      cm.Analytics.logTime('wms_tile_fetch', tileData.retries + '',
+      cm.Analytics.logTime('wms_tile_fetch', 'retry_' + tileData.retries,
                            new Date().getTime() - tileData.startTime,
-                           tileData.tileSrc + ':' + tileData.tileCoords);
+                           tileData.tilesetId);
     }
     // TODO(arb): decrement the outstanding tile counter.
     tileData.retryTimeout = null;
