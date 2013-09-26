@@ -68,6 +68,7 @@ cm.AboutPopup.populate_ = function(opt_aboutContainer) {
   var aboutBox = opt_aboutContainer || cm.ui.get('cm-aboutText');
   if (aboutBox) {
     var header = cm.ui.create('h2', {'id': 'cm-about-header'});
+    var content = cm.AboutPopup.MSG_ABOUT_HTML_;
     header.appendChild(
         goog.dom.htmlToDocumentFragment(cm.AboutPopup.MSG_ABOUT_HEADER_));
     aboutBox.appendChild(header);
@@ -75,8 +76,7 @@ cm.AboutPopup.populate_ = function(opt_aboutContainer) {
       'id': 'cm-about-text',
       'class': cm.css.ABOUT_TEXT
     });
-    text.appendChild(
-        goog.dom.htmlToDocumentFragment(cm.AboutPopup.MSG_ABOUT_HTML_));
+    text.appendChild(goog.dom.htmlToDocumentFragment(content));
     aboutBox.appendChild(text);
     aboutBox.style.display = 'block';
   }
@@ -90,18 +90,11 @@ cm.AboutPopup.populate_ = function(opt_aboutContainer) {
 cm.AboutPopup.MSG_ABOUT_HEADER_ = goog.getMsg('Google Crisis Map');
 
 /**
- * TODO(kpy): Make this easier to customize for non-Google deployments.
- * @desc Introductory paragraph in the about box.
+ * TODO(kpy): Make this easier to customize.
+ * @desc Text in a Help pop-up for people viewing the map.
  * @private
  */
 cm.AboutPopup.MSG_ABOUT_HTML_ = goog.getMsg(
-    '<p>This map displays information about current crises and events ' +
-    'for which the ' +
-    '<a href="http://www.google.org/crisisresponse" target="_blank">Google ' +
-    'Crisis Response team</a> has collected geographic information. ' +
-    'The data comes from a variety of sources, including official ' +
-    'information sources and user-generated content.  See the Layers list ' +
-    'for additional details about each layer.</p>' +
     'Tips for using this site:' +
     '<ul>' +
     '  <li>Zoom the map using either the on-screen controls or your mouse.' +
@@ -120,8 +113,4 @@ cm.AboutPopup.MSG_ABOUT_HTML_ = goog.getMsg(
     '  HTML code from the Share button.</li>' +
     '  <li>Share the link on Google+, Twitter or Facebook by clicking the ' +
     '  appropriate button in the Share window.</li>' +
-    '</ul>' +
-    '<p>If you wish to provide feedback or comments on the map, or if you ' +
-    'are aware of map layers or other datasets that you would like to ' +
-    'see included on our maps, please submit them for our evaluation ' +
-    'using <a href="http://goo.gl/MCJLS" target="_blank">this form</a>.</p>');
+    '</ul>');
