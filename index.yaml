@@ -123,6 +123,12 @@ indexes:
 
 - kind: MetadataFetchLog
   properties:
+  - name: fetch_status
+  - name: fetch_time
+    direction: desc
+
+- kind: MetadataFetchLog
+  properties:
   - name: address
   - name: fetch_time
     direction: desc
@@ -141,3 +147,25 @@ indexes:
   - name: fetch_length
   - name: fetch_time
     direction: desc
+
+- kind: MetadataFetchLog
+  properties:
+  - name: hostname
+  - name: fetch_time
+    direction: desc
+
+- kind: MetadataFetchLog
+  properties:
+  - name: hostname
+  - name: fetch_length
+  - name: fetch_time
+    direction: desc
+
+- kind: MetadataFetchLog
+  properties:
+  - name: hostname
+  - name: fetch_status
+  - name: fetch_length
+  - name: fetch_time
+    direction: desc
+

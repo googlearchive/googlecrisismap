@@ -162,6 +162,7 @@ class MetadataFetchLog(db.Model):
   """Just a log of fetches.  The metadata we actually use is in memcache."""
   log_time = db.DateTimeProperty()
   address = db.StringProperty()
+  hostname = db.StringProperty()
   fetch_time = db.DateTimeProperty()
   fetch_status = db.IntegerProperty()
   fetch_length = db.IntegerProperty()
@@ -177,9 +178,11 @@ class MetadataFetchLog(db.Model):
       utcdatetime = lambda t: t and datetime.datetime.utcfromtimestamp(t)
       MetadataFetchLog(log_time=datetime.datetime.utcnow(),
                        address=address,
+                       hostname=maproot.GetHostnameForSource(address),
                        fetch_time=utcdatetime(metadata['fetch_time']),
-                       fetch_status=metadata.get('fetch_status'),
-                       fetch_length=metadata.get('fetch_length'),
+                       fetch_status=metadata.get('fetch_status', -1),
+                       fetch_length=metadata.get('fetch_length', -1),
+                       length=metadata.get('length', -1),
                        update_time=utcdatetime(metadata.get('update_time')),
                        md5_hash=metadata.get('md5_hash'),
                        metadata_json=json.dumps(metadata)).put()
