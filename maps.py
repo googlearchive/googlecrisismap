@@ -249,6 +249,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
     result['map_root'] = json.loads(catalog_entry.maproot_json)
     result['map_id'] = catalog_entry.map_id
     result['label'] = catalog_entry.label
+    result['publisher_name'] = catalog_entry.publisher_name,
     key = catalog_entry.map_version_key
   elif map_object:  # draft map
     result['map_root'] = json.loads(map_object.GetCurrentJson())

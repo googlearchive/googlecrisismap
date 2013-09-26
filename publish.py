@@ -26,13 +26,14 @@ class Publish(base_handler.BaseHandler):
   def Post(self, domain, user):  # pylint: disable=unused-argument
     """Creates, updates, or removes a catalog entry."""
     label = self.request.get('label').strip()
+    publisher_name = self.request.get('publisher_name').strip()
     if self.request.get('remove'):
       model.CatalogEntry.Delete(domain, label)
       self.redirect('.maps')
     else:
       if not re.match(r'^[\w-]+$', label):  # Valid if alphanumeric, -, _
         raise base_handler.Error(
-            400, 'Valid labels may contain letters, digits, "-", and "_".')
+            400, 'Valid labels may only contain letters, digits, "-", and "_".')
       map_object = model.Map.Get(self.request.get('map'))
       if not map_object:
         raise base_handler.Error(400, 'No such map.')
@@ -41,5 +42,7 @@ class Publish(base_handler.BaseHandler):
       entry = (model.CatalogEntry.Get(domain, label) or
                model.CatalogEntry.Create(domain, label, map_object))
       entry.SetMapVersion(map_object)
+      if publisher_name:
+        entry.SetPublisherName(publisher_name)
       entry.Put()
       self.redirect('.maps')

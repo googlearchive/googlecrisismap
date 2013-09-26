@@ -42,9 +42,10 @@ var REPORT_ABUSE_BASE_URL =
  * @param {Element} popupContainer The DOM element on which to center the
  *     "Help" popup window.
  * @param {cm.MapModel} mapModel The map model.
+ * @param {?string} publisherName The display name of the map publisher.
  * @constructor
  */
-cm.FooterView = function(parentElem, popupContainer, mapModel) {
+cm.FooterView = function(parentElem, popupContainer, mapModel, publisherName) {
   /**
    * @type cm.MapModel
    * @private
@@ -57,6 +58,10 @@ cm.FooterView = function(parentElem, popupContainer, mapModel) {
    */
   this.footerSpan_ = cm.ui.create('span');
 
+  if (publisherName) {
+    cm.ui.append(parentElem, cm.ui.create('span', {},
+        'Published by ' + publisherName, cm.ui.SEPARATOR_DOT));
+  }
   cm.ui.append(parentElem, this.footerSpan_);
 
   if (window != window.top) {

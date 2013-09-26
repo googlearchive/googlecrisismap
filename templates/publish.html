@@ -1,0 +1,41 @@
+{% comment %}
+Copyright 2013 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+<script type="text/javascript" src="{{root}}/.static/popups.js"></script>
+<div class="cm-popup" id="publish-popup" style="display:none">
+  <h2>Publisher name</h2>
+  <form method="post" action="{{root}}/.publish">
+    <input name="domain" id="publish-popup-domain" type=hidden>
+    <input name="label" id="publish-popup-label" type=hidden>
+    <input name="map" id="publish-popup-map" type=hidden>
+    <div class="cm-section">
+      <div class="cm-p">
+        Please enter a name for the attribution that will appear on the published map.
+      </div>
+      <div>
+        Map published by
+      <input type="text" id="publisher-name" name="publisher_name" size=60
+             placeholder="Required: Name of the publishing organization or individual">
+      </div>
+      <div class="cm-p">
+        To change the publisher name, you must click on 'Unpublish' and then click on 'Publish' again.
+      </div>
+    </div>
+    <div class="cm-button-area">
+      <input type="submit" class="cm-submit cm-button" value="Publish"
+          id="publish-popup-submit">
+      <input type="button" class="cm-button" value="Cancel"
+          onclick="hide($('publish-popup'))">
+    </div>
+  </form>
+</div>

@@ -166,6 +166,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
 
   // Create the elements for the map title and description.
   var setDefaultViewLink, resetLink;
+  var publisherName = this.config_['publisher_name'];
   cm.ui.append(parentElem,
       this.panelInner_ = cm.ui.create('div', {'class': cm.css.PANEL_INNER},
           this.panelOuterHeader_ = cm.ui.create(
@@ -178,7 +179,9 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
                                'title': MSG_DRAFT_TOOLTIP},
                       MSG_DRAFT_LABEL) : null,
                   this.titleElem_ = cm.ui.create('h1',
-                      {'class': cm.css.MAP_TITLE})),
+                      {'class': cm.css.MAP_TITLE}),
+                  publisherName ? cm.ui.create('div', {},
+                      'Published by ' + publisherName) : null),
               this.descElem_ = cm.ui.create(
                   'div', {'class': cm.css.MAP_DESCRIPTION})),
           this.panelLinks_ = cm.ui.create('div', {'class': cm.css.PANEL_LINKS},

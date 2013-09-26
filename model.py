@@ -158,6 +158,10 @@ class CatalogEntryModel(db.Model):
   # The displayed title (in the crisis picker).  Set from the map_object.
   title = db.StringProperty()
 
+  # The publisher name to display in the footer and below the map
+  # title, in view-mode only.
+  publisher_name = db.StringProperty()
+
   # The key_name of the map_version's parent MapModel (this is redundant with
   # map_version, but broken out as a property so queries can filter on it).
   map_id = db.StringProperty()
@@ -341,8 +345,8 @@ class CatalogEntry(object):
   maproot_json = property(GetMaprootJson)
 
   # Make the other properties of the CatalogEntryModel visible on CatalogEntry.
-  for x in ['domain', 'label', 'map_id', 'title', 'creator', 'created',
-            'last_updated', 'last_updater']:
+  for x in ['domain', 'label', 'map_id', 'title', 'publisher_name',
+            'creator', 'created', 'last_updated', 'last_updater']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
 
   def SetMapVersion(self, map_object):
@@ -350,6 +354,10 @@ class CatalogEntry(object):
     self.model.map_id = map_object.id
     self.model.map_version = map_object.GetCurrent().key
     self.model.title = map_object.title
+
+  def SetPublisherName(self, publisher_name):
+    """Sets the publisher name to be displayed in the map viewer."""
+    self.model.publisher_name = publisher_name
 
   def Put(self):
     """Saves any modifications to the datastore."""

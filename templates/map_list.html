@@ -14,6 +14,7 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 
 {% block content %}
+{% include "publish.html" %}
   <table class="cm-map-list">
     <tr>
       <th colspan=5 class="cm-map-list-header">{{title}}</th>
@@ -71,15 +72,16 @@ specific language governing permissions and limitations under the License.
             </div>
           {% endfor %}
           {% if catalog_domains %}
-            <form action=".publish" method="post">
-              <select name="domain">
+            <form>
+              <select id="domain-{{m.id}}" name="domain">
                 {% for domain in catalog_domains %}
                   <option value="{{domain}}">{{domain}}</option>
                 {% endfor %}
               </select>
-              <input name="label" size=20>
-              <input name="map" type=hidden value="{{m.id}}">
-              <input type=submit value="Publish">
+              <input id="label-{{m.id}}" name="label" size=20>
+              <input id="map-{{m.id}}" name="map" type=hidden value="{{m.id}}">
+              <input type="button" onclick="showPublishPopup('{{m.id}}')"
+                     title="Publish map" value="Publish">
             </form>
           {% endif %}
       </tr>

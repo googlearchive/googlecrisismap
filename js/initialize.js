@@ -267,7 +267,8 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     panelView.enableMapPicker(new cm.MapPicker(panelView.getHeader(),
                                                opt_menuItems));
   }
-  var footerView = new cm.FooterView(footerElem, mapWrapperElem, mapModel);
+  var footerView = new cm.FooterView(footerElem, mapWrapperElem, mapModel,
+                                     config['publisher_name']);
   goog.style.setElementShown(footerElem, !config['hide_footer'] && !preview);
 
   new cm.BuildInfoView(mapElem);

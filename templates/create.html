@@ -14,7 +14,7 @@ specific language governing permissions and limitations under the License.
 <script src="{{root}}/.static/popups.js"></script>
 <div class="cm-popup" id="create-popup" style="display:none">
   <h2>Acceptable use</h2>
-  <form method="post" action=".create" id="create-popup-form">
+  <form method="post" action="{{root}}/.create" id="create-popup-form">
     <input type="hidden" name="domain" id="create-popup-domain">
     <div class="cm-section">
       <div class="cm-p">
@@ -69,7 +69,7 @@ specific language governing permissions and limitations under the License.
       </div>
     {% endif %}
     <div class="cm-button-area">
-      <input type="submit" class="cm-submit cm-button" value="Create Map"
+      <input type="submit" class="cm-submit cm-button" value="Create map"
           id="create-popup-submit" onclick="submitCreatePopup()">
       <a href="{{login_url}}">
         <input type="button" class="cm-button" value="Cancel"
