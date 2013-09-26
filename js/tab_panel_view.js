@@ -25,6 +25,7 @@ goog.require('cm.events');
  *     view.
  * @param {cm.MetadataModel} metadataModel The metadata model.
  * @param {cm.AppState} appState The application state model.
+ * @param {boolean} below Whether to position the tab panel below the map.
  * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     draft_mode: Indicate that the map is an unpublished draft?
  *     hide_panel_header: Hide the map title and description?
@@ -38,7 +39,7 @@ goog.require('cm.events');
  * @constructor
  */
 cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
-                           metadataModel, appState, opt_config) {
+                           metadataModel, appState, below, opt_config) {
   /** The map model
    * @type cm.MapModel
    * @private
@@ -75,9 +76,109 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
    */
   this.tabView_ = new cm.TabView();
 
+  /**
+   * Where the tab is positioned relative to the map. Placement below
+   * the map overrides left or right side placement.
+   * @type cm.TabPanelView.TabPosition
+   * @private
+   */
+  this.tabPosition_ = below ? cm.TabPanelView.TabPosition.BELOW :
+      (this.config_['panel_side'] === 'left') ?
+          cm.TabPanelView.TabPosition.LEFT : cm.TabPanelView.TabPosition.RIGHT;
+
+  /**
+   * Whether the panel is currently expanded.
+   * @type boolean
+   * @private
+   */
+  this.expanded_;
+
+  /**
+   * The upward or downward pointing chevron button for expanding or
+   * collapsing the tab panel.
+   * @type Element
+   * @private
+   */
+  this.expandCollapseButton_;
+
+  goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_BELOW, below);
+
   this.createTabs_();
-  this.tabView_.render(this.parentElem_);
+  this.createButtons_();
+  this.render_();
 };
+
+/**
+ * Positions that the tab can take on relative to the map.
+ * @enum {string}
+ */
+cm.TabPanelView.TabPosition = {
+  RIGHT: 'RIGHT',
+  LEFT: 'LEFT',
+  BELOW: 'BELOW'
+};
+
+/**
+ * Render the tab panel into the parent element.
+ * @private
+ */
+cm.TabPanelView.prototype.render_ = function() {
+  this.tabView_.render(this.parentElem_);
+
+  // For now, the tab is expanded on load only when the panel is on
+  // the right or left. This will change for mobile, when the  panel
+  // should be expanded by default but still be positioned below the map.
+  this.setExpanded_(this.tabPosition_ !== cm.TabPanelView.TabPosition.BELOW);
+
+  cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED, function() {
+    this.setExpanded_(true);
+  }, this);
+
+  cm.events.listen(goog.global, 'resize', this.handleResize_, this);
+};
+
+/**
+ * Handler for window resizing.
+ * @private
+ */
+cm.TabPanelView.prototype.handleResize_ = function() {
+  // Relies on the panel element's height being set by the resizeTabPanel()
+  // function in initialize.js.
+  this.tabView_.setHeight(this.parentElem_.offsetHeight);
+};
+
+/**
+ * Expand or collapse the tab panel.
+ * @param {boolean} expand If true, expand the panel; otherwise
+ *   collapse it.
+ * @private
+ */
+cm.TabPanelView.prototype.setExpanded_ = function(expand) {
+  if (expand === this.expanded_) {
+    return;
+  }
+  this.tabView_.setExpanded(expand);
+  goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_EXPANDED, expand);
+
+  var from, to;
+  if (this.tabPosition_ === cm.TabPanelView.TabPosition.BELOW) {
+    from = expand ? cm.css.CHEVRON_UP : cm.css.CHEVRON_DOWN;
+    to = expand ? cm.css.CHEVRON_DOWN : cm.css.CHEVRON_UP;
+  } else {
+    from = expand ? cm.css.CHEVRON_DOWN : cm.css.CHEVRON_UP;
+    to = expand ? cm.css.CHEVRON_UP : cm.css.CHEVRON_DOWN;
+  }
+  goog.dom.classes.swap(this.expandCollapseButton_, from, to);
+  this.expanded_ = expand;
+
+  // Trigger adjustments to the tab panel height in initialize.js
+  cm.events.emit(goog.global, 'resize');
+
+  // Resize the content in case the window changed size while the
+  // panel was collapsed.
+  this.handleResize_();
+};
+
 
 /**
  * Sets the maximum height of the panel; currently a no-op.  Carried forward
@@ -124,4 +225,17 @@ cm.TabPanelView.prototype.createTabs_ = function() {
                     cm.events.ZOOM_TO_LAYER],
                    this);
   this.tabView_.appendTabItem(layersTab);
+};
+
+/**
+ * Create tab bar buttons and attach listeners.
+ * @private
+ */
+cm.TabPanelView.prototype.createButtons_ = function() {
+  this.expandCollapseButton_ = cm.ui.create('div',
+                                            {'class': cm.css.CHEVRON_DOWN});
+  cm.events.listen(this.expandCollapseButton_, 'click', function() {
+    this.setExpanded_(!this.expanded_);
+  }, this);
+  this.tabView_.addButton(this.expandCollapseButton_);
 };

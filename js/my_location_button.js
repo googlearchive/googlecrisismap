@@ -25,11 +25,9 @@ goog.require('goog.dom.classes');
  * A button that when clicked zooms and pans the map to the user's location,
  * via the html5 geolocation API.
  * @param {!google.maps.Map} map The map on which to place the
- * @param {boolean} use_tab_panel Whether or not panel is in tab mode.
- * MyLocation button.
  * @constructor
  */
-cm.MyLocationButton = function(map, use_tab_panel) {
+cm.MyLocationButton = function(map) {
   // A negative index places the control between the edge of the map and the
   // default controls. See
   // developers.google.com/maps/documentation/javascript/controls#CustomPositioning
@@ -37,8 +35,6 @@ cm.MyLocationButton = function(map, use_tab_panel) {
                             {'class': [cm.css.MAPBUTTON,
                                        cm.css.MY_LOCATION_BUTTON],
                              'index': -1});
-  goog.dom.classes.enable(button, cm.css.TAB_MY_LOCATION_BUTTON, use_tab_panel);
-
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(button);
 
   cm.events.listen(button, 'click', function() {
