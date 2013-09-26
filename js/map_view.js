@@ -343,7 +343,7 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
       // style definition is invalid, we show a normal, unstyled road map.
       styledMap = new google.maps.StyledMapType([], {'name': name});
     }
-    this.map_.mapTypes.set(id, /** @type google.maps.MapType */(styledMap));
+    this.setMapType_(id, styledMap);
     mapTypeIds.push(id);
   }
   if (this.osmEnabled_ || modelMapType === cm.MapModel.Type.OSM ||
@@ -360,7 +360,7 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
       'name': 'OpenStreetMap',
       'maxZoom': 18
     });
-    this.map_.mapTypes.set(id, /** @type google.maps.MapType */(imageMapType));
+    this.setMapType_(id, imageMapType);
     mapTypeIds.push(id);
   }
   this.map_.setOptions({
@@ -370,7 +370,6 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
     }
   });
 };
-
 /**
  * Forces the map type menu to be wide enough to contain the "OpenStreetMap"
  * label, when OSM is an available option in the menu.
@@ -593,7 +592,7 @@ cm.MapView.prototype.maybeAddCacheBuster_ = function(url) {
   }
   uri.removeParameter(ttlParam);
 
-  ttlSeconds = Math.max(/** @type number */(ttlSeconds) - 0, 1);
+  ttlSeconds = Math.max(parseInt(ttlSeconds, 10), 1);
   var cacheBuster = Math.floor(new Date().getTime() / (ttlSeconds * 1000));
   uri.setParameterValue('cm.cache_time', cacheBuster);
   return uri.toString();
@@ -721,6 +720,22 @@ cm.MapView.prototype.zoomToLayer = function(id) {
     }
   }
 };
+
+
+/**
+ * Add an ImageMapType or StyledMapType to the map's MapTypeRegistry.
+ *
+ * @param {string} id The string identifier of the MapType to add to the
+ *     MapTypeRegistry.
+ * @param {google.maps.StyledMapType|google.maps.ImageMapType} mapType The
+ *     StyledMapType or ImageMapType that we want to add to the MapTypeRegistry.
+ * @private
+ * @suppress {invalidCasts}
+ */
+cm.MapView.prototype.setMapType_ = function(id, mapType) {
+  this.map_.mapTypes.set(id, /** @type google.maps.MapType */(mapType));
+};
+
 
 /** @desc Copyright notice for OpenStreetMap base map data. */
 cm.MapView.MSG_OSM_COPYRIGHT_HTML = goog.getMsg(

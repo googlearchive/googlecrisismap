@@ -40,15 +40,15 @@ cm.MenuEditor = function(parentElem, id, options) {
 
   /**
    * @type Element
-   * @private
+   * @protected
    */
   this.select_;
 
   /**
    * @type Array.<*>
-   * @private
+   * @protected
    */
-  this.values_ = [];
+  this.values = [];
 
   /**
    * @type boolean
@@ -58,9 +58,9 @@ cm.MenuEditor = function(parentElem, id, options) {
 
   /**
    * @type string
-   * @private
+   * @protected
    */
-  this.elementId_ = cm.ui.generateId('select');
+  this.elementId = cm.ui.generateId('select');
 
   cm.ui.append(parentElem, this.select_ = cm.ui.create(
       'select', {'id': id, 'class': options && options.menu_class || null}));
@@ -70,8 +70,8 @@ cm.MenuEditor = function(parentElem, id, options) {
   for (var i = 0; i < options.choices.length; i++) {
     var choice = options.choices[i];
     cm.ui.append(this.select_, cm.ui.create(
-        'option', {'name': this.elementId_}, choice.label));
-    this.values_.push(choice.value);
+        'option', {'name': this.elementId}, choice.label));
+    this.values.push(choice.value);
   }
   cm.events.listen(this.select_, 'change', this.updateValue_, this);
 
@@ -89,9 +89,9 @@ cm.MenuEditor.prototype.updateValue_ = function() {
     return this.select_.options[index].selected;
   }, this);
   if (this.isMultiSelect_) {
-    this.setValid_(goog.array.filter(this.values_, isSelected));
+    this.setValid(goog.array.filter(this.values, isSelected));
   } else {
-    this.setValid_(goog.array.find(this.values_, isSelected));
+    this.setValid(goog.array.find(this.values, isSelected));
   }
 };
 
@@ -110,9 +110,9 @@ cm.MenuEditor.prototype.updateUi = function(value) {
     if (this.isMultiSelect_) {
       value = [];
     } else {
-      value = this.values_.length > 0 ? this.values_[0] : null;
+      value = this.values.length > 0 ? this.values[0] : null;
     }
-    this.setValid_(value);
+    this.setValid(value);
   }
 
   // Update the selected options. Note that this may not properly
@@ -121,7 +121,7 @@ cm.MenuEditor.prototype.updateUi = function(value) {
   // closure set contains() method will not perform deep comparison.
   var valueSet = new goog.structs.Set(this.isMultiSelect_ ?
       /** @type Array.<*> */(value) : [value]);
-  goog.array.forEach(this.values_, function(v, index) {
+  goog.array.forEach(this.values, function(v, index) {
     this.select_.options[index].selected = valueSet.contains(v);
   }, this);
 };

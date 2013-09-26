@@ -131,18 +131,18 @@ cm.LatLonBoxEditor = function(parentElem, id, options) {
 
     if (!(this.north_.value + this.south_.value +
           this.west_.value + this.east_.value).match(/\S/)) {
-      this.setValid_(null);  // empty input is valid and yields a value of null
+      this.setValid(null);  // empty input is valid and yields a value of null
     } else {
       var north = parseValue(this.north_, 'N', -90, 90);
       var west = parseValue(this.west_, 'W', -180, 180);
       var east = parseValue(this.east_, 'E', -180, 180);
       var south = parseValue(this.south_, 'S', -90, 90);
       if (error) {
-        this.setInvalid_(error);
+        this.setInvalid(error);
       } else if (north <= south) {
-        this.setInvalid_('N should be greater than S');
+        this.setInvalid('N should be greater than S');
       } else {
-        this.setValid_(new cm.LatLonBox(north, south, east, west));
+        this.setValid(new cm.LatLonBox(north, south, east, west));
       }
     }
     this.updateSizeLabels_();
@@ -161,7 +161,7 @@ goog.inherits(cm.LatLonBoxEditor, cm.Editor);
 cm.LatLonBoxEditor.prototype.viewportChanged_ = function() {
   if (this.copyViewportCheckbox_.checked) {
     var viewport = /** @type cm.LatLonBox */(this.appState_.get('viewport'));
-    this.setValid_(viewport);
+    this.setValid(viewport);
     this.updateUi(viewport);
   }
 };

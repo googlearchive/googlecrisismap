@@ -51,18 +51,18 @@ cm.NumberEditor = function(parentElem, id, options) {
     if (text.match(/\S/)) {
       var number = text - 0;
       if (isNaN(number) || !isFinite(number)) {
-        this.setInvalid_('should be a number');
+        this.setInvalid('should be a number');
       } else if (options.require_integer && number % 1) {
-        this.setInvalid_('should be a whole number');
+        this.setInvalid('should be a whole number');
       } else if (options.minimum != null && number < options.minimum) {
-        this.setInvalid_('should not be less than ' + options.minimum);
+        this.setInvalid('should not be less than ' + options.minimum);
       } else if (options.maximum != null && number > options.maximum) {
-        this.setInvalid_('should not be greater than ' + options.maximum);
+        this.setInvalid('should not be greater than ' + options.maximum);
       } else {
-        this.setValid_(number);
+        this.setValid(number);
       }
     } else {
-      this.setValid_(null);  // empty input is valid and yields a value of null
+      this.setValid(null);  // empty input is valid and yields a value of null
     }
   }, this);
 };

@@ -91,7 +91,7 @@ goog.inherits(cm.HtmlEditor, cm.Editor);
  */
 cm.HtmlEditor.prototype.handleChange = function() {
   var value = new cm.Html(this.textarea.value);
-  this.setValid_(value);
+  this.setValid(value);
   value.pasteInto(this.preview);
 };
 

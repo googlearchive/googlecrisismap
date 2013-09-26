@@ -610,7 +610,7 @@ cm.LegendEditor.prototype.handleTextChange_ = function(legendItem, inputElem,
 
   legendItem.editor.textElem.innerHTML = editorHtml;
   legendItem.preview.textElem.innerHTML = trimmedHtml;
-  this.setValid_(cm.Html.fromElement(this.preview));
+  this.setValid(cm.Html.fromElement(this.preview));
 
   inputElem.style.height =
       legendItem.editor.textElem.offsetHeight + 'px';
@@ -625,7 +625,7 @@ cm.LegendEditor.prototype.handleTextChange_ = function(legendItem, inputElem,
 cm.LegendEditor.prototype.handleDeleteItem_ = function(legendItem) {
   cm.ui.remove(legendItem.editor.elem);
   cm.ui.remove(legendItem.preview.elem);
-  this.setValid_(cm.Html.fromElement(this.preview));
+  this.setValid(cm.Html.fromElement(this.preview));
 };
 
 /**
@@ -836,7 +836,7 @@ cm.LegendEditor.prototype.setLegendItemGraphic_ = function(legendItem,
   cm.ui.clear(parent);
   cm.ui.append(parent,
       legendItem.preview.graphicElem = graphicElem.cloneNode(true));
-  this.setValid_(cm.Html.fromElement(this.preview));
+  this.setValid(cm.Html.fromElement(this.preview));
 };
 
 /** @override */

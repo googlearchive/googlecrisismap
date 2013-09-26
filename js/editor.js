@@ -20,8 +20,8 @@ goog.provide('cm.Editor');
  * piece of UI for editing a value and exposes the value in a 'value' property.
  * The usual pattern for implementing an editor is: (a) have the constructor
  * build the UI in the state corresponding to a value of null; (b) adorn the UI
- * elements with listeners that interpret the user input and call setValid_()
- * or setInvalid_() to update the internal state of the editor; (c) implement
+ * elements with listeners that interpret the user input and call setValid()
+ * or setInvalid() to update the internal state of the editor; (c) implement
  * updateUi() to update the UI according to the 'value' property.
  * @constructor
  * @extends google.maps.MVCObject
@@ -57,9 +57,9 @@ goog.inherits(cm.Editor, google.maps.MVCObject);
  * triggering updateUi.  (The assumption is that this is being called due to
  * user input, and we don't want to mess up the UI while the user is using it.)
  * @param {*} value The new value.
- * @private
+ * @protected
  */
-cm.Editor.prototype.setValid_ = function(value) {
+cm.Editor.prototype.setValid = function(value) {
   this.suppressUiUpdates_ = true;
   this.set('validation_error', null);
   this.set('value', value);
@@ -71,9 +71,9 @@ cm.Editor.prototype.setValid_ = function(value) {
  * triggering updateUi.  (When the input is invalid, we want to null out the
  * 'value' property, but not to clear the UI while the user is typing into it.)
  * @param {string} message The validation error message.
- * @private
+ * @protected
  */
-cm.Editor.prototype.setInvalid_ = function(message) {
+cm.Editor.prototype.setInvalid = function(message) {
   this.suppressUiUpdates_ = true;
   this.set('validation_error', message || 'input is invalid');
   this.set('value', null);

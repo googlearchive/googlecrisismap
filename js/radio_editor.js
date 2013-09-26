@@ -76,11 +76,11 @@ goog.inherits(cm.RadioEditor, cm.Editor);
 cm.RadioEditor.prototype.updateValue_ = function() {
   for (var i = 0; i < this.buttons_.length; i++) {
     if (this.buttons_[i].checked) {
-      this.setValid_(this.values_[i]);
+      this.setValid(this.values_[i]);
       return;
     }
   }
-  this.setValid_(null);
+  this.setValid(null);
 };
 
 /** @override */

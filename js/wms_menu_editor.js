@@ -40,7 +40,9 @@ var QUERY_DELAY_MS = 500; // 0.5s
  * When no layer choices exist, 'value' defaults to an empty array.
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
- * @param {{div_class: string, menu_class: string}} options
+ * @param {{choices: Array.<cm.InputChoice>, div_class: string,
+ *          menu_class: string, wms_query_url: string}} options
+ *     options.choices: an array of the choices to offer, in display order.
  *     options.div_class: a CSS class for the div containing all the buttons.
  *     options.menu_class: a CSS class for the dropdown menu.
  *     options.wms_query_url: URL to the WMS layer query service.
@@ -185,12 +187,12 @@ cm.WmsMenuEditor.prototype.updateSelect_ = function(layers) {
     }
   });
   cm.ui.clear(this.select_);
-  goog.array.clear(this.values_);
+  goog.array.clear(this.values);
   for (var i = 0; i < choices.length; i++) {
     var choice = choices[i];
     cm.ui.append(this.select_, cm.ui.create(
-        'option', {'name': this.elementId_}, choice.label));
-    this.values_.push(choice.value);
+        'option', {'name': this.elementId}, choice.label));
+    this.values.push(choice.value);
   }
   // Update UI to correct any invalid selections.
   this.updateUi(this.get('value'));

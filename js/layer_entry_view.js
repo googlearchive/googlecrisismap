@@ -648,6 +648,11 @@ cm.LayerEntryView.prototype.updateFolderDecorator_ = function() {
  * Updates the state of the checkbox and layer details to match the
  * AppState's layer enabled state.
  * @private
+ *
+ * Use of goog.ui.Slider.handleRangeModelChange in this method violates
+ * its @protected declaration, so the following warning type is suppressed
+ * because it's being used on purpose.
+ * @suppress {visibility}
  */
 cm.LayerEntryView.prototype.updateEnabled_ = function() {
   var id = /** @type string */(this.model_.get('id'));
