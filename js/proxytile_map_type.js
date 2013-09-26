@@ -122,8 +122,7 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     if (!TRANSPARENT_TILE_REGEXP.test(tileImg.src)) {
       cm.Analytics.logTime('wms_tile_fetch', tileData.retries,
                            new Date().getTime() - tileData.startTime,
-                           tileData.tileSrcUrl + ':' +
-                           tileData.tileCoords.replace(/\,/, '/', 'g'));
+                           tileData.tileSrc + ':' + tileData.tileCoords);
     }
     // TODO(arb): decrement the outstanding tile counter.
     tileData.retryTimeout = null;
