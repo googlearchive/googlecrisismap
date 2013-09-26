@@ -16,7 +16,7 @@
 goog.require('goog.module');
 
 // This module exports the 'html' symbol from html-sanitizer.js, provided by
-// //third_party/java/caja:html_sanitizer.  There is no goog.require(...)
+// //third_party/java/caja:html_css_sanitizer.  There is no goog.require(...)
 // here because html-sanitizer.js doesn't have a goog.provide declaration.
 
 // One provide() line for each object to export.

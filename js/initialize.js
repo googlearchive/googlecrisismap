@@ -188,15 +188,9 @@ function installHtmlSanitizer(html) {
     if (!decision) {
       return null;
     }
-    // The HTML sanitizer normally deletes 'style' attributes.  We add back the
-    // original 'style' attribute if there is one, since we want to keep it.
-    attribs = decision['attribs'] || [];
-    if (attrDict['style']) {
-      attribs.push('style');
-      attribs.push(attrDict['style']);  // TODO(kpy): Sanitize the CSS too.
-    }
     // The HTML sanitizer normally deletes 'target' attributes.  We want to
     // allow the particular value target="_blank", though, so we add it back.
+    attribs = decision['attribs'] || [];
     if (attrDict['target'] === '_blank') {
       attribs.push('target');
       attribs.push('_blank');
