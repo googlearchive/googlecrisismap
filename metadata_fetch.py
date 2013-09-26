@@ -186,6 +186,20 @@ class MetadataFetchLog(db.Model):
       logging.exception(e)
 
 
+def HasXmlResponse(layer_type):
+  """Returns true if the expected metadata response for this layer type is XML.
+
+  Args:
+    layer_type: A maproot.LayerType value.
+
+  Returns:
+    True if the metadata response should have XML structure.
+  """
+  return layer_type in [maproot.LayerType.KML,
+                        maproot.LayerType.GEORSS,
+                        maproot.LayerType.WMS]
+
+
 def GetKml(content):
   """Gets the KML content from a string, unzipping a KMZ archive if necessary.
 
@@ -215,7 +229,8 @@ def ParseXml(content):
     return xml.etree.ElementTree.XML(content)
   except xml.etree.ElementTree.ParseError:
     # When an XML string says it's UTF-8 but actually isn't, try assuming that
-    # it's Latin-1.  (This matches the behaviour of google.maps.KmlLayer.)
+    # it's Latin-1.  This matches the behaviour of google.maps.KmlLayer, so that
+    # the metadata is consistent with what is displayed on the map.
     try:
       return xml.etree.ElementTree.XML(
           '<?xml version="1.0" encoding="latin-1"?>' +
@@ -227,6 +242,50 @@ def ParseXml(content):
 def GetAllXmlTags(root_element):
   """Gets a list of all tags (without XML namespaces) in an XML tree."""
   return [element.tag.split('}')[-1] for element in root_element.getiterator()]
+
+
+def GetWmsLayerMetadata(root_element):
+  """Extracts the "Layer" attributes from a WMS GetCapabilities XML response.
+
+  Args:
+    root_element: An XML Element object containing the parsed WMS
+    GetCapabilities response.
+
+  Returns:
+    A dictionary of layer bounding boxes keyed by layer names. Each
+    bounding box is itself a dictionary of bounding box coordinates
+    with the keys 'minx', 'miny', 'maxx' and 'maxy'. The coordinates
+    are floating point latitude and longitude degrees, named to match
+    the WMS GetCapabilities response specification: minx = west-bound
+    longitude, miny = south-bound latitude, maxx = east-bound
+    longitude, and maxy = north-bound longitude.
+  """
+  layer_metadata = {}
+  capability = root_element.find('Capability')
+  if capability is None:
+    return {}
+  # Iterate in document order over all <Layer> elements under the
+  # <Capability> element and extract the bounding boxes.
+  for layer in capability.iter('Layer'):
+    bbox = layer.find('LatLonBoundingBox')
+    if bbox is None:
+      continue
+    name = layer.find('Name')
+    if name is not None:
+      values = dict((key, bbox.attrib.get(key))
+                    for key in ['minx', 'miny', 'maxx', 'maxy'])
+      try:
+        layer_metadata[name.text] = dict(
+            (key, float(value)) for key, value in values.iteritems())
+      except (TypeError, ValueError):
+        logging.warn('Skipping layer with invalid bounding box values.')
+      else:
+        # Modify the XML so that any child <Layer> element without
+        # a <LatLonBoundingBox> inherits that of it's parent.
+        for child in layer.findall('Layer'):
+          if child.find('LatLonBoundingBox') is None:
+            child.append(bbox)
+  return layer_metadata
 
 
 def HasUnsupportedKml(root_element):
@@ -276,7 +335,7 @@ def GatherMetadata(layer_type, response):
   if 'Etag' in response.headers:
     metadata['fetch_etag'] = response.headers['Etag']
 
-  if layer_type in [maproot.LayerType.KML, maproot.LayerType.GEORSS]:
+  if HasXmlResponse(layer_type):
     try:
       root_element = ParseXml(content)
     except ValueError:
@@ -300,6 +359,9 @@ def GatherMetadata(layer_type, response):
       if 'item' not in tags:
         metadata['has_no_features'] = True
 
+    if layer_type == maproot.LayerType.WMS:
+      metadata['wms_layers'] = GetWmsLayerMetadata(root_element)
+
   return metadata
 
 
@@ -316,14 +378,19 @@ def FetchAndUpdateMetadata(metadata, address):
   if ':' not in address:
     return {'fetch_impossible': True}
   layer_type, url = address.split(':', 1)
-  logging.info('Fetching metadata for source: %s', address)
   headers = {}
   if metadata and 'fetch_etag' in metadata:
     headers['If-none-match'] = metadata['fetch_etag']
   elif metadata and 'fetch_last_modified' in metadata:
     headers['If-modified-since'] = metadata['fetch_last_modified']
   try:
-    response = urlfetch.fetch(url, headers=headers, deadline=MAX_FETCH_SECONDS)
+    if layer_type == maproot.LayerType.WMS:
+      response = urlfetch.fetch(
+          '%s?service=WMS&version=1.1.1&request=GetCapabilities' % url,
+          headers=headers, deadline=MAX_FETCH_SECONDS)
+    else:
+      response = urlfetch.fetch(url, headers=headers,
+                                deadline=MAX_FETCH_SECONDS)
   except urlfetch.Error, e:
     logging.warn('%r from urlfetch for source: %s', e, address)
     if isinstance(e, urlfetch.InvalidURLError):
@@ -358,7 +425,7 @@ def UpdateMetadata(address):
   metadata = FetchAndUpdateMetadata(metadata, address)
   metadata['fetch_time'] = fetch_time
   cache.Set(['metadata', address], metadata, METADATA_TTL_SECONDS)
-  logging.info('Updated metadata: %r', metadata)
+  logging.info('Updated metadata for source: %s %r', address, metadata)
   MetadataFetchLog.Log(address, metadata)
 
 
@@ -368,7 +435,7 @@ def ScheduleFetch(address, countdown=None):
   if not metadata.get('fetch_impossible'):
     if countdown is None:
       countdown = DetermineFetchDelay(metadata)
-    logging.info('Scheduling fetch in %d s: %s', countdown, address)
+    logging.info('Scheduling fetch in %ds for source: %s', countdown, address)
     taskqueue.add(
         queue_name='metadata', countdown=countdown, method='GET',
         url=(config.Get('root_path') or '') + '/.metadata_fetch',

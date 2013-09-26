@@ -64,6 +64,89 @@ ETAG_2 = 'fghij'
 RESPONSE_HEADERS_2 = {'Last-modified': LAST_MODIFIED_STRING_2, 'Etag': ETAG_2}
 SIMPLE_KML_2 = '<kml><Document><Placemark>def</Placemark></Document></kml>'
 
+# XML for a valid WMS GetCapabilities response. One layer inherits the
+# bounding box from its parent.
+VALID_WMS_RESPONSE = """<?xml version="1.0" encoding="UTF-8" ?>
+  <WMT_MS_Capabilities version="1.1.1">
+    <Service><Name>OGC:WMS</Name>
+    </Service>
+    <Capability>
+      <Layer>
+        <Name>Valid</Name>
+        <LatLonBoundingBox minx="-50.2" miny="10.9" maxx="50.8" maxy="35.5">
+        </LatLonBoundingBox>
+        <Layer><Name>Zipcodes</Name>
+          <LatLonBoundingBox minx="-124" miny="32.5" maxx="-114" maxy="42.9">
+          </LatLonBoundingBox>
+        </Layer>
+        <Layer><Name>Ireland</Name>
+          <LatLonBoundingBox minx="-11.1" miny="50.9" maxx="-4.2" maxy="55.8">
+          </LatLonBoundingBox>
+            <Layer><Name>NoBbox</Name></Layer>
+        </Layer>
+      </Layer>
+    </Capability>
+  </WMT_MS_Capabilities>"""
+
+METADATA_VALID_WMS_RESPONSE = {
+    'Valid': {'minx': -50.2, 'miny': 10.9, 'maxx': 50.8, 'maxy': 35.5},
+    'Zipcodes': {'minx': -124, 'miny': 32.5, 'maxx': -114, 'maxy': 42.9},
+    'Ireland': {'minx': -11.1, 'miny': 50.9, 'maxx': -4.2, 'maxy': 55.8},
+    'NoBbox': {'minx': -11.1, 'miny': 50.9, 'maxx': -4.2, 'maxy': 55.8}}
+
+# XML for a WMS GetCapabilities response with invalid layers.
+INVALID_LAYERS_WMS_RESPONSE = """<?xml version="1.0"?>
+  <WMT_MS_Capabilities version="1.1.1">
+    <Service><Name>OGC:WMS</Name>
+    </Service>
+    <Capability>
+      <Layer>
+        <Name>valid</Name>
+        <LatLonBoundingBox minx="-170" miny="-70" maxx="170" maxy="70"/>
+        <Layer>
+          <Title>no_name</Title>
+          <LatLonBoundingBox minx="0" miny="0" maxx="1" maxy="1"/>
+        </Layer>
+        <Layer>
+          <Name>missing_attributes</Name>
+          <LatLonBoundingBox minx="0" miny="0"/>
+          <Layer><Name>child_of_invalid</Name></Layer>
+        </Layer>
+        <Layer>
+          <Name>value_error</Name>
+          <LatLonBoundingBox minx="0" miny="1" maxx="0" maxy="abc"/>
+        </Layer>
+      </Layer>
+    </Capability>
+  </WMT_MS_Capabilities>
+"""
+
+METADATA_INVALID_LAYERS_WMS_RESPONSE = {
+    'valid': {'minx': -170.0, 'miny': -70.0, 'maxx': 170.0, 'maxy': 70.0}}
+
+# A response that is valid XML but an invalid WMS GetCapabilities response.
+INVALID_WMS_RESPONSE = """<?xml version="1.0"?>
+  <WMT_MS_Capabilities version="1.1.1">
+    <Service><Name>OGC:WMS</Name></Service>
+    <Name>Fake</Name>
+    <LatLonBoundingBox minx="-50.2" miny="10.9" maxx="50.8" maxy="35.5">
+    </LatLonBoundingBox>
+  </WMT_MS_Capabilities>
+"""
+
+# A WMS GetCapabilities response that is invalid XML.
+INVALID_XML_WMS_RESPONSE = """<?xml version="1.0"?>
+  <WMT_MS_Capabilities version="1.1.1">
+    <Service><Name>OGC:WMS</Name></Service>
+    <Capability>
+      <Layer>
+        <Name>Fake</Name>
+        <LatLonBoundingBox minx="-50.2" miny="10.9" maxx="50.8" maxy="35.5">
+        </LatLonBoundingBox>
+    </Capability>
+  </WMT_MS_Capabilities>
+"""
+
 SIMPLE_GEORSS = '<rss><channel><item>foo</item></channel></rss>'
 FETCH_TIME = 1341324364
 FETCH_TIME_2 = 1341324371
@@ -137,6 +220,34 @@ class MetadataFetchTest(test_utils.BaseTest):
     self.assertTrue(metadata_fetch.HasUnsupportedKml(unsupported_kml_1))
     self.assertTrue(metadata_fetch.HasUnsupportedKml(unsupported_kml_2))
     self.assertTrue(metadata_fetch.HasUnsupportedKml(unsupported_kml_3))
+
+  def testGatherMetadataWmsValid(self):
+    self.maxDiff = None
+    # A valid WMS GetCapabilities response.
+    self.assertEquals(METADATA_VALID_WMS_RESPONSE,
+                      metadata_fetch.GatherMetadata('WMS', utils.Struct(
+                          status_code=200, headers=RESPONSE_HEADERS,
+                          content=VALID_WMS_RESPONSE))['wms_layers'])
+
+    # A response with a valid layer and several invalid Layers.
+    self.assertEquals(METADATA_INVALID_LAYERS_WMS_RESPONSE,
+                      metadata_fetch.GatherMetadata('WMS', utils.Struct(
+                          status_code=200, headers=RESPONSE_HEADERS,
+                          content=INVALID_LAYERS_WMS_RESPONSE))['wms_layers'])
+
+  def testGatherMetadataWmsInvalid(self):
+    self.maxDiff = None
+    # An invalid WMS response that is valid XML.
+    self.assertEquals({}, metadata_fetch.GatherMetadata(
+        'WMS', utils.Struct(status_code=200, headers=RESPONSE_HEADERS,
+                            content=INVALID_WMS_RESPONSE))['wms_layers'])
+
+  def testGatherMetadataWmsInvalidXml(self):
+    self.maxDiff = None
+    # An WMS response with invalid XML.
+    self.assertTrue(metadata_fetch.GatherMetadata(
+        'WMS', utils.Struct(status_code=200, headers=RESPONSE_HEADERS,
+                            content=INVALID_XML_WMS_RESPONSE))['ill_formed'])
 
   def testGatherMetadataKml(self):
     # Valid KML.
@@ -351,7 +462,7 @@ class MetadataFetchTest(test_utils.BaseTest):
   def testFetchInvalidUrl(self):
     self.assertEquals(
         {'fetch_impossible': True},
-        metadata_fetch.FetchAndUpdateMetadata(None, 'KML:blarg'))
+        metadata_fetch.FetchAndUpdateMetadata(None, 'WMS:blarg'))
     self.assertEquals(
         {'fetch_impossible': True},
         metadata_fetch.FetchAndUpdateMetadata(None, 'KML:blarg:'))

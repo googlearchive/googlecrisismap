@@ -47,9 +47,9 @@ class MaprootTest(test_utils.BaseTest):
     self.assertEquals('KML:xyz', maproot.GetSourceAddress(
         {'type': 'KML', 'source': {'kml': {'url': 'xyz'}}}
     ))
-    self.assertEquals('GOOGLE_MAP_TILES:tuv', maproot.GetSourceAddress(
-        {'type': 'GOOGLE_MAP_TILES',
-         'source': {'google_map_tiles': {'url': 'tuv'}}}
+    self.assertEquals('WMS:tuv', maproot.GetSourceAddress(
+        {'type': 'WMS',
+         'source': {'wms': {'url': 'tuv'}}}
     ))
     self.assertEquals(None, maproot.GetSourceAddress(
         {'type': 'GOOGLE_MAP_DATA', 'source': {'google_map_data': 'ab'}}

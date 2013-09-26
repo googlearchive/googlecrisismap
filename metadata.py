@@ -29,14 +29,13 @@ import metadata_fetch
 
 ACTIVE_SECONDS = 24 * 3600  # layers stay active for 24 hours after activation
 ADDRESS_TTL_SECONDS = 24 * 3600  # keep cached source address lists for a day
-SUPPORTED_LAYER_TYPES = [maproot.LayerType.KML, maproot.LayerType.GEORSS]
 
 
 def GetSourceAddresses(maproot_object):
-  """Yields addresses of all the supported sources in the given MapRoot JSON."""
-  for layer in maproot.GetAllLayers(maproot_object):
-    if layer.get('type') in SUPPORTED_LAYER_TYPES:
-      yield maproot.GetSourceAddress(layer)
+  """Addresses of all sources in the given MapRoot that could have metadata."""
+  addresses = [maproot.GetSourceAddress(layer)
+               for layer in maproot.GetAllLayers(maproot_object)]
+  return [a for a in addresses if a is not None]
 
 
 def CacheSourceAddresses(map_version_key, maproot_object):
