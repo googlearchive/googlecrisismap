@@ -378,7 +378,7 @@ cm.LegendEditor.prototype.previewValid_ = function() {
  * as hides or shows the graphical legend editor, as appropriate.
  * @param {boolean} showHtml Whether or not to display the HTML editor. Also
  *     whether or not to hide the legend editor.
- * @param {cm.Html} opt_value Optional value to update the editor's UI with.
+ * @param {cm.Html=} opt_value Optional value to update the editor's UI with.
  *     Defaults to the editor's stored value.
  * @private
  */
@@ -432,7 +432,7 @@ cm.LegendEditor.prototype.handleRevertClick_ = function() {
 /**
  * Creates a legend item, and adds the appropriate event listeners to the editor
  * component.
- * @param {Element} opt_previewElem If specified, the element is parsed for a
+ * @param {Element=} opt_previewElem If specified, the element is parsed for a
  *     graphic element and text element to copy for the editor object that is
  *     created. The editor will use copies of its graphic and text elements, and
  *     preview will consist of a reference to it and its components. Must be a

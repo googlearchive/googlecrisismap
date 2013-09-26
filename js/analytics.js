@@ -38,7 +38,7 @@ cm.Analytics = function() { };
 
 /**
  * Initialize Google Analytics.
- * @param {string} opt_analyticsId The Analytics account ID that should be
+ * @param {string=} opt_analyticsId The Analytics account ID that should be
  *     associated with this logged session.
  */
 cm.Analytics.initialize = function(opt_analyticsId) {
@@ -64,9 +64,9 @@ cm.Analytics.initialize = function(opt_analyticsId) {
  * @param {string} action A short string identifying the user action to be
  *     logged (usually a verb or verb phrase, e.g. "toggle_on").
  *     Our convention is to use lowercase_with_underscores.
- * @param {string} opt_label An optional more specific label (usually a unique
+ * @param {string=} opt_label An optional more specific label (usually a unique
  *     programmatic ID, e.g. map ID, layer ID, URL, e-mail address, etc.).
- * @param {number} opt_value An optional numeric value for the event (Analytics
+ * @param {number=} opt_value An optional numeric value for the event (Analytics
  *     will compute sums and averages of these values).
  */
 cm.Analytics.logEvent = function(category, action, opt_label, opt_value) {

@@ -115,8 +115,7 @@ cm.ArrangeCommand.prototype.arrange_ = function(layerIds, mapModel) {
    *     sublayerIds: Array.<Object>}>>} ids The new hierarchy
    *         of layerIds.
    * @param {cm.MapModel} mapModel The map model.
-   * @param {?cm.LayerModel} opt_parent This list of layers' parent layer model,
-   *     if they are sublayers.
+   * @param {cm.LayerModel=} opt_parent The parent of the specified layers.
    * @return {?google.maps.MVCArray} The layer or sublayer models.
    */
   function assembleLayers(ids, mapModel, opt_parent) {

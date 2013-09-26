@@ -33,7 +33,7 @@ goog.require('goog.structs.Set');
  * A model for all the non-persistent application state.  This includes the
  * set of layers currently enabled in the panel, the current map viewport,
  * and the currently selected base map type.
- * @param {string} opt_language The language code for the user's language.
+ * @param {string=} opt_language The language code for the user's language.
  * @constructor
  * @extends google.maps.MVCObject
  */

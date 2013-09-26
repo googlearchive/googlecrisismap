@@ -319,7 +319,7 @@ cm.InspectorView.prototype.editorIsActive_ = function(key) {
 
 /**
  * Shows and hides editors according to their display conditions.
- * @param {string} opt_changedKey The property key that was changed.  If this
+ * @param {string=} opt_changedKey The property key that was changed.  If this
  *     is given, only the editors affected by that key will be updated;
  *     otherwise, the visibility of all editors will be updated.
  * @private

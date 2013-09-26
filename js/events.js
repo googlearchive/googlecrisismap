@@ -285,7 +285,7 @@ cm.events.listen = function(source, type, handler, opt_obj) {
 /**
  * @param {cm.events.ListenerToken|Array.<cm.events.ListenerToken>} token
  *     A listener token or array of tokens, as returned by cm.events.listen.
- * @param {Object} opt_obj The object bound to 'this' in the handlers of the
+ * @param {Object=} opt_obj The object bound to 'this' in the handlers of the
  *     specified listeners (i.e. the opt_obj that was passed to
  *     cm.events.listen).
  */
@@ -324,7 +324,7 @@ cm.events.mvcObjectKeyToEventType = function(key) {
  * @param {!function(string)} handler A function to handle the change event.
  *     The function will be called with the key of the changed property,
  *     and will not be called recursively.
- * @param {Object} opt_obj An object to bind 'this' to within the handler.
+ * @param {Object=} opt_obj An object to bind 'this' to within the handler.
  * @return {cm.events.ListenerToken|Array.<cm.events.ListenerToken>} A token or
  *     tokens that can be later used to remove the added listener or listeners.
  */
@@ -365,7 +365,7 @@ cm.events.onChange = function(mvcObject, key, handler, opt_obj) {
  * @param {Object} source The object from which to emit the event (a DOM
  *     element, Closure EventTarget, Maps API object, or any other object).
  * @param {string} type Event type.
- * @param {Object} opt_properties Additional properties to pass to listeners.
+ * @param {Object=} opt_properties Additional properties to pass to listeners.
  */
 cm.events.emit = function(source, type, opt_properties) {
   var event = goog.object.clone(opt_properties || {});
@@ -384,9 +384,9 @@ cm.events.emit = function(source, type, opt_properties) {
  * @param {string|Array.<string>} type Event type or array of event types.
  * @param {Object} nextSource The object from which to re-emit the event (a DOM
  *     element, Closure EventTarget, Maps API object, or any other object).
- * @param {string} opt_newType If specified, emit a new event of this type
+ * @param {string=} opt_newType If specified, emit a new event of this type
  *     instead of re-emitting the same event that was received.
- * @param {Object} opt_newProperties If specified, use these properties for
+ * @param {Object=} opt_newProperties If specified, use these properties for
  *     the new event instead of passing on the original event's properties.
  * @return {cm.events.ListenerToken|Array.<cm.events.ListenerToken>} A token or
  *     tokens that can be later used to remove the added listener or listeners.

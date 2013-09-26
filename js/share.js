@@ -392,7 +392,7 @@ cm.ShareBox.prototype.updateLinks = function() {
 /**
  * Given a URL and an optional shortened URL, sets the links in the share box.
  * @param {goog.Uri|string} url URL to the current map view before shortening.
- * @param {string} opt_shortUrl Shortened URL.
+ * @param {string=} opt_shortUrl Shortened URL.
  * @private
  */
 cm.ShareBox.prototype.setShareUrl_ = function(url, opt_shortUrl) {

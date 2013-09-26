@@ -50,7 +50,7 @@ cm.ui.createCloseButton = function(container, callback) {
  * on the given container element.  The popup is centered on the document body
  * if no container element is specified.
  * @param {Element} popup An element to display in a popup box.
- * @param {Element} opt_container An element on which to center the popup box.
+ * @param {Element=} opt_container An element on which to center the popup box.
  *     The CSS styles from opt_container's document are used for the purpose
  *     of estimating the size of the popup, unless the popup is already shown.
  */
@@ -167,7 +167,7 @@ cm.ui.get = function(id) {
  * Returns the first element in the document with the given class name.
  * If opt_parent is given, limit search to its descendants.
  * @param {string} className A class name.
- * @param {?Element} opt_parent A DOM element to look in.
+ * @param {Element=} opt_parent A DOM element to look in.
  * @return {?Element} The element with the given class name, if found.
  */
 cm.ui.getByClass = function(className, opt_parent) {
@@ -178,7 +178,7 @@ cm.ui.getByClass = function(className, opt_parent) {
  * Returns all the elements in the document with the given class name.
  * If opt_parent is given, limit search to its descendants.
  * @param {string} className A class name.
- * @param {?Element} opt_parent A DOM element to look in.
+ * @param {Element=} opt_parent A DOM element to look in.
  * @return { {length: number} } The elements with the given class name.
  */
 cm.ui.getAllByClass = function(className, opt_parent) {

@@ -45,7 +45,7 @@ cm.util.browserSupportsEvent = function(eventName) {
  * @param {cm.LayerModel} layer The root layer model.
  * @param {function(cm.LayerModel)} callback The callback to call on
  *   itself and all descendants.
- * @param {?function(cm.LayerModel): boolean} opt_expandFn A boolean
+ * @param {?function(cm.LayerModel): boolean=} opt_expandFn A boolean
  *   function to pass the current layer to. If it returns true, this
  *   node's descendants will be expanded; otherwise, they are pruned.
  * @param {Object=} opt_obj An object to bind 'this' to in the callback.
@@ -72,7 +72,7 @@ cm.util.forLayerAndDescendants = function(layer, callback,
  * @param {cm.MapModel} map The map model.
  * @param {function(cm.LayerModel)} callback The callback to call on
  *   itself and all descendants.
- * @param {?function(cm.LayerModel): boolean} opt_expandFn A boolean
+ * @param {?function(cm.LayerModel): boolean=} opt_expandFn A boolean
  *   function to pass the current layer to. If it returns true, this
  *   node's descendants will be expanded; otherwise, they are pruned.
  * @param {Object=} opt_obj An object to bind 'this' to in the callback.
