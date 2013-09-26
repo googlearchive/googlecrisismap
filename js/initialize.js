@@ -412,7 +412,7 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
  */
 function createLanguageChoices(langCodes) {
   var languageChoices = [];
-  if (goog.array.isEmpty(langCodes)) {
+  if (goog.array.isEmpty(langCodes || [])) {
     // Default to showing just English if languages don't load.
     var enName = cm.util.getNativeLanguageAndRegionName('en');
     languageChoices = [{value: 'en', label: enName}];
@@ -433,4 +433,3 @@ function createLanguageChoices(langCodes) {
 if (typeof window !== 'undefined') {
   window['cm_initialize'] = initialize;
 }
-
