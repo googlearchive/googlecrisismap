@@ -247,43 +247,32 @@ LayerModelTest.prototype.newFromMapRootFolders = function() {
   expectEq(3, nested_folder.get('sublayers').getLength());
 };
 
-/**
- * Tests that time series are constructed from JSON layers with
- * sublayers and the time series tag.
- *
- */
-LayerModelTest.prototype.newFromMapRootTimeSeries = function() {
+/** Tests construction of a single-select folder. */
+LayerModelTest.prototype.newFromMapRootSingleSelect = function() {
   var json = {
     type: 'FOLDER',
-    tags: [cm.LayerModel.IS_TIME_SERIES_FOLDER],
+    list_item_type: 'RADIO_FOLDER',
     sublayers: [
-      {type: 'KML', last_update: '1321671420'},
-      {type: 'KML', last_update: '1321585020'},
-      {type: 'KML', last_update: '1321757820', id: 'most_recent_sublayer'},
-      {type: 'KML', last_update: '1321498620'}
-  ]};
+      {type: 'KML', id: '1'},
+      {type: 'KML', id: '2', visibility: 'DEFAULT_ON'},
+      {type: 'KML', id: '3'}
+    ]};
   var layerModel = cm.LayerModel.newFromMapRoot(json);
-  expectTrue(layerModel.isTimeSeries());
-  expectEq('most_recent_sublayer',
-           layerModel.getMostRecentSublayer().get('id'));
-  expectEq('1321757820', layerModel.get('last_update'));
+  expectTrue(layerModel.isSingleSelect());
 };
 
-/**
- * Tests that most recent sublayer always returns a sublayer even if
- * none of the layers have a last_update time.
- */
-LayerModelTest.prototype.newFromMapRootMostRecentSublayerNoUpdateTimes =
-    function() {
+/** Tests construction of a locked folder. */
+LayerModelTest.prototype.newFromMapRootLockedFolder = function() {
   var json = {
     type: 'FOLDER',
+    list_item_type: 'CHECK_HIDE_CHILDREN',
     sublayers: [
-      {type: 'KML', id: 'child1'},
-      {type: 'KML', id: 'child2'}
-  ]};
+      {type: 'KML', id: '1'},
+      {type: 'KML', id: '2'},
+      {type: 'KML', id: '3'}
+    ]};
   var layerModel = cm.LayerModel.newFromMapRoot(json);
-  expectThat(['child1', 'child2'],
-             contains(layerModel.getMostRecentSublayer().get('id')));
+  expectEq(cm.LayerModel.FolderType.LOCKED, layerModel.get('folder_type'));
 };
 
 /**

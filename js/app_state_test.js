@@ -21,7 +21,6 @@ registerTestSuite(AppStateTest);
 /** Test the AppState constructor. */
 AppStateTest.prototype.testConstruction = function() {
   expectEq(0, this.appState_.get('enabled_layer_ids').getCount());
-  expectEq(0, this.appState_.get('promoted_layer_ids').getCount());
   expectEq(this.viewport_, this.appState_.get('viewport'));
   expectEq(cm.MapModel.Type.ROADMAP, this.appState_.get('map_type'));
 };
@@ -30,7 +29,6 @@ AppStateTest.prototype.testConstruction = function() {
 AppStateTest.prototype.testFromAppState = function() {
   this.appState_.set('language', 'es');
   this.appState_.get('enabled_layer_ids').add('x');
-  this.appState_.get('promoted_layer_ids').add('y');
   this.appState_.set('layer_opacities', {a: 50});
   this.appState_.set('viewport', new cm.LatLonBox(10, -10, 20, -20));
   this.appState_.set('map_type', cm.MapModel.Type.SATELLITE);
@@ -40,8 +38,6 @@ AppStateTest.prototype.testFromAppState = function() {
   expectEq(this.appState_.get('language'), newAppState.get('language'));
   expectEq(this.appState_.get('enabled_layer_ids'),
            newAppState.get('enabled_layer_ids'));
-  expectEq(this.appState_.get('promoted_layer_ids'),
-           newAppState.get('promoted_layer_ids'));
   expectEq(this.appState_.get('layer_opacities'),
            newAppState.get('layer_opacities'));
   expectEq(this.appState_.get('viewport'),
@@ -49,7 +45,7 @@ AppStateTest.prototype.testFromAppState = function() {
   expectEq(this.appState_.get('map_type'), newAppState.get('map_type'));
 
   // Check that object references are not the same.
-  var keys = ['enabled_layer_ids', 'promoted_layer_ids', 'layer_opacities'];
+  var keys = ['enabled_layer_ids', 'layer_opacities'];
   goog.array.forEach(keys, function(key) {
     expectTrue(newAppState.get(key) !== this.appState_.get(key));
   }, this);
@@ -80,34 +76,38 @@ AppStateTest.prototype.createLayer_ = function(id, opt_parent, opt_sublayers) {
 AppStateTest.prototype.testLayerEnabledPlainLayer = function() {
   var layera = this.createLayer_('a');
   var layerb = this.createLayer_('b');
+  expectFalse(this.appState_.getLayerEnabled('a'));
+  expectFalse(this.appState_.getLayerEnabled('b'));
 
-  var notified = 0;
-  cm.events.listen(this.appState_, 'enabled_layer_ids_changed', function() {
-    ++notified;
+  var notified;
+  cm.events.onChange(this.appState_, 'enabled_layer_ids', function() {
+    notified = true;
   });
 
-  expectFalse(this.appState_.getLayerEnabled('a'));
-  expectEq(0, notified);
-
+  notified = false;
   this.appState_.setLayerEnabled('a', true);
   expectTrue(this.appState_.getLayerEnabled('a'));
-  expectEq(1, notified);
+  expectTrue(notified);
 
+  notified = false;
   this.appState_.setLayerEnabled('a', false);
   expectFalse(this.appState_.getLayerEnabled('a'));
-  expectEq(2, notified);
+  expectTrue(notified);
 
+  notified = false;
   this.appState_.setLayerEnabled('a', false);
   expectFalse(this.appState_.getLayerEnabled('a'));
-  expectEq(2, notified);
+  expectFalse(notified);
 
+  notified = false;
   this.appState_.setLayerEnabled('b', true);
   expectFalse(this.appState_.getLayerEnabled('a'));
   expectTrue(this.appState_.getLayerEnabled('b'));
-  expectEq(3, notified);
+  expectTrue(notified);
 
+  notified = false;
   this.appState_.setLayerEnabled('b', true);
-  expectEq(3, notified);
+  expectFalse(notified);
 };
 
 /** Tests setLayerEnabled and getLayerEnabled with nested folders. */
@@ -136,61 +136,72 @@ AppStateTest.prototype.testLayerEnabledFolders = function() {
 
 };
 
-/**
- * Verifies that promoteLayer() adds and removes the right layers from
- * the sets of enabled and promoted layers.
- */
-AppStateTest.prototype.testPromoteLayer = function() {
-  var child = this.createLayer_('child');
-  var sibling = this.createLayer_('sibling');
-  var parent = this.createLayer_('parent', null, [child, sibling]);
-  child.set('parent', parent);
-  sibling.set('parent', parent);
-  parent.set('type', cm.LayerModel.Type.FOLDER);
-  parent.set('tags', [cm.LayerModel.IS_TIME_SERIES_FOLDER]);
+/** Tests that selectSublayer() enables and disables sublayers corectly. */
+AppStateTest.prototype.testSelectSublayer = function() {
+  var mapModel = cm.MapModel.newFromMapRoot({
+    id: 'map', layers: [
+      {id: 'singleSelect', type: 'FOLDER', list_item_type: 'RADIO_FOLDER',
+       sublayers: [
+         {id: 'subA', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+         {id: 'subB', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+         {id: 'subC', type: cm.LayerModel.Type.KML}
+      ]}
+    ]
+  });
+  this.appState_.setFromMapModel(mapModel);
+  var folder = mapModel.getLayer('singleSelect');
 
-  // Enable both child and sibling
-  this.appState_.setLayerEnabled('child');
-  this.appState_.setLayerEnabled('sibling');
+  var notified;
+  cm.events.onChange(this.appState_, 'enabled_layer_ids', function() {
+    notified = true;
+  });
 
-  // Promote the 'child' sublayer.
-  this.appState_.promoteLayer(child);
-  expectThat(this.appState_.get('promoted_layer_ids').getValues(),
-             elementsAre(['child']));
-  expectThat(this.appState_.get('enabled_layer_ids').getValues(),
-             elementsAre(['child']));
+  // Verify that only first sublayer of the single-select folder is enabled.
+  expectTrue(this.appState_.get('enabled_layer_ids').contains('subA'));
+  expectFalse(this.appState_.get('enabled_layer_ids').contains('subB'));
+  expectFalse(this.appState_.get('enabled_layer_ids').contains('subC'));
 
-  // Promote the 'sibling' sublayer.
-  this.appState_.promoteLayer(sibling);
-  expectThat(this.appState_.get('promoted_layer_ids').getValues(),
-             elementsAre(['sibling']));
-  expectThat(this.appState_.get('enabled_layer_ids').getValues(),
-             elementsAre(['sibling']));
+  // Select the third sublayer.
+  notified = false;
+  this.appState_.selectSublayer(folder, 'subC');
+  expectFalse(this.appState_.get('enabled_layer_ids').contains('subA'));
+  expectFalse(this.appState_.get('enabled_layer_ids').contains('subB'));
+  expectTrue(this.appState_.get('enabled_layer_ids').contains('subC'));
+  expectTrue(notified);
+
+  // Turn off all sublayers and verify that selectSublayer() turns one on.
+  notified = false;
+  this.appState_.get('enabled_layer_ids').clear();
+  this.appState_.selectSublayer(folder, 'subA', true);
+  expectTrue(this.appState_.get('enabled_layer_ids').contains('subA'));
+  expectFalse(this.appState_.get('enabled_layer_ids').contains('subB'));
+  expectFalse(this.appState_.get('enabled_layer_ids').contains('subC'));
+  expectTrue(notified);
 };
 
-/**
- * Verifies that demoteSublayers() modifies the AppState's sets of promoted
- * and enabled layers properly.
- */
-AppStateTest.prototype.testDemoteSublayers = function() {
-  var child1 = this.createLayer_('child1');
-  var child2 = this.createLayer_('child2');
-  var child3 = this.createLayer_('child3');
-  var parent = this.createLayer_('parent', null, [child1, child2, child3]);
-  child1.set('parent', parent);
-  child2.set('parent', parent);
-  child3.set('parent', parent);
-  parent.set('type', cm.LayerModel.Type.FOLDER);
-  parent.set('tags', [cm.LayerModel.IS_TIME_SERIES_FOLDER]);
-  this.appState_.set('promoted_layer_ids', new goog.structs.Set(['child1']));
-  this.appState_.set('enabled_layer_ids', new goog.structs.Set(['child1']));
-
-  // Demote sublayers and verify that child1 is still enabled.
-  this.appState_.demoteSublayers(parent);
-  expectThat(this.appState_.get('promoted_layer_ids').getValues(),
-             elementsAre([]));
+/** Tests enforcing that single-select folders have one enabled sublayer. */
+AppStateTest.prototype.testUpdateSingleSelectFolders = function() {
+  var mapModel = cm.MapModel.newFromMapRoot({
+    id: 'map', layers: [
+      {id: 'folder1', type: 'FOLDER', list_item_type: 'RADIO_FOLDER',
+       sublayers: [
+         {id: 'folder2', type: cm.LayerModel.Type.FOLDER,
+          list_item_type: 'RADIO_FOLDER',
+          sublayers: [
+            {id: 'subC', type: cm.LayerModel.Type.KML},
+            {id: 'subD', type: cm.LayerModel.Type.KML}
+          ]},
+         {id: 'subA', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+         {id: 'subB', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'}
+      ]},
+      {id: 'folder3', type: 'FOLDER', list_item_type: 'RADIO_FOLDER',
+       sublayers: []
+      }
+    ]
+  });
+  this.appState_.setFromMapModel(mapModel);
   expectThat(this.appState_.get('enabled_layer_ids').getValues(),
-             elementsAre(['child1']));
+             whenSorted(elementsAre(['subA', 'subC'])));
 };
 
 /**
@@ -243,17 +254,15 @@ AppStateTest.prototype.testGetUri = function() {
   var layerd = this.createLayer_('d');
   this.appState_.set('enabled_layer_ids',
                      new goog.structs.Set(['a', 'b', 'd']));
-  this.appState_.set('promoted_layer_ids', new goog.structs.Set(['c']));
   this.appState_.set('viewport', new cm.LatLonBox(12, 11, -33, -34.123456));
   this.appState_.set('layer_opacities', {'a': 1, 'b': 34});
-  // crisis should be removed; id, hl, llbox, t, layers, and promoted should
+  // crisis should be removed; id, hl, llbox, t, and layers should
   // be set; lat, lng, z should be removed.
   expectEq('http://google.org/crisismap/foo' +
            '?hl=fr' +
            '&llbox=12%2C11%2C-33%2C-34.123' +
            '&t=SATELLITE' +
-           '&layers=a%3A1%2Cb%3A34%2Cd' +
-           '&promoted=c',
+           '&layers=a%3A1%2Cb%3A34%2Cd',
            this.appState_.getUri().toString());
 
   // Include the 'base' parameter in the location.
@@ -266,8 +275,7 @@ AppStateTest.prototype.testGetUri = function() {
            '?hl=fr' +
            '&llbox=12%2C11%2C-33%2C-34.123' +
            '&t=SATELLITE' +
-           '&layers=a%3A1%2Cb%3A34%2Cd' +
-           '&promoted=c',
+           '&layers=a%3A1%2Cb%3A34%2Cd',
            this.appState_.getUri().toString());
 };
 
@@ -300,51 +308,31 @@ AppStateTest.prototype.testSetFromUriLayers = function() {
   expectEq(66, opacities['d']);
 };
 
-/** Verifies that the AppState is set according to the 'promoted' param. */
-AppStateTest.prototype.testSetFromUriPromoted = function() {
-  var uri = new goog.Uri('');
-  uri.setParameterValue('promoted', 'c,a,d');
-
-  this.appState_.setFromUri(uri);
-  expectTrue(this.appState_.getLayerPromoted('a'));
-  expectFalse(this.appState_.getLayerPromoted('b'));
-  expectTrue(this.appState_.getLayerPromoted('c'));
-  expectTrue(this.appState_.getLayerPromoted('d'));
-};
-
 /** Test that the setFromMapModel() method works correctly. */
 AppStateTest.prototype.testSetFromMapModel = function() {
-  var viewport = new cm.LatLonBox(10, -10, 20, -20);
+  var viewport = {north: 10, south: -10, east: 20, west: -20};
   var mapModel = cm.MapModel.newFromMapRoot({
     id: 'map', base_map_type: 'GOOGLE_SATELLITE',
-    viewport: {lat_lon_alt_box: viewport.toMapRoot()}, layers: [
-      {id: 'layer', type: cm.LayerModel.Type.KML,
-       default_visibility: true, opacity: 0},
-      {id: 'folderA', type: cm.LayerModel.Type.FOLDER,
-       default_visibility: true, opacity: 1, sublayers: [
-         {id: 'sublayerA', type: cm.LayerModel.Type.KML,
-          default_visibility: false, opacity: 25}
+    viewport: {lat_lon_alt_box: viewport}, layers: [
+      {id: 'layer', type: 'KML', visibility: 'DEFAULT_ON', opacity: 0},
+      {id: 'folderA', type: 'FOLDER', visibility: 'DEFAULT_ON', opacity: 1,
+       sublayers: [{id: 'sublayerA', type: 'KML', opacity: 25}]},
+      {id: 'folderB', type: 'FOLDER', opacity: 75, sublayers: [
+        {id: 'sublayerB', type: 'KML', visibility: 'DEFAULT_ON', opacity: 100}
       ]},
-      {id: 'folderB', type: cm.LayerModel.Type.FOLDER,
-       default_visibility: false, opacity: 75, sublayers: [
-         {id: 'sublayerB', type: cm.LayerModel.Type.KML,
-          default_visibility: true, opacity: 100}
-      ]},
-      {id: 'timeSeries', type: cm.LayerModel.Type.FOLDER,
-       tags: [cm.LayerModel.IS_TIME_SERIES_FOLDER], sublayers: [
-         {id: 'timeA', type: cm.LayerModel.Type.KML},
-         {id: 'promoted', type: cm.LayerModel.Type.KML,
-          last_update: 1},
-         {id: 'timeC', type: cm.LayerModel.Type.KML}
+      {id: 'singleSelect', type: 'FOLDER', list_item_type: 'RADIO_FOLDER',
+       sublayers: [
+         {id: 'subA', type: cm.LayerModel.Type.KML},
+         {id: 'subB', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+         {id: 'subC', type: cm.LayerModel.Type.KML}
       ]}
     ]
   });
   this.appState_.setFromMapModel(mapModel);
 
   expectEq(mapModel.get('map_type'), this.appState_.get('map_type'));
-  expectEq(viewport, this.appState_.get('viewport'));
+  expectEq(mapModel.get('viewport'), this.appState_.get('viewport'));
 
-  expectEq(['promoted'], this.appState_.get('promoted_layer_ids').getValues());
   var opacities = this.appState_.get('layer_opacities');
   var enabledLayerIds = this.appState_.get('enabled_layer_ids');
   cm.util.forLayersInMap(mapModel, function(layer) {
@@ -359,6 +347,27 @@ AppStateTest.prototype.testSetFromMapModel = function() {
     expectEq(layer.get('default_visibility'), enabledLayerIds.contains(id),
              'Unexpected visibility for layer id ' + id);
   });
+};
+
+/** Test that single-select folders get at most one enabled sublayer. */
+AppStateTest.prototype.testSetFromMapModelSingleSelect = function() {
+  var mapModel = cm.MapModel.newFromMapRoot({
+    id: 'map', layers: [
+      {id: 'singleSelect', type: 'FOLDER', list_item_type: 'RADIO_FOLDER',
+        sublayers: [
+          {id: 'subA', type: cm.LayerModel.Type.KML},
+          {id: 'subB', type: cm.LayerModel.Type.KML},
+          {id: 'subC', type: cm.LayerModel.Type.KML}
+      ]},
+      {id: 'emptySingleSelect1', type: 'FOLDER', list_item_type: 'RADIO_FOLDER',
+        sublayers: []}
+    ]
+  });
+  this.appState_.setFromMapModel(mapModel);
+
+  // The first sublayer of the single-select folder should be enabled, even
+  // though its MapRoot 'visibility' was off.
+  expectTrue(this.appState_.get('enabled_layer_ids').contains('subA'));
 };
 
 /** Test that the writeToMapModel() method works correctly. */

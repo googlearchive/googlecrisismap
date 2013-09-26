@@ -50,11 +50,6 @@ var MSG_VIEW_FUSION_TABLE_LABEL = goog.getMsg('View data');
 /** @desc Label for a link to download a GeoRSS file. */
 var MSG_OPACITY_TOOLTIP = goog.getMsg('Adjust layer transparency');
 
-/** @desc Label for a select option to show multiple sublayers/dates
- *  in a time series folder.
- */
-var MSG_MULTIPLE_DATES = goog.getMsg('Multiple dates');
-
 /** @desc Warning message for data sources that have unsupported features. */
 var MSG_UNSUPPORTED_KML_WARNING = goog.getMsg(
     'This layer may include some unsupported features.');
@@ -87,6 +82,10 @@ var MSG_LEGEND = goog.getMsg('Legend');
  */
 cm.LayerEntryView = function(parentElem, model, metadataModel,
                              appState, opt_config, opt_index) {
+  /**
+   * @type goog.i18n.DateTimeFormat
+   * @private
+   */
   this.dateFormatter_ = new goog.i18n.DateTimeFormat(
       goog.i18n.DateTimeFormat.Format.MEDIUM_DATE);
 
@@ -121,12 +120,6 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   this.layerEntryViews_ = {};
 
   /**
-   * @type ?string
-   * @private
-   */
-  this.lastPromotedId_ = null;
-
-  /**
    * @type Element
    * @private
    */
@@ -137,6 +130,13 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
    * @private
    */
   this.headerElem_;
+
+  /**
+   * Container for checkbox and folder decoration.
+   * @type Element
+   * @private
+   */
+  this.checkboxContainer_;
 
   /**
    * @type Element
@@ -166,7 +166,7 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
    * @type Element
    * @private
    */
-  this.dateElem_;
+  this.sublayerSelect_;
 
   /**
    * @type Element
@@ -254,10 +254,17 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
    */
   this.config_ = opt_config || {};
 
+  /**
+   * The select menu for promoting a single sublayer of a folder, or null
+   * if this layer is not a single-select folder.
+   * @type cm.SublayerPicker
+   * @private
+   */
+  this.sublayerPicker_ = null;
+
   // Extract information about the layer.
   var id = /** @type string */(model.get('id'));
   var layerType = model.get('type');
-  var isTimeSeries = model.isTimeSeries();
 
   // Figure out whether to enable editing.
   var enableEditing = this.config_['enable_editing'];
@@ -279,17 +286,17 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   // Create the panel entry.
   this.entryElem_ = cm.ui.create('div', {'class': cm.css.LAYER_ENTRY},
       this.headerElem_ = cm.ui.create('div', {'class': cm.css.HEADER},
-          cm.ui.create('div', {'class': cm.css.CHECKBOX_CONTAINER},
+          this.checkboxContainer_ = cm.ui.create(
+              'div', {'class': cm.css.CHECKBOX_CONTAINER},
               this.checkboxElem_ = cm.ui.create('input',
                   {'type': 'checkbox', 'id': 'checkbox' + id}),
               this.folderDecorator_ = cm.ui.create('span',
                   {'class': cm.css.CHECKBOX_FOLDER_DECORATION})),
           this.checkboxLabel_ = cm.ui.create('label', {'for': 'checkbox' + id},
               this.titleElem_ = cm.ui.create('span',
-                  {'class': cm.css.LAYER_TITLE}),
-              this.dateElem_ = isTimeSeries ?
-                  cm.ui.create('span', {'class': cm.css.LAYER_DATE}) :
-                  null)
+                  {'class': cm.css.LAYER_TITLE})),
+          this.sublayerSelect_ = cm.ui.create('div',
+              {'class': cm.css.SUBLAYER_SELECT})
       ),
       this.contentElem_ = cm.ui.create('div', {'class': cm.css.CONTENT},
           this.sliderDiv_ = cm.ui.create('div', {'title': MSG_OPACITY_TOOLTIP,
@@ -314,11 +321,6 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
     parentElem.appendChild(this.entryElem_);
   }
 
-
-  if (isTimeSeries) {
-    this.sublayerPicker_ = new cm.SublayerPicker(this.headerElem_, this.model_);
-  }
-
   // Add views for all the sublayers.
   var sublayers = /** @type google.maps.MVCArray */(model.get('sublayers'));
   goog.array.forEach(sublayers.getArray(), this.insertSublayer_, this);
@@ -338,22 +340,20 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
 
   // Attach event handlers to ensure this view reflects changes in the
   // layer model, the metadata model, and the AppState.
-  cm.events.onChange(model, 'title', this.updateTitle_, this);
+  cm.events.onChange(model, ['title', 'folder_type'], this.updateTitle_, this);
   cm.events.onChange(model, 'description', this.updateDescription_, this);
   cm.events.onChange(model, 'legend', this.updateLegend_, this);
   cm.events.onChange(model,
                      ['suppress_download_link', 'type', 'url', 'ft_from'],
                      this.updateDownloadLink_, this);
   cm.events.onChange(model, ['viewport', 'type'], this.updateZoomLink_, this);
-  cm.events.onChange(model, 'locked', function() {
+  cm.events.onChange(model, ['folder_type'], function() {
     this.updateFolderDecorator_();
     this.updateEnabled_();
   }, this);
   cm.events.onChange(model, 'type', this.updateSliderVisibility_, this);
 
-  cm.events.onChange(appState, ['enabled_layer_ids', 'promoted_layer_ids'],
-                     this.updateEnabled_, this);
-  cm.events.onChange(appState, 'promoted_layer_ids', this.updateTitle_, this);
+  cm.events.onChange(appState, 'enabled_layer_ids', this.updateEnabled_, this);
 
   // When the source address changes, update which metadata entry we listen to.
   cm.events.onChange(model, ['type', 'url'],
@@ -397,32 +397,7 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
                       cm.events.DELETE_LAYER, {id: id});
   }
 
-  if (isTimeSeries) {
-    cm.events.listen(this.sublayerPicker_, cm.events.SELECT_SUBLAYER,
-      function(event) {
-        var sublayer = model.getSublayer(event.id);
-        if (sublayer && event.value) {
-          // Promote this sublayer.
-          cm.events.emit(this, cm.events.PROMOTE_LAYER,
-                         {object: sublayer, value: true});
-          // Enable parent if a sublayer was promoted
-          cm.events.emit(this,
-                         cm.events.TOGGLE_LAYER, {id: id, value: true});
-        } else {
-          // Demote all of this layer's sublayers.
-          cm.events.emit(this, cm.events.PROMOTE_LAYER,
-                        {object: this.model_, value: false});
-        }
-      }, this);
-  }
 };
-
-/**
- * The value to give the SublayerPicker menu option for displaying
- * multiple sublayers.
- * @type {string}
- */
-cm.LayerEntryView.MULTIPLE_DATES_OPTION = '0';
 
 /**
  * Accessor for the DOM element containing this layer's header information.
@@ -432,6 +407,21 @@ cm.LayerEntryView.prototype.getHeaderElement = function() {
   return this.headerElem_;
 };
 
+/**
+ * Accessor for the checkbox container.
+ * @return {Element} The checkbox container.
+ */
+cm.LayerEntryView.prototype.getCheckboxContainer = function() {
+  return this.checkboxContainer_;
+};
+
+/**
+ * Accessor for the checkbox label element.
+ * @return {Element} The checkbox label.
+ */
+cm.LayerEntryView.prototype.getCheckboxLabel = function() {
+  return this.checkboxLabel_;
+};
 
 /**
  * Accessor for the top level LayerEntryView DOM element.
@@ -452,20 +442,6 @@ cm.LayerEntryView.prototype.updateTitle_ = function() {
   // because the full version has a large file size. After every ten characters
   // in a word, a word break is inserted.
   this.titleElem_.innerHTML = goog.format.insertWordBreaksBasic(title, 10);
-  if (this.model_.isTimeSeries()) {
-    var formattedDate = '';
-    var sublayer = this.appState_.getPromotedSublayer(this.model_);
-    if (sublayer) {
-      var update = sublayer.get('last_update') || null;
-      if (update) {
-        formattedDate = cm.ui.SEPARATOR_DASH + this.dateFormatter_.format(
-            new Date(/** @type number */(update) * 1000));
-      }
-    } else {
-      formattedDate = cm.ui.SEPARATOR_DASH + MSG_MULTIPLE_DATES;
-    }
-    cm.ui.setText(this.dateElem_, formattedDate);
-  }
 };
 
 /** @private Updates the panel entry's description to match the model. */
@@ -619,8 +595,8 @@ cm.LayerEntryView.prototype.setFade_ = function(faded, opt_fadeReason) {
 cm.LayerEntryView.prototype.updateZoomLink_ = function() {
   // Do not display zoom link when viewport is not explicitly defined,
   // except for KMLLayer types, which have default viewports. TODO(romano):
-  // also display folder zoomto links once a folder's viewport can be computed
-  // from its descendants' viewports.
+  // if a folder's viewport is not defined, compute one from its
+  // descendants and display a zoom link.
   var showZoomLink = !this.metadataModel_.isEmpty(this.model_) && (
       this.model_.get('viewport') ||
       this.model_.get('type') === cm.LayerModel.Type.KML ||
@@ -632,6 +608,28 @@ cm.LayerEntryView.prototype.updateZoomLink_ = function() {
 };
 
 /**
+ * If the layer is a single-select folder, construct a sublayer menu with one
+ * selected sublayer; otherwise dispose of the sublayer picker.
+ * @private
+ */
+cm.LayerEntryView.prototype.updateSingleSelect_ = function() {
+  if (this.sublayerPicker_) {
+    this.sublayerPicker_.dispose();
+    this.sublayerPicker_ = null;
+  }
+if (this.model_.isSingleSelect()) {
+    this.sublayerPicker_ = new cm.SublayerPicker(
+        this.sublayerSelect_, this.model_,
+        this.appState_.getFirstEnabledSublayerId(this.model_) || '');
+    cm.events.listen(this.sublayerPicker_, cm.events.SELECT_SUBLAYER,
+      function(event) {
+        cm.events.emit(this, cm.events.SELECT_SUBLAYER,
+                       {id: event.id, model: this.model_});
+      }, this);
+  }
+};
+
+/**
  * Hides or shows the folder decorator depending on whether the layer is a
  * locked folder and the application has editing enabled.
  * @private
@@ -639,8 +637,9 @@ cm.LayerEntryView.prototype.updateZoomLink_ = function() {
 cm.LayerEntryView.prototype.updateFolderDecorator_ = function() {
   // Show folder decorations except when the folder is locked and
   // editing is disabled.
-  var folder = this.model_.get('type') === cm.LayerModel.Type.FOLDER;
-  var locked = /** @type boolean */(this.model_.get('locked'));
+  var folder = (this.model_.get('type') === cm.LayerModel.Type.FOLDER);
+  var locked = (this.model_.get('folder_type') ===
+      cm.LayerModel.FolderType.LOCKED);
   goog.dom.classes.enable(this.folderDecorator_, cm.css.HIDDEN,
       !folder || (locked && !this.config_['enable_editing']));
 };
@@ -654,54 +653,55 @@ cm.LayerEntryView.prototype.updateEnabled_ = function() {
   var id = /** @type string */(this.model_.get('id'));
   var enabled = this.appState_.getLayerEnabled(id);
   this.checkboxElem_.checked = enabled;
-  var sublayer = null;
-  var promotedId = null;
-  if (this.model_.isTimeSeries()) {
-    sublayer = this.appState_.getPromotedSublayer(this.model_);
-    promotedId = sublayer && /** @type string **/(sublayer.get('id')) || null;
+  var selectedId = this.model_.isSingleSelect() &&
+      this.appState_.getFirstEnabledSublayerId(this.model_) || null;
+  goog.dom.classes.enable(this.entryElem_, cm.css.CONTAINS_PROMOTED_SUBLAYER,
+                          selectedId !== null);
+  if (selectedId) {
+      goog.dom.classes.add(this.layerEntryViews_[selectedId].
+          getEntryElement(), cm.css.PROMOTED_SUBLAYER);
+      // Hide the selected sublayer's checkbox.
+      goog.dom.classes.add(this.layerEntryViews_[selectedId].
+          getCheckboxContainer(), cm.css.HIDDEN);
+      // Hide the selected sublayer's title, except in edit mode, when the
+      // editing links need a header.
+      if (!this.config_['enable_editing']) {
+        goog.dom.classes.add(this.layerEntryViews_[selectedId].
+            getCheckboxLabel(), cm.css.HIDDEN);
+      }
   }
-  if (this.lastPromotedId_ && this.lastPromotedId_ != promotedId) {
-    // The last-promoted sublayer is no longer promoted.
-    goog.dom.classes.remove(
-        this.layerEntryViews_[this.lastPromotedId_].getEntryElement(),
-        cm.css.PROMOTED_SUBLAYER);
-    this.layerEntryViews_[this.lastPromotedId_].
-        getHeaderElement().className = cm.css.HEADER;
-  }
-  if (promotedId) {
-    // Hide promoted sublayer's checkbox and title
-    this.layerEntryViews_[promotedId].
-        getHeaderElement().className = cm.css.HIDDEN;
-    if (promotedId != this.lastPromotedId_) {
-      // A new sublayer is now promoted.
-      goog.dom.classes.add(this.layerEntryViews_[promotedId].getEntryElement(),
-                           cm.css.PROMOTED_SUBLAYER);
-    }
-    if (!this.lastPromotedId_) {
-      // The time series was toggled from not having a promoted sublayer
-      // to having one.
-      goog.dom.classes.add(this.entryElem_, cm.css.CONTAINS_PROMOTED_SUBLAYER);
-    }
-  }
-  if (!promotedId && this.lastPromotedId_) {
-    // The time series was toggled from having a promoted sublayer to
-    // not having one.
-    goog.dom.classes.remove(this.entryElem_, cm.css.CONTAINS_PROMOTED_SUBLAYER);
-  }
-  this.lastPromotedId_ = promotedId;
 
-  // Hide layer details of disabled layers and folders with a promoted sublayer.
-  goog.dom.classes.enable(this.contentElem_, cm.css.HIDDEN,
-                          !enabled || sublayer !== null);
+  // Demote all sublayers except the selected one.
+  goog.array.forEach(this.model_.getSublayerIds() || [],
+                     function(sublayerId) {
+      if (sublayerId !== selectedId) {
+        goog.dom.classes.remove(this.layerEntryViews_[sublayerId].
+            getEntryElement(), cm.css.PROMOTED_SUBLAYER);
+        // Stop hiding the checkbox.
+        goog.dom.classes.remove(this.layerEntryViews_[sublayerId].
+            getCheckboxContainer(), cm.css.HIDDEN);
+        // Stop hiding the title.
+        goog.dom.classes.remove(this.layerEntryViews_[sublayerId].
+            getCheckboxLabel(), cm.css.HIDDEN);
+      }
+    }, this);
+
+  // Hide layer details of disabled layers and (if not editing) single-select
+  // folders.
+  goog.dom.classes.enable(this.contentElem_, cm.css.HIDDEN, !enabled ||
+      (!this.config_['enable_editing'] && this.model_.isSingleSelect()));
+
   // Hide sublayers of disabled layers and locked folders.
-  goog.dom.classes.enable(this.sublayersElem_, cm.css.HIDDEN,
-      !enabled || /** @type boolean */(this.model_.get('locked')));
+  goog.dom.classes.enable(this.sublayersElem_, cm.css.HIDDEN, !enabled ||
+      this.model_.get('folder_type') === cm.LayerModel.FolderType.LOCKED);
 
   // The opacity slider does not update properly when it's hidden, so we need
   // update it when it becomes visible.
   if (enabled && this.slider_) {
     this.slider_.handleRangeModelChange(null);  // force UI update
   }
+
+  this.updateSingleSelect_();
 };
 
 /**
@@ -762,30 +762,32 @@ cm.LayerEntryView.prototype.updateSliderValue_ = function() {
 
 /**
  * Adds a LayerEntryView for a sublayer.
- * @param {cm.LayerModel} layer A layer model for which to create a view.
- * @param {number} index The index into this layer entry's parent
- *   element's children at which to insert the sublayer.
+ * @param {cm.LayerModel} sublayer The sublayer model for which to create a
+ *   view.
+ * @param {number} index The index into this sublayer entry's parent
+ *   element's child list at which to insert the sublayer.
  * @private
  */
-cm.LayerEntryView.prototype.insertSublayer_ = function(layer, index) {
-  var id = /** @type string */(layer.get('id'));
+cm.LayerEntryView.prototype.insertSublayer_ = function(sublayer, index) {
+  var id = /** @type string */(sublayer.get('id'));
   this.layerEntryViews_[id] = new cm.LayerEntryView(this.sublayersElem_,
-      layer, this.metadataModel_, this.appState_, this.config_, index);
+      sublayer, this.metadataModel_, this.appState_, this.config_, index);
+  cm.events.onChange(sublayer, 'title', this.updateSingleSelect_, this);
   cm.events.forward(this.layerEntryViews_[id],
                     [cm.events.DELETE_LAYER,
-                     cm.events.PROMOTE_LAYER,
                      cm.events.TOGGLE_LAYER,
+                     cm.events.SELECT_SUBLAYER,
                      cm.events.ZOOM_TO_LAYER], this);
 };
 
 /**
  * Removes an entry for a sublayer.
- * @param {cm.LayerModel} layer The layer model whose view to remove.
+ * @param {cm.LayerModel} sublayer The sublayer model whose view to remove.
  * @private
  */
-cm.LayerEntryView.prototype.removeSublayer_ = function(layer) {
-  if (layer) {
-    var id = /** @type string */(layer.get('id'));
+cm.LayerEntryView.prototype.removeSublayer_ = function(sublayer) {
+  if (sublayer) {
+    var id = /** @type string */(sublayer.get('id'));
     this.layerEntryViews_[id].dispose();
     delete this.layerEntryViews_[id];
   }
@@ -793,6 +795,11 @@ cm.LayerEntryView.prototype.removeSublayer_ = function(layer) {
 
 /** Removes this cm.LayerEntryView from the UI. */
 cm.LayerEntryView.prototype.dispose = function() {
+  for (var id in this.layerEntryViews_) {
+    this.layerEntryViews_[id].dispose();
+    delete this.layerEntryViews_[id];
+  }
+  cm.events.dispose(this);
   cm.ui.remove(this.entryElem_);
   if (this.metadataListener_) {
     cm.events.unlisten(this.metadataListener_);

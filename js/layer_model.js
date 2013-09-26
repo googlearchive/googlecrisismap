@@ -49,6 +49,13 @@ cm.LayerModel.Type = {
   WMS: 'WMS'
 };
 
+/** @enum {string} */
+cm.LayerModel.FolderType = {
+  UNLOCKED: 'UNLOCKED',
+  LOCKED: 'LOCKED',
+  SINGLE_SELECT: 'SINGLE_SELECT'
+};
+
 /** @type Object.<cm.LayerModel.Type> */
 cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
   'FOLDER': cm.LayerModel.Type.FOLDER,
@@ -127,11 +134,13 @@ cm.LayerModel.MODEL_TO_MAPROOT_WIND_SPEED_UNITS = goog.object.create(
   cm.LayerModel.WindSpeedUnit.MILES_PER_HOUR, 'MILES_PER_HOUR'
 );
 
-/**
- * Unique tag to indicate that this layer has sublayers that should be
- * treated as samples of a time series.
- */
-cm.LayerModel.IS_TIME_SERIES_FOLDER = 'IS_TIME_SERIES_FOLDER';
+/** @type Object.<cm.LayerModel.FolderType> */
+cm.LayerModel.MAPROOT_TO_MODEL_FOLDER_TYPES = {
+  'CHECK': cm.LayerModel.FolderType.UNLOCKED,
+  'CHECK_HIDE_CHILDREN': cm.LayerModel.FolderType.LOCKED,
+  'RADIO_FOLDER': cm.LayerModel.FolderType.SINGLE_SELECT
+};
+
 /**
  * An internal counter used to generate unique IDs.
  * @type number
@@ -172,7 +181,6 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
             maproot['suppress_download_link'] || null);
   model.set('suppress_info_windows', maproot['suppress_info_windows'] || null);
   model.set('clip_to_viewport', maproot['clip_to_viewport'] || null);
-  model.set('last_update', maproot['last_update'] || '');
 
   switch (type) {
     case cm.LayerModel.Type.KML:
@@ -219,7 +227,8 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
           cm.LayerModel.WindSpeedUnit.KILOMETERS_PER_HOUR);
       break;
     case cm.LayerModel.Type.FOLDER:
-      model.set('locked', maproot['list_item_type'] === 'CHECK_HIDE_CHILDREN');
+      model.set('folder_type', cm.LayerModel.MAPROOT_TO_MODEL_FOLDER_TYPES[
+          maproot['list_item_type']]);
       break;
     case cm.LayerModel.Type.WMS:
       var wms = source['wms'] || {};
@@ -239,20 +248,9 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
     layer && sublayers.push(layer);
   });
 
-  // A time series without an explicit lastUpdate field inherits the
-  // lastUpdate of its most recently updated sublayer.
-  model.set('tags', new goog.structs.Set(maproot['tags'] || []));
-  if (model.isTimeSeries() && !model.get('last_update')) {
-    var mostRecentSublayer = model.getMostRecentSublayer();
-    if (mostRecentSublayer) {
-      model.set('last_update', mostRecentSublayer.get('last_update'));
-    }
-  }
-
-  // Non-folder layers should always be unlocked.
   cm.events.onChange(model, 'type', function() {
     if (model.get('type') !== cm.LayerModel.Type.FOLDER) {
-      model.set('locked', false);
+      model.set('folder_type', null);
     }
   });
 
@@ -356,7 +354,8 @@ cm.LayerModel.prototype.toMapRoot = function() {
     'suppress_download_link': this.get('suppress_download_link'),
     'suppress_info_windows': this.get('suppress_info_windows'),
     'clip_to_viewport': this.get('clip_to_viewport'),
-    'list_item_type': this.get('locked') ? 'CHECK_HIDE_CHILDREN' : null
+    'list_item_type': goog.object.transpose(cm.LayerModel.
+        MAPROOT_TO_MODEL_FOLDER_TYPES)[this.get('folder_type')]
   };
   if (type === cm.LayerModel.Type.FOLDER) {
     maproot['sublayers'] = sublayers;
@@ -368,7 +367,11 @@ cm.LayerModel.prototype.toMapRoot = function() {
 
 /** @override */
 cm.LayerModel.prototype.changed = function(key) {
-  cm.events.emit(this, cm.events.MODEL_CHANGED);
+  if (key === 'folder_type') {
+    cm.events.emit(this, cm.events.MODEL_CHANGED, {model: this});
+  } else {
+    cm.events.emit(this, cm.events.MODEL_CHANGED);
+  }
 };
 
 // Export this method so it can be called by the MVCObject machinery.
@@ -421,30 +424,9 @@ cm.LayerModel.prototype.getSublayer = function(layerId) {
 };
 
 /**
- * Convenience function for testing whether a layer is a time series.
- * @return {boolean} True if the layer is a time series.
+ * Convenience function for testing whether a layer is a single-select folder.
+ * @return {boolean} True if the layer is a single-select folder.
  */
-cm.LayerModel.prototype.isTimeSeries = function() {
-  var tags = this.get('tags');
-  return this.get('type') === cm.LayerModel.Type.FOLDER &&
-      tags && tags.contains(cm.LayerModel.IS_TIME_SERIES_FOLDER);
-};
-
-/**
- * Returns the most recently updated sublayer. If the sublayers
- * all have empty timestamps, return the first sublayer's id.
- * @return {?cm.LayerModel} The most recently updated layer model, or
- *   null if the folder has no sublayers.
- */
-cm.LayerModel.prototype.getMostRecentSublayer = function() {
-  var mostRecentDate = 0;
-  var mostRecentSublayer = null;
-  this.get('sublayers').forEach(function(sublayer) {
-    var lastUpdate = sublayer.get('last_update');
-    if (!mostRecentDate || lastUpdate > mostRecentDate) {
-      mostRecentSublayer = sublayer;
-      mostRecentDate = lastUpdate;
-    }
-  });
-  return mostRecentSublayer;
+cm.LayerModel.prototype.isSingleSelect = function() {
+  return this.get('folder_type') === cm.LayerModel.FolderType.SINGLE_SELECT;
 };

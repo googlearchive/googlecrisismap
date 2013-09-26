@@ -52,12 +52,6 @@ cm.AppState = function(opt_language) {
   this.set('enabled_layer_ids', new goog.structs.Set());
 
   /**
-   * The set of layers that are currently promoted sublayers of a time series.
-   * type goog.structs.Set
-   */
-  this.set('promoted_layer_ids', new goog.structs.Set());
-
-  /**
    * The dictionary to keep opacity values of layers.  Indexed by layer ID.  The
    * values in the dictionary are integers from 0 to 100.  All layers that
    * don't appear in the dictionary are assumed to have opacity 100.
@@ -73,6 +67,10 @@ cm.AppState = function(opt_language) {
 
   /** The currently selected base map type, as a cm.MapModel.Type. */
   this.set('map_type', cm.MapModel.Type.ROADMAP);
+
+  cm.events.listen(goog.global, [cm.events.MODEL_CHANGED], function(e) {
+    e.model && this.updateSingleSelectFolders(e.model);
+  }, this);
 };
 goog.inherits(cm.AppState, google.maps.MVCObject);
 
@@ -86,8 +84,6 @@ cm.AppState.fromAppState = function(appState) {
       /** @type {string} */ (appState.get('language')));
   newAppState.set('enabled_layer_ids',
       appState.get('enabled_layer_ids').clone());
-  newAppState.set('promoted_layer_ids',
-      appState.get('promoted_layer_ids').clone());
   newAppState.set('layer_opacities', goog.object.clone(
       /** @type {Object} */ (appState.get('layer_opacities'))));
   newAppState.set('viewport', appState.get('viewport'));
@@ -129,70 +125,62 @@ cm.AppState.prototype.setLayerOpacity = function(id, opacity) {
 };
 
 /**
- * Promote and enable the given layer, and demote its sibling sublayers.
- * @param {cm.LayerModel} layer The layer to promote.
- */
-cm.AppState.prototype.promoteLayer = function(layer) {
-  var id = /** @type string */(layer.get('id'));
-  var promotedLayerIds = this.get('promoted_layer_ids');
-  if (promotedLayerIds.contains(id)) {
-    return;
-  }
-  var siblingIds = layer.get('parent').getSublayerIds();
-  var enabledLayerIds = this.get('enabled_layer_ids');
-  var promotedClone = promotedLayerIds.clone();
-  var enabledClone = enabledLayerIds.clone();
-
-  // Operate on a clone of each property to prevent listeners from firing
-  // when nothing has changed.
-  promotedClone.removeAll(siblingIds);
-  enabledClone.removeAll(siblingIds);
-  promotedClone.add(id);
-  enabledClone.add(id);
-
-  promotedClone.equals(promotedLayerIds) ||
-      this.set('promoted_layer_ids', promotedClone);
-  enabledClone.equals(enabledLayerIds) ||
-      this.set('enabled_layer_ids', enabledClone);
-};
-
-/**
- * Demote any and all promoted sublayers of the given layer.
- * @param {cm.LayerModel} layer The parent layer.
- */
-cm.AppState.prototype.demoteSublayers = function(layer) {
-  var toDemote = this.get('promoted_layer_ids').intersection(
-      layer.getSublayerIds());
-  if (!toDemote.isEmpty()) {
-    this.get('promoted_layer_ids').removeAll(toDemote);
-    this.notify('promoted_layer_ids');
-  }
-};
-
-/**
- * Returns whether or not a layer is currently promoted.
- * @param {string} id A layer ID.
- * @return {boolean} The promoted state for the layer.
- */
-cm.AppState.prototype.getLayerPromoted = function(id) {
-  return this.get('promoted_layer_ids').contains(id);
-};
-
-/**
- * Returns the promoted sublayer of the given parent time series layer, or
- * null if none exists.
+ * Returns the ID of the first selected sublayer of the given layer, or null if
+ * there is none.
  * @param {cm.LayerModel} layer The parent layer model.
- * @return {?cm.LayerModel} The promoted sublayer model if it exists.
+ * @return {?string} The ID of the first enabled sublayer model or null
+ *   if there is no enabled sublayer.
  */
-cm.AppState.prototype.getPromotedSublayer = function(layer) {
-  var promotedLayerIds = this.get('promoted_layer_ids');
-  var sublayerIds = promotedLayerIds.intersection(layer.getSublayerIds());
-  return sublayerIds.isEmpty() ? null :
-      layer.getSublayer(sublayerIds.getValues()[0]);
+cm.AppState.prototype.getFirstEnabledSublayerId = function(layer) {
+  var enabledIds = this.get('enabled_layer_ids').intersection(
+      layer.getSublayerIds());
+  return enabledIds.isEmpty() ? null : enabledIds.getValues()[0];
 };
 
 /**
- * Return all layers that should be visible on the map.
+ * Enables a sublayer of the given layer and disables all other sublayers.
+ * @param {cm.LayerModel} layer The layer whose sublayer to select.
+ * @param {string} selectedId The ID of the sublayer to select.
+ */
+cm.AppState.prototype.selectSublayer = function(layer, selectedId) {
+  var enabledLayerIds = this.get('enabled_layer_ids');
+  var sublayerIds = layer.getSublayerIds();
+  enabledLayerIds.removeAll(sublayerIds);
+  enabledLayerIds.add(selectedId);
+  this.notify('enabled_layer_ids');
+};
+
+/**
+ * Enforces that all non-empty single-select folders in the given map or
+ * layer tree have exactly one enabled sublayer.
+ * @param {cm.LayerModel|cm.MapModel} model The layer or map model.
+ */
+cm.AppState.prototype.updateSingleSelectFolders = function(model) {
+  var updateSingleSelect = goog.bind(function(layer) {
+    var enabledLayerIds = this.get('enabled_layer_ids');
+    if (layer.isSingleSelect()) {
+      var sublayerIds = layer.getSublayerIds();
+      var selectedId = this.getFirstEnabledSublayerId(layer) ||
+          (sublayerIds.length && sublayerIds[0]);
+      if (selectedId) {
+        // Select this sublayer without notifying changes to 'enabled_layer_ids'
+        enabledLayerIds.removeAll(sublayerIds);
+        enabledLayerIds.add(selectedId);
+      }
+    }
+  }, this);
+
+  if (model.get('layers')) {
+    cm.util.forLayersInMap(/** @type cm.MapModel */(model), updateSingleSelect);
+  } else {
+    cm.util.forLayerAndDescendants(/** @type cm.LayerModel */(model),
+      updateSingleSelect);
+  }
+  this.notify('enabled_layer_ids');
+};
+
+/**
+ * Returns all layers that should be visible on the map.
  * @param {cm.MapModel} mapModel The map model.
  * @return {goog.structs.Set} The IDs of layers that should be visible.
  */
@@ -229,8 +217,8 @@ cm.AppState.prototype.writeToMapModel = function(mapModel) {
 };
 
 /**
- * Sets the base map type, map viewport, layer visibility, layer promotion,
- * and layer opacities to the default view specified by the MapModel.
+ * Sets the base map type, map viewport, layer visibility, and layer opacities
+ * to the default view specified by the MapModel.
  * @param {cm.MapModel} mapModel The MapModel.
  */
 cm.AppState.prototype.setFromMapModel = function(mapModel) {
@@ -243,17 +231,8 @@ cm.AppState.prototype.setFromMapModel = function(mapModel) {
       opacities[id] = opacity * 100;
     }
     this.setLayerEnabled(id, layer.get('default_visibility'));
-    // By default, all time series are loaded with a promoted sublayer,
-    // though this may be overriden by a URI parameter.
-    if (layer.isTimeSeries()) {
-      // A time series may have at most one promoted sublayer, enforced here
-      // because the AppState has no handle to the layer model.
-      var sublayer = layer.getMostRecentSublayer();
-      sublayer && this.promoteLayer(sublayer);
-    } else {
-      this.demoteSublayers(layer);
-    }
   }, null, this);
+  this.updateSingleSelectFolders(mapModel);
   this.set('map_type', mapModel.get('map_type') || cm.MapModel.Type.ROADMAP);
   this.set('layer_opacities', opacities);
   this.set('viewport', mapModel.get('viewport'));
@@ -263,8 +242,6 @@ cm.AppState.prototype.setFromMapModel = function(mapModel) {
 cm.AppState.prototype.getUri = function() {
   var viewport = /** @type cm.LatLonBox */(this.get('viewport'));
   var enabledIds = /** @type goog.structs.Set */(this.get('enabled_layer_ids'));
-  var promotedIds = /** @type goog.structs.Set */(
-      this.get('promoted_layer_ids'));
 
   // TODO(kpy): Consider showing a warning if the user shares a link to a
   // non-default server, such as a development server?
@@ -281,7 +258,6 @@ cm.AppState.prototype.getUri = function() {
   uri.setParameterValue('llbox', viewport.round(4).toString());
   uri.setParameterValue('t', this.get('map_type'));
   uri.setParameterValue('layers', this.getLayersParameter_());
-  uri.setParameterValue('promoted', promotedIds.getValues().join(','));
   return uri;
 };
 
@@ -300,8 +276,8 @@ cm.AppState.prototype.setFromUri = function(uri) {
     this.set('map_type', mapType.toUpperCase());
   }
   // TODO(romano): Needs error-checking to verify that the layer
-  // ID lists in the 'layers' and 'promoted' parameters are valid,
-  // and if not, default to valid values.
+  // ID lists in the 'layers' parameters is valid, and if not,
+  // default to a valid value.
   var enabledLayers = uri.getParameterValue('layers');
   if (goog.isDefAndNotNull(enabledLayers)) {
     // 'layers' url parameter defines which layers are enabled and also
@@ -320,11 +296,6 @@ cm.AppState.prototype.setFromUri = function(uri) {
     });
     this.set('enabled_layer_ids', enabledLayerIds);
     this.set('layer_opacities', opacities);
-  }
-  var promotedLayerIds = uri.getParameterValue('promoted');
-  if (goog.isDefAndNotNull(promotedLayerIds)) {
-    this.set('promoted_layer_ids',
-             new goog.structs.Set(promotedLayerIds.split(',')));
   }
 };
 

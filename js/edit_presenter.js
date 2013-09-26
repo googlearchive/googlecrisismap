@@ -213,10 +213,6 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      multiple: true,
      choices: [],
      menu_class: cm.css.WMS_MENU_EDITOR},
-    {key: 'locked', label: 'Locked?',
-     type: cm.editors.Type.CHECKBOX, checked_value: true,
-     unchecked_value: false,
-     conditions: {'type': isType(cm.LayerModel.Type.FOLDER)}},
     {key: 'tile_coordinate_type', label: 'Tile coordinates',
      type: cm.editors.Type.MENU,
      conditions: {'type': isType(cm.LayerModel.Type.TILE)},
@@ -224,7 +220,15 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
        {value: cm.LayerModel.TileCoordinateType.GOOGLE,
         label: 'Google Tile Coordinates'},
        {value: cm.LayerModel.TileCoordinateType.BING,
-        label: 'Bing Tile Coordinates'}]}
+        label: 'Bing Tile Coordinates'}]},
+    {key: 'folder_type', label: 'Folder type',
+      type: cm.editors.Type.MENU,
+      choices: [
+        {value: cm.LayerModel.FolderType.UNLOCKED, label: 'Unlocked'},
+        {value: cm.LayerModel.FolderType.LOCKED, label: 'Locked'},
+        {value: cm.LayerModel.FolderType.SINGLE_SELECT, label: 'Single select'}
+      ],
+      conditions: {'type': isType(cm.LayerModel.Type.FOLDER)}}
  ];
 
   // The user has asked us to bring up an inspector.
@@ -288,6 +292,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   cm.events.listen(goog.global, cm.events.LAYERS_ARRANGED, function(e) {
     this.doCommand(new cm.ArrangeCommand(e.oldValue, e.newValue),
                    appState, mapModel);
+    cm.events.emit(goog.global, cm.events.MODEL_CHANGED, {model: mapModel});
   }, this);
 
   // The user has requested undo or redo.

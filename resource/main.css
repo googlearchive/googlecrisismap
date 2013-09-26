@@ -339,18 +339,12 @@ html, body {
 }
 .cm-layer-entry.cm-contains-promoted-sublayer > * > .cm-layer-entry.cm-promoted-sublayer {
   display: block;
-  margin-left:-20px;
 }
 .cm-panel .cm-layer-title {
   font-size:14px;
   line-height:16px;
   padding-left:2px;
   margin-left:-23px;
-}
-.cm-layer-date {
-  font-size:14px;
-  line-height:16px;
-  color: #888888;
 }
 .cm-embedded .cm-panel {
   float:none;
@@ -375,9 +369,6 @@ html, body {
 .cm-panel input[type=checkbox] {
   margin-left:-19px;
   margin-bottom:-2px;
-}
-.cm-panel .cm-time-series-button {
-  vertical-align:middle;
 }
 
 /* Map */
@@ -588,7 +579,7 @@ input[type=checkbox] {
   border-radius:1px;
   -webkit-box-sizing:border-box;
   -moz-box-sizing:border-box;
-/**  box-sizing:border-box; */
+  box-sizing:border-box;
   cursor:pointer;
   position:relative;
   overflow:visible;
@@ -630,18 +621,25 @@ input[type=checkbox]:checked::after {
  display:none;
 }
 
-/* Menu for time series layers */
-.cm-calendar-button {
-  width:21px;
-  height:15px;
+/* Menu for single-select layers */
+.cm-single-select-button {
+  width:11px;
+  height:11px;
   display:inline-block;
-  background:url('calendar.png') no-repeat left;
+  background:url('//maps.gstatic.com/mapfiles/hpimgs28.png') -123px 4px;
+  border:1px solid #c6c6c6;
+  border-radius:1px;
   float:right;
   padding-right:5px;
-  cursor:pointer;
+  opacity:0.5;
 }
-.cm-calendar-button.open {
+.cm-single-select-button.open {
   width:auto
+}
+.cm-sublayer-select {
+  margin-top:4px;
+  margin-left:-2px;
+  margin-bottom:2px;
 }
 .cm-sublayer-picker {
   background:#fff;
@@ -702,7 +700,7 @@ input[type=checkbox]:checked::after {
 .cm-map-picker li:hover {
   background-color:#f1f1f1;
 }
-.cm-map-picker-button {
+.cm-map-picker-button { 
   width:11px;
   height:11px;
   border:1px solid #c6c6c6;

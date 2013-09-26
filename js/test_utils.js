@@ -146,6 +146,16 @@ FakeElement.prototype.getAttribute = function(name) {
 };
 
 /**
+ * Fake implementation of getAttributeNode, used by
+ * goog.dom.isFocusableTabIndex().
+ * @param {string} name The attribute's name.
+ * @return {string} The attribute name and value as an object.
+ */
+FakeElement.prototype.getAttributeNode = function(name) {
+  return {'name': name, 'value': this.attrs_[name]};
+};
+
+/**
  * Fake implementation of setAttribute.
  * @param {string} name The attribute's name.
  * @param {string} value The attribute's value.

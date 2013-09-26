@@ -71,6 +71,7 @@ PanelViewTest.prototype.testConstructorHiddenHeader = function() {
 PanelViewTest.createLayerModel_ = function(id) {
   var layerModel = new google.maps.MVCObject();
   layerModel.set('id', id);
+  layerModel.isSingleSelect = function() { return false; };
   return layerModel;
 };
 
@@ -108,10 +109,6 @@ PanelViewTest.prototype.testLayerEventsForwarded = function() {
   cm.events.listen(this.panelView_, cm.events.ZOOM_TO_LAYER, function() {
     zoomToLayer = true;
   });
-  var layerPromoted = false;
-  cm.events.listen(this.panelView_, cm.events.PROMOTE_LAYER, function() {
-    layerPromoted = true;
-  });
   var layerDeleted = false;
   cm.events.listen(goog.global, cm.events.DELETE_LAYER, function() {
     layerDeleted = true;
@@ -120,8 +117,6 @@ PanelViewTest.prototype.testLayerEventsForwarded = function() {
   expectTrue(layerToggled);
   cm.events.emit(layerEntry, cm.events.ZOOM_TO_LAYER);
   expectTrue(zoomToLayer);
-  cm.events.emit(layerEntry, cm.events.PROMOTE_LAYER);
-  expectTrue(layerPromoted);
   cm.events.emit(layerEntry, cm.events.DELETE_LAYER);
   expectTrue(layerDeleted);
 };

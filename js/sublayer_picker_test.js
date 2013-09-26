@@ -9,112 +9,65 @@
 // OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 // specific language governing permissions and limitations under the License.
 
-goog.require('cm.css');
+// Author: romano@google.com (Raquel Romano)
 
-/**
- * @fileoverview Tests for the SublayerPicker class.
- * @author romano@google.com (Raquel Romano)
- */
-
-/**
- * @constructor
- */
 function SublayerPickerTest() {
   cm.TestBase.call(this);
   var json = {
     type: 'FOLDER',
-    tags: [cm.LayerModel.IS_TIME_SERIES_FOLDER],
+    title: 'Parent Folder',
     sublayers: [
-      {type: 'KML', last_update: '1321671420'},
-      {type: 'KML', last_update: '1321757820', title: 'Most Recent'},
-      {type: 'KML', last_update: '1321498620', title: 'Least Recent',
-       id: 'least-recent'}
-  ]};
+      {type: 'KML', id: 'unselected1', title: 'Unselected 1'},
+      {type: 'KML', id: 'selected', title: 'Selected',
+       default_visibility: 'CHECK'},
+      {type: 'KML', id: 'unselected2', title: 'Unselected 2'}
+    ]};
   this.layer_ = cm.LayerModel.newFromMapRoot(json);
+
+  this.parent_ = new FakeElement('div');
+  this.sublayerPicker_ = new cm.SublayerPicker(
+      this.parent_, this.layer_, 'selected');
 }
 SublayerPickerTest.prototype = new cm.TestBase();
 registerTestSuite(SublayerPickerTest);
 
 /** Tests that the menu was created with an option for each sublayer. */
 SublayerPickerTest.prototype.testConstructor = function() {
-  var parent = new FakeElement('div');
-  var sublayerPicker = new cm.SublayerPicker(parent, this.layer_);
-  var menu = expectDescendantOf(parent, withClass(cm.css.SUBLAYER_PICKER));
-  this.layer_.get('sublayers').forEach(function(sublayer) {
-    expectDescendantOf(menu, withText(sublayer.get('title')));
-  });
-  expectDescendantOf(menu, withText(MSG_MULTIPLE_DATES));
+  expectDescendantOf(this.parent_, withText('Selected'));
+  this.layer_.get('sublayers').forEach(goog.bind(function(sublayer) {
+    if (sublayer.get('id') !== 'selected') {
+      expectNoDescendantOf(this.parent_, withText(sublayer.get('title')));
+    }
+  }, this));
 };
 
 /**
- * Tests that the default menu option is the most recent sublayer.
- */
-SublayerPickerTest.prototype.testDefaultOption = function() {
-  var parent = new FakeElement('div');
-  var sublayerPicker = new cm.SublayerPicker(parent, this.layer_);
-  var selected = expectDescendantOf(parent, withText('Most Recent'));
-  expectEq('selected', selected.className);
-};
-
-/**
- * Tests that the default menu option is the multiple dates optoins
- * when no sublayers have last update times.
- */
-SublayerPickerTest.prototype.testDefaultOptionMultiple = function() {
-  this.layer_.get('sublayers').forEach(function(sublayer) {
-    sublayer.set('last_update', undefined);
-  });
-  var parent = new FakeElement('div');
-  var sublayerPicker = new cm.SublayerPicker(parent, this.layer_);
-  var selected = expectDescendantOf(parent, withText(MSG_MULTIPLE_DATES));
-  expectEq('selected', selected.className);
-};
-
-/**
- * Tests the menu open/close listeners.
- */
-SublayerPickerTest.prototype.testMenuVisibility = function() {
-  var parent = new FakeElement('div');
-  var sublayerPicker = new cm.SublayerPicker(parent, this.layer_);
-  var button = expectDescendantOf(parent, withClass(cm.css.CALENDAR_BUTTON));
-  var menu = expectDescendantOf(parent, withClass(cm.css.SUBLAYER_PICKER));
-
-  expectEq('none', menu.style.display);
-  cm.events.emit(button, 'click');
-  expectEq('inline-block', menu.style.display);
-  cm.events.emit(button, 'click');
-  expectEq('none', menu.style.display);
-};
-
-/**
- * Tests the menu selection listeners.
+ * Tests the menu selection listener.
  */
 SublayerPickerTest.prototype.testMenuSelect = function() {
-  var toggled = {};
-  this.layer_.get('sublayers').forEach(function(sublayer) {
-    toggled[sublayer.get('id')] = false;
-    sublayer.set('last_update', undefined);
-  });
-  toggled[cm.LayerEntryView.MULTIPLE_DATES_OPTION] = false;
+  var selected = 'selected';
+  cm.events.listen(this.sublayerPicker_, cm.events.SELECT_SUBLAYER,
+    function(event) { selected = event.id; });
 
-  var parent = new FakeElement('div');
-  var sublayerPicker = new cm.SublayerPicker(parent, this.layer_);
-  cm.events.listen(sublayerPicker, cm.events.SELECT_SUBLAYER,
-    function(event) { toggled[event.id] = !toggled[event.id]; });
+  // Select a new sublayer.
+  this.sublayerPicker_.select_.setSelectedIndex(2);
+  cm.events.emit(this.sublayerPicker_, goog.ui.Component.EventType.CHANGE);
+  expectEq('unselected2', selected);
 
-  var single = findDescendantOf(parent, withText('Least Recent'));
-  var multiple = expectDescendantOf(parent, withText(MSG_MULTIPLE_DATES));
-
-  // Click on a sublayer
-  cm.events.emit(single, 'click');
-  expectTrue(toggled['least-recent']);
-
-  // Click on multiple dates option
-  cm.events.emit(multiple, 'click');
-  expectTrue(toggled[cm.LayerEntryView.MULTIPLE_DATES_OPTION]);
-
-  // Click on a sublayer
-  cm.events.emit(single, 'click');
-  expectFalse(toggled['least-recent']);
+  // Select the original sublayer.
+  this.sublayerPicker_.select_.setSelectedIndex(1);
+  cm.events.emit(this.sublayerPicker_, goog.ui.Component.EventType.CHANGE);
+  expectEq('selected', selected);
 };
 
+/**
+ * Tests that the picker can be constructed for empty folders.
+ */
+SublayerPickerTest.prototype.testEmptyFolder = function() {
+  var json = {
+    type: 'FOLDER',
+    title: 'Empty Folder',
+    sublayers: []};
+  var layer = cm.LayerModel.newFromMapRoot(json);
+  var sublayerPicker = new cm.SublayerPicker(this.parent_, layer, '');
+};

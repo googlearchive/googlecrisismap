@@ -75,22 +75,17 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     appState.setLayerOpacity(event.id, event.opacity);
   });
 
-  cm.events.listen(panelView, cm.events.PROMOTE_LAYER, function(event) {
-    this.logEvent_(event.value ? 'promote_on' : 'promote_off', event.id,
-                   event.value ? 1 : 0);
-    if (event.value) {
-      appState.promoteLayer(event.object);
-    } else {
-      appState.demoteSublayers(event.object);
-    }
-  }, this);
-
   cm.events.listen(panelView, cm.events.ZOOM_TO_LAYER, function(event) {
     this.logEvent_('zoom_to', event.id);
     appState.setLayerEnabled(event.id, true);
     mapView.zoomToLayer(event.id);
     cm.events.emit(panelElem, 'panelclose');
   }, this);
+
+  cm.events.listen(panelView, cm.events.SELECT_SUBLAYER, function(event) {
+    appState.selectSublayer(event.model, event.id);
+    appState.setLayerEnabled(event.model.get('id'), true);
+  });
 
   cm.events.listen(panelElem, 'panelopen', function(event) {
     cm.Analytics.logEvent('panel', 'open', mapId, 1);

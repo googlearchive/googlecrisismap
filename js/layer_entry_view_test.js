@@ -28,7 +28,8 @@ function LayerEntryViewTest() {
           'dark red - eviler monsters'));
   this.layerModel_.set('type', cm.LayerModel.Type.FUSION);
   this.layerModel_.set('sublayers', new google.maps.MVCArray());
-  this.layerModel_.isTimeSeries = function() { return false; };
+  this.layerModel_.getSublayerIds = function() { return []; };
+  this.layerModel_.isSingleSelect = function() { return false; };
   this.layerModel_.getSourceAddress = function() { return 'XYZ:xyz'; };
 
   this.metadataModel_ = new cm.MetadataModel();
@@ -198,14 +199,16 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   this.layerModel_.set('type', cm.LayerModel.Type.KML);
 };
 
-/** Tests that time series layers get a sublayer picker. */
+/** Tests that a single-select folder get a sublayer picker. */
 LayerEntryViewTest.prototype.testSublayerPicker = function() {
   this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
-  this.layerModel_.set('tags', [cm.LayerModel.IS_TIME_SERIES_FOLDER]);
+  this.layerModel_.set('folder_type', cm.LayerModel.FolderType.SINGLE_SELECT);
+  this.layerModel_.isSingleSelect = function() { return true; };
 
-  var container = new FakeElement('div');
-  var sublayerPicker = this.expectNew_(
-      'cm.SublayerPicker', _, this.layerModel_);
+  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
+      .willRepeatedly(returnWith(null));
+  var sublayerPicker = this.expectNew_('cm.SublayerPicker',
+                                       _, this.layerModel_, '');
   this.createView_();
 };
 
@@ -228,36 +231,6 @@ LayerEntryViewTest.prototype.updateTitleWithWordBreaks = function() {
       withInnerHtml(wordBrokenTitle));
   expectNoDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
       withInnerHtml(longTitle));
-};
-
-/**
- * Tests that a time series 'title' property updates to reflect a
- * promoted sublayer.
- */
-LayerEntryViewTest.prototype.updateTitleTimeSeries = function() {
-  var sublayerPicker = this.expectNew_(
-      'cm.SublayerPicker', _, this.layerModel_);
-  this.layerModel_.isTimeSeries = function() { return true; };
-  var childModel = new google.maps.MVCObject;
-  childModel.set('last_update', new Date(2020, 2, 20).valueOf() / 1000);
-  expectCall(this.appState_.getPromotedSublayer)(this.layerModel_)
-      .willRepeatedly(returnWith(childModel));
-  var parent = this.createView_();
-  var expectedSubtitle = cm.ui.SEPARATOR_DASH + 'Mar 20, 2020';
-
-  cm.events.emit(this.appState_, 'promoted_layer_ids_changed');
-  expectDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
-                     withText('monsters'));
-  expectDescendantOf(parent, withClass(cm.css.LAYER_DATE),
-                     withText(expectedSubtitle));
-
-  expectCall(this.appState_.getPromotedSublayer)(this.layerModel_)
-      .willRepeatedly(returnWith(null));
-  cm.events.emit(this.appState_, 'promoted_layer_ids_changed');
-  expectDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
-                     withText('monsters'));
-  expectNoDescendantOf(parent, withClass(cm.css.LAYER_DATE),
-                       withText(expectedSubtitle));
 };
 
 /** Tests that setting the 'description' property updates the description. */
@@ -518,36 +491,61 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
       .willRepeatedly(returnWith(false));
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectFalse(checkbox.checked);
-  // Warnign element is already hidden, make sure some other is hidden too.
+  // Warning element is already hidden, make sure some other is hidden too.
   expectDescendantOf(parent, 'div', withClass(cm.css.HIDDEN),
                      not(withClass(cm.css.WARNING)));
 };
 
 /**
- * Tests that a time series layer entry is updated when its
+ * Create a single-select folder with the given sublayerIds, and add it to
+ * the map model.
+ * @param {string} sublayerIds The IDs of the folder's sublayers.
+ * @return {Array.<cm.LayerModel>} An array of the folder's sublayer models.
+ * @private
+ */
+LayerEntryViewTest.prototype.createSingleSelect_ = function(sublayerIds) {
+  var children = [];
+  goog.array.forEach(sublayerIds, function(id) {
+    var childModel = new google.maps.MVCObject;
+    childModel.set('id', id);
+    childModel.set('sublayers', new google.maps.MVCArray());
+    childModel.isSingleSelect = function() { return false; };
+    childModel.getSublayerIds = function() { return []; };
+    childModel.getSourceAddress = function() { return 'ABC:abc'; };
+    children.push(childModel);
+  });
+
+  this.layerModel_.set('sublayers', new google.maps.MVCArray(children));
+  this.layerModel_.isSingleSelect = function() { return true; };
+  this.layerModel_.getSublayerIds = function() { return sublayerIds; };
+  var sublayerPicker = this.expectNew_('cm.SublayerPicker',
+                                       _, this.layerModel_, _);
+  sublayerPicker.dispose = function() {};
+  return children;
+};
+
+/**
+ * Tests that a single-select folder's layer entry is updated when its
  * enabled state changes in the AppState.
  */
-LayerEntryViewTest.prototype.updateEnabledTimeSeries = function() {
-  var childModel = new google.maps.MVCObject;
-  childModel.set('id', 'child');
-  childModel.set('sublayers', new google.maps.MVCArray());
-  childModel.isTimeSeries = function() { return false; };
-  childModel.getSourceAddress = function() { return 'ABC:abc'; };
+LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
+  var children = this.createSingleSelect_(['child1', 'child2'], 0);
 
-  this.layerModel_.set('sublayers', new google.maps.MVCArray([childModel]));
-  this.layerModel_.isTimeSeries = function() { return true; };
-  var sublayerPicker = this.expectNew_(
-      'cm.SublayerPicker', _, this.layerModel_);
-
-  expectCall(this.appState_.getPromotedSublayer)(this.layerModel_)
-      .willRepeatedly(returnWith(childModel));
-  expectCall(this.appState_.getLayerEnabled)('child')
+  // Initialize the single-select menu with a single enabled child.
+  expectCall(this.appState_.getLayerEnabled)('child1')
       .willRepeatedly(returnWith(true));
-  var parent = this.createView_();
-  var childEntry = this.view_.layerEntryViews_['child'].getEntryElement();
+  expectCall(this.appState_.getLayerEnabled)('child2')
+      .willRepeatedly(returnWith(false));
+  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
+      .willRepeatedly(returnWith('child1'));
 
+  var parent = this.createView_();
+  var child1 = this.view_.layerEntryViews_['child1'].getEntryElement();
+  var child2 = this.view_.layerEntryViews_['child2'].getEntryElement();
+
+  // Initially disable folder.
   var checkbox = expectDescendantOf(parent, inputType('checkbox'));
-  expectFalse(checkbox.checked);  // layer is initially toggled off
+  expectFalse(checkbox.checked);
 
   // Enable the parent layer.
   expectCall(this.appState_.getLayerEnabled)('layer0')
@@ -555,95 +553,126 @@ LayerEntryViewTest.prototype.updateEnabledTimeSeries = function() {
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectTrue(checkbox.checked);
 
-  // TODO(romano): replace this when expectNoDescendantOf() takes a
-  // maximum recursion depth, so that the childEntry's content div is excluded.
-  //expectNoDescendantOf(parent, 'div', withClass(cm.css.CONTENT));
+  expectDescendantOf(parent, 'div', withClass(cm.css.SUBLAYER_SELECT));
   expectDescendantOf(parent, 'div', withClass(cm.css.SUBLAYERS));
-  expectDescendantOf(childEntry, 'div', withClass(cm.css.CONTENT));
-  expectNoDescendantOf(childEntry, 'div', withClass(cm.css.HEADER));
+
+  // The selected sublayer's checkbox should not be shown.
+  expectDescendantOf(child1, 'div', withClass(cm.css.CHECKBOX_CONTAINER),
+                     withClass(cm.css.HIDDEN));
+  // The selected sublayer's title should not be shown, but its details
+  // should be.
+  expectDescendantOf(child1, 'label', withAttr('for', 'checkboxchild1'),
+                     withClass(cm.css.HIDDEN));
+  expectDescendantOf(child1, 'div', withClass(cm.css.CONTENT),
+                    not(withClass(cm.css.HIDDEN)));
+
+  // The sibling sublayer should be hidden.
+  expectThat(child2, isElement('div'), withAttr('display', 'none'));
+
+  // The parent folder's details should not be shown. We can't
+  // use expectNoDescendantOf(parent, ...) because the child content
+  // element will give a false match.
+  expectThat(this.view_.getEntryElement().childNodes[1], isElement('div'),
+             withClass(cm.css.CONTENT), withClass(cm.css.HIDDEN));
 };
 
-/**
- * Tests that a time series layer entry is updated when a selection is made
- * from its SublayerPicker.
- */
-LayerEntryViewTest.prototype.updateEnabledTimeSeriesSelect = function() {
-  var childModel1 = new google.maps.MVCObject;
-  childModel1.set('id', 'child1');
-  childModel1.set('sublayers', new google.maps.MVCArray());
-  childModel1.isTimeSeries = function() { return false; };
-  childModel1.getSourceAddress = function() { return 'ABC:abc'; };
+/** Tests displaying layer details of single-select folders in the editor. */
+LayerEntryViewTest.prototype.updateEnabledSingleSelectInEditor = function() {
+  var children = this.createSingleSelect_(['child1', 'child2'], 0);
 
-  var childModel2 = new google.maps.MVCObject;
-  childModel2.set('id', 'child2');
-  childModel2.set('sublayers', new google.maps.MVCArray());
-  childModel2.isTimeSeries = function() { return false; };
-  childModel2.getSourceAddress = function() { return 'DEF:def'; };
-
-  this.layerModel_.set('sublayers',
-                       new google.maps.MVCArray([childModel1, childModel2]));
-  this.layerModel_.isTimeSeries = function() { return true; };
-  var sublayerPicker = this.expectNew_(
-      'cm.SublayerPicker', _, this.layerModel_);
-
-  // Initialize the time series as enabled with a promoted sublayer.
-  expectCall(this.appState_.getPromotedSublayer)(this.layerModel_)
-      .willRepeatedly(returnWith(childModel1));
+  // Initialize the single-select menu with a single enabled child.
   expectCall(this.appState_.getLayerEnabled)('child1')
       .willRepeatedly(returnWith(true));
   expectCall(this.appState_.getLayerEnabled)('child2')
       .willRepeatedly(returnWith(false));
+  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
+      .willRepeatedly(returnWith('child1'));
+
+  var parent = this.createView_({enable_editing: true});
+  var child1 = this.view_.layerEntryViews_['child1'].getEntryElement();
+  var child2 = this.view_.layerEntryViews_['child2'].getEntryElement();
+
+  // Enable the parent layer.
   expectCall(this.appState_.getLayerEnabled)('layer0')
       .willRepeatedly(returnWith(true));
-  var parent = this.createView_();
-  var childEntry1 = this.view_.layerEntryViews_['child1'].getEntryElement();
-  var childEntry2 = this.view_.layerEntryViews_['child2'].getEntryElement();
+  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
 
-  // Check the class names of the parent layer, promoted sublayer, and
-  // not-promoted sublayer.
-  expectDescendantOf(parent, withClass(cm.css.CONTAINS_PROMOTED_SUBLAYER));
-  var sublayers = expectDescendantOf(parent, withClass(cm.css.SUBLAYERS));
-  var promoted = expectDescendantOf(parent,
-                                    withClass(cm.css.LAYER_ENTRY),
-                                    withClass(cm.css.PROMOTED_SUBLAYER));
-  expectEq(childEntry1, promoted);
-  var notPromoted =
-      expectDescendantOf(sublayers,
-                         withClass(cm.css.LAYER_ENTRY),
-                         not(withClass(cm.css.PROMOTED_SUBLAYER)));
-  expectEq(childEntry2, notPromoted);
+  // The selected sublayer's checkbox should not be shown.
+  expectDescendantOf(child1, 'div', withClass(cm.css.CHECKBOX_CONTAINER),
+                     withClass(cm.css.HIDDEN));
 
-  // Promote the other sublayer and verify its class name.
-  expectCall(this.appState_.getPromotedSublayer)(this.layerModel_)
-      .willRepeatedly(returnWith(childModel2));
-  cm.events.emit(this.appState_, 'promoted_layer_ids_changed');
-  promoted = expectDescendantOf(parent,
-                                withClass(cm.css.LAYER_ENTRY),
-                                withClass(cm.css.PROMOTED_SUBLAYER));
-  expectEq(childEntry2, promoted);
+  // The selected sublayer's title and details should be shown.
+  expectDescendantOf(child1, 'label', withAttr('for', 'checkboxchild1'),
+                     not(withClass(cm.css.HIDDEN)));
+  expectDescendantOf(child1, 'div', withClass(cm.css.CONTENT),
+                    not(withClass(cm.css.HIDDEN)));
 
-  // Select the multiple dates option and verify that no layers are
-  // promoted sublayers or contain promoted sublayers.
-  expectCall(this.appState_.getPromotedSublayer)(this.layerModel_)
-      .willRepeatedly(returnWith(null));
-  cm.events.emit(this.appState_, 'promoted_layer_ids_changed');
-  expectNoDescendantOf(parent, withClass(cm.css.CONTAINS_PROMOTED_SUBLAYER));
-  expectNoDescendantOf(parent, withClass(cm.css.PROMOTED_SUBLAYER));
+  // The sibling sublayer should be hidden.
+  expectThat(child2, isElement('div'), withAttr('display', 'none'));
+
+  // The parent folder's details should be shown.  We can't
+  // use expectNoDescendantOf(parent, ...) because the child content
+  // element will give a false match.
+  expectThat(this.view_.getEntryElement().childNodes[1],
+             isElement('div'), withClass(cm.css.CONTENT),
+             not(withClass(cm.css.HIDDEN)));
 };
 
 /**
- * Tests that a locked folder's sublayers are not shown.
+ * Tests that a single-select folder is updated when a selection is made
+ * from its SublayerPicker.
  */
+LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
+  var children = this.createSingleSelect_(['child1', 'child2']);
+
+  // Initialize the single-select menu with 'child2' and its parent enabled.
+  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
+      .willRepeatedly(returnWith('child2'));
+  expectCall(this.appState_.getLayerEnabled)('child1')
+      .willRepeatedly(returnWith(false));
+  expectCall(this.appState_.getLayerEnabled)('child2')
+      .willRepeatedly(returnWith(true));
+  expectCall(this.appState_.getLayerEnabled)('layer0')
+      .willRepeatedly(returnWith(true));
+  var parent = this.createView_();
+  var childElem1 = this.view_.layerEntryViews_['child1'].getEntryElement();
+  var childElem2 = this.view_.layerEntryViews_['child2'].getEntryElement();
+
+  // Check the class names of the parent layer, selected sublayer, and
+  // non-selected sublayer.
+  expectDescendantOf(parent, withClass(cm.css.CONTAINS_PROMOTED_SUBLAYER));
+  var sublayers = expectDescendantOf(parent, withClass(cm.css.SUBLAYERS));
+  var selected = expectDescendantOf(parent,
+      withClass(cm.css.LAYER_ENTRY), withClass(cm.css.PROMOTED_SUBLAYER));
+  expectEq(childElem2, selected);
+  var notSelected = expectDescendantOf(sublayers,
+      withClass(cm.css.LAYER_ENTRY), not(withClass(cm.css.PROMOTED_SUBLAYER)));
+  expectEq(childElem1, notSelected);
+
+  // Select the other sublayer and verify its class name.
+  expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
+      .willRepeatedly(returnWith('child1'));
+  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  selected = expectDescendantOf(parent,
+                                withClass(cm.css.LAYER_ENTRY),
+                                withClass(cm.css.PROMOTED_SUBLAYER));
+  expectEq(childElem1, selected);
+};
+
+/** Tests that a locked folder's sublayers are not shown. */
 LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
   var childModel = new google.maps.MVCObject;
   childModel.set('id', 'child');
   childModel.set('sublayers', new google.maps.MVCArray());
-  childModel.isTimeSeries = function() { return false; };
+  childModel.isSingleSelect = function() { return false; };
+  childModel.getSublayerIds = function() { return []; };
+  this.layerModel_.getSublayerIds = function() { return ['child']; };
+  this.layerModel_.isSingleSelect = function() { return false; };
   childModel.getSourceAddress = function() { return 'PQR:pqr'; };
 
   this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
   this.layerModel_.set('sublayers', new google.maps.MVCArray([childModel]));
-  this.layerModel_.set('locked', true);
+  this.layerModel_.set('folder_type', cm.LayerModel.FolderType.LOCKED);
 
   // When a locked folder and its sublayers are enabled...
   expectCall(this.appState_.getLayerEnabled)('layer0')
@@ -651,15 +680,14 @@ LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
   expectCall(this.appState_.getLayerEnabled)('child')
       .willRepeatedly(returnWith(true));
   var parent = this.createView_();
-  // ...the sublayers should be hidden.
-  // TODO(romano): replace this element definition with expectDescendantOf()
-  // once it takes maximum recursion depth, so that only this layer's sublayers
-  // element qualifies.
+  // ...the sublayers should be hidden.  We can't
+  // use expectNoDescendantOf(parent, ...) because descendant layers'
+  // sublayer elements will give a false match for this layer's sublayers.
   expectThat(this.view_.getEntryElement().childNodes[2],
              isElement(withClass(cm.css.HIDDEN)));
 
   // When the folder is unlocked...
-  this.layerModel_.set('locked', false);
+  this.layerModel_.set('folder_type', cm.LayerModel.FolderType.UNLOCKED);
   // ...the sublayers should be visible.
   expectThat(this.view_.getEntryElement().childNodes[2],
              isElement(not(withClass(cm.css.HIDDEN))));

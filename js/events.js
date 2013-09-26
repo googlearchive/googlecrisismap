@@ -204,12 +204,6 @@ cm.events.ZOOM_CHANGED = 'ZOOM_CHANGED';
  */
 cm.events.SELECT_SUBLAYER = 'SELECT_SUBLAYER';
 
-/**
- * The user requested to promote/demote a layer using the time series sublayer
- * picker (not undoable).
- */
-cm.events.PROMOTE_LAYER = 'PROMOTE_LAYER';
-
 /** The user requested to delete a layer (undoable). */
 cm.events.DELETE_LAYER = 'DELETE_LAYER';
 

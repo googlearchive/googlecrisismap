@@ -19,24 +19,24 @@ goog.require('cm.Command');
 
 /**
  * A command to arrange the layers of a MapModel.
- * @param {Array.<string>} oldOrdering The old ordering of top-level layer IDs.
- * @param {Array.<string>} newOrdering The new ordering of top-level
- * layer IDs. The new ordering should contain the same set of IDs as the
- * old ordering; otherwise, the command will do nothing.
+ * @param {Array.<Object>} oldOrdering The old ordered hierarchy of layer IDs.
+ * @param {Array.<Object>} newOrdering The new ordered hierarchy of layer Ids.
+ *    The new ordering should contain the same set of IDs as the old
+ *    ordering; otherwise, the command will do nothing.
  * @constructor
  * @implements cm.Command
  */
 cm.ArrangeCommand = function(oldOrdering, newOrdering) {
   /**
    * The original ordering of the layer IDs.
-   * @type Array.<string>
+   * @type Array.<Object>
    * @private
    */
   this.oldOrdering_ = oldOrdering;
 
   /**
    * The new ordering of the layer IDs.
-   * @type Array.<string>
+   * @type Array.<Object>
    * @private
    */
   this.newOrdering_ = newOrdering;
@@ -44,27 +44,17 @@ cm.ArrangeCommand = function(oldOrdering, newOrdering) {
 
 /**
  * @override
- * @suppress {checkTypes} actual parameter 1 of
- * cm.ArrangeCommand.prototype.arrange_ does not match formal parameter
- * found   : (Array.<string>|null)
- * required: (Array.<(Object|null)>|null)
- *   this.arrange_(this.newOrdering_, mapModel);
  */
 cm.ArrangeCommand.prototype.execute = function(appState, mapModel) {
-  this.arrange_(this.newOrdering_, mapModel);
+  this.arrange_(this.newOrdering_, appState, mapModel);
   return true;
 };
 
 /**
  * @override
- * @suppress {checkTypes} actual parameter 1 of
- * cm.ArrangeCommand.prototype.arrange_ does not match formal parameter
- * found   : (Array.<string>|null)
- * required: (Array.<(Object|null)>|null)
- *   this.arrange_(this.oldOrdering_, mapModel);
  */
 cm.ArrangeCommand.prototype.undo = function(appState, mapModel) {
-  this.arrange_(this.oldOrdering_, mapModel);
+  this.arrange_(this.oldOrdering_, appState, mapModel);
   return true;
 };
 
@@ -73,10 +63,11 @@ cm.ArrangeCommand.prototype.undo = function(appState, mapModel) {
  * The layers panel and layer entry listeners will update the panel when the
  * map model 'layers' property is mutated.
  * @param {Array.<Object>} layerIds The new hierarchy of layer IDs.
+ * @param {cm.AppState} appState The state of the application.
  * @param {cm.MapModel} mapModel The map model.
  * @private
  */
-cm.ArrangeCommand.prototype.arrange_ = function(layerIds, mapModel) {
+cm.ArrangeCommand.prototype.arrange_ = function(layerIds, appState, mapModel) {
   /**
    * Given a node in a layer ID tree, return a flat array of layer IDs.
    * @param {Object.<{
@@ -149,4 +140,5 @@ cm.ArrangeCommand.prototype.arrange_ = function(layerIds, mapModel) {
       layers.push(layer);
     });
   }
+  appState.updateSingleSelectFolders(mapModel);
 };

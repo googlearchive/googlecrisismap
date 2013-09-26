@@ -293,8 +293,8 @@ cm.PanelView.prototype.addLayer_ = function(layer, index) {
     cm.events.emit(goog.global, cm.events.DELETE_LAYER,
                    {model: this.model_, id: e.id});
   }, this);
-  cm.events.forward(view, [cm.events.PROMOTE_LAYER,
-                           cm.events.TOGGLE_LAYER,
+  cm.events.forward(view, [cm.events.TOGGLE_LAYER,
+                           cm.events.SELECT_SUBLAYER,
                            cm.events.ZOOM_TO_LAYER],
                            this);
 };

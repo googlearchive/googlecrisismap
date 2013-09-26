@@ -34,6 +34,7 @@ function ArrangeCommandTest() {
   this.newValue_ = [{id: 'layer2', sublayerIds: undefined},
                     {id: 'layer1', sublayerIds: undefined},
                     {id: 'layer3', sublayerIds: undefined}];
+  this.appState_ = new cm.AppState();
 }
 registerTestSuite(ArrangeCommandTest);
 
@@ -42,10 +43,10 @@ ArrangeCommandTest.prototype.testExecuteUndo = function() {
   var command = new cm.ArrangeCommand(this.oldValue_, this.newValue_);
   expectThat(this.mapModel_.getLayerIds(), elementsAre(
       ['layer1', 'layer2', 'layer3']));
-  command.execute(null, this.mapModel_);
+  command.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(), elementsAre(
       ['layer2', 'layer1', 'layer3']));
-  command.undo(null, this.mapModel_);
+  command.undo(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(), elementsAre(
       ['layer1', 'layer2', 'layer3']));
 };
@@ -59,7 +60,7 @@ ArrangeCommandTest.prototype.testInvalidCommand = function() {
       ['layer1', 'layer2', 'layer3']));
   this.newValue_.pop();
   var command = new cm.ArrangeCommand(this.oldValue_, this.newValue_);
-  command.execute(null, this.mapModel_);
+  command.execute(this.appState_, this.mapModel_);
   // Map layers should not be updated.
   expectThat(this.mapModel_.getLayerIds(), elementsAre(
       ['layer1', 'layer2', 'layer3']));
@@ -84,7 +85,7 @@ ArrangeCommandTest.prototype.moveToFromFolders = function() {
                    ];
   var command = new cm.ArrangeCommand(this.oldValue_, this.newValue_);
   // Move layer3 into layer2
-  command.execute(null, this.mapModel_);
+  command.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(), elementsAre(['layer1']));
   expectThat(this.mapModel_.getLayer('layer1').getSublayerIds(),
              elementsAre(['layer2']));
@@ -95,7 +96,7 @@ ArrangeCommandTest.prototype.moveToFromFolders = function() {
   expectEq(this.mapModel_.getLayer('layer2'),
            this.mapModel_.getLayer('layer3').get('parent'));
   // Move layer3 out of layer2
-  command.undo(null, this.mapModel_);
+  command.undo(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(), elementsAre(['layer1', 'layer3']));
   expectThat(this.mapModel_.getLayer('layer1').getSublayerIds(),
              elementsAre(['layer2']));

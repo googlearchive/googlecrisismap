@@ -27,32 +27,45 @@ goog.require('cm.util');
  */
 cm.DeleteLayerCommand = function(layerId) {
   /**
+   * The ID of the deleted layer's parent folder, if it isn't a root layer.
    * @type string
    * @private
    */
-  this.parentLayerId_;
+  this.parentLayerId_ = '';
 
   /**
+   * Index into the ordered list of the deleted layer's sibling layers.
    * @type number
    * @private
    */
   this.index_;
 
   /**
+   * The deleted layer's MapRoot representation.
    * @type Object
    * @private
    */
   this.layerMapRoot_;
 
   /**
-   * @type Object
+   * Snapshot of the visibilities of all of the deleted layer's sublayers.
+   * @type goog.structs.Set
    * @private
    */
-  this.visibility_ = {};
+  this.enabledSublayers_ = new goog.structs.Set();
 
   this.layerMapRoot_ = {
     id: layerId
   };
+
+  /**
+   * True if the layer being deleted is the selected sublayer of a single-select
+   * folder, stored so that when the command is undone, it will be enabled and
+   * its sibling layers disabled.
+   * @type boolean
+   * @private
+   */
+  this.enabled_;
 };
 
 /** @override */
@@ -60,21 +73,26 @@ cm.DeleteLayerCommand.prototype.execute = function(appState, mapModel) {
   var id = /** @type string */(this.layerMapRoot_['id']);
   var layer = mapModel.getLayer(id);
   this.layerMapRoot_ = layer.toMapRoot();
+  var parent = layer.get('parent');
+  this.parentLayerId_ = parent && parent.get('id') || null;
 
+  // Save layer visibilities and disable all layers in this tree.
   cm.util.forLayerAndDescendants(layer, function(sublayer) {
     var sublayerId = /** @type string */(sublayer.get('id'));
-    this.visibility_[sublayerId] = appState.getLayerEnabled(sublayerId);
+    if (appState.getLayerEnabled(sublayerId)) {
+      this.enabledSublayers_.add(sublayerId);
+    }
     appState.setLayerEnabled(sublayerId, false);
   }, null, this);
 
-  var parent = layer.get('parent');
-  this.parentLayerId_ = parent && parent.get('id');
-  var siblingIds = parent ? parent.getSublayerIds() : mapModel.getLayerIds();
-  this.index_ = goog.array.indexOf(siblingIds, id);
+  // Remove the layer from the model.
   if (parent) {
+    this.index_ = goog.array.indexOf(parent.getSublayerIds(), id);
     parent.get('sublayers').removeAt(this.index_);
     parent.notify('sublayers');
+    appState.updateSingleSelectFolders(mapModel);
   } else {
+    this.index_ = goog.array.indexOf(mapModel.getLayerIds(), id);
     mapModel.get('layers').removeAt(this.index_);
     mapModel.notify('layers');
   }
@@ -84,17 +102,31 @@ cm.DeleteLayerCommand.prototype.execute = function(appState, mapModel) {
 /** @override */
 cm.DeleteLayerCommand.prototype.undo = function(appState, mapModel) {
   var layer = cm.LayerModel.newFromMapRoot(this.layerMapRoot_);
-  if (this.parentLayerId_) {
-    var parent = mapModel.getLayer(this.parentLayerId_);
-    parent && parent.get('sublayers').insertAt(this.index_, layer) &&
-        parent.notify('sublayers');
+  var parent = this.parentLayerId_ ?
+      mapModel.getLayer(this.parentLayerId_) : null;
+  if (parent) {
+    parent.get('sublayers').insertAt(this.index_, layer);
+    parent.notify('sublayers');
   } else {
     mapModel.get('layers').insertAt(this.index_, layer);
     mapModel.notify('layers');
   }
   cm.util.forLayerAndDescendants(layer, function(sublayer) {
     var sublayerId = /** @type string */(sublayer.get('id'));
-    appState.setLayerEnabled(sublayerId, this.visibility_[sublayerId]);
+    if (this.enabledSublayers_.contains(sublayerId)) {
+      appState.setLayerEnabled(sublayerId, true);
+    }
   }, null, this);
+
+  // If the deleted layer's parent is a single-select folder, this was
+  // the selected sublayer, so disable its siblings.
+  if (parent && parent.isSingleSelect()) {
+    var siblingIds = mapModel.getLayer(this.parentLayerId_).getSublayerIds();
+    goog.array.forEach(siblingIds, function(siblingId) {
+      if (siblingId !== layer.get('id')) {
+        appState.setLayerEnabled(siblingId, false);
+      }
+    });
+  }
   return true;
 };

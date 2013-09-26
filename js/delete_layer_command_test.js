@@ -19,23 +19,30 @@ function DeleteLayerCommandTest() {
                    {id: 'sub1', type: 'GOOGLE_TRAFFIC'},
                    {id: 'sub2', type: 'GOOGLE_MAP_DATA'}
                  ]},
-                {id: 'layer2', type: 'GEORSS'}]});
+                {id: 'layer2', type: 'FOLDER', list_item_type: 'RADIO_FOLDER',
+                 sublayers: [
+                   {id: 'sub3', type: 'KML'},
+                   {id: 'sub4', type: 'KML'}
+                 ]
+                }]});
   this.appState_ = new cm.AppState();
   this.appState_.setLayerEnabled('layer1', true);
   this.appState_.setLayerEnabled('sub2', true);
+  this.appState_.setLayerEnabled('sub3', true);
 }
 registerTestSuite(DeleteLayerCommandTest);
 
-/** Tests execute() on a 'root-level' layer. */
+/** Tests deleting a 'root-level' layer. */
 DeleteLayerCommandTest.prototype.testExecuteRoot = function() {
   var command = new cm.DeleteLayerCommand('layer1');
   command.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
-            whenSorted(elementsAre(['layer0', 'layer2'])));
-  expectTrue(this.appState_.get('enabled_layer_ids').isEmpty());
+             whenSorted(elementsAre(['layer0', 'layer2'])));
+  expectThat(this.appState_.get('enabled_layer_ids').getValues(),
+             elementsAre(['sub3']));
 };
 
-/** Tests undo() on a 'root-level' layer. */
+/** Tests undoing deletion of a 'root-level' layer. */
 DeleteLayerCommandTest.prototype.testUndoRoot = function() {
   var command = new cm.DeleteLayerCommand('layer1');
   command.execute(this.appState_, this.mapModel_);
@@ -45,10 +52,10 @@ DeleteLayerCommandTest.prototype.testUndoRoot = function() {
   expectThat(this.mapModel_.getLayer('layer1').getSublayerIds(),
              whenSorted(elementsAre(['sub0', 'sub1', 'sub2'])));
   expectThat(this.appState_.get('enabled_layer_ids').getValues(),
-             whenSorted(elementsAre(['layer1', 'sub2'])));
+             whenSorted(elementsAre(['layer1', 'sub2', 'sub3'])));
 };
 
-/** Tests execute() on a sublayer. */
+/** Tests deleting a sublayer. */
 DeleteLayerCommandTest.prototype.testExecuteSublayer = function() {
   var command = new cm.DeleteLayerCommand('sub2');
   command.execute(this.appState_, this.mapModel_);
@@ -56,11 +63,37 @@ DeleteLayerCommandTest.prototype.testExecuteSublayer = function() {
   expectFalse(this.appState_.getLayerEnabled('sub2'));
 };
 
-/** Tests execute() on a sublayer. */
+/** Tests undoing deletion of a sublayer. */
 DeleteLayerCommandTest.prototype.testUndoSublayer = function() {
   var command = new cm.DeleteLayerCommand('sub2');
   command.execute(this.appState_, this.mapModel_);
   command.undo(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayer('sub2'), not(isUndefined));
   expectTrue(this.appState_.getLayerEnabled('sub2'));
+};
+
+/** Tests deleting and undoing deletion of a single-select folder. */
+DeleteLayerCommandTest.prototype.testSingleSelectFolder = function() {
+  this.appState_.setLayerEnabled('layer2', true);
+  this.appState_.setLayerEnabled('sub4', true);
+  var command = new cm.DeleteLayerCommand('layer2');
+  command.execute(this.appState_, this.mapModel_);
+  command.undo(this.appState_, this.mapModel_);
+  expectThat(this.mapModel_.getLayerIds(),
+             whenSorted(elementsAre(['layer0', 'layer1', 'layer2'])));
+  expectTrue(this.appState_.getLayerEnabled('layer2'));
+  expectTrue(this.appState_.getLayerEnabled('sub4'));
+};
+
+/** Tests deleting and undoing deletion of a single-select folder's sublayer. */
+DeleteLayerCommandTest.prototype.testSingleSelectSublayer = function() {
+  this.appState_.setLayerEnabled('layer2', true);
+  this.appState_.setLayerEnabled('sub4', true);
+  var command = new cm.DeleteLayerCommand('sub4');
+  command.execute(this.appState_, this.mapModel_);
+  command.undo(this.appState_, this.mapModel_);
+  expectThat(this.mapModel_.getLayerIds(),
+             whenSorted(elementsAre(['layer0', 'layer1', 'layer2'])));
+  expectTrue(this.appState_.getLayerEnabled('layer2'));
+  expectTrue(this.appState_.getLayerEnabled('sub4'));
 };
