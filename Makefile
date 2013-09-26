@@ -64,15 +64,15 @@ opt: languages.py static/mapviewer.css $(OUT_OPT)
 list: $(LIST)
 
 # Run all the JS and Python tests (we need languages.py for Python tests).
-test: languages.py $(LIST) static/json_files.js
+test: languages.py $(LIST) $(OUT_DIR)/css.js static/json_files.js
 	@gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),$$(echo js/*_test.js | tr ' ' ',') | python tools/format_gjstest_output.py && echo "All JS tests passed.\n" && tools/pytests && echo "\nAll JS and Python tests passed."
 
 # Run a single JS test using gjstest.
-%_test: $(LIST) static/json_files.js
+%_test: $(LIST) $(OUT_DIR)/css.js static/json_files.js
 	@gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),js/$@.js | python tools/format_gjstest_output.py
 
 # Build the HTML file for a test using gjstest.
-%_test.html: $(LIST) static/json_files.js
+%_test.html: $(LIST) $(OUT_DIR)/css.js static/json_files.js
 	gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),js/$$(echo $@ | sed -e 's/\.html/.js/') --html_output_file=$@
 	@ls -l $@
 

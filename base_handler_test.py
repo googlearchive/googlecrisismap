@@ -45,6 +45,23 @@ class BaseHandlerTest(test_utils.BaseTest):
     self.assertFalse('>' in base_handler.ToHtmlSafeJson('x>y'))
     self.assertFalse('&' in base_handler.ToHtmlSafeJson('x&y'))
 
+  def testSanitizeCallback(self):
+    """Verifies that SanitizeCallback protects against XSS."""
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, '')
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, '.')
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, 'abc"')
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, "abc'")
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, 'abc;')
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, '<b>')
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, '1')
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, '1abc')
+    self.assertRaises(base_handler.Error, base_handler.SanitizeCallback, 'x.2')
+    self.assertEquals('abc', base_handler.SanitizeCallback('abc'))
+    self.assertEquals('_def', base_handler.SanitizeCallback('_def'))
+    self.assertEquals('FooBar3', base_handler.SanitizeCallback('FooBar3'))
+    self.assertEquals('x.y', base_handler.SanitizeCallback('x.y'))
+    self.assertEquals('x.y._z', base_handler.SanitizeCallback('x.y._z'))
+
 
 if __name__ == '__main__':
   test_utils.main()

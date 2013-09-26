@@ -15,10 +15,12 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import hmac
+import httplib
 import inspect
 import json
 import logging
 import os
+import re
 import time
 
 import webapp2
@@ -110,6 +112,24 @@ def ValidateXsrfToken(uid, token):
   timestamp = token.split(':')[0]
   return (timestamp and time.time() < int(timestamp) + 4*3600 and
           token == GenerateXsrfToken(uid, timestamp))
+
+
+def SanitizeCallback(callback):
+  """Checks and returns a safe JSONP callback name, or raises an error.
+
+  Args:
+    callback: A JavaScript callback function name.
+
+  Returns:
+    The callback name, only if it is a valid JavaScript identifier optionally
+    preceded by other identifiers with dots (e.g. "object1.child2.name3").
+
+  Raises:
+    Error: If the callback name was invalid.
+  """
+  if re.match(r'^([a-zA-Z_]\w*\.)*[a-zA-Z_]\w*$', callback):
+    return callback
+  raise Error(httplib.BAD_REQUEST, 'Invalid callback name.')
 
 
 class Error(Exception):
@@ -242,7 +262,7 @@ class BaseHandler(webapp2.RequestHandler):
     output = ToHtmlSafeJson(data)
     if callback:  # emit a JavaScript expression with a callback function
       self.response.headers['Content-Type'] = 'application/javascript'
-      self.response.out.write(callback + '(' + output + ')')
+      self.response.out.write(SanitizeCallback(callback) + '(' + output + ')')
     else:  # just emit the JSON literal
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(output)
