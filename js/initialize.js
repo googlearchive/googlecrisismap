@@ -14,6 +14,7 @@
  */
 
 goog.provide('MIN_DOCUMENT_WIDTH_FOR_SIDEBAR');
+goog.provide('cm.Map');
 
 goog.require('cm.Analytics');
 goog.require('cm.AppState');
@@ -206,9 +207,7 @@ function installHtmlSanitizer(html) {
 }
 
 /**
- * Loads the HTML sanitizer, then builds the map viewer UI.
- * TODO(kpy): This adds a 9-kb HTTP fetch to each pageview.  Speed up pageviews
- * by loading the sanitizer dynamically or moving sanitization to the server.
+ * Stub initialize function for existing dependent code.
  * @param {Object} mapRoot The MapRoot JSON to parse and render.
  * @param {string|Element} frame The DOM element in which to render the UI,
  *     or the ID of such a DOM element.
@@ -227,21 +226,27 @@ function installHtmlSanitizer(html) {
 function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
                     opt_unused, opt_language) {
   var config = opt_config || {};
+  config['map_root'] = mapRoot;
+  config['menu_items'] = opt_menuItems;
+  config['lang'] = opt_language || 'en';
 
-  // Initialize the dynamic module loader and tell it how to find module URLs.
-  var getModuleUrl = config['get_module_url'] || function(baseUrl, module) {
-    return baseUrl.replace(/\/$/, '') + '/.js/crisismap_' + module + '__' +
-        opt_language + '.js';
-  };
-  // initLoader must be passed a non-null base URL - or else it doesn't get
-  // initialised correctly (see b/8933525 for the gory details)
-  goog.module.initLoader(jsBaseUrl || '/', getModuleUrl);
-  goog.module.require('sanitizer', 'html', function(html) {
-    installHtmlSanitizer(html);
-    // We need to defer buildUi until after sanitizer_module.js is loaded,
-    // so we call buildUi inside this callback.
-    buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language);
-  });
+  // The new API uses a getModuleUrl signature that takes (module, lang) but
+  // the old API matched the goog.module.Loader.init API's opt_urlFunction
+  // method which takes (baseUrl, moduleName). So if the caller has defined
+  // a get_module_url function, wrap it with an adapter using the new API.
+  var legacyGetModuleUrl = config['get_module_url'];
+  if (legacyGetModuleUrl) {
+    config['get_module_url'] = function(module) {
+      return legacyGetModuleUrl(jsBaseUrl, module);
+    };
+  } else {
+    config['get_module_url'] = function(module, lang) {
+      return jsBaseUrl.replace(/\/$/, '') + '/.js/crisismap_' + module + '__' +
+          lang + '.js';
+    };
+  }
+
+  var map = new cm.Map(frame, config);
 }
 
 /**
@@ -408,6 +413,34 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language) {
   window['theMap'] = mapView.getMap();
   window['mapModel'] = mapModel;
 }
+
+/**
+ * Constructs a map: loads the HTML sanitizer, then builds the map viewer UI.
+ * TODO(kpy): This adds a 9-kb HTTP fetch to each pageview.  Speed up pageviews
+ * by loading the sanitizer dynamically or moving sanitization to the server.
+ * @constructor
+ * @param {string|Element} frame The DOM element in which to render the UI,
+ *     or the ID of such a DOM element.
+ * @param {Object=} opt_config The configuration settings.
+ */
+cm.Map = function(frame, opt_config) {
+  var config = opt_config || {};
+  var getModuleUrl = config['get_module_url'];
+
+  // Wrap the getModuleUrl function in an adapter for the goog.module API.
+  var googModuleGetModuleUrl = function(baseUrl, module) {
+    return getModuleUrl(module, config['lang']);
+  };
+
+  goog.module.initLoader('', googModuleGetModuleUrl);
+  goog.module.require('sanitizer', 'html', function(html) {
+    installHtmlSanitizer(html);
+    // We need to defer buildUi until after sanitizer_module.js is loaded,
+    // so we call buildUi inside this callback.
+    buildUi(config['map_root'], frame, config['menu_items'], config,
+      config['lang']);
+  });
+};
 
 // window doesn't exist in gjstests
 if (typeof window !== 'undefined') {
