@@ -331,6 +331,9 @@ cm.PanelView.prototype.open_ = function() {
   // Once the style is set on the container, its width can be retrieved.
   var x = (this.frameElem_.offsetWidth - this.parentElem_.offsetWidth) / 2;
   this.parentElem_.style.left = Math.max(0, Math.round(x)) + 'px';
+  // If the panel hasn't been displayed previously, this is its first
+  // opportunity to measure its size and position the layer list accordingly.
+  this.positionPanelLayers_();
 };
 
 /**
