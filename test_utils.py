@@ -119,7 +119,10 @@ def DatetimeWithUtcnow(now):
   # SDK randomly uses both utcnow() and now(), so we have to patch both. :/
   return type('datetime.datetime', (datetime.datetime,),
               {'utcnow': staticmethod(lambda: now),
-               'now': staticmethod(lambda: now)})
+               'now': staticmethod(lambda: now),
+               # The line below makes utcfromtimestamp return datetime.datetime
+               # instances instead of test_utils.datetime.datetime instances.
+               'utcfromtimestamp': datetime.datetime.utcfromtimestamp})
 
 
 def CreateMap(maproot_json='{"title": "Foo"}', domain=DEFAULT_DOMAIN, **kwargs):
