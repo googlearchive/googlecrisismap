@@ -17,6 +17,7 @@ goog.provide('cm.ImporterView');
 
 goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.i18n.MessageFormat');
@@ -168,20 +169,20 @@ cm.ImporterView = function() {
   var newLayerLink;
   var closeBtn;
 
-  this.popup_ = cm.ui.create('div', {'class': 'cm-importer cm-popup'},
-      this.headerElem_ = cm.ui.create('div', {'class': 'cm-importer-header'},
+  this.popup_ = cm.ui.create('div', {'class': [cm.css.IMPORTER, cm.css.POPUP]},
+      this.headerElem_ = cm.ui.create('div', {'class': cm.css.IMPORTER_HEADER},
           cm.ui.create('h2', {}, MSG_IMPORT_TITLE),
           newLayerLink = cm.ui.createLink(MSG_CREATE_NEW_LAYER)),
       this.layerListElem_ = cm.ui.create('div',
           // 'tabIndex' makes element focusable
-          {'class': 'cm-importer-list', 'tabIndex': 0}),
+          {'class': cm.css.IMPORTER_LIST, 'tabIndex': 0}),
       this.selectedCountElem_ = cm.ui.create('div',
-          {'class': 'cm-selected-count'}),
-      cm.ui.create('div', {'class': 'cm-button-area'},
+          {'class': cm.css.SELECTED_COUNT}),
+      cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
           this.submitBtn_ = cm.ui.create('button',
-              {'class': 'cm-button cm-submit'},
+              {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
               MSG_IMPORTER_SUBMIT),
-          closeBtn = cm.ui.create('button', {'class': 'cm-button'},
+          closeBtn = cm.ui.create('button', {'class': cm.css.BUTTON},
               MSG_IMPORTER_CANCEL)));
 
   cm.events.listen(newLayerLink, 'click', this.handleNewLayer_, this);
@@ -286,7 +287,7 @@ cm.ImporterView.prototype.renderLayerList_ = function(maps) {
     var layers = model.get('layers');
     if (layers.getLength()) {
       cm.ui.append(this.layerListElem_,
-          cm.ui.create('div', {'class': 'cm-map-title'},
+          cm.ui.create('div', {'class': cm.css.MAP_TITLE},
               cm.ui.create('span', {},
                   /** @type {string} */(model.get('title'))),
               this.renderPreviewLink_(label)));
@@ -326,16 +327,16 @@ cm.ImporterView.prototype.renderLayerElem_ = function(parent, layerModel,
   var layerElem, expanderElem, previewLink, folderElem;
   cm.ui.append(parent,
       layerElem = cm.ui.create('div', {
-          'data-index': index, 'class': 'cm-layer-item',
+          'data-index': index, 'class': cm.css.LAYER_ITEM,
           'style': 'padding-left: ' + (depth * 16) + 'px;'},
-          expanderElem = cm.ui.create('div', {'class': 'cm-triangle'}),
-          cm.ui.create('span', {'class': 'cm-layer-title'},
+          expanderElem = cm.ui.create('div', {'class': cm.css.TRIANGLE}),
+          cm.ui.create('span', {'class': cm.css.LAYER_TITLE},
               /** @type {string} */(layerModel.get('title'))),
           previewLink = this.renderPreviewLink_(
               mapLabel, layerModel, /** @type {cm.LatLonBox|undefined} */
               (layerModel.get('viewport') || mapModel.get('viewport')))),
       folderElem =
-          cm.ui.create('div', {'class': 'cm-folder-container'}));
+          cm.ui.create('div', {'class': cm.css.FOLDER_CONTAINER}));
 
   cm.events.listen(layerElem, 'click',
       goog.bind(this.handleLayerClick_, this, layerElem));
@@ -363,13 +364,13 @@ cm.ImporterView.prototype.renderLayerElem_ = function(parent, layerModel,
  * @private
  */
 cm.ImporterView.prototype.handleLayerClick_ = function(layerElem) {
-  var selected = goog.dom.classes.toggle(layerElem, 'cm-layer-selected');
+  var selected = goog.dom.classes.toggle(layerElem, cm.css.LAYER_SELECTED);
   if (selected) {
     // Look for an ancestor folder to deselect.
     var removed = false;
     var parentFolder = this.getParentFolderElem_(layerElem);
     while (parentFolder && !removed) {
-      removed = goog.dom.classes.remove(parentFolder, 'cm-layer-selected');
+      removed = goog.dom.classes.remove(parentFolder, cm.css.LAYER_SELECTED);
       if (removed) {
         this.selectedLayersCount_--;
       }
@@ -377,9 +378,9 @@ cm.ImporterView.prototype.handleLayerClick_ = function(layerElem) {
     }
     // Look for sublayers to deselect.
     goog.array.forEach(
-        cm.ui.getAllByClass('cm-layer-selected',
+        cm.ui.getAllByClass(cm.css.LAYER_SELECTED,
         /** @type {Element} */(layerElem.nextSibling)), function(e) {
-          goog.dom.classes.remove(e, 'cm-layer-selected');
+          goog.dom.classes.remove(e, cm.css.LAYER_SELECTED);
           this.selectedLayersCount_--;
         }, this);
   }
@@ -430,7 +431,7 @@ cm.ImporterView.prototype.renderPreviewLink_ = function(mapLabel,
     }, isVisibleOrRoot);
 
     previewLink = cm.ui.create('div',
-        {'class': 'cm-preview-link' +
+        {'class': cm.css.PREVIEW_LINK +
             (foundVisibleLeaf ? '' : ' cm-no-preview')});
     if (foundVisibleLeaf) {
       // Must add all of this layer's ancestors to the 'layers' URL parameter to
@@ -462,7 +463,7 @@ cm.ImporterView.prototype.renderPreviewLink_ = function(mapLabel,
       });
       cm.events.listen(previewLink, 'mousemove', function(e) {
         if (!tooltip) {
-          tooltip = cm.ui.create('div', {'class': 'cm-tooltip'},
+          tooltip = cm.ui.create('div', {'class': cm.css.TOOLTIP},
               MSG_NO_PREVIEW);
           cm.ui.append(cm.ui.document.body, tooltip);
         }
@@ -479,7 +480,7 @@ cm.ImporterView.prototype.renderPreviewLink_ = function(mapLabel,
     }
   } else {
     previewLink = cm.ui.create('a',
-        {'class': 'cm-preview-link', 'target': '_blank', 'href': href});
+        {'class': cm.css.PREVIEW_LINK, 'target': '_blank', 'href': href});
   }
   return previewLink;
 };
@@ -524,12 +525,12 @@ cm.ImporterView.prototype.handlePreviewClick_ = function(previewLink, href,
   }
 
   this.layerPreview_ = cm.ui.create('div', {
-      'class': 'cm-popup cm-layer-preview',
+      'class': [cm.css.POPUP, cm.css.LAYER_PREVIEW],
       'style': goog.string.format('left:%dpx; top:%dpx', pos.x, pos.y)},
       cm.ui.create('iframe', {
           'src': href, 'width': width + 'px', 'height': height + 'px'}));
   cm.ui.append(container, this.layerPreview_);
-  goog.dom.classes.add(previewLink, 'cm-preview-active');
+  goog.dom.classes.add(previewLink, cm.css.PREVIEW_ACTIVE);
 
   cm.ui.createCloseButton(
       this.layerPreview_, goog.bind(this.closePreview_, this));
@@ -549,7 +550,7 @@ cm.ImporterView.prototype.handlePreviewClick_ = function(previewLink, href,
  */
 cm.ImporterView.prototype.getParentFolderElem_ = function(sublayerElem) {
   var folderContainer = goog.dom.getAncestorByClass(
-      sublayerElem, 'cm-folder-container');
+      sublayerElem, cm.css.FOLDER_CONTAINER);
   return /** @type {Element} */(folderContainer ?
       folderContainer.previousSibling : null);
 };
@@ -567,7 +568,7 @@ cm.ImporterView.prototype.handleExpanderClick_ = function(
   // close any open previews since the document will not witness this click.
   e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
   this.closePreview_();
-  var expanded = goog.dom.classes.toggle(expanderElem, 'cm-expanded');
+  var expanded = goog.dom.classes.toggle(expanderElem, cm.css.EXPANDED);
   goog.style.setElementShown(folderElem, expanded);
 };
 
@@ -616,7 +617,7 @@ cm.ImporterView.prototype.handleNewLayer_ = function() {
 cm.ImporterView.prototype.handleOk_ = function() {
   var layers = [];
   var selectedElems = cm.ui.getAllByClass(
-      'cm-layer-selected', this.layerListElem_);
+      cm.css.LAYER_SELECTED, this.layerListElem_);
   goog.array.forEach(selectedElems, function(layerElem) {
     var index = parseInt(layerElem.getAttribute('data-index'), 10);
     layers.push(this.layerModels_[index].toMapRoot());
@@ -662,9 +663,9 @@ cm.ImporterView.prototype.closePreview_ = function(opt_event) {
     }
     this.closePreviewListeners_ = null;
 
-    var activeLink = cm.ui.getByClass('cm-preview-active', this.popup_);
+    var activeLink = cm.ui.getByClass(cm.css.PREVIEW_ACTIVE, this.popup_);
     if (activeLink) {
-      goog.dom.classes.remove(activeLink, 'cm-preview-active');
+      goog.dom.classes.remove(activeLink, cm.css.PREVIEW_ACTIVE);
       if (opt_event && opt_event.srcElement === activeLink) {
         this.cancelPreviewClick_ = true;
       }

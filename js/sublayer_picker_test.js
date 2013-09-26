@@ -9,6 +9,8 @@
 // OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 // specific language governing permissions and limitations under the License.
 
+goog.require('cm.css');
+
 /**
  * @fileoverview Tests for the SublayerPicker class.
  * @author romano@google.com (Raquel Romano)
@@ -37,7 +39,7 @@ registerTestSuite(SublayerPickerTest);
 SublayerPickerTest.prototype.testConstructor = function() {
   var parent = new FakeElement('div');
   var sublayerPicker = new cm.SublayerPicker(parent, this.layer_);
-  var menu = expectDescendantOf(parent, withClass('cm-sublayer-picker'));
+  var menu = expectDescendantOf(parent, withClass(cm.css.SUBLAYER_PICKER));
   this.layer_.get('sublayers').forEach(function(sublayer) {
     expectDescendantOf(menu, withText(sublayer.get('title')));
   });
@@ -74,8 +76,8 @@ SublayerPickerTest.prototype.testDefaultOptionMultiple = function() {
 SublayerPickerTest.prototype.testMenuVisibility = function() {
   var parent = new FakeElement('div');
   var sublayerPicker = new cm.SublayerPicker(parent, this.layer_);
-  var button = expectDescendantOf(parent, withClass('cm-calendar-button'));
-  var menu = expectDescendantOf(parent, withClass('cm-sublayer-picker'));
+  var button = expectDescendantOf(parent, withClass(cm.css.CALENDAR_BUTTON));
+  var menu = expectDescendantOf(parent, withClass(cm.css.SUBLAYER_PICKER));
 
   expectEq('none', menu.style.display);
   cm.events.emit(button, 'click');

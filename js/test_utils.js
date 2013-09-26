@@ -332,7 +332,9 @@ FakeUi.createChildHelper_ = function(newElement, newChild) {
  */
 FakeUi.create = function(tag, opt_attrs, var_args) {
   var args = Array.prototype.slice.call(arguments, 2);
-
+  if (opt_attrs && opt_attrs['class'] && goog.isArray(opt_attrs['class'])) {
+    opt_attrs['class'] = opt_attrs['class'].join(' ');
+  }
   var element = new FakeElement(tag, opt_attrs);
   for (var i = 0; i < args.length; i++) {
     if (goog.isArray(args[i])) {

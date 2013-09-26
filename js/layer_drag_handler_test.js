@@ -11,6 +11,8 @@
 
 // Author: romano@google.com (Raquel Romano)
 
+goog.require('cm.css');
+
 function LayerDragHandlerTest() {
   cm.TestBase.call(this);
 
@@ -24,9 +26,10 @@ function LayerDragHandlerTest() {
   this.setForTest_('goog.style.getSize',
       function() { return {'width': 0, 'height': 0}; });
 
-  this.cloneElem_ = new FakeElement('span', {'class': 'cm-dragged-clone'});
-  this.layerListElem_ = new FakeElement('div', {'class': 'cm-arranger-inner'});
-  var container = new FakeElement('div', {'class': 'cm-arranger'});
+  this.cloneElem_ = new FakeElement('span', {'class': cm.css.DRAGGED_CLONE});
+  this.layerListElem_ =
+      new FakeElement('div', {'class': cm.css.ARRANGER_INNER});
+  var container = new FakeElement('div', {'class': cm.css.ARRANGER});
   container.appendChild(this.layerListElem_);
 
   this.draggableElements_ = [];
@@ -110,11 +113,11 @@ registerTestSuite(LayerDragHandlerTest);
  */
 LayerDragHandlerTest.prototype.createDraggableLayer_ = function(
     parentElem, id, title, isFolder) {
-  var elem = cm.ui.create('div', {'class': 'cm-draggable-layer', 'id': id},
-      cm.ui.create('span', {'class': 'cm-draggable-layer-title'}, title));
+  var elem = cm.ui.create('div', {'class': cm.css.DRAGGABLE_LAYER, 'id': id},
+      cm.ui.create('span', {'class': cm.css.DRAGGABLE_LAYER_TITLE}, title));
   if (isFolder) {
     elem.appendChild(new FakeElement(
-        'div', {'class': 'cm-draggable-sublayer-container'}));
+        'div', {'class': cm.css.DRAGGABLE_SUBLAYER_CONTAINER}));
   }
   parentElem.appendChild(elem);
   return elem;
@@ -207,10 +210,10 @@ LayerDragHandlerTest.prototype.testStartHandler = function() {
 
   // Verify the expected element is active.
   expectEq(draggedElem, findDescendantOf(
-      this.layerListElem_, withClass('cm-active-draggable-layer')));
+      this.layerListElem_, withClass(cm.css.ACTIVE_DRAGGABLE_LAYER)));
   // Verify the clone is added to the DOM.
   expectEq(this.cloneElem_, findDescendantOf(
-      cm.ui.document.body, withClass('cm-dragged-clone')));
+      cm.ui.document.body, withClass(cm.css.DRAGGED_CLONE)));
 };
 
 /**
@@ -229,7 +232,7 @@ LayerDragHandlerTest.prototype.testDragHandlerInLimits = function() {
   cm.events.emit(dragger, goog.fx.Dragger.EventType.START, event);
 
   // Verify the target line is not in the DOM.
-  expectNoDescendantOf(this.layerListElem_, withClass('cm-drop-target-line'));
+  expectNoDescendantOf(this.layerListElem_, withClass(cm.css.DROP_TARGET_LINE));
 
   // Set drag point to be within layer0's bounds (a legal target).
   this.expectComputeDropTarget_(0, 5, 5);
@@ -238,7 +241,7 @@ LayerDragHandlerTest.prototype.testDragHandlerInLimits = function() {
   cm.events.emit(dragger, goog.fx.Dragger.EventType.DRAG, event);
 
   // Verify the target line has been added to the DOM.
-  expectDescendantOf(this.layerListElem_, withClass('cm-drop-target-line'));
+  expectDescendantOf(this.layerListElem_, withClass(cm.css.DROP_TARGET_LINE));
 
   // Now set the drag point to be within layer1's bounds (an illegal target).
   this.expectComputeDropTarget_(1, 5, 5);
@@ -247,7 +250,7 @@ LayerDragHandlerTest.prototype.testDragHandlerInLimits = function() {
   cm.events.emit(dragger, goog.fx.Dragger.EventType.DRAG, event);
 
   // Verify the target line has been removed.
-  expectNoDescendantOf(this.layerListElem_, withClass('cm-drop-target-line'));
+  expectNoDescendantOf(this.layerListElem_, withClass(cm.css.DROP_TARGET_LINE));
 };
 
 /**
@@ -272,7 +275,7 @@ LayerDragHandlerTest.prototype.testDragHandlerInLimitsAndNull = function() {
 
   // Verify the target line has been added to the DOM.
   var targetLine = findDescendantOf(this.layerListElem_,
-                                    withClass('cm-drop-target-line'));
+                                    withClass(cm.css.DROP_TARGET_LINE));
   expectThat(targetLine, not(isNull));
   var targetParent = targetLine.parentNode;
   var targetIndex = this.siblingIndexOf_(targetLine);
@@ -286,7 +289,7 @@ LayerDragHandlerTest.prototype.testDragHandlerInLimitsAndNull = function() {
 
   // Verify that the target line was not moved or removed.
   expectEq(targetLine, findDescendantOf(
-      this.layerListElem_, withClass('cm-drop-target-line')));
+      this.layerListElem_, withClass(cm.css.DROP_TARGET_LINE)));
   expectEq(targetParent, targetLine.parentNode);
   expectEq(targetIndex, this.siblingIndexOf_(targetLine));
 };
@@ -311,7 +314,7 @@ LayerDragHandlerTest.prototype.testDragHandlerOutsideLimits = function() {
   cm.events.emit(dragger, goog.fx.Dragger.EventType.DRAG, event);
 
   // Verify the target line has been added to the DOM.
-  expectDescendantOf(this.layerListElem_, withClass('cm-drop-target-line'));
+  expectDescendantOf(this.layerListElem_, withClass(cm.css.DROP_TARGET_LINE));
 
   // Set drag point to be outside the dragger limits.
 this.expectComputeDropTarget_(-1, 2000, 2000);
@@ -320,7 +323,7 @@ this.expectComputeDropTarget_(-1, 2000, 2000);
   cm.events.emit(dragger, goog.fx.Dragger.EventType.DRAG, event);
 
   // Verify the target line has been removed.
-  expectNoDescendantOf(this.layerListElem_, withClass('cm-drop-target-line'));
+  expectNoDescendantOf(this.layerListElem_, withClass(cm.css.DROP_TARGET_LINE));
 };
 
 /**
@@ -345,10 +348,10 @@ LayerDragHandlerTest.prototype.testEndHandler = function() {
 
   // Verify the expected element is active.
   expectEq(this.draggableElements_[0], findDescendantOf(
-      this.layerListElem_, withClass('cm-active-draggable-layer')));
+      this.layerListElem_, withClass(cm.css.ACTIVE_DRAGGABLE_LAYER)));
   // Verify the clone is added to the DOM.
   expectEq(this.cloneElem_, findDescendantOf(
-      cm.ui.document.body, withClass('cm-dragged-clone')));
+      cm.ui.document.body, withClass(cm.css.DRAGGED_CLONE)));
 
   // Set drag point to be within layer1's bounds (a legal target).
   this.expectComputeDropTarget_(1, 5, 5);
@@ -357,7 +360,7 @@ LayerDragHandlerTest.prototype.testEndHandler = function() {
   cm.events.emit(dragger, goog.fx.Dragger.EventType.DRAG, event);
 
   // Verify the target line has been added to the DOM.
-  expectDescendantOf(this.layerListElem_, withClass('cm-drop-target-line'));
+  expectDescendantOf(this.layerListElem_, withClass(cm.css.DROP_TARGET_LINE));
 
   // Emit the end event.
   cm.events.emit(dragger, goog.fx.Dragger.EventType.END, event);
@@ -365,9 +368,9 @@ LayerDragHandlerTest.prototype.testEndHandler = function() {
   // Verify there is no longer an active element, and the target line
   // and clone are removed from the DOM.
   expectNoDescendantOf(this.layerListElem_,
-                       withClass('cm-active-draggable-layer'));
-  expectNoDescendantOf(this.layerListElem_, withClass('cm-dragged-cloner'));
-  expectNoDescendantOf(this.layerListElem_, withClass('cm-drop-target-line'));
+                       withClass(cm.css.ACTIVE_DRAGGABLE_LAYER));
+  expectNoDescendantOf(this.layerListElem_, withClass(cm.css.DRAGGED_CLONER));
+  expectNoDescendantOf(this.layerListElem_, withClass(cm.css.DROP_TARGET_LINE));
 };
 
 

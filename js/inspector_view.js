@@ -16,6 +16,7 @@
 goog.provide('cm.InspectorView');
 
 goog.require('cm.LayerModel');
+goog.require('cm.css');
 goog.require('cm.editors');
 goog.require('cm.events');
 goog.require('cm.ui');
@@ -84,17 +85,17 @@ cm.InspectorView = function() {
    */
   this.editors_ = null;
 
-  this.popup_ = cm.ui.create('div', {'class': 'cm-inspector cm-popup'},
+  this.popup_ = cm.ui.create('div', {'class': [cm.css.INSPECTOR, cm.css.POPUP]},
       cm.ui.create('div', undefined,
           this.titleElem_ = cm.ui.create('h2'),
           this.copyLayerLink_ = cm.ui.createLink(MSG_COPY_EXISTING)),
       this.tableElem_ = cm.ui.create('table',
-          {'class': 'cm-editors', 'cellpadding': '0', 'cellspacing': '0'}),
-      cm.ui.create('div', {'class': 'cm-button-area'},
+          {'class': cm.css.EDITORS, 'cellpadding': '0', 'cellspacing': '0'}),
+      cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
           this.okBtn_ = cm.ui.create(
-              'button', {'class': 'cm-button cm-submit'}, MSG_OK),
+              'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_OK),
           this.cancelBtn_ = cm.ui.create(
-              'button', {'class': 'cm-button'}, MSG_CANCEL)));
+              'button', {'class': cm.css.BUTTON}, MSG_CANCEL)));
 
   cm.events.listen(this.copyLayerLink_, 'click', this.handleCopyClick_, this);
   cm.events.listen(this.okBtn_, 'click', this.handleOk_, this);
@@ -135,7 +136,7 @@ cm.InspectorView.prototype.inspect = function(
   this.appState_ = appState;
 
   cm.ui.setText(this.titleElem_, title);
-  goog.dom.classes.enable(this.copyLayerLink_, 'cm-hidden', !this.isNew_);
+  goog.dom.classes.enable(this.copyLayerLink_, cm.css.HIDDEN, !this.isNew_);
 
   /** The table row DOM elements (each one holds a label and an editor). */
   this.rows_ = {};
@@ -161,6 +162,8 @@ cm.InspectorView.prototype.inspect = function(
     // type, e.g. cm.editors.Type.FOO gets the CSS class "cm-foo-editor".
     var id = cm.ui.generateId('editor');
     var cell, row;
+    // TODO(user) figure out how to get goog.getCssName to work with
+    // this
     var cls = 'cm-' + spec.type.toLowerCase().replace(/_/g, '-') + '-editor';
     cm.ui.append(this.tableElem_, row = cm.ui.create('tr', {'class': cls},
         cm.ui.create('th', {},
@@ -172,7 +175,7 @@ cm.InspectorView.prototype.inspect = function(
     // Add a validation error indicator next to each editor.
     // TODO(kpy): When we figure out the exact UX we want, we might want to
     // replace this with an icon and a popup or something like that.
-    var errorSpan = cm.ui.create('span', {'class': 'cm-validation-error'});
+    var errorSpan = cm.ui.create('span', {'class': cm.css.VALIDATION_ERROR});
     cm.ui.append(cell, errorSpan);
     (function(errorSpan) {  // close over the local variable, errorSpan
       cm.events.onChange(editor, 'validation_error', function() {

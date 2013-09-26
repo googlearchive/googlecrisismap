@@ -15,6 +15,7 @@
  */
 goog.provide('cm.BuildInfoView');
 
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 
@@ -24,7 +25,7 @@ goog.require('cm.ui');
  * @constructor
  */
 cm.BuildInfoView = function(parentElem) {
-  var element = cm.ui.create('span', {'class': 'cm-build-info'}, '\u2665');
+  var element = cm.ui.create('span', {'class': cm.css.BUILD_INFO}, '\u2665');
   cm.ui.append(parentElem, element);
 
   cm.events.listen(element, 'click', function() {

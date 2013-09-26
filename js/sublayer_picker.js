@@ -17,6 +17,8 @@
 
 goog.provide('cm.SublayerPicker');
 
+goog.require('cm.css');
+
 /**
  * Dropdown menu listing all sublayers for a given parent layer. When
  * a sublayer is selected, an event is emitted for view classes to
@@ -47,9 +49,9 @@ cm.SublayerPicker = function(container, parentLayer) {
    */
   this.choices_ = {};
 
-  var buttonElem = cm.ui.create('div', {'class': 'cm-calendar-button'});
+  var buttonElem = cm.ui.create('div', {'class': cm.css.CALENDAR_BUTTON});
   container.appendChild(buttonElem);
-  this.menu_ = cm.ui.create('ul', {'class': 'cm-sublayer-picker'});
+  this.menu_ = cm.ui.create('ul', {'class': cm.css.SUBLAYER_PICKER});
   this.menu_.style.display = 'none';
   buttonElem.appendChild(this.menu_);
 

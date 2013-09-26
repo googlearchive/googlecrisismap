@@ -19,6 +19,7 @@ goog.require('cm.Editor');
 goog.require('cm.Html');
 goog.require('cm.HtmlEditor');
 goog.require('cm.LayerModel');
+goog.require('cm.css');
 goog.require('cm.ui');
 goog.require('goog.net.XhrIo');
 goog.require('goog.ui.ColorPalette');
@@ -191,13 +192,13 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
   // Construct graphic selection dialog.
   var colorPaletteElem;
   this.paletteDialog_ = cm.ui.create('div',
-      {'class': 'cm-graphic-selector cm-popup'},
+      {'class': [cm.css.GRAPHIC_SELECTOR, cm.css.POPUP]},
       this.featurePaletteContainer_ = cm.ui.create('div', {},
           this.loadingElem_ = cm.ui.create('div', {}, 'Loading...'),
           this.featurePaletteElem_ = cm.ui.create('div',
-              {'class': 'cm-feature-palette'}),
+              {'class': cm.css.FEATURE_PALETTE}),
           cm.ui.create('hr')),
-      colorPaletteElem = cm.ui.create('div', {'class': 'cm-color-palette'}));
+      colorPaletteElem = cm.ui.create('div', {'class': cm.css.COLOR_PALETTE}));
 
   cm.events.listen(this.paletteDialog_, 'click', function() {
     this.ignoreCloseClick_ = true;
@@ -228,7 +229,7 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
   var addItemLink, editHtmlLink, revertLink;
   cm.ui.append(parentElem, this.legendEditorElem_ = cm.ui.create('div', {},
       this.legendItemsElem_ = cm.ui.create('div',
-          {'class': 'cm-legend-items'}),
+          {'class': cm.css.LEGEND_ITEMS}),
       addItemLink = cm.ui.createLink(MSG_ADD_ITEM),
       cm.ui.SEPARATOR_DASH,
       editHtmlLink = cm.ui.createLink(MSG_EDIT_HTML)));
@@ -255,7 +256,7 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
   cm.ui.append(this.htmlEditorElem,
       this.editGraphicallyLink_ = cm.ui.createLink(MSG_EDIT_GRAPHICALLY),
       this.revertToLastValidLink_ = cm.ui.create('div', {},
-          cm.ui.create('span', {'class': 'cm-validation-error'},
+          cm.ui.create('span', {'class': cm.css.VALIDATION_ERROR},
               MSG_INVALID_LEGEND),
           cm.ui.SEPARATOR_DASH,
           revertLink = cm.ui.createLink(MSG_REVERT)));
@@ -362,11 +363,11 @@ cm.LegendEditor.prototype.updateUi = function(value) {
  */
 cm.LegendEditor.prototype.previewValid_ = function() {
   for (var i = 0, itemElem; itemElem = this.preview.childNodes[i]; i++) {
-    if (!goog.dom.classes.has(itemElem, 'cm-legend-item')) {
+    if (!goog.dom.classes.has(itemElem, cm.css.LEGEND_ITEM)) {
       return false;
     }
-    if (!cm.ui.getByClass('cm-legend-graphic', itemElem) ||
-        !cm.ui.getByClass('cm-legend-text', itemElem)) {
+    if (!cm.ui.getByClass(cm.css.LEGEND_GRAPHIC, itemElem) ||
+        !cm.ui.getByClass(cm.css.LEGEND_TEXT, itemElem)) {
       return false;
     }
   }
@@ -389,8 +390,8 @@ cm.LegendEditor.prototype.showHtmlEditor_ = function(showHtml, opt_value) {
   // Set this.shown_ to the opposite of showHtml, and update the UI if this
   // causes a change.
   if (this.shown_ != (this.shown_ = !showHtml) || opt_value) {
-    var from = showHtml ? 'cm-legend-editor' : 'cm-html-editor';
-    var to = showHtml ? 'cm-html-editor' : 'cm-legend-editor';
+    var from = showHtml ? cm.css.LEGEND_EDITOR : cm.css.HTML_EDITOR;
+    var to = showHtml ? cm.css.HTML_EDITOR : cm.css.LEGEND_EDITOR;
 
     var parentElem = goog.dom.getAncestorByClass(this.legendEditorElem_, from);
     goog.dom.classes.swap(parentElem, from, to);
@@ -443,11 +444,11 @@ cm.LegendEditor.prototype.handleRevertClick_ = function() {
  */
 cm.LegendEditor.prototype.createLegendItem_ = function(opt_previewElem) {
   var graphicElem = opt_previewElem ?
-      cm.ui.getByClass('cm-legend-graphic', opt_previewElem) :
-      cm.ui.create('div', {'class': 'cm-legend-graphic'});
+      cm.ui.getByClass(cm.css.LEGEND_GRAPHIC, opt_previewElem) :
+      cm.ui.create('div', {'class': cm.css.LEGEND_GRAPHIC});
   var textElem = opt_previewElem ?
-      cm.ui.getByClass('cm-legend-text', opt_previewElem) :
-      cm.ui.create('div', {'class': 'cm-legend-text'});
+      cm.ui.getByClass(cm.css.LEGEND_TEXT, opt_previewElem) :
+      cm.ui.create('div', {'class': cm.css.LEGEND_TEXT});
 
   if (!graphicElem || !textElem) {
     return null;
@@ -460,9 +461,10 @@ cm.LegendEditor.prototype.createLegendItem_ = function(opt_previewElem) {
       textElem: textElem.cloneNode(true)
     },
     preview: {
-      elem: opt_previewElem || cm.ui.create('div', {'class': 'cm-legend-item'},
-          cm.ui.create('div', {'style': 'width: 1%'}, graphicElem),
-          cm.ui.create('div', {}, textElem)),
+      elem: opt_previewElem ||
+          cm.ui.create('div', {'class': cm.css.LEGEND_ITEM},
+                       cm.ui.create('div', {'style': 'width: 1%'}, graphicElem),
+                       cm.ui.create('div', {}, textElem)),
       graphicElem: graphicElem,
       textElem: textElem
     }
@@ -470,17 +472,18 @@ cm.LegendEditor.prototype.createLegendItem_ = function(opt_previewElem) {
 
   var inputElem, deleteBtn;
   cm.ui.append(this.legendItemsElem_, legendItem.editor.elem =
-      cm.ui.create('div', {'class': 'cm-legend-item'},
+      cm.ui.create('div', {'class': cm.css.LEGEND_ITEM},
           cm.ui.create('div', {'style': 'width: 1%'},
               legendItem.editor.graphicElem),
           cm.ui.create('div', {'style': 'vertical-align:top;position:relative'},
               legendItem.editor.textElem,
               inputElem = cm.ui.create('textarea',
-                  {'class': 'cm-legend-text', 'type': 'text', 'value':
+                  {'class': cm.css.LEGEND_TEXT, 'type': 'text', 'value':
                       goog.string.unescapeEntities(cm.ui.getText(textElem)).
                       replace(/<br\/?>/g, '\n').replace(/&nbsp;/g, ' ')})),
           cm.ui.create('div', {'style': 'width: 1%'},
-              deleteBtn = cm.ui.create('div', {'class': 'cm-close-button'}))));
+              deleteBtn = cm.ui.create('div',
+                                       {'class': cm.css.CLOSE_BUTTON}))));
   if (!opt_previewElem) {
     cm.ui.append(this.preview, legendItem.preview.elem);
   }
@@ -588,7 +591,7 @@ cm.LegendEditor.prototype.handleTextChange_ = function(legendItem, inputElem,
 
   var empty = goog.string.isEmpty(editorHtml) &&
       (!!opt_trimInEditor || editorHtml.indexOf('\n') == -1);
-  goog.dom.classes.enable(legendItem.editor.textElem, 'cm-empty', empty);
+  goog.dom.classes.enable(legendItem.editor.textElem, cm.css.EMPTY, empty);
   if (empty) {
     editorHtml = MSG_EMPTY_LEGEND_TEXT;
   }
@@ -718,7 +721,7 @@ cm.LegendEditor.prototype.constructFeatureElements_ = function(graphics) {
       features,
       goog.array.map(graphics['static_icon_urls'], function(static_icon_url) {
         var iconElem = cm.ui.create('div', {
-          'class': 'cm-legend-graphic cm-legend-icon',
+          'class': [cm.css.LEGEND_GRAPHIC, cm.css.LEGEND_ICON],
           'style': {
             'backgroundImage': 'url(' + static_icon_url + ')'
           }
@@ -753,14 +756,14 @@ cm.LegendEditor.prototype.constructFeatureElements_ = function(graphics) {
       }),
       goog.array.map(graphics['line_styles'], function(line) {
         return cm.ui.create('div',
-            {'class': 'cm-legend-graphic cm-legend-line'},
+            {'class': [cm.css.LEGEND_GRAPHIC, cm.css.LEGEND_LINE]},
             cm.ui.create('div', {'style': {
               'borderBottomColor': line['color']
             }}));
       }),
       goog.array.map(graphics['polygon_styles'], function(polygon) {
         return cm.ui.create('div', {
-          'class': 'cm-legend-graphic cm-legend-polygon',
+          'class': [cm.css.LEGEND_GRAPHIC, cm.css.LEGEND_POLYGON],
           'style': {
             'backgroundColor': polygon['fill_color'] || 'white',
             'borderColor': polygon['border_color'] || 'black'
@@ -794,7 +797,7 @@ cm.LegendEditor.prototype.handleColorPaletteClick_ = function() {
   if (this.paletteCallback_) {
     var color = this.colorPalette_.getSelectedColor();
     this.paletteCallback_(cm.ui.create('div',
-        {'class': 'cm-legend-graphic cm-legend-color',
+        {'class': [cm.css.LEGEND_GRAPHIC, cm.css.LEGEND_COLOR],
          'style': {'backgroundColor': color}}));
   }
   this.paletteCallback_ = null;

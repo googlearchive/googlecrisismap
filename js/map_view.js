@@ -20,6 +20,7 @@ goog.require('cm.AppState');
 goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
 goog.require('cm.TileOverlay');
+goog.require('cm.css');
 goog.require('cm.util');
 goog.require('goog.Uri');
 goog.require('goog.array');
@@ -93,7 +94,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   this.listenerTokens_ = {};
 
   /** @private {Element} A copyright notice to show on the map. */
-  this.copyrightDiv_ = cm.ui.create('div', {'class': 'cm-map-copyright'});
+  this.copyrightDiv_ = cm.ui.create('div', {'class': cm.css.MAP_COPYRIGHT});
 
   /** @private {boolean} Allow OSM as a base map type. */
   this.osmEnabled_ = (opt_config || {})['enable_osm_map_type'];
@@ -188,7 +189,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
       this.map_, 'click', function() { this.infoWindow_.close(); }, this);
 
   // Helper text for defining lat/lng values when editing a layer's viewport.
-  var mouseLatLngElem = cm.ui.create('div', {'class': 'cm-lat-lng'});
+  var mouseLatLngElem = cm.ui.create('div', {'class': cm.css.LAT_LNG});
   mouseLatLngElem.style.display = 'none';
   cm.ui.append(parentElem, mouseLatLngElem);
   cm.events.listen(this.map_, 'mousemove', function(event) {

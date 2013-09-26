@@ -16,6 +16,7 @@
 
 goog.provide('cm.LoginView');
 
+goog.require('cm.css');
 goog.require('cm.ui');
 
 /**
@@ -26,12 +27,13 @@ goog.require('cm.ui');
  */
 cm.LoginView = function(parentElem, clientConfig) {
   if (clientConfig['user_email']) {
-    this.element_ = cm.ui.create('div', {'class': 'cm-login'},
-        cm.ui.create('span', {'class': 'cm-user'}, clientConfig['user_email']),
+    this.element_ = cm.ui.create('div', {'class': cm.css.LOGIN},
+        cm.ui.create('span', {'class': cm.css.USER},
+                     clientConfig['user_email']),
         cm.ui.SEPARATOR_DOT,
         cm.ui.createLink(MSG_SIGN_OUT, clientConfig['logout_url']));
   } else {
-    this.element_ = cm.ui.create('div', {'class': 'cm-login'},
+    this.element_ = cm.ui.create('div', {'class': cm.css.LOGIN},
         cm.ui.createLink(MSG_SIGN_IN, clientConfig['login_url']));
   }
   parentElem.appendChild(this.element_);

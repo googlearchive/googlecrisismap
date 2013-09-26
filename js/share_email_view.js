@@ -14,6 +14,7 @@
  */
 goog.provide('cm.ShareEmailView');
 
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.net.XhrIo');
@@ -129,14 +130,15 @@ cm.ShareEmailView = function() {
    */
   this.cancelBtn_;
 
-  this.popup_ = cm.ui.create('div', {'class': 'cm-share-emailer cm-popup'},
+  this.popup_ = cm.ui.create('div',
+                             {'class': [cm.css.SHARE_EMAILER, cm.css.POPUP]},
       this.titleElem_ = cm.ui.create('h2', {}, MSG_SHARE_TITLE),
       this.tableElem_ = cm.ui.create('table'),
-      cm.ui.create('div', {'class': 'cm-button-area'},
+      cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
       this.shareBtn_ = cm.ui.create(
-          'button', {'class': 'cm-button cm-submit'}, MSG_SHARE),
+          'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_SHARE),
       this.cancelBtn_ = cm.ui.create(
-          'button', {'class': 'cm-button'}, MSG_CANCEL_BTN)));
+          'button', {'class': cm.css.BUTTON}, MSG_CANCEL_BTN)));
 
   cm.events.listen(this.shareBtn_, 'click', this.handleShare_, this);
   cm.events.listen(this.cancelBtn_, 'click', this.handleCancel_, this);
@@ -195,11 +197,13 @@ cm.ShareEmailView.prototype.share = function(share_url) {
  */
 cm.ShareEmailView.prototype.emailError = function() {
   var okayBtn;
-  var errorPopup = cm.ui.create('div', {'class': 'cm-share-emailer cm-popup'},
-      cm.ui.create('p', {'class': 'cm-email-error'}, MSG_EMAIL_ERROR),
-      cm.ui.create('div', {'class': 'cm-button-area'},
+  var errorPopup = cm.ui.create('div',
+                                {'class': [cm.css.SHARE_EMAILER, cm.css.POPUP]},
+      cm.ui.create('p', {'class': cm.css.EMAIL_ERROR}, MSG_EMAIL_ERROR),
+      cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
                    okayBtn = cm.ui.create(
-                       'button', {'class': 'cm-button cm-submit'}, MSG_OK)));
+                       'button',
+                       {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_OK)));
   cm.ui.showPopup(errorPopup);
   cm.events.listen(okayBtn, 'click', function() {
       cm.ui.remove(errorPopup);
@@ -215,7 +219,7 @@ cm.ShareEmailView.prototype.handleShare_ = function() {
   var recipientEmail = this.emailInput_.value;
 
   if (recipientEmail.length === 0 || !recipientEmail.match(EMAIL_PATTERN)) {
-    goog.dom.classes.add(this.emailLabel_, 'cm-email-error');
+    goog.dom.classes.add(this.emailLabel_, cm.css.EMAIL_ERROR);
     return;
   }
   var permission = this.viewer_.value;

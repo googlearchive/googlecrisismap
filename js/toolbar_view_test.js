@@ -11,6 +11,8 @@
 
 // Author: kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.css');
+
 function ToolbarViewTest() {
   cm.TestBase.call(this);
   this.parent_ = cm.ui.create('div');
@@ -33,7 +35,7 @@ ToolbarViewTest.prototype.testUndoLink = function() {
       {redo_possible: true, undo_possible: true});
   cm.events.emit(undoLink, 'click');
   expectTrue(undoEmitted);
-  expectThat(undoLink, isElement(not(withClass('cm-disabled'))));
+  expectThat(undoLink, isElement(not(withClass(cm.css.DISABLED))));
 };
 
 /** Verifies that the Redo link works properly. */
@@ -48,7 +50,7 @@ ToolbarViewTest.prototype.testRedoLink = function() {
       {redo_possible: true, undo_possible: true});
   cm.events.emit(redoLink, 'click');
   expectTrue(redoEmitted);
-  expectThat(redoLink, isElement(not(withClass('cm-disabled'))));
+  expectThat(redoLink, isElement(not(withClass(cm.css.DISABLED))));
 };
 
 /** Verifies that the Arrange link works properly. */

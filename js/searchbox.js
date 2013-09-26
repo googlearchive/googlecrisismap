@@ -16,6 +16,7 @@
 goog.provide('cm.SearchBox');
 
 goog.require('cm');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.ui.BidiInput');
@@ -31,7 +32,8 @@ cm.SearchBox = function(map, opt_domHelper) {
    * @private
    */
   var span = this.span_ = cm.ui.create('span',
-                                       {'class': 'cm-mapbutton cm-searchbox'});
+                                       {'class': [cm.css.MAPBUTTON,
+                                                  cm.css.SEARCHBOX]});
   span.style.padding = '0';
   span.style.textAlign = 'left';
   span.style.zIndex = 1000;

@@ -11,6 +11,8 @@
 
 // @author joeysilva@google.com (Joey Silva)
 
+goog.require('cm.css');
+
 var EXTRACTED_LEGEND_ITEMS = {
   static_icon_urls: ['icon_href'],
   line_styles: [{color: '#111111'}],
@@ -25,7 +27,7 @@ function LegendEditorTest() {
   this.featurePalette_ = this.expectNew_('goog.ui.Palette');
   this.colorPalette_ = this.expectNew_('goog.ui.ColorPalette');
 
-  this.parent_ = cm.ui.create('div', {'class': 'cm-legend-editor'});
+  this.parent_ = cm.ui.create('div', {'class': cm.css.LEGEND_EDITOR});
   this.draft_ = new google.maps.MVCObject();
   this.draft_.set('type', cm.LayerModel.Type.KML);
 
@@ -74,13 +76,14 @@ LegendEditorTest.prototype.createEditor_ = function() {
 
   // Legend editor elements
   this.itemsElem_ =
-      expectDescendantOf(this.parent_, withClass('cm-legend-items'));
+      expectDescendantOf(this.parent_, withClass(cm.css.LEGEND_ITEMS));
   this.legendEditorElem_ = this.itemsElem_.parentNode;
   this.editHtmlLink_ = expectDescendantOf(
       this.legendEditorElem_, withText('Edit HTML'));
 
   // HTML editor elements
-  this.previewElem_ = expectDescendantOf(this.parent_, withClass('cm-preview'));
+  this.previewElem_ = expectDescendantOf(this.parent_,
+                                         withClass(cm.css.PREVIEW));
   this.htmlEditorElem_ = this.previewElem_.parentNode;
   this.htmlTextarea_ = expectDescendantOf(this.htmlEditorElem_, 'textarea');
   this.editGraphicallyLink_ =
@@ -112,7 +115,7 @@ LegendEditorTest.prototype.setGraphic_ = function(graphic, opt_legendItem) {
   // Emit a click event from either the given opt_legendItem's graphic, or from
   // the 'Add item' link.
   cm.events.emit(opt_legendItem ? expectDescendantOf(
-      opt_legendItem, withClass('cm-legend-graphic')).parentNode :
+      opt_legendItem, withClass(cm.css.LEGEND_GRAPHIC)).parentNode :
       expectDescendantOf(this.legendEditorElem_, withText('Add item')),
       'click');
 
@@ -126,7 +129,7 @@ LegendEditorTest.prototype.setGraphic_ = function(graphic, opt_legendItem) {
   // Expect a color graphic with the appropriate background color, in the case
   // of a color, or the DOM element itself in the case of a feature.
   var graphicMatcher = isColor ? isElement(
-      withClass('cm-legend-graphic'), withClass('cm-legend-color'),
+      withClass(cm.css.LEGEND_GRAPHIC), withClass(cm.css.LEGEND_COLOR),
       withStyle('backgroundColor', graphic)) : graphic;
 
   var legendItem = opt_legendItem || this.expectLegendItem_('', graphicMatcher);
@@ -151,8 +154,8 @@ LegendEditorTest.prototype.setGraphic_ = function(graphic, opt_legendItem) {
  */
 LegendEditorTest.prototype.expectLegendItem_ = function(opt_text,
     opt_graphicMatcher) {
-  var previewTextMatchers = ['div', withClass('cm-legend-text')];
-  var editorTextMatchers = ['div', withClass('cm-legend-text')];
+  var previewTextMatchers = ['div', withClass(cm.css.LEGEND_TEXT)];
+  var editorTextMatchers = ['div', withClass(cm.css.LEGEND_TEXT)];
   if (opt_text != undefined) {
     // Mimic the preview and editor's respective whitespace trimming and
     // escaping behaviors.
@@ -163,14 +166,14 @@ LegendEditorTest.prototype.expectLegendItem_ = function(opt_text,
 
     previewTextMatchers.push(withInnerHtml(previewHtml));
     editorTextMatchers.push(goog.string.isEmpty(opt_text) ?
-        withClass('cm-empty') : withInnerHtml(editorHtml));
+        withClass(cm.css.EMPTY) : withInnerHtml(editorHtml));
   }
   var withGraphic = hasDescendant(
-      opt_graphicMatcher || withClass('cm-legend-graphic'));
+      opt_graphicMatcher || withClass(cm.css.LEGEND_GRAPHIC));
 
-  expectDescendantOf(this.previewElem_, withClass('cm-legend-item'),
+  expectDescendantOf(this.previewElem_, withClass(cm.css.LEGEND_ITEM),
       withGraphic, hasDescendant.apply(this, previewTextMatchers));
-  return expectDescendantOf(this.itemsElem_, withClass('cm-legend-item'),
+  return expectDescendantOf(this.itemsElem_, withClass(cm.css.LEGEND_ITEM),
       withGraphic, hasDescendant.apply(this, editorTextMatchers));
 };
 
@@ -182,7 +185,7 @@ LegendEditorTest.prototype.expectLegendItem_ = function(opt_text,
  */
 LegendEditorTest.prototype.setText_ = function(legendItem, text) {
   var textElem = expectDescendantOf(legendItem, isElement(
-      'div', withClass('cm-legend-text')));
+      'div', withClass(cm.css.LEGEND_TEXT)));
   var inputElem = expectDescendantOf(legendItem, isElement(
       'textarea', not(isShown())));
 
@@ -272,21 +275,21 @@ LegendEditorTest.prototype.expectPaletteUpdates_ = function(opt_items) {
         featureCount += items['static_icon_urls'].length;
         goog.array.forEach(items['static_icon_urls'], function(icon) {
           expectDescendantOf(contentElem, isElement(
-              withClass('cm-legend-graphic'), withClass('cm-legend-icon'),
+              withClass(cm.css.LEGEND_GRAPHIC), withClass(cm.css.LEGEND_ICON),
               withStyle('backgroundImage', 'url(' + icon + ')')));
         });
         featureCount += items['line_styles'].length;
         goog.array.forEach(items['line_styles'], function(line) {
           expectDescendantOf(contentElem, isElement(
-              withClass('cm-legend-graphic'), withClass('cm-legend-line'),
+              withClass(cm.css.LEGEND_GRAPHIC), withClass(cm.css.LEGEND_LINE),
               hasDescendant(withStyle('borderBottomColor', line['color']))));
         });
         featureCount += items['polygon_styles'].length;
         goog.array.forEach(items['polygon_styles'], function(polygon) {
           if (polygon['border_color']) {
             expectDescendantOf(
-                contentElem, withClass('cm-legend-graphic'),
-                withClass('cm-legend-polygon'),
+                contentElem, withClass(cm.css.LEGEND_GRAPHIC),
+                withClass(cm.css.LEGEND_POLYGON),
                 withStyle('backgroundColor', polygon['fill_color']));
           } else {
             featureCount--;
@@ -333,7 +336,7 @@ LegendEditorTest.prototype.testLegendItem = function() {
 
   // Test creating a legend item (with an icon).
   var legendItem = this.setGraphic_(cm.ui.create('div',
-      {'class': 'cm-legend-graphic cm-legend-icon',
+      {'class': [cm.css.LEGEND_GRAPHIC, cm.css.LEGEND_ICON],
        'style': {'backgroundImage': 'url(icon_url)'}}));
 
   // Test modifying its graphic element (to a color).
@@ -343,9 +346,9 @@ LegendEditorTest.prototype.testLegendItem = function() {
   this.setText_(legendItem, 'Legend item text');
 
   // Test the delete button of the legend item.
-  var closeBtn = expectDescendantOf(legendItem, withClass('cm-close-button'));
+  var closeBtn = expectDescendantOf(legendItem, withClass(cm.css.CLOSE_BUTTON));
   cm.events.emit(closeBtn, 'click');
-  expectNoDescendantOf(this.parent_, withClass('cm-legend-item'));
+  expectNoDescendantOf(this.parent_, withClass(cm.css.LEGEND_ITEM));
 };
 
 /** Tests the escaping and trimming behaviour of whitespace and linebreaks. */
@@ -422,12 +425,13 @@ LegendEditorTest.prototype.testEditHtml = function() {
   // elements, or vice versa.
   var graphicElem;
   cm.ui.append(this.previewElem_,
-      cm.ui.create('div', {'class': 'cm-legend-item'},
+      cm.ui.create('div', {'class': cm.css.LEGEND_ITEM},
           graphicElem = cm.ui.create('div',
-              {'class': 'cm-legend-graphic whatever-class',
+              {'class': [cm.css.LEGEND_GRAPHIC, cm.css.WHATEVER_CLASS],
                'style': 'whatever-style: whatever-value'}),
-          cm.ui.create('div', {'class': 'cm-legend-text whatever-class',
-                               'style': 'whatever-style: whatever-value'},
+          cm.ui.create('div',
+                       {'class': [cm.css.LEGEND_TEXT, cm.css.WHATEVER_CLASS],
+                        'style': 'whatever-style: whatever-value'},
               'Legend item text')));
 
   // Test that clicking the edit graphically link correctly loads the HTML in
@@ -444,16 +448,16 @@ LegendEditorTest.prototype.testInvalidHtml = function() {
   var invalidLegendItems = [
       // no cm-legend-item class
       cm.ui.create('div', {},
-          cm.ui.create('div', {'class': 'cm-legend-graphic'}),
-          cm.ui.create('div', {'class': 'cm-legend-text'})),
+          cm.ui.create('div', {'class': cm.css.LEGEND_GRAPHIC}),
+          cm.ui.create('div', {'class': cm.css.LEGEND_TEXT})),
       // no graphic or text element
-      cm.ui.create('div', {'class': 'cm-legend-item'}),
+      cm.ui.create('div', {'class': cm.css.LEGEND_ITEM}),
       // no text element
-      cm.ui.create('div', {'class': 'cm-legend-item'},
-          cm.ui.create('div', {'class': 'cm-legend-graphic'})),
+      cm.ui.create('div', {'class': cm.css.LEGEND_ITEM},
+          cm.ui.create('div', {'class': cm.css.LEGEND_GRAPHIC})),
       // no graphic element
-      cm.ui.create('div', {'class': 'cm-legend-item'},
-          cm.ui.create('div', {'class': 'cm-legend-text'}))
+      cm.ui.create('div', {'class': cm.css.LEGEND_ITEM},
+          cm.ui.create('div', {'class': cm.css.LEGEND_TEXT}))
   ];
 
   goog.array.forEach(invalidLegendItems, function(invalidItem) {

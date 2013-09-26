@@ -17,6 +17,7 @@ goog.provide('cm.ui');
 
 goog.require('cm');
 goog.require('cm.Html');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('goog.dom');
 goog.require('goog.style');
@@ -37,7 +38,7 @@ cm.ui.document = (typeof document !== 'undefined') ? document : null;
  * @param {!Function} callback The callback to call when clicked.
  */
 cm.ui.createCloseButton = function(container, callback) {
-  var close = cm.ui.create('div', {'class': 'cm-close-button'});
+  var close = cm.ui.create('div', {'class': cm.css.CLOSE_BUTTON});
   container.appendChild(close);
 
   // Hides the layers panel and deselects the layers button.
@@ -84,10 +85,14 @@ cm.ui.showPopup = function(popup, opt_container) {
 cm.ui.create = function(tag, opt_attributes, var_args) {
   var args = [];
   var styleDict = null;
-  if (opt_attributes && opt_attributes['style'] &&
-      !goog.isString(opt_attributes['style'])) {
-    styleDict = opt_attributes['style'];
-    delete opt_attributes['style'];
+  if (opt_attributes) {
+    if (opt_attributes['style'] && !goog.isString(opt_attributes['style'])) {
+      styleDict = opt_attributes['style'];
+      delete opt_attributes['style'];
+    }
+    if (opt_attributes['class'] && goog.isArray(opt_attributes['class'])) {
+      opt_attributes['class'] = opt_attributes['class'].join(' ');
+    }
   }
   for (var a = 0; a < arguments.length; a++) {
     if (arguments[a] instanceof cm.Html) {  // Convert Html objects to elements.

@@ -16,6 +16,7 @@
 goog.provide('cm.LayerDragHandler');
 
 goog.require('cm');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('goog.array');
 goog.require('goog.dom');
@@ -103,7 +104,7 @@ cm.LayerDragHandler = function(layerListElem, draggableElements) {
    * @type Element
    * @private
    */
-  this.targetLine_ = cm.ui.create('div', {'class': 'cm-drop-target-line'});
+  this.targetLine_ = cm.ui.create('div', {'class': cm.css.DROP_TARGET_LINE});
 
   /**
    * The active Dragger object.
@@ -133,7 +134,7 @@ cm.LayerDragHandler = function(layerListElem, draggableElements) {
   // Create a dragger for each draggable element and attach listeners.
   goog.array.forEach(this.draggableElements_, function(elem) {
     var dragger = new goog.fx.Dragger(
-        elem, cm.ui.getByClass('cm-draggable-layer-title', elem));
+        elem, cm.ui.getByClass(cm.css.DRAGGABLE_LAYER_TITLE, elem));
     goog.array.insert(this.draggerList_, dragger);
     cm.events.listen(dragger, goog.fx.Dragger.EventType.START, function(e) {
       this.draggedElem_ = elem;
@@ -182,7 +183,7 @@ cm.LayerDragHandler.DropTarget;
 cm.LayerDragHandler.getNextDraggableLayer_ = function(element) {
   for (var sibling = element.nextSibling; sibling;
        sibling = sibling.nextSibling) {
-    if (goog.dom.classes.has(sibling, 'cm-draggable-layer')) {
+    if (goog.dom.classes.has(sibling, cm.css.DRAGGABLE_LAYER)) {
       return /** @type Element */(sibling);
     }
   }
@@ -200,7 +201,7 @@ cm.LayerDragHandler.getNextDraggableLayer_ = function(element) {
 cm.LayerDragHandler.getPreviousDraggableLayer_ = function(element) {
   for (var sibling = element.previousSibling; sibling;
        sibling = sibling.previousSibling) {
-    if (goog.dom.classes.has(sibling, 'cm-draggable-layer')) {
+    if (goog.dom.classes.has(sibling, cm.css.DRAGGABLE_LAYER)) {
       return /** @type Element */(sibling);
     }
   }
@@ -216,7 +217,7 @@ cm.LayerDragHandler.getPreviousDraggableLayer_ = function(element) {
  */
 cm.LayerDragHandler.getDraggableParent_ = function(element) {
   var grandparent = /** @type Element */(element.parentNode.parentNode);
-  return goog.dom.classes.has(grandparent, 'cm-draggable-layer') ?
+  return goog.dom.classes.has(grandparent, cm.css.DRAGGABLE_LAYER) ?
       grandparent : null;
 };
 
@@ -228,12 +229,13 @@ cm.LayerDragHandler.getDraggableParent_ = function(element) {
 cm.LayerDragHandler.prototype.handleDragStart_ = function(e) {
   // Clone the element containing the dragged element's title and
   // hide it until the user begins dragging.
-  this.draggedClone_ = cm.ui.getByClass(
-      'cm-draggable-layer-title', this.draggedElem_).cloneNode(true);
-  goog.dom.classes.add(this.draggedElem_, 'cm-active-draggable-layer');
-  goog.dom.classes.add(this.draggedClone_, 'cm-dragged-clone', 'cm-hidden');
+  this.draggedClone_ = cm.ui.getByClass(cm.css.DRAGGABLE_LAYER_TITLE,
+                                        this.draggedElem_).cloneNode(true);
+  goog.dom.classes.add(this.draggedElem_, cm.css.ACTIVE_DRAGGABLE_LAYER);
+  goog.dom.classes.add(this.draggedClone_, cm.css.DRAGGED_CLONE, cm.css.HIDDEN);
   goog.dom.classes.remove(this.draggedClone_,
-                          'cm-draggable-layer-bg', 'cm-draggable-folder-bg');
+                          cm.css.DRAGGABLE_LAYER_BG,
+                          cm.css.DRAGGABLE_FOLDER_BG);
   cm.ui.append(cm.ui.document.body, this.draggedClone_);
 
   // Compute the cursor's offset relative to the dragged element's upper-left
@@ -248,7 +250,7 @@ cm.LayerDragHandler.prototype.handleDragStart_ = function(e) {
   var innerLimits = goog.style.getBounds(this.layerListElem_);
   var limits = goog.style.getBounds(
       goog.dom.getAncestorByTagNameAndClass(this.layerListElem_, 'div',
-                                            'cm-arranger'));
+                                            cm.css.ARRANGER));
   limits.top = innerLimits.top;
   limits.height = innerLimits.height;
   // Expand the limits to the left to allow some slack when the drag point
@@ -265,7 +267,7 @@ cm.LayerDragHandler.prototype.handleDragStart_ = function(e) {
  * @private
  */
 cm.LayerDragHandler.prototype.handleDrag_ = function(e) {
-  goog.dom.classes.remove(this.draggedClone_, 'cm-hidden');
+  goog.dom.classes.remove(this.draggedClone_, cm.css.HIDDEN);
   this.updateDragInfo_(e);
 
   // If drag point is outside of dragger limits, reset the drop target
@@ -359,12 +361,12 @@ cm.LayerDragHandler.prototype.moveElementToCurrentTarget_ = function(element) {
         goog.dom.insertSiblingAfter(element, target);
         break;
       case cm.LayerDragHandler.TargetRelation.CHILD:
-      var sublayers = cm.ui.getByClass(
-            'cm-draggable-sublayer-container', target);
-        if (sublayers) {
-          goog.dom.appendChild(sublayers, element);
-        }
-        break;
+      var sublayers =
+          cm.ui.getByClass(cm.css.DRAGGABLE_SUBLAYER_CONTAINER, target);
+      if (sublayers) {
+        goog.dom.appendChild(sublayers, element);
+      }
+      break;
     }
   }
 };
@@ -375,7 +377,7 @@ cm.LayerDragHandler.prototype.moveElementToCurrentTarget_ = function(element) {
  * @private
  */
 cm.LayerDragHandler.prototype.handleDragEnd_ = function(e) {
-  goog.dom.classes.remove(this.draggedElem_, 'cm-active-draggable-layer');
+  goog.dom.classes.remove(this.draggedElem_, cm.css.ACTIVE_DRAGGABLE_LAYER);
   cm.ui.remove(this.targetLine_);
   cm.ui.remove(this.draggedClone_);
 
@@ -428,8 +430,7 @@ cm.LayerDragHandler.computeDropTarget_ = function(
   // drop target.
   if (dragger.limits.contains(dragPoint)) {
     goog.array.some(targetElems, function(elem) {
-      titleElem = cm.ui.getByClass(
-          'cm-draggable-layer-title', elem);
+      titleElem = cm.ui.getByClass(cm.css.DRAGGABLE_LAYER_TITLE, elem);
       elemBounds = goog.style.getBounds(/** @type Element */(titleElem));
       elemMargin = goog.style.getMarginBox(/** @type Element */(titleElem));
 
@@ -452,10 +453,10 @@ cm.LayerDragHandler.computeDropTarget_ = function(
           relation = cm.LayerDragHandler.TargetRelation.PREVIOUS_SIBLING;
           return true;
         }
-        var sublayerContainer = cm.ui.getByClass(
-            'cm-draggable-sublayer-container', elem);
-        var firstSublayer = sublayerContainer ? cm.ui.getByClass(
-            'cm-draggable-layer', sublayerContainer) : null;
+        var sublayerContainer =
+            cm.ui.getByClass(cm.css.DRAGGABLE_SUBLAYER_CONTAINER, elem);
+        var firstSublayer = sublayerContainer ?
+            cm.ui.getByClass(cm.css.DRAGGABLE_LAYER, sublayerContainer) : null;
         var nextSibling = cm.LayerDragHandler.getNextDraggableLayer_(elem);
 
         if (sublayerContainer) {
@@ -495,8 +496,8 @@ cm.LayerDragHandler.computeDropTarget_ = function(
           }
           // Update candidate to the next draggable parent.
           candidate = cm.LayerDragHandler.getDraggableParent_(candidate);
-          titleElem = candidate ? cm.ui.getByClass(
-              'cm-draggable-layer-title', candidate) : null;
+          titleElem = candidate ? cm.ui.getByClass(cm.css.DRAGGABLE_LAYER_TITLE,
+                                                   candidate) : null;
           candidateBounds = titleElem ? goog.style.getBounds(
               /** @type Element */(titleElem)) : null;
         }

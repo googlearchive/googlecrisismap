@@ -11,6 +11,8 @@
 
 // @author kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.css');
+
 function HtmlEditorTest() {
   cm.TestBase.call(this);
   this.setForTest_('cm.Html.sanitize_', function(x) { return '*' + x + '*'; });
@@ -33,7 +35,8 @@ HtmlEditorTest.prototype.createEditor_ = function() {
 HtmlEditorTest.prototype.testConstructor = function() {
   var parent = this.createEditor_();
   expectDescendantOf(parent, 'textarea', withId('editor1'));
-  expectDescendantOf(parent, 'div', withClass('cm-preview'), withClass('foo'));
+  expectDescendantOf(parent,
+                     'div', withClass(cm.css.PREVIEW), withClass('foo'));
 };
 
 /** Tests that the textarea contents propagate to the 'value' property. */
@@ -62,7 +65,7 @@ HtmlEditorTest.prototype.valuePropertyShouldUpdateTextarea = function() {
 /** Tests that the 'value' property propagates, sanitized, to the preview. */
 HtmlEditorTest.prototype.valueShouldAppearSanitizedInPreview = function() {
   var parent = this.createEditor_();
-  var preview = expectDescendantOf(parent, 'div', withClass('cm-preview'));
+  var preview = expectDescendantOf(parent, 'div', withClass(cm.css.PREVIEW));
   this.editor_.set('value', new cm.Html('xyz'));
   expectEq('*xyz*', preview.innerHTML);
 };
@@ -71,13 +74,13 @@ HtmlEditorTest.prototype.valueShouldAppearSanitizedInPreview = function() {
 HtmlEditorTest.prototype.clickShouldTogglePreview = function() {
   // When the editor is initially created...
   var parent = this.createEditor_();
-  var preview = expectDescendantOf(parent, 'div', withClass('cm-preview'));
+  var preview = expectDescendantOf(parent, 'div', withClass(cm.css.PREVIEW));
 
   // ...expect the preview to be hidden.
   expectEq('none', preview.style.display);
 
   // When the user clicks on the disclosure element...
-  var toggle = expectDescendantOf(parent, 'div', withClass('cm-disclosure'));
+  var toggle = expectDescendantOf(parent, 'div', withClass(cm.css.DISCLOSURE));
   cm.events.emit(toggle, 'click');
 
   // ...expect the preview to be shown.

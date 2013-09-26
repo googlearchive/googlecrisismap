@@ -11,6 +11,8 @@
 
 // Author: romano@google.com (Raquel Romano)
 
+goog.require('cm.css');
+
 function AboutPopupTest() {
   cm.TestBase.call(this);
   this.setForTest_('goog.dom.htmlToDocumentFragment', function(html) {
@@ -19,7 +21,7 @@ function AboutPopupTest() {
     return e;
   });
   this.container_ = cm.ui.create('div');
-  this.aboutText_ = cm.ui.create('div', {'class': 'cm-aboutText'});
+  this.aboutText_ = cm.ui.create('div', {'class': cm.css.ABOUT_TEXT});
   this.about_ = new cm.AboutPopup(this.container_, this.aboutText_);
   this.popup_ = cm.ui.get('cm-about');
 }
@@ -29,14 +31,14 @@ registerTestSuite(AboutPopupTest);
 /** Verifies that the popup window is constructed properly. */
 AboutPopupTest.prototype.testConstructor = function() {
   expectThat(this.popup_,
-             isElement(goog.dom.TagName.DIV, withClass('cm-popup')));
-  expectDescendantOf(this.popup_, withClass('cm-aboutText'));
+             isElement(goog.dom.TagName.DIV, withClass(cm.css.POPUP)));
+  expectDescendantOf(this.popup_, withClass(cm.css.ABOUT_TEXT));
 };
 
 /** Verifies that the close button callback removes the popup window. */
 AboutPopupTest.prototype.testCloseButtonCallback = function() {
   var parent = cm.ui.create('div', {}, this.popup_);
-  var button = expectDescendantOf(this.popup_, withClass('cm-close-button'));
+  var button = expectDescendantOf(this.popup_, withClass(cm.css.CLOSE_BUTTON));
   cm.events.emit(button, 'click');
   expectThat(parent, not(hasDescendant(this.popup_)));
 };

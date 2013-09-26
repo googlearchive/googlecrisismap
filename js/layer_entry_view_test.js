@@ -10,6 +10,8 @@
 // specific language governing permissions and limitations under the License.
 
 
+goog.require('cm.css');
+
 function LayerEntryViewTest() {
   cm.TestBase.call(this);
 
@@ -63,7 +65,7 @@ LayerEntryViewTest.prototype.createView_ = function(
   var index = opt_index || 0;
   var childCount = opt_childCount || index + 1;
   for (var i = 0; i < childCount - 1; i++) {
-    parent.appendChild(new FakeElement('div', {'class': 'cm-layer-entry'}));
+    parent.appendChild(new FakeElement('div', {'class': cm.css.LAYER_ENTRY}));
   }
   this.view_ = new cm.LayerEntryView(parent, this.layerModel_,
                                      this.metadataModel_, this.appState_,
@@ -77,17 +79,17 @@ LayerEntryViewTest.prototype.createView_ = function(
  */
 LayerEntryViewTest.prototype.testConstructor = function() {
   var parent = this.createView_();
-  var contentElem = expectDescendantOf(parent, 'div', withClass('cm-hidden'));
+  var contentElem = expectDescendantOf(parent, 'div', withClass(cm.css.HIDDEN));
   expectDescendantOf(
-      parent, withClass('cm-layer-title'), withText('monsters'));
+      parent, withClass(cm.css.LAYER_TITLE), withText('monsters'));
   expectDescendantOf(
-      contentElem, withClass('cm-layer-description'),
+      contentElem, withClass(cm.css.LAYER_DESCRIPTION),
       withText('lots of monsters'));
   expectDescendantOf(
-      contentElem, withClass('cm-layer-legend-box'),
+      contentElem, withClass(cm.css.LAYER_LEGEND_BOX),
       not(withStyle('display', 'none'),
-      hasDescendant(not(withClass('cm-hidden')),
-          hasDescendant(withClass('cm-layer-legend'), withText(
+      hasDescendant(not(withClass(cm.css.HIDDEN)),
+          hasDescendant(withClass(cm.css.LAYER_LEGEND), withText(
               'red - evil monsters<br/>' +
               'dark red - eviler monsters')))));
   var checkbox = expectDescendantOf(parent, inputType('checkbox'));
@@ -125,19 +127,19 @@ LayerEntryViewTest.prototype.testEnableEditingFlags = function() {
 LayerEntryViewTest.prototype.testConstructorIndex = function() {
   // Insert layer at the beginning of the child node list.
   var parent = this.createView_({}, 0, 2);
-  var childNodes = allDescendantsOf(parent, withClass('cm-layer-entry'));
+  var childNodes = allDescendantsOf(parent, withClass(cm.css.LAYER_ENTRY));
   expectEq(2, childNodes.length);
   expectDescendantOf(childNodes[0], withText('monsters'));
 
   // Insert layer in the middle of the child node list.
   parent = this.createView_({}, 1, 3);
-  childNodes = allDescendantsOf(parent, withClass('cm-layer-entry'));
+  childNodes = allDescendantsOf(parent, withClass(cm.css.LAYER_ENTRY));
   expectEq(3, childNodes.length);
   expectDescendantOf(childNodes[1], withText('monsters'));
 
   // Add layer to the end of the child node list.
   parent = this.createView_({}, 4);
-  childNodes = allDescendantsOf(parent, withClass('cm-layer-entry'));
+  childNodes = allDescendantsOf(parent, withClass(cm.css.LAYER_ENTRY));
   expectEq(5, childNodes.length);
   expectDescendantOf(childNodes[4], withText('monsters'));
 };
@@ -164,7 +166,7 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
 
   this.layerModel_.set('type', cm.LayerModel.Type.TILE);
   var sliderDot = expectDescendantOf(
-      this.fakeThumb_, withClass('cm-slider-dot'));
+      this.fakeThumb_, withClass(cm.css.SLIDER_DOT));
   expectEq(1, sliderDot.style.opacity);
 
   // Test that the slider's 'change' event fires a CHANGE_OPACITY event with the
@@ -189,8 +191,8 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
 
   // The slider thumb should contain circle and dot divs.
   var circle = expectDescendantOf(
-      this.fakeThumb_, withClass('cm-slider-circle'));
-  expectDescendantOf(circle, withClass('cm-slider-dot'));
+      this.fakeThumb_, withClass(cm.css.SLIDER_CIRCLE));
+  expectDescendantOf(circle, withClass(cm.css.SLIDER_DOT));
 
   // Change the layer to non-TILE to verify that the slider is destroyed.
   this.layerModel_.set('type', cm.LayerModel.Type.KML);
@@ -212,7 +214,7 @@ LayerEntryViewTest.prototype.updateTitle = function() {
   var parent = this.createView_();
   this.layerModel_.set('title', 'unicorns');
   expectDescendantOf(parent,
-      withClass('cm-layer-title'), withText('unicorns'));
+      withClass(cm.css.LAYER_TITLE), withText('unicorns'));
 };
 
 /** Tests whether word breaks are placed properly for title. */
@@ -222,9 +224,9 @@ LayerEntryViewTest.prototype.updateTitleWithWordBreaks = function() {
   this.layerModel_.set('title', longTitle);
   var wordBrokenTitle = '&lt;b&gt;thisisa<wbr>verylooooo<wbr>oooooooooo<wbr>' +
                         'oooongone&lt;<wbr>/b&gt;';
-  expectDescendantOf(parent, withClass('cm-layer-title'),
+  expectDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
       withInnerHtml(wordBrokenTitle));
-  expectNoDescendantOf(parent, withClass('cm-layer-title'),
+  expectNoDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
       withInnerHtml(longTitle));
 };
 
@@ -244,17 +246,17 @@ LayerEntryViewTest.prototype.updateTitleTimeSeries = function() {
   var expectedSubtitle = cm.ui.SEPARATOR_DASH + 'Mar 20, 2020';
 
   cm.events.emit(this.appState_, 'promoted_layer_ids_changed');
-  expectDescendantOf(parent, withClass('cm-layer-title'),
+  expectDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
                      withText('monsters'));
-  expectDescendantOf(parent, withClass('cm-layer-date'),
+  expectDescendantOf(parent, withClass(cm.css.LAYER_DATE),
                      withText(expectedSubtitle));
 
   expectCall(this.appState_.getPromotedSublayer)(this.layerModel_)
       .willRepeatedly(returnWith(null));
   cm.events.emit(this.appState_, 'promoted_layer_ids_changed');
-  expectDescendantOf(parent, withClass('cm-layer-title'),
+  expectDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
                      withText('monsters'));
-  expectNoDescendantOf(parent, withClass('cm-layer-date'),
+  expectNoDescendantOf(parent, withClass(cm.css.LAYER_DATE),
                        withText(expectedSubtitle));
 };
 
@@ -264,7 +266,7 @@ LayerEntryViewTest.prototype.updateDescription = function() {
   this.layerModel_.set(
       'description', cm.Html.fromSanitizedHtml('heaps of unicorns'));
   expectDescendantOf(parent,
-      withClass('cm-layer-description'), withText('heaps of unicorns'));
+      withClass(cm.css.LAYER_DESCRIPTION), withText('heaps of unicorns'));
 };
 
 /** Tests that setting the 'legend' property updates the legend. */
@@ -274,8 +276,8 @@ LayerEntryViewTest.prototype.updateLegend = function() {
   // clear legend and check that box disappears
   this.layerModel_.set('legend', cm.Html.fromSanitizedHtml(''));
   expectDescendantOf(parent,
-      withClass('cm-layer-legend-box'), withClass('cm-hidden'),
-          hasDescendant(withClass('cm-layer-legend'), withText('')));
+      withClass(cm.css.LAYER_LEGEND_BOX), withClass(cm.css.HIDDEN),
+          hasDescendant(withClass(cm.css.LAYER_LEGEND), withText('')));
 
   // put a new legend
   var text = 'red - evil monsters<br/>' +
@@ -283,14 +285,14 @@ LayerEntryViewTest.prototype.updateLegend = function() {
              'blue - friendly monsters';
   this.layerModel_.set('legend', cm.Html.fromSanitizedHtml(text));
   expectDescendantOf(parent,
-      withClass('cm-layer-legend-box'), not(withClass('cm-hidden'),
-          hasDescendant(withClass('cm-layer-legend'), withText(text))));
+      withClass(cm.css.LAYER_LEGEND_BOX), not(withClass(cm.css.HIDDEN),
+          hasDescendant(withClass(cm.css.LAYER_LEGEND), withText(text))));
 };
 
 /** Tests that the layer's timestamp is displayed correctly. */
 LayerEntryViewTest.prototype.updateTime = function() {
   var parent = this.createView_();
-  var timeElem = expectDescendantOf(parent, withClass('cm-timestamp'));
+  var timeElem = expectDescendantOf(parent, withClass(cm.css.TIMESTAMP));
   var now = new Date().valueOf() / 1000;
   var metadata = this.metadataModel_;
 
@@ -452,17 +454,17 @@ LayerEntryViewTest.prototype.testZoomLinks = function() {
   // ...should have a visible zoom link.
   var zoomLink = expectDescendantOf(parent, 'a',
                                     withText(containsRegExp(/Zoom/)));
-  expectThat(zoomLink.parentNode, isElement(not(withClass('cm-hidden'))));
+  expectThat(zoomLink.parentNode, isElement(not(withClass(cm.css.HIDDEN))));
 
   // When the viewport is not defined...
   this.layerModel_.set('viewport', undefined);
   // ...the zoom link should disappear.
-  expectThat(zoomLink.parentNode, isElement(withClass('cm-hidden')));
+  expectThat(zoomLink.parentNode, isElement(withClass(cm.css.HIDDEN)));
 
   // When the layer type is changed to KML...
   this.layerModel_.set('type', cm.LayerModel.Type.KML);
   // ...the zoom link should reappear.
-  expectThat(zoomLink.parentNode, isElement(not(withClass('cm-hidden'))));
+  expectThat(zoomLink.parentNode, isElement(not(withClass(cm.css.HIDDEN))));
 };
 
 /**
@@ -475,8 +477,8 @@ LayerEntryViewTest.prototype.testZoomFading = function() {
 
   var parent = this.createView_();
   var elems = goog.array.map(
-      ['cm-header', 'cm-layer-description', 'cm-layer-legend',
-       'cm-timestamp', 'cm-slider', 'cm-sublayers', 'cm-warning'],
+      [cm.css.HEADER, cm.css.LAYER_DESCRIPTION, cm.css.LAYER_LEGEND,
+       cm.css.TIMESTAMP, cm.css.SLIDER, cm.css.SUBLAYERS, cm.css.WARNING],
       function(cls) { return expectDescendantOf(parent, withClass(cls)); });
 
   // Each of the elements above should be faded out twice and faded in twice.
@@ -508,8 +510,8 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectTrue(checkbox.checked);
   // Warning element is hidden initially, all other are visible.
-  expectNoDescendantOf(parent, 'div', withClass('cm-hidden'),
-                       not(withClass('cm-warning')));
+  expectNoDescendantOf(parent, 'div', withClass(cm.css.HIDDEN),
+                       not(withClass(cm.css.WARNING)));
 
   // Disable the layer.
   expectCall(this.appState_.getLayerEnabled)('layer0')
@@ -517,8 +519,8 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectFalse(checkbox.checked);
   // Warnign element is already hidden, make sure some other is hidden too.
-  expectDescendantOf(parent, 'div', withClass('cm-hidden'),
-                     not(withClass('cm-warning')));
+  expectDescendantOf(parent, 'div', withClass(cm.css.HIDDEN),
+                     not(withClass(cm.css.WARNING)));
 };
 
 /**
@@ -555,10 +557,10 @@ LayerEntryViewTest.prototype.updateEnabledTimeSeries = function() {
 
   // TODO(romano): replace this when expectNoDescendantOf() takes a
   // maximum recursion depth, so that the childEntry's content div is excluded.
-  //expectNoDescendantOf(parent, 'div', withClass('cm-content'));
-  expectDescendantOf(parent, 'div', withClass('cm-sublayers'));
-  expectDescendantOf(childEntry, 'div', withClass('cm-content'));
-  expectNoDescendantOf(childEntry, 'div', withClass('cm-header'));
+  //expectNoDescendantOf(parent, 'div', withClass(cm.css.CONTENT));
+  expectDescendantOf(parent, 'div', withClass(cm.css.SUBLAYERS));
+  expectDescendantOf(childEntry, 'div', withClass(cm.css.CONTENT));
+  expectNoDescendantOf(childEntry, 'div', withClass(cm.css.HEADER));
 };
 
 /**
@@ -599,15 +601,16 @@ LayerEntryViewTest.prototype.updateEnabledTimeSeriesSelect = function() {
 
   // Check the class names of the parent layer, promoted sublayer, and
   // not-promoted sublayer.
-  expectDescendantOf(parent, withClass('cm-contains-promoted-sublayer'));
-  var sublayers = expectDescendantOf(parent, withClass('cm-sublayers'));
+  expectDescendantOf(parent, withClass(cm.css.CONTAINS_PROMOTED_SUBLAYER));
+  var sublayers = expectDescendantOf(parent, withClass(cm.css.SUBLAYERS));
   var promoted = expectDescendantOf(parent,
-                                    withClass('cm-layer-entry'),
-                                    withClass('cm-promoted-sublayer'));
+                                    withClass(cm.css.LAYER_ENTRY),
+                                    withClass(cm.css.PROMOTED_SUBLAYER));
   expectEq(childEntry1, promoted);
-  var notPromoted = expectDescendantOf(sublayers,
-                                       withClass('cm-layer-entry'),
-                                       not(withClass('cm-promoted-sublayer')));
+  var notPromoted =
+      expectDescendantOf(sublayers,
+                         withClass(cm.css.LAYER_ENTRY),
+                         not(withClass(cm.css.PROMOTED_SUBLAYER)));
   expectEq(childEntry2, notPromoted);
 
   // Promote the other sublayer and verify its class name.
@@ -615,8 +618,8 @@ LayerEntryViewTest.prototype.updateEnabledTimeSeriesSelect = function() {
       .willRepeatedly(returnWith(childModel2));
   cm.events.emit(this.appState_, 'promoted_layer_ids_changed');
   promoted = expectDescendantOf(parent,
-                                withClass('cm-layer-entry'),
-                                withClass('cm-promoted-sublayer'));
+                                withClass(cm.css.LAYER_ENTRY),
+                                withClass(cm.css.PROMOTED_SUBLAYER));
   expectEq(childEntry2, promoted);
 
   // Select the multiple dates option and verify that no layers are
@@ -624,8 +627,8 @@ LayerEntryViewTest.prototype.updateEnabledTimeSeriesSelect = function() {
   expectCall(this.appState_.getPromotedSublayer)(this.layerModel_)
       .willRepeatedly(returnWith(null));
   cm.events.emit(this.appState_, 'promoted_layer_ids_changed');
-  expectNoDescendantOf(parent, withClass('cm-contains-promoted-sublayer'));
-  expectNoDescendantOf(parent, withClass('cm-promoted-sublayer'));
+  expectNoDescendantOf(parent, withClass(cm.css.CONTAINS_PROMOTED_SUBLAYER));
+  expectNoDescendantOf(parent, withClass(cm.css.PROMOTED_SUBLAYER));
 };
 
 /**
@@ -653,13 +656,13 @@ LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
   // once it takes maximum recursion depth, so that only this layer's sublayers
   // element qualifies.
   expectThat(this.view_.getEntryElement().childNodes[2],
-             isElement(withClass('cm-hidden')));
+             isElement(withClass(cm.css.HIDDEN)));
 
   // When the folder is unlocked...
   this.layerModel_.set('locked', false);
   // ...the sublayers should be visible.
   expectThat(this.view_.getEntryElement().childNodes[2],
-             isElement(not(withClass('cm-hidden'))));
+             isElement(not(withClass(cm.css.HIDDEN))));
 };
 
 /**
@@ -695,8 +698,8 @@ LayerEntryViewTest.prototype.testMetadataUpdates = function() {
 
   var parent = this.createView_();
   var elems = goog.array.map(
-      ['cm-header', 'cm-layer-description', 'cm-layer-legend',
-       'cm-timestamp', 'cm-slider', 'cm-sublayers', 'cm-warning'],
+      [cm.css.HEADER, cm.css.LAYER_DESCRIPTION, cm.css.LAYER_LEGEND,
+       cm.css.TIMESTAMP, cm.css.SLIDER, cm.css.SUBLAYERS, cm.css.WARNING],
       function(cls) { return expectDescendantOf(parent, withClass(cls)); });
 
   // The layer should be faded out...
@@ -708,14 +711,14 @@ LayerEntryViewTest.prototype.testMetadataUpdates = function() {
     'has_no_features': true
   });
 
-  var warningElem = expectDescendantOf(
-      parent, withClass('cm-warning'), not(withClass('cm-hidden')));
+  var warningElem = expectDescendantOf(parent, withClass(cm.css.WARNING),
+                                       not(withClass(cm.css.HIDDEN)));
   expectThat(cm.ui.getText(warningElem), containsRegExp(/nothing to show/));
-  var timeElem = expectDescendantOf(
-      parent, withClass('cm-timestamp'), not(withClass('cm-hidden')));
-  var downloadElem = expectDescendantOf(
-      parent, 'a', withText('Download KML'),
-      withHref('http://monsters.com.au'), not(withClass('cm-hidden')));
+  var timeElem = expectDescendantOf(parent, withClass(cm.css.TIMESTAMP),
+                                    not(withClass(cm.css.HIDDEN)));
+  var downloadElem = expectDescendantOf(parent, 'a', withText('Download KML'),
+                                        withHref('http://monsters.com.au'),
+                                        not(withClass(cm.css.HIDDEN)));
   expectEq('25 k', downloadElem.parentNode.title);
   var zoomLink = expectDescendantOf(
       parent, 'a', withText(containsRegExp(/Zoom/)));
@@ -737,5 +740,5 @@ LayerEntryViewTest.prototype.testMetadataUpdates = function() {
 LayerEntryViewTest.prototype.dispose = function() {
   var parent = this.createView_();
   this.view_.dispose();
-  expectNoDescendantOf(parent, withClass('cm-layer-entry'));
+  expectNoDescendantOf(parent, withClass(cm.css.LAYER_ENTRY));
 };

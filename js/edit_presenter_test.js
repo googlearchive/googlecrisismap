@@ -11,6 +11,8 @@
 
 // Author: kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.css');
+
 function EditPresenterTest() {
   cm.TestBase.call(this);
 }
@@ -35,8 +37,10 @@ EditPresenterTest.prototype.testInspectEvent = function() {
   // Emitting an INSPECT event on a map should open an inspector on the map.
   expectCall(inspector.inspect)('Edit map details', allOf([
     contains({key: 'title', label: 'Title', type: cm.editors.Type.TEXT}),
-    contains({key: 'description', label: 'Description',
-              type: cm.editors.Type.HTML, preview_class: 'cm-map-description'}),
+    contains({key: 'description',
+              label: 'Description',
+              type: cm.editors.Type.HTML,
+              preview_class: cm.css.MAP_DESCRIPTION}),
     contains({key: 'viewport', label: 'Default viewport',
               type: cm.editors.Type.LAT_LON_BOX, app_state: null})
   ]), null, map);
@@ -48,9 +52,9 @@ EditPresenterTest.prototype.testInspectEvent = function() {
     contains({key: 'title', label: 'Title', type: cm.editors.Type.TEXT}),
     contains({key: 'description', label: 'Description',
               type: cm.editors.Type.HTML,
-              preview_class: 'cm-layer-description'}),
+              preview_class: cm.css.LAYER_DESCRIPTION}),
     contains({key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
-              preview_class: 'cm-layer-legend'}),
+              preview_class: cm.css.LAYER_LEGEND}),
     contains({key: 'viewport', label: '"Zoom to area" viewport',
               type: cm.editors.Type.LAT_LON_BOX, app_state: null}),
     contains({key: 'min_zoom', type: cm.editors.Type.NUMBER,

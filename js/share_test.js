@@ -12,6 +12,8 @@
 // Author: arb@google.com (Anthony Baxter)
 
 // The URI object returned by the mock AppState's getUri() method.
+goog.require('cm.css');
+
 var APPSTATE_URI_OBJECT = new goog.Uri('http://appstate.url/');
 
 // The AppState URL as a string.
@@ -79,19 +81,20 @@ SharePopupTest.prototype.nonShortenedLinks = function() {
   var parent = this.createPopup_(true, true, true);
 
   // Check that the URL field is populated correctly.
-  var urlField = expectDescendantOf(parent, withId('cm-share-url'));
+  var urlField = expectDescendantOf(parent, withId(cm.css.SHARE_URL));
   expectEq(APPSTATE_URL, urlField.value);
 
-  var link = expectDescendantOf(parent, withClass('cm-gplus-share-button'));
+  var link = expectDescendantOf(parent, withClass(cm.css.GPLUS_SHARE_BUTTON));
   expectEq('//plus.google.com/share?hl=en&url=' + APPSTATE_URL_ENCODED,
            link.href);
 
-  var iframe = expectDescendantOf(parent, withClass('cm-twitter-share-button'));
+  var iframe = expectDescendantOf(parent,
+                                  withClass(cm.css.TWITTER_SHARE_BUTTON));
   expectEq('//platform.twitter.com/widgets/tweet_button.html' +
            '?lang=en&count=none&counturl=http%3A%2F%2Fgoogle.org%2Fcrisismap' +
            '&url=' + APPSTATE_URL_ENCODED, iframe.src);
 
-  iframe = expectDescendantOf(parent, withClass('cm-facebook-like-button'));
+  iframe = expectDescendantOf(parent, withClass(cm.css.FACEBOOK_LIKE_BUTTON));
   expectEq('//www.facebook.com/plugins/like.php?layout=button_count' +
            '&width=90&show_faces=false&action=like&colorscheme=light' +
            '&font=arial&height=21&href=' + APPSTATE_URL_ENCODED, iframe.src);
@@ -109,53 +112,55 @@ SharePopupTest.prototype.shortenUrl = function() {
   }, _).willOnce(function(_, callback) { callback({'id': SHORTENED_URL}); });
 
   // Confirm that checking the box puts the shortened URL in the text field...
-  var checkbox = expectDescendantOf(parent, withClass('cm-shorten-checkbox'));
+  var checkbox = expectDescendantOf(parent, withClass(cm.css.SHORTEN_CHECKBOX));
   checkbox.checked = true;
   cm.events.emit(checkbox, 'click');
-  expectDescendantOf(parent, withId('cm-share-url'), withValue(SHORTENED_URL));
+  expectDescendantOf(parent,
+                     withId(cm.css.SHARE_URL),
+                     withValue(SHORTENED_URL));
 
   // ...and in the Twitter button...
-  expectDescendantOf(parent, withClass('cm-twitter-share-button'), withSrc(
+  expectDescendantOf(parent, withClass(cm.css.TWITTER_SHARE_BUTTON), withSrc(
       '//platform.twitter.com/widgets/tweet_button.html' +
       '?lang=en&count=none&counturl=http%3A%2F%2Fgoogle.org%2Fcrisismap' +
       '&url=' + SHORTENED_URL_ENCODED));
 
   // ...and in the Facebook button...
-  expectDescendantOf(parent, withClass('cm-facebook-like-button'), withSrc(
+  expectDescendantOf(parent, withClass(cm.css.FACEBOOK_LIKE_BUTTON), withSrc(
       '//www.facebook.com/plugins/like.php?layout=button_count' +
       '&width=90&show_faces=false&action=like&colorscheme=light' +
       '&font=arial&height=21&href=' + SHORTENED_URL_ENCODED));
 
   // ...but Google+ doesn't use the shortened URL because it fails whitelisting.
-  expectDescendantOf(parent, withClass('cm-gplus-share-button'), withHref(
+  expectDescendantOf(parent, withClass(cm.css.GPLUS_SHARE_BUTTON), withHref(
       '//plus.google.com/share?hl=en&url=' + APPSTATE_URL_ENCODED));
 
   // Confirm that unchecking the box restores the unshortened URL.
   checkbox.checked = false;
   cm.events.emit(checkbox, 'click');
-  expectDescendantOf(parent, withId('cm-share-url'), withValue(APPSTATE_URL));
+  expectDescendantOf(parent, withId(cm.css.SHARE_URL), withValue(APPSTATE_URL));
 };
 
 /** Tests that the popup can be made to show only the Facebook button. */
 SharePopupTest.prototype.showFacebookButtonOnly = function() {
   var parent = this.createPopup_(true, false, false);
-  expectDescendantOf(parent, withClass('cm-facebook-like-button'));
-  expectNoDescendantOf(parent, withClass('cm-gplus-share-button'));
-  expectNoDescendantOf(parent, withClass('cm-twitter-share-button'));
+  expectDescendantOf(parent, withClass(cm.css.FACEBOOK_LIKE_BUTTON));
+  expectNoDescendantOf(parent, withClass(cm.css.GPLUS_SHARE_BUTTON));
+  expectNoDescendantOf(parent, withClass(cm.css.TWITTER_SHARE_BUTTON));
 };
 
 /** Tests that the popup can be made to show only the Google+ button. */
 SharePopupTest.prototype.showGooglePlusButtonOnly = function() {
   var parent = this.createPopup_(false, true, false);
-  expectNoDescendantOf(parent, withClass('cm-facebook-like-button'));
-  expectDescendantOf(parent, withClass('cm-gplus-share-button'));
-  expectNoDescendantOf(parent, withClass('cm-twitter-share-button'));
+  expectNoDescendantOf(parent, withClass(cm.css.FACEBOOK_LIKE_BUTTON));
+  expectDescendantOf(parent, withClass(cm.css.GPLUS_SHARE_BUTTON));
+  expectNoDescendantOf(parent, withClass(cm.css.TWITTER_SHARE_BUTTON));
 };
 
 /** Tests that the popup can be made to show only the Twitter button. */
 SharePopupTest.prototype.showTwitterButtonOnly = function() {
   var parent = this.createPopup_(false, false, true);
-  expectNoDescendantOf(parent, withClass('cm-facebook-like-button'));
-  expectNoDescendantOf(parent, withClass('cm-gplus-share-button'));
-  expectDescendantOf(parent, withClass('cm-twitter-share-button'));
+  expectNoDescendantOf(parent, withClass(cm.css.FACEBOOK_LIKE_BUTTON));
+  expectNoDescendantOf(parent, withClass(cm.css.GPLUS_SHARE_BUTTON));
+  expectDescendantOf(parent, withClass(cm.css.TWITTER_SHARE_BUTTON));
 };

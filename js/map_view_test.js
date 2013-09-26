@@ -12,6 +12,8 @@
 
 // TODO(kpy): Move the actual constant to a shared location between MapView
 // and initialization and then remove this.
+goog.require('cm.css');
+
 MIN_MAP_WIDTH_FOR_SEARCHBOX = 570;
 
 DEFAULT_MAP_TYPE_IDS = [google.maps.MapTypeId.ROADMAP,
@@ -225,7 +227,7 @@ MapViewTest.prototype.mapClickClosesInfoWindow = function() {
 MapViewTest.prototype.mouseLatLonCoordinates = function() {
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                   this.metadataModel_, false);
-  var latLonElem = expectDescendantOf(this.elem_, withClass('cm-lat-lng'));
+  var latLonElem = expectDescendantOf(this.elem_, withClass(cm.css.LAT_LNG));
   expectEq('none', latLonElem.style.display);
   cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: true});
   expectEq('', latLonElem.style.display);

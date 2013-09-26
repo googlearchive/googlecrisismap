@@ -11,6 +11,8 @@
 
 // Author: romano@google.com (Raquel Romano)
 
+goog.require('cm.css');
+
 function LayersButtonTest() {
   cm.TestBase.call(this);
 
@@ -27,7 +29,7 @@ registerTestSuite(LayersButtonTest);
 LayersButtonTest.prototype.constructorTest = function() {
   expectEq(2, this.button_.index);
   expectThat(this.button_, isElement(
-      'div', withClass('cm-mapbutton'), withClass('cm-panel-button'),
+      'div', withClass(cm.css.MAPBUTTON), withClass(cm.css.PANEL_BUTTON),
       withText(cm.LayersButton.MSG_LAYER_BUTTON_)));
 };
 
@@ -37,7 +39,7 @@ LayersButtonTest.prototype.constructorTest = function() {
  */
 LayersButtonTest.prototype.buttonClickOpensPanel = function() {
   cm.events.emit(this.button_, 'click');
-  expectThat(this.button_, isElement(withClass('cm-selected')));
+  expectThat(this.button_, isElement(withClass(cm.css.SELECTED)));
 };
 
 /**
@@ -45,7 +47,8 @@ LayersButtonTest.prototype.buttonClickOpensPanel = function() {
  * verifying that the button class has changed to now be unselected.
  */
 LayersButtonTest.prototype.buttonClickClosesPanel = function() {
-  this.button_.className = 'cm-panel-button cm-mapbutton cm-selected';
+  this.button_.className =
+      [cm.css.PANEL_BUTTON, cm.css.MAPBUTTON, cm.css.SELECTED].join(' ');
   cm.events.emit(this.button_, 'click');
-  expectThat(this.button_, isElement(not(withClass('cm-selected'))));
+  expectThat(this.button_, isElement(not(withClass(cm.css.SELECTED))));
 };

@@ -11,6 +11,8 @@
 
 // Author: Steven Hakusa (shakusa@googel.com)
 
+goog.require('cm.css');
+
 function MyLocationButtonTest() {
   cm.TestBase.call(this);
 
@@ -25,8 +27,9 @@ registerTestSuite(MyLocationButtonTest);
 
 /** Verifies button construction. */
 MyLocationButtonTest.prototype.constructorTest = function() {
-  expectThat(this.button_, isElement(
-      'div', withClass('cm-mapbutton'), withClass('cm-my-location-button')));
+  expectThat(this.button_, isElement('div',
+                                     withClass(cm.css.MAPBUTTON),
+                                     withClass(cm.css.MY_LOCATION_BUTTON)));
 };
 
 /** Verifies that clicking emits a GO_TO_MY_LOCATION event. */

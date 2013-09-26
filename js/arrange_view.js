@@ -19,6 +19,7 @@ goog.require('cm');
 goog.require('cm.AppState');
 goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.array');
@@ -104,24 +105,24 @@ cm.ArrangeView = function(arrangerElem, panelElem, appState, mapModel) {
   // Fill the arranger element with 'OK' and 'Cancel' buttons and an empty
   // top-level layer list.
   cm.ui.append(arrangerElem,
-      cm.ui.create('div', {'class': 'cm-button-area'},
+      cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
           this.okBtn_ = cm.ui.create(
-              'button', {'class': 'cm-button cm-submit'}, MSG_OK),
+              'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_OK),
           this.cancelBtn_ = cm.ui.create(
-              'button', {'class': 'cm-button cm'}, MSG_CANCEL)),
+              'button', {'class': cm.css.BUTTON}, MSG_CANCEL)),
       this.layerListElem_ = cm.ui.create(
-          'div', {'class': 'cm-arranger-inner'}));
+          'div', {'class': cm.css.ARRANGER_INNER}));
   cm.events.listen(this.okBtn_, 'click', this.handleOk_, this);
   cm.events.listen(this.cancelBtn_, 'click', this.handleCancel_, this);
 
   // Listen to the open/close events triggered on the layers panel container.
   cm.events.listen(panelElem, 'panelopen', function() {
-    goog.dom.classes.add(arrangerElem, 'cm-open');
+    goog.dom.classes.add(arrangerElem, cm.css.OPEN);
     // Copy arranger position from panel position.
     arrangerElem.style.left = panelElem.style.left;
   });
   cm.events.listen(panelElem, 'panelclose', function() {
-    goog.dom.classes.remove(arrangerElem, 'cm-open');
+    goog.dom.classes.remove(arrangerElem, cm.css.OPEN);
     arrangerElem.style.left = 'auto';
   });
 };
@@ -136,8 +137,8 @@ cm.ArrangeView.prototype.open = function() {
   }, this);
   this.layerDragHandler_ = new cm.LayerDragHandler(
       this.layerListElem_, this.draggableElements_);
-  goog.dom.classes.add(this.panelElem_, 'cm-hidden');
-  goog.dom.classes.remove(this.arrangerElem_, 'cm-hidden');
+  goog.dom.classes.add(this.panelElem_, cm.css.HIDDEN);
+  goog.dom.classes.remove(this.arrangerElem_, cm.css.HIDDEN);
 };
 
 /**
@@ -145,8 +146,8 @@ cm.ArrangeView.prototype.open = function() {
  * @private
  */
 cm.ArrangeView.prototype.handleOk_ = function() {
-  goog.dom.classes.add(this.arrangerElem_, 'cm-hidden');
-  goog.dom.classes.remove(this.panelElem_, 'cm-hidden');
+  goog.dom.classes.add(this.arrangerElem_, cm.css.HIDDEN);
+  goog.dom.classes.remove(this.panelElem_, cm.css.HIDDEN);
   // Extract a hierarchy of layer IDs from the map's current LayerModel tree.
   var oldOrdering = goog.array.map(this.layers_.getArray(),
                                    this.layerIdTreeFromLayerModel_, this);
@@ -165,8 +166,8 @@ cm.ArrangeView.prototype.handleOk_ = function() {
  * @private
  */
 cm.ArrangeView.prototype.handleCancel_ = function() {
-  goog.dom.classes.add(this.arrangerElem_, 'cm-hidden');
-  goog.dom.classes.remove(this.panelElem_, 'cm-hidden');
+  goog.dom.classes.add(this.arrangerElem_, cm.css.HIDDEN);
+  goog.dom.classes.remove(this.panelElem_, cm.css.HIDDEN);
   cm.ui.clear(this.layerListElem_);
   goog.array.clear(this.draggableElements_);
   this.layerDragHandler_.dispose();
@@ -195,25 +196,25 @@ cm.ArrangeView.prototype.addLayer_ = function(parentElem, layer) {
   var titleElem;
   var id = /** @type string */(layer.get('id'));
   var draggableLayerElem =
-      cm.ui.create('div', {'class': 'cm-draggable-layer', 'id': id},
+      cm.ui.create('div', {'class': cm.css.DRAGGABLE_LAYER, 'id': id},
           titleElem = cm.ui.create('span',
-                                   {'class': 'cm-draggable-layer-title'},
+                                   {'class': cm.css.DRAGGABLE_LAYER_TITLE},
                                    /** @type string */(layer.get('title'))));
   this.draggableElements_.push(draggableLayerElem);
   cm.ui.append(parentElem, draggableLayerElem);
 
   // If the layer is a folder, recursively add its draggable sublayer elements.
   if (layer.get('type') === cm.LayerModel.Type.FOLDER) {
-    goog.dom.classes.add(titleElem, 'cm-draggable-folder-bg');
+    goog.dom.classes.add(titleElem, cm.css.DRAGGABLE_FOLDER_BG);
     var sublayerListElem = cm.ui.create('div',
-       {'class': 'cm-draggable-sublayer-container'});
+       {'class': cm.css.DRAGGABLE_SUBLAYER_CONTAINER});
     var sublayers = /** @type google.maps.MVCArray */(layer.get('sublayers'));
     goog.array.forEach(sublayers.getArray(), function(sublayer, i) {
         this.addLayer_(sublayerListElem, sublayer);
     }, this);
     cm.ui.append(draggableLayerElem, sublayerListElem);
   } else {
-    goog.dom.classes.add(titleElem, 'cm-draggable-layer-bg');
+    goog.dom.classes.add(titleElem, cm.css.DRAGGABLE_LAYER_BG);
   }
 };
 

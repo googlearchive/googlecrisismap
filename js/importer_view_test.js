@@ -11,6 +11,8 @@
 
 // Author: joeysilva@google.com (Joey Silva)
 
+goog.require('cm.css');
+
 function ImporterViewTest() {
   cm.TestBase.call(this);
   this.view_ = new cm.ImporterView();
@@ -78,7 +80,7 @@ ImporterViewTest.prototype.openImporter_ = function() {
   // Construct this.rows_ object, which keys rows by their title, and has
   // their layer model and row element.
   var rowElems = allDescendantsOf(this.popup_,
-      isElement('div', withClass('cm-layer-item')));
+      isElement('div', withClass(cm.css.LAYER_ITEM)));
   var rowCounter = 0;
   this.rows_ = {};
   var addLayer = function(layer, mapLabel) {
@@ -104,17 +106,18 @@ ImporterViewTest.prototype.testOpenImporter = function() {
 
   // Confirm that the popup has a title, a table, and two buttons.
   expectDescendantOf(this.popup_, 'h2');
-  expectDescendantOf(this.popup_, 'div', withClass('cm-importer-list'));
-  var buttonArea = expectDescendantOf(this.popup_, withClass('cm-button-area'));
+  expectDescendantOf(this.popup_, 'div', withClass(cm.css.IMPORTER_LIST));
+  var buttonArea = expectDescendantOf(this.popup_,
+                                      withClass(cm.css.BUTTON_AREA));
   expectDescendantOf(buttonArea, 'button', withText('Import selected layers'));
   expectDescendantOf(buttonArea, 'button', withText('Cancel'));
 
   // Confirm that the map headings are there, with preview links.
   expectDescendantOf(this.popup_, 'span', withText('Map A'));
-  expectDescendantOf(this.popup_, 'a', withClass('cm-preview-link',
+  expectDescendantOf(this.popup_, 'a', withClass(cm.css.PREVIEW_LINK,
                      withAttr('href', '/crisismap/map_a')));
   expectDescendantOf(this.popup_, 'span', withText('Map B'));
-  expectDescendantOf(this.popup_, 'a', withClass('cm-preview-link',
+  expectDescendantOf(this.popup_, 'a', withClass(cm.css.PREVIEW_LINK,
                      withAttr('href', '/crisismap/map_b')));
 
   // Confirm the layer rows are there, with correct titles and preview links.
@@ -122,13 +125,13 @@ ImporterViewTest.prototype.testOpenImporter = function() {
     var row = this.rows_[title];
     expectDescendantOf(row.elem, 'span', withText(title));
     if (!this.rows_[title].layer.sublayers) {
-      expectDescendantOf(row.elem, 'div', withClass('cm-preview-link'));
+      expectDescendantOf(row.elem, 'div', withClass(cm.css.PREVIEW_LINK));
     }
   }
 
   // Confirm the arrows are there and not expanded.
   var arrows = allDescendantsOf(this.popup_, isElement('div',
-      withClass('cm-triangle'), not(withClass('cm-expanded'))));
+      withClass(cm.css.TRIANGLE), not(withClass(cm.css.EXPANDED))));
   expectEq(2, arrows.length);
 
   // Confirm the sublayers are hidden.
@@ -144,9 +147,9 @@ ImporterViewTest.prototype.testExpandFolders = function() {
 
   // Grab the arrow for the folder, and click it to expand the folder.
   var arrow = findDescendantOf(this.popup_, isElement('div',
-      withClass('cm-triangle')));
+      withClass(cm.css.TRIANGLE)));
   cm.events.emit(arrow, 'click', {stopPropagation: goog.nullFunction});
-  expectThat(arrow, withClass('cm-expanded'));
+  expectThat(arrow, withClass(cm.css.EXPANDED));
 
   // Assert that the hidden sublayer is now showing.
   var containerElem = this.rows_['Sublayer A'].elem.parentNode;
@@ -154,7 +157,7 @@ ImporterViewTest.prototype.testExpandFolders = function() {
 
   // Collapse the folder and verify the sublayer is hidden.
   cm.events.emit(arrow, 'click', {stopPropagation: goog.nullFunction});
-  expectThat(arrow, not(withClass('cm-expanded')));
+  expectThat(arrow, not(withClass(cm.css.EXPANDED)));
   expectThat(containerElem, isElement(withStyle('display', 'none')));
 };
 
@@ -165,28 +168,28 @@ ImporterViewTest.prototype.testSelectLayers = function() {
 
   // Grab the arrow for the folder, and click it
   var arrow = findDescendantOf(this.popup_, isElement('div',
-      withClass('cm-triangle')));
+      withClass(cm.css.TRIANGLE)));
   cm.events.emit(arrow, 'click', {stopPropagation: goog.nullFunction});
 
   // Select and deselect a row.
   var layerElem = this.rows_['Layer A'].elem;
   cm.events.emit(layerElem, 'click');
-  expectThat(layerElem, withClass('cm-layer-selected'));
+  expectThat(layerElem, withClass(cm.css.LAYER_SELECTED));
   cm.events.emit(layerElem, 'click');
-  expectThat(layerElem, not(withClass('cm-layer-selected')));
+  expectThat(layerElem, not(withClass(cm.css.LAYER_SELECTED)));
 
   // Select a folder, then its child, to clear the folder selection
   var folderElem = this.rows_['Folder A'].elem;
   var sublayerElem = this.rows_['Sublayer A'].elem;
   cm.events.emit(folderElem, 'click');
   cm.events.emit(sublayerElem, 'click');
-  expectThat(folderElem, not(withClass('cm-layer-selected')));
-  expectThat(sublayerElem, withClass('cm-layer-selected'));
+  expectThat(folderElem, not(withClass(cm.css.LAYER_SELECTED)));
+  expectThat(sublayerElem, withClass(cm.css.LAYER_SELECTED));
 
   // Select a parent folder of a selected child, to clear child selection
   cm.events.emit(folderElem, 'click');
-  expectThat(folderElem, withClass('cm-layer-selected'));
-  expectThat(sublayerElem, not(withClass('cm-layer-selected')));
+  expectThat(folderElem, withClass(cm.css.LAYER_SELECTED));
+  expectThat(sublayerElem, not(withClass(cm.css.LAYER_SELECTED)));
 };
 
 
@@ -195,7 +198,7 @@ ImporterViewTest.prototype.testImportLayers = function() {
   this.openImporter_();
 
   var arrow = findDescendantOf(this.popup_, isElement('div',
-      withClass('cm-triangle')));
+      withClass(cm.css.TRIANGLE)));
   cm.events.emit(arrow, 'click', {stopPropagation: goog.nullFunction});
 
   var button = expectDescendantOf(this.popup_, 'button',
@@ -318,24 +321,24 @@ ImporterViewTest.prototype.testPreviewLinks = function() {
 
   // Test that leaf layers have previews, regardless of visibility.
   var link = expectDescendantOf(this.rows_['Layer A'].elem,
-                                withClass('cm-preview-link'));
+                                withClass(cm.css.PREVIEW_LINK));
   cm.events.emit(link, 'click');
   expectDescendantOf(cm.ui.document.body, isElement(
       'iframe', withAttr('src', previewSrc + 'layer_a')));
 
   // Test closing the preview by clicking the close button.
   cm.events.emit(
-      expectDescendantOf(cm.ui.document.body, withClass('cm-close-button')),
+      expectDescendantOf(cm.ui.document.body, withClass(cm.css.CLOSE_BUTTON)),
       'click');
   expectNoDescendantOf(cm.ui.document.body, 'iframe');
 
   // Test that folders with no default-on layers have no preview.
   expectDescendantOf(this.rows_['Folder A'].elem,
-                       withClass('cm-no-preview'));
+                       withClass(cm.css.NO_PREVIEW));
 
   // Test that folders with some default-on layers have a preview.
   link = expectDescendantOf(this.rows_['Folder B'].elem,
-                            withClass('cm-preview-link'));
+                            withClass(cm.css.PREVIEW_LINK));
   cm.events.emit(link, 'click');
   expectDescendantOf(cm.ui.document.body, isElement(
       'iframe', withAttr('src', previewSrc + 'folder_b,sublayer_c')));
@@ -346,11 +349,11 @@ ImporterViewTest.prototype.testPreviewLinks = function() {
 
   // Test that nested folders with no default-on descendants have no preview.
   expectDescendantOf(this.rows_['Folder C'].elem,
-                     withClass('cm-no-preview'));
+                     withClass(cm.css.NO_PREVIEW));
 
   // Test that nested folders with some default-on descendants have a preview.
   link = expectDescendantOf(this.rows_['Folder D'].elem,
-                            withClass('cm-preview-link'));
+                            withClass(cm.css.PREVIEW_LINK));
   cm.events.emit(link, 'click');
   expectDescendantOf(cm.ui.document.body, isElement(
       'iframe', withAttr('src', previewSrc +

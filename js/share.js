@@ -18,6 +18,7 @@ goog.provide('cm.ShareButton');
 goog.provide('cm.SharePopup');
 
 goog.require('cm.AppState');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.Disposable');
@@ -43,7 +44,7 @@ cm.ShareButton = function(map, appState, showFacebookButton,
                           showGooglePlusButton, showTwitterButton) {
   goog.Disposable.call(this);
 
-  var button = cm.ui.create('div', {'class': 'cm-mapbutton', 'index': 1},
+  var button = cm.ui.create('div', {'class': cm.css.MAPBUTTON, 'index': 1},
       cm.ShareButton.MSG_SHARE_BUTTON_);
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(button);
 
@@ -60,7 +61,7 @@ cm.ShareButton = function(map, appState, showFacebookButton,
   // causes the dialog box to "flicker")
   cm.events.listen(button, 'mousedown', function() {
     if (!this.popup_.isVisible()) {
-      goog.dom.classes.add(button, 'cm-selected');
+      goog.dom.classes.add(button, cm.css.SELECTED);
       cm.events.emit(goog.global, cm.events.SHARE_BUTTON);
       // TODO(kpy): Let the cm.Presenter open the cm.SharePopup, instead of
       // making the popup private to the cm.ShareButton.  This decoupling will
@@ -71,7 +72,7 @@ cm.ShareButton = function(map, appState, showFacebookButton,
 
   // When the popup goes away, make the button appear unselected.
   cm.events.listen(this.popup_, 'hide', function() {
-    goog.dom.classes.remove(button, 'cm-selected');
+    goog.dom.classes.remove(button, cm.css.SELECTED);
   }, this);
 };
 goog.inherits(cm.ShareButton, goog.Disposable);
@@ -109,7 +110,7 @@ cm.SharePopup = function(appState, button, showFacebookButton,
    * @type {Element}
    * @private
    */
-  this.element_ = cm.ui.create('div', {'class': 'cm-share cm-popup'});
+  this.element_ = cm.ui.create('div', {'class': [cm.css.SHARE, cm.css.POPUP]});
   cm.ui.createCloseButton(this.element_, goog.bind(function() {
     this.popup_.setVisible(false);
   }, this));
@@ -211,9 +212,9 @@ cm.ShareBox = function(parentElem, appState, showFacebookButton,
       cm.ShareBox.createFacebookButton_() : null;
 
   var urlLabelAndInput = cm.ShareBox.createLabelAndInput_(
-      'cm-share-url', cm.ShareBox.MSG_SHARE_VIEW_LINK_, opt_domHelper);
+      cm.css.SHARE_URL, cm.ShareBox.MSG_SHARE_VIEW_LINK_, opt_domHelper);
   var htmlLabelAndInput = cm.ShareBox.createLabelAndInput_(
-      'cm-share-html', cm.ShareBox.MSG_SHARE_VIEW_IFRAME_, opt_domHelper);
+      cm.css.SHARE_HTML, cm.ShareBox.MSG_SHARE_VIEW_IFRAME_, opt_domHelper);
 
   /**
    * @type {Element}
@@ -228,14 +229,14 @@ cm.ShareBox = function(parentElem, appState, showFacebookButton,
   this.shareHtml_ = htmlLabelAndInput[1];
 
   parentElem.appendChild(cm.ui.create('div', {},
-      cm.ui.create('h2', {'class': 'cm-share-header'},
+      cm.ui.create('h2', {'class': cm.css.SHARE_HEADER},
           cm.ShareBox.MSG_SHARE_TITLE_),
       cm.ui.create('ul', {},
-          cm.ui.create('div', {'class': 'cm-shorten'},
+          cm.ui.create('div', {'class': cm.css.SHORTEN},
               // TODO(arb): bidi - reverse label and checkbox order
               this.shortenCheckbox_ = cm.ui.create('input', {
                 'type': 'checkbox',
-                'class': 'cm-shorten-checkbox',
+                'class': cm.css.SHORTEN_CHECKBOX,
                 'id': 'cm-shorten-checkbox'
               }),
               cm.ui.create('label', {'for': 'cm-shorten-checkbox'},
@@ -244,7 +245,7 @@ cm.ShareBox = function(parentElem, appState, showFacebookButton,
           cm.ui.create('li', {}, urlLabelAndInput),
           cm.ui.create('li', {}, htmlLabelAndInput),
           cm.ui.create('li', {},
-              cm.ui.create('div', {'class': 'cm-social'},
+              cm.ui.create('div', {'class': cm.css.SOCIAL},
                   this.gplusLink_, this.twitterLink_, this.fbFrame_))
       )
   ));
@@ -293,7 +294,7 @@ cm.ShareBox.createFacebookButton_ = function() {
   // It's necessary to create this in an iframe, as the facebook
   // API has no way to dynamically update the URL of a Like button.
   return cm.ui.create('iframe', {
-    'class': 'cm-facebook-like-button',
+    'class': cm.css.FACEBOOK_LIKE_BUTTON,
     'scrolling': 'no',
     'allowtransparency': 'true',
     'frameborder': '0',
@@ -321,13 +322,13 @@ cm.ShareBox.createFacebookButton_ = function() {
 cm.ShareBox.createGPlusButton_ = function(language) {
   // Query parameters on the 'href' attribute are added later by setShareUrl_.
   return cm.ui.create('a', {
-    'class': 'cm-gplus-share-button',
+    'class': cm.css.GPLUS_SHARE_BUTTON,
     'href': '//plus.google.com/share?hl=' + language,
     'target': '_blank',
     'title': cm.ShareBox.MSG_GPLUS_SHARE_LABEL_
   },
       cm.ui.create('img', {
-        'class': 'cm-gplus-img',
+        'class': cm.css.GPLUS_IMG,
         'src': '//ssl.gstatic.com/images/icons/gplus-32.png',
         'alt': cm.ShareBox.MSG_GPLUS_SHARE_LABEL_
       })
@@ -351,22 +352,21 @@ cm.ShareBox.createTwitterButton_ = function(language, touch) {
     // android.
     // TODO(arb): At some point, track down why it's flaky on android.
     return cm.ui.create('a', {
-      'class': 'cm-twitter-share-button',
+      'class': cm.css.TWITTER_SHARE_BUTTON,
       'href': '//twitter.com/share?lang=' + language,
       'target': '_blank',
       'title': cm.ShareBox.MSG_TWITTER_SHARE_LABEL_
     },
         // TODO(arb): Find proper button? Maybe use the Twitter sprite with
         // offsets, but then we need to address i18n?
-        cm.ui.create('div', {
-          'class': 'cm-twitter-share-button cm-twitter-img'
-        })
+        cm.ui.create('div', {'class': [cm.css.TWITTER_SHARE_BUTTON,
+                                       cm.css.TWITTER_IMG]})
     );
   } else {
     // TODO(arb): this leaks internal hostnames with original_referrer when
     // triggered from dev versions (under dev_appserver).
     return cm.ui.create('iframe', {
-      'class': 'cm-twitter-share-button',
+      'class': cm.css.TWITTER_SHARE_BUTTON,
       'src': '//platform.twitter.com/widgets/tweet_button.html?lang=' +
           language + '&count=none&counturl=http://google.org/crisismap',
       'allowtransparency': 'true',

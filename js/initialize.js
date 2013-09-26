@@ -27,6 +27,7 @@ goog.require('cm.PanelView');
 goog.require('cm.Presenter');
 goog.require('cm.SearchBox');
 goog.require('cm.ShareButton');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('cm.util');
@@ -98,20 +99,20 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
         margins - borders;
   }
 
-  goog.dom.classes.enable(container, 'cm-touch', touch);
+  goog.dom.classes.enable(container, cm.css.TOUCH, touch);
 
   var embed_action = embedded ||
       container.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
   if (!embed_action) {
     cm.events.emit(panelElem, 'panelclose');
   }
-  goog.dom.classes.enable(container, 'cm-embedded', embed_action);
+  goog.dom.classes.enable(container, cm.css.EMBEDDED, embed_action);
 
   mapWrapperElem.style.height = getMapHeight() + 'px';
 
   // In floating mode, the panel has variable height based on its content,
   // but we need to limit its maximum height to fit over the map.
-  var panelFloat = goog.dom.classes.has(container, 'cm-panel-float');
+  var panelFloat = goog.dom.classes.has(container, cm.css.PANEL_FLOAT);
   var floatMaxHeight = getMapHeight() - 10;  // allow 5px top and bottom margin
   panelElem.style.maxHeight = panelFloat ? floatMaxHeight + 'px' : '';
 
@@ -209,21 +210,21 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
 
   // Create the DOM tree within the frame.
   var frameElem = (typeof frame == 'string') ? cm.ui.get(frame) : frame;
-  goog.dom.classes.add(frameElem, 'cm-frame');
-  var footerElem = cm.ui.create('div', {'class': 'cm-footer'});
-  var panelElem = cm.ui.create('div', {'class': 'cm-panel'});
+  goog.dom.classes.add(frameElem, cm.css.FRAME);
+  var footerElem = cm.ui.create('div', {'class': cm.css.FOOTER});
+  var panelElem = cm.ui.create('div', {'class': cm.css.PANEL});
   var arrangerElem = cm.ui.create(
-      'div', {'class': 'cm-panel cm-arranger cm-hidden'});
-  var mapElem = cm.ui.create('div', {'class': 'cm-map', 'id': 'map'});
+      'div', {'class': [cm.css.PANEL, cm.css.ARRANGER, cm.css.HIDDEN]});
+  var mapElem = cm.ui.create('div', {'class': cm.css.MAP, 'id': 'map'});
   var mapWrapperElem = cm.ui.create(
-      'div', {'class': 'cm-map-wrapper'}, mapElem, footerElem);
+      'div', {'class': cm.css.MAP_WRAPPER}, mapElem, footerElem);
   var aboutTextElem = cm.ui.create(
-      'div', {'class': 'cm-aboutText', 'id': 'cm-aboutText'});
+      'div', {'class': cm.css.ABOUT_TEXT, 'id': 'cm-aboutText'});
   cm.ui.append(frameElem, panelElem, arrangerElem, mapWrapperElem,
                aboutTextElem);
   if (goog.i18n.bidi.IS_RTL) {
     goog.ui.Component.setDefaultRightToLeft(true);
-    goog.dom.classes.add(frameElem, 'cm-layout-rtl');
+    goog.dom.classes.add(frameElem, cm.css.LAYOUT_RTL);
   }
 
   // Create all the views and UI elements.
@@ -246,10 +247,10 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   }
 
   if (config['panel_float']) {
-    goog.dom.classes.add(frameElem, 'cm-panel-float');
+    goog.dom.classes.add(frameElem, cm.css.PANEL_FLOAT);
   }
   if (config['panel_side'] === 'left') {
-    goog.dom.classes.add(frameElem, 'cm-panel-left');
+    goog.dom.classes.add(frameElem, cm.css.PANEL_LEFT);
   }
   if (config['show_login']) {
     new cm.LoginView(panelElem, config);
@@ -311,7 +312,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     });
 
     // Mark the body as editable so other styles can adjust accordingly.
-    goog.dom.classes.add(frameElem, 'cm-edit');
+    goog.dom.classes.add(frameElem, cm.css.EDIT);
 
     // This loads the 'edit' module, then calls the function in arg 3, passing
     // it the object that the module exported with the name 'cm.ToolbarView'.

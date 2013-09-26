@@ -16,11 +16,11 @@
 goog.provide('cm.MapPicker');
 
 goog.require('cm');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.Uri');
 goog.require('goog.array');
-goog.require('goog.dom.classes');
 
 /**
  * A dropdown triangle that reveals a menu of links to other maps.
@@ -66,7 +66,7 @@ cm.MapPicker.createMenu_ = function(menuItems) {
   var currentUrl = new goog.Uri(goog.global.location);
   currentUrl.setQuery('');
   currentUrl.setFragment('');
-  return cm.ui.create('ul', {'class': 'cm-popup cm-map-picker'},
+  return cm.ui.create('ul', {'class': [cm.css.POPUP, cm.css.MAP_PICKER]},
                       goog.array.map(menuItems, function(item) {
     // TODO(kpy): Log Analytics events to track clicks on these menu items.
     // Requires further investigation.  Since setting window.location will
@@ -77,7 +77,7 @@ cm.MapPicker.createMenu_ = function(menuItems) {
     var destinationUrl = currentUrl.resolve(new goog.Uri(item.url));
     var selected = (destinationUrl.toString() === currentUrl.toString());
     return cm.ui.create(
-        'li', selected ? {'class': 'cm-selected'} : {},
+        'li', selected ? {'class': cm.css.SELECTED} : {},
         cm.ui.createLink(item.title, selected ? null : item.url));
   }));
 };
@@ -125,7 +125,7 @@ cm.MapPicker.prototype.showMenu = function(show) {
 cm.MapPicker.prototype.createMenuButton_ = function(parentElem, menuElem) {
   this.menuShown_ = false;
   this.menuElem_ = menuElem;
-  this.buttonElem_ = cm.ui.create('div', {'class': 'cm-map-picker-button'});
+  this.buttonElem_ = cm.ui.create('div', {'class': cm.css.MAP_PICKER_BUTTON});
 
   cm.ui.append(parentElem, this.buttonElem_);
 

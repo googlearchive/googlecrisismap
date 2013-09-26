@@ -10,6 +10,8 @@
 // specific language governing permissions and limitations under the License.
 
 
+goog.require('cm.css');
+
 function PanelViewTest() {
   cm.TestBase.call(this);
   this.setForTest_('cm.ui.document.body.offsetWidth', 500);
@@ -43,7 +45,7 @@ PanelViewTest.prototype.createView_ = function() {
 PanelViewTest.prototype.testConstructor = function() {
   var parent = this.createView_();
   expectDescendantOf(parent, 'h1', withText('Monster Attack 2000'));
-  expectDescendantOf(parent, withClass('cm-map-description'),
+  expectDescendantOf(parent, withClass(cm.css.MAP_DESCRIPTION),
                      withText('A giant green monster attacked!'));
 };
 
@@ -54,9 +56,10 @@ PanelViewTest.prototype.testConstructorHiddenHeader = function() {
     'hide_panel_header': true
   };
   var parent = this.createView_();
-  var title = expectDescendantOf(parent, withClass('cm-panel-header'));
+  var title = expectDescendantOf(parent, withClass(cm.css.PANEL_HEADER));
   expectEq('none', title.style.display);
-  var description = expectDescendantOf(parent, withClass('cm-map-description'));
+  var description = expectDescendantOf(parent,
+                                       withClass(cm.css.MAP_DESCRIPTION));
   expectEq('none', description.style.display);
 };
 
@@ -180,7 +183,7 @@ PanelViewTest.prototype.testPanelOpen = function() {
 
   parent.offsetWidth = 49;
   cm.events.emit(parent, 'panelopen');
-  expectEq('cm-open', parent.className);
+  expectEq(cm.css.OPEN, parent.className);
   expectEq(Math.round((500 - 49) / 2) + 'px', parent.style.left);
 
   // And if the container is wider than the body...
@@ -204,7 +207,7 @@ PanelViewTest.prototype.testCloseButtonCallback = function() {
   expectEq('', parent.className);
   expectThat(parent.style.left, isUndefined);
 
-  var button = expectDescendantOf(parent, withClass('cm-close-button'));
+  var button = expectDescendantOf(parent, withClass(cm.css.CLOSE_BUTTON));
   cm.events.emit(button, 'click');
   expectEq('', parent.className);
   expectEq('auto', parent.style.left);
@@ -214,11 +217,11 @@ PanelViewTest.prototype.testCloseButtonCallback = function() {
 PanelViewTest.prototype.testCollapseAndExpand = function() {
   var parent = this.createView_();
 
-  var button = expectDescendantOf(parent, withClass('cm-collapse'));
+  var button = expectDescendantOf(parent, withClass(cm.css.COLLAPSE));
   cm.events.emit(button, 'click');
-  expectEq('cm-panel-collapsed', cm.ui.document.body.className);
+  expectEq(cm.css.PANEL_COLLAPSED, cm.ui.document.body.className);
 
-  button = expectDescendantOf(this.mapDiv_, withClass('cm-expand'));
+  button = expectDescendantOf(this.mapDiv_, withClass(cm.css.EXPAND));
   cm.events.emit(button, 'click');
   expectEq('', cm.ui.document.body.className);
 };

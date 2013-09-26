@@ -16,6 +16,7 @@
 goog.provide('cm.ToolbarView');
 
 goog.require('cm.MapModel');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.dom');
@@ -68,8 +69,8 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
   // Initially, neither the undo nor the redo operation can be done.
   var undoLink = cm.ui.createLink('Undo');
   var redoLink = cm.ui.createLink('Redo');
-  goog.dom.classes.add(undoLink, 'cm-disabled');
-  goog.dom.classes.add(redoLink, 'cm-disabled');
+  goog.dom.classes.add(undoLink, cm.css.DISABLED);
+  goog.dom.classes.add(redoLink, cm.css.DISABLED);
 
   var undoLinkEventToken = cm.events.forward(undoLink, 'click',
       goog.global, cm.events.UNDO);
@@ -78,11 +79,11 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
 
   cm.events.listen(goog.global, cm.events.UNDO_REDO_BUFFER_CHANGED,
     function(e) {
-      goog.dom.classes.enable(undoLink, 'cm-disabled', !e.undo_possible);
-      goog.dom.classes.enable(redoLink, 'cm-disabled', !e.redo_possible);
+      goog.dom.classes.enable(undoLink, cm.css.DISABLED, !e.undo_possible);
+      goog.dom.classes.enable(redoLink, cm.css.DISABLED, !e.redo_possible);
   }, this);
 
-  var toolbarElem = cm.ui.create('div', {'class': 'cm-toolbar'},
+  var toolbarElem = cm.ui.create('div', {'class': cm.css.TOOLBAR},
                                  undoLink, cm.ui.SEPARATOR_DOT,
                                  redoLink, cm.ui.SEPARATOR_DOT);
   if (!touch) {
@@ -110,18 +111,18 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
     cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, saveLink);
 
     // The "Save" link is initially disabled. Changing the model enables it.
-    goog.dom.classes.add(saveLink, 'cm-disabled');
+    goog.dom.classes.add(saveLink, cm.css.DISABLED);
     cm.events.listen(goog.global, cm.events.MODEL_CHANGED, function() {
       cm.ui.setText(saveLink, 'Save');
-      goog.dom.classes.remove(saveLink, 'cm-disabled', 'cm-error');
+      goog.dom.classes.remove(saveLink, cm.css.DISABLED, cm.css.ERROR);
     }, this);
 
     // Handle clicks on the "Save" link.
     cm.events.listen(saveLink, 'click', function() {
-      if (!goog.dom.classes.has(saveLink, 'cm-disabled')) {
+      if (!goog.dom.classes.has(saveLink, cm.css.DISABLED)) {
         cm.ui.setText(saveLink, 'Saving...');
-        goog.dom.classes.remove(saveLink, 'cm-error');
-        goog.dom.classes.add(saveLink, 'cm-disabled');
+        goog.dom.classes.remove(saveLink, cm.css.ERROR);
+        goog.dom.classes.add(saveLink, cm.css.DISABLED);
         cm.events.emit(goog.global, cm.events.SAVE, {model: mapModel});
       }
     });
@@ -133,8 +134,8 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
     cm.events.listen(goog.global, cm.events.SAVE_FAILED, function() {
       // If the save fails, leave the link enabled so the user can click it
       // to try again.  Not the most elegant solution, but good enough for now.
-      goog.dom.classes.remove(saveLink, 'cm-disabled');
-      goog.dom.classes.add(saveLink, 'cm-error');
+      goog.dom.classes.remove(saveLink, cm.css.DISABLED);
+      goog.dom.classes.add(saveLink, cm.css.ERROR);
       cm.ui.setText(saveLink, 'Save failed');
     }, this);
 
@@ -143,7 +144,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
     // In Chrome, this event will not get fired if you navigate to another page
     // within this app via the navigation bar.
     window.onbeforeunload = function() {
-      if (!goog.dom.classes.has(saveLink, 'cm-disabled')) {
+      if (!goog.dom.classes.has(saveLink, cm.css.DISABLED)) {
         return MSG_UNSAVED_CHANGES;
       }
     };
@@ -175,7 +176,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
  * @private
  */
 cm.ToolbarView.prototype.handleDiffJsonClick_ = function(mapModel, opt_mapId) {
-  var popup = cm.ui.create('div', {'class': 'cm-popup cm-diff'});
+  var popup = cm.ui.create('div', {'class': [cm.css.POPUP, cm.css.DIFF]});
   cm.ui.createCloseButton(
       popup, function() { goog.dom.removeNode(popup); });
   cm.ui.showPopup(popup);

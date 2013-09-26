@@ -11,6 +11,8 @@
 
 // @author kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.css');
+
 function MapPickerTest() {
   cm.TestBase.call(this);
 }
@@ -24,15 +26,16 @@ MapPickerTest.prototype.createMenu = function() {
     {title: 'Item One', url: '/crisismap/map1'},
     {title: 'Item Two', url: '/crisismap/map2'}
   ]);
-  expectThat(menu, isElement('ul'), withClass('cm-map-picker'));
+  expectThat(menu, isElement('ul'), withClass(cm.css.MAP_PICKER));
   // /map1 should be a live link, and should not be selected
   var item1 = expectDescendantOf(menu, withText('Item One'));
   expectThat(item1, isElement('a', withHref('/crisismap/map1')));
-  expectThat(item1.parentNode, isElement('li', not(withClass('cm-selected'))));
+  expectThat(item1.parentNode,
+             isElement('li', not(withClass(cm.css.SELECTED))));
   // /map2 should not be a link, and should be selected
   var item2 = expectDescendantOf(menu, withText('Item Two'));
   expectThat(item2, isElement('a', not(withHref('/crisismap/map2'))));
-  expectThat(item2.parentNode, isElement('li', withClass('cm-selected')));
+  expectThat(item2.parentNode, isElement('li', withClass(cm.css.SELECTED)));
 };
 
 /** Tests positioning of the menu. */
@@ -69,32 +72,32 @@ MapPickerTest.prototype.menuButton = function() {
     {title: 'Item One', url: '/crisismap/map1'},
     {title: 'Item Two', url: '/crisismap/map2'}
   ]);
-  var button = expectDescendantOf(parent, withClass('cm-map-picker-button'));
+  var button = expectDescendantOf(parent, withClass(cm.css.MAP_PICKER_BUTTON));
 
   // Menu should be initially not shown.
-  expectNoDescendantOf(body, withClass('cm-map-picker'));
+  expectNoDescendantOf(body, withClass(cm.css.MAP_PICKER));
 
   // Clicking on the button should make it appear.
   cm.events.emit(body, 'click', {target: button});
-  expectDescendantOf(body, withClass('cm-map-picker'));
+  expectDescendantOf(body, withClass(cm.css.MAP_PICKER));
 
   // Clicking on the button again should make it disappear.
   cm.events.emit(body, 'click', {target: button});
-  expectNoDescendantOf(body, withClass('cm-map-picker'));
+  expectNoDescendantOf(body, withClass(cm.css.MAP_PICKER));
 
   // Clicking on the button should make it appear.
   cm.events.emit(body, 'click', {target: button});
-  expectDescendantOf(body, withClass('cm-map-picker'));
+  expectDescendantOf(body, withClass(cm.css.MAP_PICKER));
 
   // Clicking anywhere outside the button should make it disappear.
   cm.events.emit(body, 'click');
-  expectNoDescendantOf(body, withClass('cm-map-picker'));
+  expectNoDescendantOf(body, withClass(cm.css.MAP_PICKER));
 
   // Clicking on the button should make it appear.
   cm.events.emit(body, 'click', {target: button});
-  expectDescendantOf(body, withClass('cm-map-picker'));
+  expectDescendantOf(body, withClass(cm.css.MAP_PICKER));
 
   // Resizing the window should make it disappear.
   cm.events.emit(goog.global, 'resize');
-  expectNoDescendantOf(body, withClass('cm-map-picker'));
+  expectNoDescendantOf(body, withClass(cm.css.MAP_PICKER));
 };

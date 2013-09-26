@@ -16,6 +16,7 @@
 goog.provide('cm.WmsMenuEditor');
 
 goog.require('cm.MenuEditor');
+goog.require('cm.css');
 goog.require('cm.ui');
 goog.require('goog.Uri');
 goog.require('goog.dom.classes');
@@ -119,7 +120,7 @@ cm.WmsMenuEditor.prototype.updateMenuOptions_ = function() {
     this.waitingForResponse_ = false;
     if (json) {
       var layers = json['layers'] || [];
-      goog.dom.classes.enable(this.warningMessage_, 'cm-hidden',
+      goog.dom.classes.enable(this.warningMessage_, cm.css.HIDDEN,
                               layers.length > 0);
       this.updateSelect_(layers);
       this.serverLayersCache_[url] = {
@@ -146,7 +147,7 @@ cm.WmsMenuEditor.prototype.updateMenuOptions_ = function() {
       if (layerCache && (new Date()).getTime() - layerCache['timestamp'] <
           SERVER_LAYERS_CACHE_TTL_MS) {
         var layers = layerCache['layers'];
-        goog.dom.classes.enable(this.warningMessage_, 'cm-hidden',
+        goog.dom.classes.enable(this.warningMessage_, cm.css.HIDDEN,
                                 layers.length > 0);
         this.updateSelect_(layers);
       } else {

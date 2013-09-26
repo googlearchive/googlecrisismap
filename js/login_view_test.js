@@ -11,6 +11,8 @@
 
 // Author: kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.css');
+
 USER_EMAIL = 'username@hostname.org';
 LOGIN_URL = '/test/login/whatever';
 LOGOUT_URL = '/test/logout/whatever';
@@ -41,8 +43,8 @@ LoginViewTest.prototype.testSignedInConstruction = function() {
       'user_email': USER_EMAIL
   });
 
-  var div = expectDescendantOf(parent, 'div', withClass('cm-login'));
-  expectDescendantOf(div, 'span', withClass('cm-user'), withText(USER_EMAIL));
+  var div = expectDescendantOf(parent, 'div', withClass(cm.css.LOGIN));
+  expectDescendantOf(div, 'span', withClass(cm.css.USER), withText(USER_EMAIL));
   expectDescendantOf(div, 'a', withHref(LOGOUT_URL), withText('Sign out'));
   expectNoDescendantOf(div, 'a', withHref(LOGIN_URL));
 };
@@ -54,8 +56,8 @@ LoginViewTest.prototype.testSignedOutConstruction = function() {
       'logout_url': LOGOUT_URL
   });
 
-  var div = expectDescendantOf(parent, 'div', withClass('cm-login'));
+  var div = expectDescendantOf(parent, 'div', withClass(cm.css.LOGIN));
   expectDescendantOf(div, 'a', withHref(LOGIN_URL), withText('Sign in'));
-  expectNoDescendantOf(div, 'span', withClass('cm-user'));
+  expectNoDescendantOf(div, 'span', withClass(cm.css.USER));
   expectNoDescendantOf(div, 'a', withHref(LOGOUT_URL));
 };

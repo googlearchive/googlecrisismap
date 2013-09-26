@@ -11,6 +11,8 @@
 
 // Author: muzny@google.com (Grace Muzny)
 
+goog.require('cm.css');
+
 function ShareEmailViewTest() {
   cm.TestBase.call(this);
   this.view_ = new cm.ShareEmailView();
@@ -59,7 +61,8 @@ ShareEmailViewTest.prototype.testShare = function() {
   var button = expectDescendantOf(this.popup_, 'button', withText('Share'));
   cm.events.emit(button, 'click');
 
-  var emailInput = expectDescendantOf(this.popup_, withClass('cm-email-error'));
+  var emailInput = expectDescendantOf(this.popup_,
+                                      withClass(cm.css.EMAIL_ERROR));
 
   expectDescendantOf(this.popup_, 'input', withValue('MAP_VIEWER'));
   expectDescendantOf(this.popup_, 'input', withValue('MAP_EDITOR'));

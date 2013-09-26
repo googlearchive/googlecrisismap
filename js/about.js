@@ -16,6 +16,7 @@
 goog.provide('cm.AboutPopup');
 
 goog.require('cm');
+goog.require('cm.css');
 goog.require('cm.ui');
 goog.require('goog.dom');
 
@@ -34,7 +35,7 @@ cm.AboutPopup = function(container, opt_aboutContainer) {
     this.container_ = container;
 
     this.popup_ = cm.ui.create(
-        'div', {'id': 'cm-about', 'class': 'cm-popup'}, aboutBox);
+        'div', {'id': 'cm-about', 'class': cm.css.POPUP}, aboutBox);
 
     // Creates a close button for the about popup.
     cm.ui.createCloseButton(this.popup_, goog.bind(function() {
@@ -72,7 +73,7 @@ cm.AboutPopup.populate_ = function(opt_aboutContainer) {
     aboutBox.appendChild(header);
     var text = cm.ui.create('p', {
       'id': 'cm-about-text',
-      'class': 'cm-about-text'
+      'class': cm.css.ABOUT_TEXT
     });
     text.appendChild(
         goog.dom.htmlToDocumentFragment(cm.AboutPopup.MSG_ABOUT_HTML_));

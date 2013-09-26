@@ -28,6 +28,7 @@ goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
 goog.require('cm.SetDefaultViewCommand');
 goog.require('cm.ShareEmailView');
+goog.require('cm.css');
 goog.require('cm.editors');
 goog.require('cm.events');
 goog.require('goog.net.XhrIo');
@@ -122,9 +123,9 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   var mapFields = [
    {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
    {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
-    preview_class: 'cm-map-description'},
+    preview_class: cm.css.MAP_DESCRIPTION},
    {key: 'footer', label: 'Footer', type: cm.editors.Type.HTML,
-    preview_class: 'cm-footer'},
+    preview_class: cm.css.FOOTER},
    {key: 'viewport', label: 'Default viewport',
     type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
    {key: 'map_type', label: 'Default base map',
@@ -141,9 +142,9 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     // Settings that don't depend on the layer type
     {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
     {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
-     preview_class: 'cm-layer-description'},
+     preview_class: cm.css.LAYER_DESCRIPTION},
     {key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
-     preview_class: 'cm-layer-legend'},
+     preview_class: cm.css.LAYER_LEGEND},
     {key: 'viewport', label: '"Zoom to area" viewport',
      type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
     {key: 'min_zoom', label: 'Minimum zoom level',
@@ -211,7 +212,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      conditions: {'type': isType(cm.LayerModel.Type.WMS)},
      multiple: true,
      choices: [],
-     menu_class: 'cm-wms-menu-editor'},
+     menu_class: cm.css.WMS_MENU_EDITOR},
     {key: 'locked', label: 'Locked?',
      type: cm.editors.Type.CHECKBOX, checked_value: true,
      unchecked_value: false,

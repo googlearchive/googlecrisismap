@@ -11,6 +11,8 @@
 
 // Author: kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.css');
+
 function InspectorViewTest() {
   cm.TestBase.call(this);
   this.appState_ = createMockInstance(cm.AppState);
@@ -61,8 +63,9 @@ InspectorViewTest.prototype.testInspect = function() {
 
   // Confirm that the popup has a title, a table, and two buttons.
   expectDescendantOf(this.popup_, 'h2');
-  expectDescendantOf(this.popup_, 'table', withClass('cm-editors'));
-  var buttonArea = expectDescendantOf(this.popup_, withClass('cm-button-area'));
+  expectDescendantOf(this.popup_, 'table', withClass(cm.css.EDITORS));
+  var buttonArea = expectDescendantOf(this.popup_,
+                                      withClass(cm.css.BUTTON_AREA));
   expectDescendantOf(buttonArea, 'button', withText('OK'));
   expectDescendantOf(buttonArea, 'button', withText('Cancel'));
 
@@ -279,7 +282,7 @@ InspectorViewTest.prototype.testValidationErrorShown = function() {
   bInput.value = ' xxx ';  // invalid, should be a number
   cm.events.emit(bInput, 'keyup');
 
-  expectDescendantOf(rows[1], withClass('cm-validation-error'),
+  expectDescendantOf(rows[1], withClass(cm.css.VALIDATION_ERROR),
                      withText('should be a number'));
 };
 
@@ -300,4 +303,3 @@ InspectorViewTest.prototype.testImport = function() {
   // Confirm that the popup disappeared.
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
 };
-

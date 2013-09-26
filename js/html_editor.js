@@ -17,6 +17,7 @@ goog.provide('cm.HtmlEditor');
 
 goog.require('cm.Editor');
 goog.require('cm.Html');
+goog.require('cm.css');
 goog.require('cm.ui');
 
 /**
@@ -62,11 +63,11 @@ cm.HtmlEditor = function(parentElem, id, options) {
   this.previewShown_ = false;
 
   this.textarea = cm.ui.create('textarea', {'id': id});
-  var previewLabel = cm.ui.create('div', {'class': 'cm-disclosure'},
-      this.previewTriangle_ = cm.ui.create('span', {'class': 'cm-triangle'}),
-      cm.ui.create('span', {'class': 'cm-label'}, 'Preview'));
+  var previewLabel = cm.ui.create('div', {'class': cm.css.DISCLOSURE},
+      this.previewTriangle_ = cm.ui.create('span', {'class': cm.css.TRIANGLE}),
+      cm.ui.create('span', {'class': cm.css.LABEL}, 'Preview'));
   var previewClass = options && options.preview_class || '';
-  this.preview = cm.ui.create('div', {'class': 'cm-preview ' + previewClass});
+  this.preview = cm.ui.create('div', {'class': [cm.css.PREVIEW, previewClass]});
   cm.ui.append(parentElem, this.htmlEditorElem = cm.ui.create('div', {},
       this.textarea,
       previewLabel,

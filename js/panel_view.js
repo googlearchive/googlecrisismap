@@ -22,6 +22,7 @@ goog.require('cm.Html');
 goog.require('cm.LayerEntryView');
 goog.require('cm.MapModel');
 goog.require('cm.MetadataModel');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.array');
@@ -126,37 +127,37 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
    */
   this.config_ = opt_config || {};
 
-  var collapse = cm.ui.create('div', {'class': 'cm-collapse'},
-      cm.ui.create('img', {'class': 'cm-collapse-icon', 'src': EMPTY_PNG}));
+  var collapse = cm.ui.create('div', {'class': cm.css.COLLAPSE},
+      cm.ui.create('img', {'class': cm.css.COLLAPSE_ICON, 'src': EMPTY_PNG}));
 
   var toggleCollapseOnClick = goog.bind(function() {
-      goog.dom.classes.toggle(this.frameElem_, 'cm-panel-collapsed');
+      goog.dom.classes.toggle(this.frameElem_, cm.css.PANEL_COLLAPSED);
       cm.events.emit(goog.global, 'resize');  // readjust layout
     }, this);
   cm.events.listen(collapse, 'click', toggleCollapseOnClick);
-  var expand = cm.ui.create('div', {'class': 'cm-expand'},
-      cm.ui.create('img', {'class': 'cm-expand-icon', 'src': EMPTY_PNG}));
+  var expand = cm.ui.create('div', {'class': cm.css.EXPAND},
+      cm.ui.create('img', {'class': cm.css.EXPAND_ICON, 'src': EMPTY_PNG}));
   cm.events.listen(expand, 'click', toggleCollapseOnClick);
   mapContainer.appendChild(expand);
 
   // Create the elements for the map title and description.
   var setDefaultViewLink, resetLink;
-  cm.ui.append(parentElem, cm.ui.create('div', {'class': 'cm-panel-inner'},
+  cm.ui.append(parentElem, cm.ui.create('div', {'class': cm.css.PANEL_INNER},
       collapse,
-      this.headerElem_ = cm.ui.create('div', {'class': 'cm-panel-header'},
+      this.headerElem_ = cm.ui.create('div', {'class': cm.css.PANEL_HEADER},
           this.config_['draft_mode'] ? cm.ui.create(
               'span',
-              {'class': 'cm-draft-indicator', 'title': MSG_DRAFT_TOOLTIP},
+              {'class': cm.css.DRAFT_INDICATOR, 'title': MSG_DRAFT_TOOLTIP},
               MSG_DRAFT_LABEL) : null,
           this.titleElem_ = cm.ui.create('h1',
-              {'class': 'cm-map-title'})),
-      this.descElem_ = cm.ui.create('div', {'class': 'cm-map-description'}),
-      cm.ui.create('div', {'class': 'cm-panel-links'},
+              {'class': cm.css.MAP_TITLE})),
+      this.descElem_ = cm.ui.create('div', {'class': cm.css.MAP_DESCRIPTION}),
+      cm.ui.create('div', {'class': cm.css.PANEL_LINKS},
           setDefaultViewLink = this.config_['enable_editing'] ?
               cm.ui.createLink(MSG_SET_DEFAULT_VIEW_LINK) : null,
           setDefaultViewLink && cm.ui.create('br'),
           resetLink = cm.ui.createLink(MSG_RESET_VIEW_LINK)),
-      this.layerListElem_ = cm.ui.create('div', {'class': 'cm-panel-layers'})
+      this.layerListElem_ = cm.ui.create('div', {'class': cm.css.PANEL_LAYERS})
   ));
   if (this.config_['hide_panel_header']) {
     this.headerElem_.style.display = 'none';
@@ -225,7 +226,7 @@ cm.PanelView.prototype.getHeader = function() {
  * @param {cm.MapPicker} picker The MapPicker to trigger.
  */
 cm.PanelView.prototype.enableMapPicker = function(picker) {
-  goog.dom.classes.add(this.titleElem_, 'cm-map-title-picker');
+  goog.dom.classes.add(this.titleElem_, cm.css.MAP_TITLE_PICKER);
   cm.events.listen(this.titleElem_, 'click', goog.bind(function(e) {
       picker.showMenu(true);
       e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
@@ -260,7 +261,7 @@ cm.PanelView.prototype.updateDescription_ = function() {
  * @private
  */
 cm.PanelView.prototype.open_ = function() {
-  goog.dom.classes.add(this.parentElem_, 'cm-open');
+  goog.dom.classes.add(this.parentElem_, cm.css.OPEN);
   // Once the style is set on the container, its width can be retrieved.
   var x = (this.frameElem_.offsetWidth - this.parentElem_.offsetWidth) / 2;
   this.parentElem_.style.left = Math.max(0, Math.round(x)) + 'px';
@@ -271,7 +272,7 @@ cm.PanelView.prototype.open_ = function() {
  * @private
  */
 cm.PanelView.prototype.close_ = function() {
-  goog.dom.classes.remove(this.parentElem_, 'cm-open');
+  goog.dom.classes.remove(this.parentElem_, cm.css.OPEN);
   this.parentElem_.style.left = 'auto';
 };
 

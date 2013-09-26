@@ -20,6 +20,7 @@ goog.require('cm.AppState');
 goog.require('cm.LayerModel');
 goog.require('cm.MetadataModel');
 goog.require('cm.SublayerPicker');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.date.relative');
@@ -276,36 +277,36 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
                     this.zoomElem_, this.downloadElem_];
 
   // Create the panel entry.
-  this.entryElem_ = cm.ui.create('div', {'class': 'cm-layer-entry'},
-      this.headerElem_ = cm.ui.create('div', {'class': 'cm-header'},
-          cm.ui.create('div', {'class': 'cm-checkbox-container'},
+  this.entryElem_ = cm.ui.create('div', {'class': cm.css.LAYER_ENTRY},
+      this.headerElem_ = cm.ui.create('div', {'class': cm.css.HEADER},
+          cm.ui.create('div', {'class': cm.css.CHECKBOX_CONTAINER},
               this.checkboxElem_ = cm.ui.create('input',
                   {'type': 'checkbox', 'id': 'checkbox' + id}),
               this.folderDecorator_ = cm.ui.create('span',
-                  {'class': 'cm-checkbox-folder-decoration'})),
+                  {'class': cm.css.CHECKBOX_FOLDER_DECORATION})),
           this.checkboxLabel_ = cm.ui.create('label', {'for': 'checkbox' + id},
               this.titleElem_ = cm.ui.create('span',
-                  {'class': 'cm-layer-title'}),
+                  {'class': cm.css.LAYER_TITLE}),
               this.dateElem_ = isTimeSeries ?
-                  cm.ui.create('span', {'class': 'cm-layer-date'}) :
+                  cm.ui.create('span', {'class': cm.css.LAYER_DATE}) :
                   null)
       ),
-      this.contentElem_ = cm.ui.create('div', {'class': 'cm-content'},
+      this.contentElem_ = cm.ui.create('div', {'class': cm.css.CONTENT},
           this.sliderDiv_ = cm.ui.create('div', {'title': MSG_OPACITY_TOOLTIP,
-                                                 'class': 'cm-slider'}),
+                                                 'class': cm.css.SLIDER}),
           cm.ui.create('div', {}, layerLinks),
-          this.warningElem_ = cm.ui.create('div', {'class': 'cm-warning'}),
+          this.warningElem_ = cm.ui.create('div', {'class': cm.css.WARNING}),
           this.legendBoxElem_ = cm.ui.create('div',
-              {'class': 'cm-layer-legend-box'},
+              {'class': cm.css.LAYER_LEGEND_BOX},
               cm.ui.create('fieldset', undefined,
                   cm.ui.create('legend', undefined, MSG_LEGEND),
                   this.legendElem_ = cm.ui.create('div',
-                      {'class': 'cm-layer-legend'}))),
+                      {'class': cm.css.LAYER_LEGEND}))),
           this.descriptionElem_ = cm.ui.create('div',
-              {'class': 'cm-layer-description'}),
-          this.timeElem_ = cm.ui.create('div', {'class': 'cm-timestamp'})
+              {'class': cm.css.LAYER_DESCRIPTION}),
+          this.timeElem_ = cm.ui.create('div', {'class': cm.css.TIMESTAMP})
       ),
-      this.sublayersElem_ = cm.ui.create('div', {'class': 'cm-sublayers'})
+      this.sublayersElem_ = cm.ui.create('div', {'class': cm.css.SUBLAYERS})
   );
   if (opt_index !== undefined && opt_index < parentElem.childNodes.length) {
     parentElem.insertBefore(this.entryElem_, parentElem.childNodes[opt_index]);
@@ -477,7 +478,7 @@ cm.LayerEntryView.prototype.updateDescription_ = function() {
 cm.LayerEntryView.prototype.updateLegend_ = function() {
   var legend = /** @type cm.Html */(this.model_.get('legend'));
   legend && legend.pasteInto(this.legendElem_);
-  goog.dom.classes.enable(this.legendBoxElem_, 'cm-hidden',
+  goog.dom.classes.enable(this.legendBoxElem_, cm.css.HIDDEN,
       !legend || goog.string.isEmpty(legend.getHtml()));
 };
 
@@ -485,7 +486,7 @@ cm.LayerEntryView.prototype.updateLegend_ = function() {
 cm.LayerEntryView.prototype.updateWarning_ = function() {
   var isEmpty = this.metadataModel_.isEmpty(this.model_);
   cm.ui.setText(this.warningElem_, isEmpty ? MSG_NO_DATA_WARNING : '');
-  goog.dom.classes.enable(this.warningElem_, 'cm-hidden', !isEmpty);
+  goog.dom.classes.enable(this.warningElem_, cm.css.HIDDEN, !isEmpty);
 };
 
 /** @private Updates the panel entry to match the model. */
@@ -624,7 +625,7 @@ cm.LayerEntryView.prototype.updateZoomLink_ = function() {
       this.model_.get('viewport') ||
       this.model_.get('type') === cm.LayerModel.Type.KML ||
       this.model_.get('type') === cm.LayerModel.Type.GEORSS);
-  goog.dom.classes.enable(this.zoomElem_, 'cm-hidden', !showZoomLink);
+  goog.dom.classes.enable(this.zoomElem_, cm.css.HIDDEN, !showZoomLink);
   // Include a separator dot iff the zoom element has a previous sibling.
   cm.ui.setText(/** @type Element */(this.zoomElem_.firstChild),
     this.zoomElem_.previousSibling ? cm.ui.SEPARATOR_DOT : '');
@@ -640,7 +641,7 @@ cm.LayerEntryView.prototype.updateFolderDecorator_ = function() {
   // editing is disabled.
   var folder = this.model_.get('type') === cm.LayerModel.Type.FOLDER;
   var locked = /** @type boolean */(this.model_.get('locked'));
-  goog.dom.classes.enable(this.folderDecorator_, 'cm-hidden',
+  goog.dom.classes.enable(this.folderDecorator_, cm.css.HIDDEN,
       !folder || (locked && !this.config_['enable_editing']));
 };
 
@@ -663,37 +664,37 @@ cm.LayerEntryView.prototype.updateEnabled_ = function() {
     // The last-promoted sublayer is no longer promoted.
     goog.dom.classes.remove(
         this.layerEntryViews_[this.lastPromotedId_].getEntryElement(),
-        'cm-promoted-sublayer');
+        cm.css.PROMOTED_SUBLAYER);
     this.layerEntryViews_[this.lastPromotedId_].
-        getHeaderElement().className = 'cm-header';
+        getHeaderElement().className = cm.css.HEADER;
   }
   if (promotedId) {
     // Hide promoted sublayer's checkbox and title
     this.layerEntryViews_[promotedId].
-        getHeaderElement().className = 'cm-hidden';
+        getHeaderElement().className = cm.css.HIDDEN;
     if (promotedId != this.lastPromotedId_) {
       // A new sublayer is now promoted.
       goog.dom.classes.add(this.layerEntryViews_[promotedId].getEntryElement(),
-                           'cm-promoted-sublayer');
+                           cm.css.PROMOTED_SUBLAYER);
     }
     if (!this.lastPromotedId_) {
       // The time series was toggled from not having a promoted sublayer
       // to having one.
-      goog.dom.classes.add(this.entryElem_, 'cm-contains-promoted-sublayer');
+      goog.dom.classes.add(this.entryElem_, cm.css.CONTAINS_PROMOTED_SUBLAYER);
     }
   }
   if (!promotedId && this.lastPromotedId_) {
     // The time series was toggled from having a promoted sublayer to
     // not having one.
-    goog.dom.classes.remove(this.entryElem_, 'cm-contains-promoted-sublayer');
+    goog.dom.classes.remove(this.entryElem_, cm.css.CONTAINS_PROMOTED_SUBLAYER);
   }
   this.lastPromotedId_ = promotedId;
 
   // Hide layer details of disabled layers and folders with a promoted sublayer.
-  goog.dom.classes.enable(this.contentElem_, 'cm-hidden',
+  goog.dom.classes.enable(this.contentElem_, cm.css.HIDDEN,
                           !enabled || sublayer !== null);
   // Hide sublayers of disabled layers and locked folders.
-  goog.dom.classes.enable(this.sublayersElem_, 'cm-hidden',
+  goog.dom.classes.enable(this.sublayersElem_, cm.css.HIDDEN,
       !enabled || /** @type boolean */(this.model_.get('locked')));
 
   // The opacity slider does not update properly when it's hidden, so we need
@@ -717,9 +718,9 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
     this.slider_ = new goog.ui.Slider();
     this.slider_.setMoveToPointEnabled(true);
     this.slider_.render(this.sliderDiv_);
+    this.sliderDot_ = cm.ui.create('div', {'class': cm.css.SLIDER_DOT});
     this.slider_.getValueThumb().appendChild(
-        cm.ui.create('div', {'class': 'cm-slider-circle'},
-            this.sliderDot_ = cm.ui.create('div', {'class': 'cm-slider-dot'})));
+        cm.ui.create('div', {'class': cm.css.SLIDER_CIRCLE}, this.sliderDot_));
     this.updateSliderValue_();
 
     this.sliderListeners_ = [

@@ -15,6 +15,7 @@
 goog.provide('cm.LayersButton');
 
 goog.require('cm');
+goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.dom.classes');
@@ -27,24 +28,24 @@ goog.require('goog.dom.classes');
  */
 cm.LayersButton = function(map, layersPanel) {
   var button = cm.ui.create(
-      'div', {'class': 'cm-panel-button cm-mapbutton'},
+      'div', {'class': [cm.css.PANEL_BUTTON, cm.css.MAPBUTTON]},
       cm.LayersButton.MSG_LAYER_BUTTON_);
   button.index = 2;
 
   cm.events.listen(button, 'click', function() {
     // If the button is not selected, open the panel.  Otherwise, close it.
     cm.events.emit(this,
-                   goog.dom.classes.has(button, 'cm-selected') ?
+                   goog.dom.classes.has(button, cm.css.SELECTED) ?
                        'panelclose' : 'panelopen');
   }, layersPanel);
 
   // Listens to the open/close events on the layers panel and selects the button
   // if the panel is opened and deselects if it is closed.
   cm.events.listen(layersPanel, 'panelopen', function() {
-    goog.dom.classes.add(button, 'cm-selected');
+    goog.dom.classes.add(button, cm.css.SELECTED);
   });
   cm.events.listen(layersPanel, 'panelclose', function() {
-    goog.dom.classes.remove(button, 'cm-selected');
+    goog.dom.classes.remove(button, cm.css.SELECTED);
   });
 
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(button);

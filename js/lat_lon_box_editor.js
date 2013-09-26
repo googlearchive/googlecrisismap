@@ -16,6 +16,7 @@
 goog.provide('cm.LatLonBoxEditor');
 
 goog.require('cm.Editor');
+goog.require('cm.css');
 goog.require('cm.ui');
 
 /**
@@ -74,35 +75,35 @@ cm.LatLonBoxEditor = function(parentElem, id, options) {
    * @type Element
    * @private
    */
-  this.nsLabel_ = cm.ui.create('div', {'class': 'cm-box-size-label'});
+  this.nsLabel_ = cm.ui.create('div', {'class': cm.css.BOX_SIZE_LABEL});
 
   /**
    * @type Element
    * @private
    */
-  this.ewLabel_ = cm.ui.create('div', {'class': 'cm-box-size-label'});
+  this.ewLabel_ = cm.ui.create('div', {'class': cm.css.BOX_SIZE_LABEL});
 
   /**
    * @type Element
    * @private
    */
-  this.viewportInfo_ = cm.ui.create('div', {'class': 'cm-viewport-info'},
+  this.viewportInfo_ = cm.ui.create('div', {'class': cm.css.VIEWPORT_INFO},
       'For layers of type \'Tiles\', please provide accurate viewport values' +
       ' in order to ensure that only tiles within the defined area are' +
       ' requested.');
 
   cm.ui.append(parentElem,
       cm.ui.create('table',
-          {'class': 'cm-extents', 'cellpadding': 0, 'cellspacing': 0},
+          {'class': cm.css.EXTENTS, 'cellpadding': 0, 'cellspacing': 0},
           cm.ui.create('tr', {},
               cm.ui.create('td', {'colspan': 2}, 'N ', this.north_)),
           cm.ui.create('tr', {},
-              cm.ui.create('td', {'class': 'cm-west'}, 'W ', this.west_),
-              cm.ui.create('td', {'class': 'cm-east'}, 'E ', this.east_)),
+              cm.ui.create('td', {'class': cm.css.WEST}, 'W ', this.west_),
+              cm.ui.create('td', {'class': cm.css.EAST}, 'E ', this.east_)),
           cm.ui.create('tr', {},
               cm.ui.create('td', {'colspan': 2}, 'S ', this.south_))
       ),
-      cm.ui.create('div', {'class': 'cm-copy-viewport'},
+      cm.ui.create('div', {'class': cm.css.COPY_VIEWPORT},
           this.copyViewportCheckbox_,
           cm.ui.create('label', {'for': 'cm-copy-viewport-checkbox'},
               'Copy from map viewport')),

@@ -11,6 +11,8 @@
 
 // Author: arb@google.com (Anthony Baxter)
 
+goog.require('cm.css');
+
 function SearchboxTest() {
   cm.TestBase.call(this);
 
@@ -35,7 +37,7 @@ registerTestSuite(SearchboxTest);
 /** Tests the constructor. */
 SearchboxTest.prototype.constructorTest = function() {
   expectThat(this.span_, isElement(
-      'span', withClass('cm-mapbutton'), withClass('cm-searchbox')));
+      'span', withClass(cm.css.MAPBUTTON), withClass(cm.css.SEARCHBOX)));
 };
 
 /** Tests the case when the autocomplete widget fires with a viewport. */
