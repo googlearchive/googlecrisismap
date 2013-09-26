@@ -23,6 +23,11 @@ import utils
 from google.appengine.api import mail
 
 
+SHARING_ROLES = {perms.Role.MAP_OWNER: 'owner',
+                 perms.Role.MAP_EDITOR: 'editor',
+                 perms.Role.MAP_VIEWER: 'viewer'}
+
+
 class Share(base_handler.BaseHandler):
   """An interface for sharing maps between users."""
 
@@ -36,8 +41,7 @@ class Share(base_handler.BaseHandler):
     message = self.request.get('message', '')
 
     # If these are empty or invalid, we shouldn't try to do anything.
-    if role not in [perms.Role.MAP_VIEWER, perms.Role.MAP_EDITOR,
-                    perms.Role.MAP_OWNER]:
+    if role not in SHARING_ROLES:
       raise base_handler.Error(400, 'Invalid role parameter: %r.' % role)
     if not utils.IsValidEmail(recipient_email):
       raise base_handler.Error(
@@ -54,12 +58,16 @@ class Share(base_handler.BaseHandler):
                                 role, message):
     """Sends recipient_email an email with info of map and permission level."""
     email = users.GetCurrent().email
-    subject = '%s has shared "%s" with you' % (email, map_object.title)
+    subject = map_object.title
     url = (self.request.host_url + self.request.root_path + '/.maps/' +
            map_object.id)
     body = """
-Your permission level for %s has changed to %s.
-Access the map at: %s
+I've invited you to collaborate on the map "%s".
+You can access the map at:
 
-%s""" % (map_object.title, role, url, message)
+    %s
+
+You have %s access; please use this invitation within 30 days.
+
+%s""" % (map_object.title, url, SHARING_ROLES[role], message)
     mail.send_mail(email, recipient_email, subject, body)
