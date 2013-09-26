@@ -58,7 +58,8 @@ cm.Html = function(unsanitizedHtml) {
  * @private
  */
 cm.Html.sanitize_ = function(unsanitizedHtml) {
-  return '<!-- no sanitizer available -->';
+  var escapedHtml = goog.string.htmlEscape(unsanitizedHtml);
+  return '<!-- no sanitizer available: ' + escapedHtml + ' -->';
 };
 
 
@@ -148,7 +149,7 @@ cm.Html.prototype.toString = function() {
   // We (safely) expose the HTML content so that the assert error message
   // gives more useful information when a test fails.
   var escapedHtml = goog.string.htmlEscape(this.unsanitizedHtml_);
-  return '<!-- Unsanitized: ' + escapedHtml + ' -->';
+  return '<!-- unsanitized: ' + escapedHtml + ' -->';
 };
 
 

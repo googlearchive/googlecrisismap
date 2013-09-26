@@ -26,7 +26,6 @@ goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.date.relative');
 goog.require('goog.dom.classes');
-goog.require('goog.format');
 goog.require('goog.i18n.DateTimeFormat');
 goog.require('goog.i18n.MessageFormat');
 goog.require('goog.ui.Slider');
@@ -430,15 +429,8 @@ cm.LayerEntryView.prototype.isEnabled = function() {
 
 /** @private Updates the panel entry to match the model. */
 cm.LayerEntryView.prototype.updateTitle_ = function() {
-  // We don't want any HTML code to be rendered other than word break related
-  // ones.
-  var title = goog.string.htmlEscape(
-      /** @type string */(this.model_.get('title')) || '');
-  // If a very long word appears and is left unbroken, it causes horizontal
-  // scrollbars to appear. We use the basic version of word breaking method
-  // because the full version has a large file size. After every ten characters
-  // in a word, a word break is inserted.
-  this.titleElem_.innerHTML = goog.format.insertWordBreaksBasic(title, 10);
+  cm.ui.setText(this.titleElem_,
+                /** @type string */(this.model_.get('title')) || '', 10);
 };
 
 /** @private Updates the panel entry's description to match the model. */
@@ -452,7 +444,7 @@ cm.LayerEntryView.prototype.updateLegend_ = function() {
   var legend = /** @type cm.Html */(this.model_.get('legend'));
   legend && legend.pasteInto(this.legendElem_);
   goog.dom.classes.enable(this.legendBoxElem_, cm.css.HIDDEN,
-      !legend || goog.string.isEmpty(legend.getHtml()));
+      !legend || legend.isEmpty());
 };
 
 /** @private Updates the warning label based on the layer metadata. */

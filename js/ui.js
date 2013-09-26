@@ -20,6 +20,8 @@ goog.require('cm.Html');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('goog.dom');
+goog.require('goog.format');
+goog.require('goog.string');
 goog.require('goog.style');
 
 /** A centered dot with a non-breaking space before and breaking space after. */
@@ -143,18 +145,18 @@ cm.ui.append = function(elem, var_args) {
 
 /**
  * Creates a link element.
- * @param {string} anchorText The text of the link anchor.
+ * @param {string|Element} anchor The text or DOM element to use as the anchor.
  * @param {string=} opt_url The URL of the link.
  * @param {string=} opt_target The target attribute for the link.
  * @return {Element} A newly created link element.
  */
-cm.ui.createLink = function(anchorText, opt_url, opt_target) {
+cm.ui.createLink = function(anchor, opt_url, opt_target) {
   var url = opt_url || 'javascript:void(0)';
   var attributes = {'href': url};
   if (opt_target) {
     attributes['target'] = opt_target;
   }
-  return cm.ui.create('a', attributes, anchorText);
+  return cm.ui.create('a', attributes, anchor);
 };
 
 /**
@@ -197,12 +199,20 @@ cm.ui.getText = function(element) {
 };
 
 /**
- * Sets the content of an element to a string of plain text.
+ * Sets the content of an element to a string of plain text.  Optionally
+ * inserts word breaks to prevent very long words from messing up page layout.
  * @param {Element} element A DOM element.
  * @param {string} text A string of plain text.
+ * @param {number?} opt_wordBreakMaxLen If this is specified, word breaks are
+ *     inserted; this is the maximum length after which to add a word break.
  */
-cm.ui.setText = function(element, text) {
-  goog.dom.setTextContent(element, text);
+cm.ui.setText = function(element, text, opt_wordBreakMaxLen) {
+  if (opt_wordBreakMaxLen) {
+    new cm.Html(goog.format.insertWordBreaksBasic(
+        goog.string.htmlEscape(text), opt_wordBreakMaxLen)).pasteInto(element);
+  } else {
+    goog.dom.setTextContent(element, text);
+  }
 };
 
 /**

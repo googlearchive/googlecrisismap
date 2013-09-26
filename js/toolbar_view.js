@@ -178,11 +178,10 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
 
   // Method to show JSON. Used by JSON link, and when diffs cannot be loaded.
   var showJson = function() {
-    contentElem.innerHTML = goog.string.htmlEscape(
-        new goog.format.JsonPrettyPrinter(
-            new goog.format.JsonPrettyPrinter.TextDelimiters()).
-            format(mapModel.toMapRoot())).
-        replace(/ /g, '&nbsp;').replace(/\n/g, '<br>');
+    contentElem.style.whiteSpace = 'pre';
+    cm.ui.setText(contentElem, new goog.format.JsonPrettyPrinter(
+        new goog.format.JsonPrettyPrinter.TextDelimiters()).
+        format(mapModel.toMapRoot()));
 
     showJsonLink && goog.style.setElementShown(showJsonLink, false);
     showDiffLink && goog.style.setElementShown(showDiffLink, true);
@@ -202,7 +201,8 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
         var htmlDiffs, diffSelectElem;
         var showDiff = function() {
           // TODO(joeysilva): Fix bug where line numbers are compacted.
-          contentElem.innerHTML = htmlDiffs[diffSelectElem.selectedIndex];
+          new cm.Html(htmlDiffs[diffSelectElem.selectedIndex]).pasteInto(
+              contentElem);
           goog.style.setElementShown(showJsonLink, true);
           goog.style.setElementShown(showDiffLink, false);
           cm.ui.showPopup(popup);

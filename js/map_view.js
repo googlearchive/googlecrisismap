@@ -18,6 +18,7 @@ goog.provide('cm.MapView');
 goog.require('cm');
 goog.require('cm.Analytics');
 goog.require('cm.AppState');
+goog.require('cm.Html');
 goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
 goog.require('cm.TileOverlay');
@@ -399,7 +400,7 @@ cm.MapView.prototype.updateMapCopyright = function() {
   cm.ui.clear(this.copyrightDiv_);
   if (this.map_.get('mapTypeId') ===
       cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]) {
-    this.copyrightDiv_.innerHTML = cm.MSG_OSM_COPYRIGHT_HTML;
+    new cm.Html(cm.MSG_OSM_COPYRIGHT_HTML).pasteInto(this.copyrightDiv_);
   }
 };
 

@@ -123,7 +123,7 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
   // Test that the saved diff is displayed first.
   var diffLink = expectDescendantOf(this.parent_, withText('Diff'));
   cm.events.emit(diffLink, 'click');
-  expectDescendantOf(diffPopup, withText('Saved diff'));
+  expectDescendantOf(diffPopup, withInnerHtml(sanitize('Saved diff')));
 
   // Test that the selected diffs are displayed.
   var diffSelectElem = expectDescendantOf(diffPopup, isElement('select',
@@ -131,18 +131,17 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
       hasDescendant(withText('Name 1'))));
   diffSelectElem.selectedIndex = 1;
   cm.events.emit(diffSelectElem, 'change');
-  expectDescendantOf(diffPopup, withText('Catalog diff'));
+  expectDescendantOf(diffPopup, withInnerHtml(sanitize('Catalog diff')));
 
   // Test showing the pretty-printed JSON.
   showJsonLink = expectDescendantOf(diffPopup, withText('Show JSON'));
   cm.events.emit(showJsonLink, 'click');
-  expectEq(mapRoot, goog.json.parse(
-      cm.ui.getText(diffPopup.lastChild).replace(/&nbsp;/g, '')));
+  expectEq(mapRoot, goog.json.parse(cm.ui.getText(diffPopup.lastChild)));
 
   // Test going back to the diff.
   var showDiffLink = expectDescendantOf(diffPopup, withText('Show diff'));
   cm.events.emit(showDiffLink, 'click');
-  expectDescendantOf(diffPopup, withText('Catalog diff'));
+  expectDescendantOf(diffPopup, withInnerHtml(sanitize('Catalog diff')));
 };
 
 /** Verifies the beforeunload handler when there are no changes to be saved.*/

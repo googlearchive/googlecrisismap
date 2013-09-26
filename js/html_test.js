@@ -80,10 +80,10 @@ HtmlTest.prototype.equals = function() {
 /** Verifies that toString protects us from leakage of unsafe HTML. */
 HtmlTest.prototype.toString = function() {
   var dangerous = new cm.Html('<script>');
-  expectEq('<!-- Unsanitized: &lt;script&gt; -->', dangerous.toString());
+  expectEq('<!-- unsanitized: &lt;script&gt; -->', dangerous.toString());
 
   // Accidental automatic string conversion should not leak unsafe HTML.
-  expectEq('xyz<!-- Unsanitized: &lt;script&gt; -->', 'xyz' + dangerous);
+  expectEq('xyz<!-- unsanitized: &lt;script&gt; -->', 'xyz' + dangerous);
 };
 
 /** Verifies that toText converts HTML entities correctly. */
@@ -96,12 +96,13 @@ HtmlTest.prototype.toText = function() {
 HtmlTest.prototype.getHtml = function() {
   // This is where we would test the sanitizer, but right now we are just
   // using a stub to avoid pulling in all the sanitizer code.
-  expectEq('<!-- no sanitizer available -->', (new cm.Html('a')).getHtml());
+  expectEq('<!-- no sanitizer available: a&lt;b -->',
+           (new cm.Html('a<b')).getHtml());
 };
 
 /** Verifies that pasteInto populates the content of a DOM element. */
 HtmlTest.prototype.pasteInto = function() {
   var element = {};
-  (new cm.Html('a')).pasteInto(element);
-  expectEq('<!-- no sanitizer available -->', element.innerHTML);
+  (new cm.Html('a<b')).pasteInto(element);
+  expectEq('<!-- no sanitizer available: a&lt;b -->', element.innerHTML);
 };

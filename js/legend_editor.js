@@ -324,17 +324,15 @@ cm.LegendEditor.SUPPORTED_LAYER_TYPES_ = [
 
 /** @override */
 cm.LegendEditor.prototype.updateUi = function(value) {
-  if (!value) {
-    value = new cm.Html('');
-  }
-  goog.base(this, 'updateUi', value);
+  var htmlValue = /** @type {cm.Html} */(value || cm.Html.EMPTY);
+  goog.base(this, 'updateUi', htmlValue);
   if (this.shown_) {
     if (this.previewValid_()) {
       cm.ui.clear(this.legendItemsElem_);
       goog.array.forEach(this.previewContent.childNodes,
           this.createLegendItem_, this);
     } else {
-      this.showHtmlEditor_(true, /** @type {cm.Html} */(value));
+      this.showHtmlEditor_(true, htmlValue);
     }
   } else {
     this.handleChange();
@@ -388,7 +386,7 @@ cm.LegendEditor.prototype.showHtmlEditor_ = function(showHtml, opt_value) {
     var parentElem = goog.dom.getAncestorByClass(this.legendEditorElem_, from);
     goog.dom.classes.swap(parentElem, from, to);
 
-    this.updateUi(opt_value || /** @type {cm.Html} */(this.get('value')));
+    this.updateUi(opt_value || this.get('value'));
   }
 };
 
@@ -418,7 +416,7 @@ cm.LegendEditor.prototype.handleChange = function() {
  * @private
  */
 cm.LegendEditor.prototype.handleRevertClick_ = function() {
-  this.textarea.value = (this.lastValid_ || new cm.Html('')).getHtml();
+  this.textarea.value = (this.lastValid_ || cm.Html.EMPTY).getUnsanitizedHtml();
   this.handleChange();
 };
 
@@ -588,8 +586,8 @@ cm.LegendEditor.prototype.handleTextChange_ = function(legendItem, inputElem,
     editorHtml = cm.MSG_EMPTY_LEGEND_TEXT;
   }
 
-  legendItem.editor.textElem.innerHTML = editorHtml;
-  legendItem.preview.textElem.innerHTML = trimmedHtml;
+  new cm.Html(editorHtml).pasteInto(legendItem.editor.textElem);
+  new cm.Html(trimmedHtml).pasteInto(legendItem.preview.textElem);
   this.setValid(cm.Html.fromElement(this.previewContent));
 
   inputElem.style.height =

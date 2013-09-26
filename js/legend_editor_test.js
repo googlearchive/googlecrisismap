@@ -22,8 +22,6 @@ var EXTRACTED_LEGEND_ITEMS = {
 
 function LegendEditorTest() {
   cm.TestBase.call(this);
-  this.setForTest_('cm.Html.sanitize_', function(x) { return '*' + x + '*'; });
-
   this.featurePalette_ = this.expectNew_('goog.ui.Palette', _);
   this.colorPalette_ = this.expectNew_('goog.ui.ColorPalette', _);
 
@@ -162,9 +160,9 @@ LegendEditorTest.prototype.expectLegendItem_ = function(opt_text,
     var editorHtml = cm.LegendEditor.convertWhitespaceToHtml_(opt_text);
     editorHtml = editorHtml.replace(/<br>[ ]?$/, '<br>&nbsp;');
 
-    previewTextMatchers.push(withInnerHtml(previewHtml));
+    previewTextMatchers.push(withInnerHtml(sanitize(previewHtml)));
     editorTextMatchers.push(goog.string.isEmpty(opt_text) ?
-        withClass(cm.css.EMPTY) : withInnerHtml(editorHtml));
+        withClass(cm.css.EMPTY) : withInnerHtml(sanitize(editorHtml)));
   }
   var withGraphic = hasDescendant(
       opt_graphicMatcher || withClass(cm.css.LEGEND_GRAPHIC));
@@ -488,7 +486,7 @@ LegendEditorTest.prototype.testRevertHtml = function() {
   this.editHtml_('invalid HTML', false);
   cm.ui.clear(this.previewElem_);
   cm.events.emit(this.revertLink_, 'click');
-  expectThat(this.htmlTextarea_, withValue('*valid HTML*'));
+  expectThat(this.htmlTextarea_, withValue('valid HTML'));
   expectThat(this.editGraphicallyLink_, isShown());
   expectThat(this.revertLink_.parentNode, not(isShown()));
 

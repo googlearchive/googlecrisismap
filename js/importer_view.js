@@ -203,7 +203,7 @@ cm.ImporterView.TOTAL_EXTRA_HEIGHT_ =
 cm.ImporterView.prototype.openImporter = function() {
   this.layerModels_ = [];
   this.selectedLayersCount_ = 0;
-  this.selectedCountElem_.innerHTML = cm.MSG_NONE_SELECTED_INITIAL;
+  cm.ui.setText(this.selectedCountElem_, cm.MSG_NONE_SELECTED_INITIAL);
   this.submitBtn_.setAttribute('disabled', 'disabled');
 
   cm.ui.showPopup(this.popup_);
@@ -350,9 +350,8 @@ cm.ImporterView.prototype.handleLayerClick_ = function(layerElem) {
   }
 
   this.selectedLayersCount_ += selected ? 1 : -1;
-  this.selectedCountElem_.innerHTML = (new goog.i18n.MessageFormat(
-      cm.MSG_LAYERS_SELECTED))
-      .format({'SELECTED': this.selectedLayersCount_});
+  cm.ui.setText(this.selectedCountElem_, new goog.i18n.MessageFormat(
+      cm.MSG_LAYERS_SELECTED).format({'SELECTED': this.selectedLayersCount_}));
   if (this.selectedLayersCount_) {
     this.submitBtn_.removeAttribute('disabled');
   } else {
