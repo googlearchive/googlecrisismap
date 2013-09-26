@@ -332,7 +332,11 @@ cm.MSG_LAYER_DESCRIPTION_TOOLTIP = goog.getMsg(
 cm.MSG_LEGEND_TOOLTIP = goog.getMsg(
     'The legend to display for this layer.');
 
-/** @desc Tooltip for editing the layer's viewport. */
+/**
+ * @desc Tooltip for editing the layer's viewport.  The "Zoom to area" part
+ * in quotation marks refers to the message MSG_ZOOM_TO_AREA_LINK and should
+ * exactly match the translation for that message.
+ */
 cm.MSG_LAYER_VIEWPORT_TOOLTIP = goog.getMsg(
     'The bounding coordinates of the area to zoom to when the user clicks ' +
     '"Zoom to area".');
