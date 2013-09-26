@@ -34,6 +34,7 @@ goog.require('cm.Presenter');
 goog.require('cm.SearchBox');
 goog.require('cm.ShareButton');
 goog.require('cm.TabPanelView');
+goog.require('cm.UrlShortener');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
@@ -399,11 +400,12 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
       new cm.LayersButton(mapView.getMap(), panelElem);
     }
     if (!config['hide_share_button'] && !config['enable_editing']) {
+      var urlShortener = new cm.UrlShortener(
+          config['json_proxy_url'], config['google_api_key']);
       new cm.ShareButton(mapView.getMap(), appState,
                          !config['hide_facebook_button'],
                          !config['hide_google_plus_button'],
-                         !config['hide_twitter_button'],
-                         config['json_proxy_url']);
+                         !config['hide_twitter_button'], urlShortener);
     }
   }
   if (!(config['hide_my_location_button'] || preview)) {

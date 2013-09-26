@@ -19,14 +19,13 @@ goog.provide('cm.SharePopup');
 
 goog.require('cm.Analytics');
 goog.require('cm.AppState');
+goog.require('cm.UrlShortener');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.Disposable');
 goog.require('goog.Uri');
 goog.require('goog.dom.classes');
-goog.require('goog.json');
-goog.require('goog.net.Jsonp');
 goog.require('goog.ui.BidiInput');
 goog.require('goog.ui.Popup');
 
@@ -38,13 +37,13 @@ goog.require('goog.ui.Popup');
  * @param {boolean} showFacebookButton Show the Facebook button in the popup?
  * @param {boolean} showGooglePlusButton Show the Google+ button in the popup?
  * @param {boolean} showTwitterButton Show the Twitter button in the popup?
- * @param {string} jsonProxyUrl URL to the JSON proxy service.
+ * @param {cm.UrlShortener} urlShortener A URL shortening service.
  * @constructor
  * @extends {goog.Disposable}
  */
 cm.ShareButton = function(map, appState, showFacebookButton,
                           showGooglePlusButton, showTwitterButton,
-                          jsonProxyUrl) {
+                          urlShortener) {
   goog.Disposable.call(this);
 
   var button = cm.ui.create('div', {'class': cm.css.MAPBUTTON, 'index': 1},
@@ -57,7 +56,7 @@ cm.ShareButton = function(map, appState, showFacebookButton,
    */
   this.popup_ = new cm.SharePopup(appState, button, showFacebookButton,
                                   showGooglePlusButton, showTwitterButton,
-                                  jsonProxyUrl);
+                                  urlShortener);
 
   // When the button is clicked, show the popup and make the button selected.
   // 'mousedown' is better than 'click' in this circumstance because it prevents
@@ -98,14 +97,14 @@ cm.ShareButton.prototype.disposeInternal = function() {
  * @param {boolean} showFacebookButton Show the Facebook button in the popup?
  * @param {boolean} showGooglePlusButton Show the Google+ button in the popup?
  * @param {boolean} showTwitterButton Show the Twitter button in the popup?
- * @param {string} jsonProxyUrl URL to the JSON proxy service.
+ * @param {cm.UrlShortener} urlShortener A URL shortening service.
  * @param {goog.dom.DomHelper=} opt_domHelper The (optional) DOM helper.
  * @constructor
  * @extends {goog.Disposable}
  */
 cm.SharePopup = function(appState, button, showFacebookButton,
                          showGooglePlusButton, showTwitterButton,
-                         jsonProxyUrl, opt_domHelper) {
+                         urlShortener, opt_domHelper) {
   goog.Disposable.call(this);
 
   /**
@@ -129,7 +128,7 @@ cm.SharePopup = function(appState, button, showFacebookButton,
    */
   this.shareBox_ = new cm.ShareBox(this.element_, appState, showFacebookButton,
                                    showGooglePlusButton, showTwitterButton,
-                                   jsonProxyUrl, opt_domHelper);
+                                   urlShortener, opt_domHelper);
 
   /**
    * @type {!goog.ui.Popup}
@@ -182,21 +181,21 @@ cm.SharePopup.prototype.isVisible = function() {
  * @param {boolean} showFacebookButton Show the Facebook button in the popup?
  * @param {boolean} showGooglePlusButton Show the Google+ button in the popup?
  * @param {boolean} showTwitterButton Show the Twitter button in the popup?
- * @param {string} jsonProxyUrl URL to the JSON proxy service.
+ * @param {cm.UrlShortener} urlShortener A URL shortening service.
  * @param {goog.dom.DomHelper=} opt_domHelper The (optional) DOM helper.
  * @constructor
  * @extends {goog.Disposable}
  */
 cm.ShareBox = function(parentElem, appState, showFacebookButton,
                        showGooglePlusButton, showTwitterButton,
-                       jsonProxyUrl, opt_domHelper) {
+                       urlShortener, opt_domHelper) {
   goog.Disposable.call(this);
 
   /** @private {!cm.AppState} */
   this.appState_ = appState;
 
-  /** @private {string} */
-  this.jsonProxyUrl_ = jsonProxyUrl;
+  /** @private {cm.UrlShortener} */
+  this.urlShortener_ = urlShortener;
 
   var language = /** @type string */(appState.get('language'));
   var touch = cm.util.browserSupportsTouch();
@@ -400,10 +399,9 @@ cm.ShareBox.prototype.updateLinks = function() {
 
   if (this.shortenCheckbox_.checked) {
     var that = this;
-    new goog.net.Jsonp(this.jsonProxyUrl_).send({
-      'url': cm.ShareBox.GOOGL_API_URL,
-      'post_json': goog.json.serialize({'longUrl': url})
-    }, function(result) { that.setShareUrl_(url, result['id']); });
+    this.urlShortener_.shorten(url, function(shortUrl) {
+      that.setShareUrl_(url, shortUrl);
+    });
   }
 };
 
@@ -446,6 +444,3 @@ cm.ShareBox.prototype.setShareUrl_ = function(url, opt_shortUrl) {
   this.shareHtml_.value = '<iframe width="400" height="400" src="' +
       iframeUri + '" style="border: 1px solid #ccc"></iframe>';
 };
-
-/** @const {string} URL for the goo.gl URL Shortener API. */
-cm.ShareBox.GOOGL_API_URL = 'https://www.googleapis.com/urlshortener/v1/url';

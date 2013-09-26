@@ -16,6 +16,7 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import httplib
 import json
+import logging
 import pickle
 import re
 import urlparse
@@ -74,7 +75,7 @@ def AssertRateLimitNotExceeded(client_ip):
   memcache.incr(cache_key)
 
 
-def FetchJson(url, post_json, use_cache, client_ip):
+def FetchJson(url, post_json, use_cache, client_ip, referrer=None):
   """Fetches a URL, parses it as JSON, and caches the resulting object.
 
   Args:
@@ -85,6 +86,7 @@ def FetchJson(url, post_json, use_cache, client_ip):
         present, return that instead of actually performing the fetch.
     client_ip: A string, the IP address of the client.  If the fetch rate per
         client exceeds MAX_OUTBOUND_QPM_PER_IP requests per minute, we abort.
+    referrer: An optional string, the "Referer:" header to use in the request.
 
   Returns:
     A dictionary or list parsed from the fetched JSON.
@@ -101,8 +103,12 @@ def FetchJson(url, post_json, use_cache, client_ip):
     AssertRateLimitNotExceeded(client_ip)
     method = post_json and 'POST' or 'GET'
     headers = post_json and {'Content-Type': 'application/json'} or {}
+    if referrer:
+      headers['Referer'] = referrer
     result = urlfetch.fetch(url, post_json, method, headers)
     if result.status_code != httplib.OK:
+      logging.warn('Request for url=%r post_json=%r returned status %r: %r',
+                   url, post_json, result.status_code, result.content)
       raise base_handler.Error(result.status_code, 'Request failed.')
     value = ParseJson(result.content)
     memcache.set(cache_key, value, CACHE_SECONDS)
@@ -180,7 +186,8 @@ class Jsonp(base_handler.BaseHandler):
     post_json = self.request.get('post_json', '')
     use_cache = not self.request.get('no_cache')
     hl = self.request.get('hl', '')
-    data = FetchJson(url, post_json, use_cache, self.request.remote_addr)
+    data = FetchJson(url, post_json, use_cache, self.request.remote_addr,
+                     self.request.headers.get('Referer'))
     if hl:
       LocalizeMapRoot(data, hl)
     self.WriteJson(data)

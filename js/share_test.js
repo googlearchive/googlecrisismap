@@ -59,9 +59,12 @@ SharePopupTest.prototype.createPopup_ = function(
   var appState = createMockInstance(cm.AppState);
   stub(appState.getUri)().is(APPSTATE_URI_OBJECT);
   stub(appState.get)('language').is('en');
+  var fakeUrlShortener = {'shorten': function(url, callback) {
+    callback(SHORTENED_URL);
+  }};
   this.sharePopup_ = new cm.SharePopup(
       appState, cm.ui.create('button'), showFacebookButton,
-      showGooglePlusButton, showTwitterButton);
+      showGooglePlusButton, showTwitterButton, fakeUrlShortener);
 
   // Show the popup.
   expectCall(this.popup_.setVisible)(true);
@@ -104,13 +107,6 @@ SharePopupTest.prototype.nonShortenedLinks = function() {
 /** Tests that links are set correctly when URL shortening is on. */
 SharePopupTest.prototype.shortenUrl = function() {
   var parent = this.createPopup_(true, true, true);
-
-  // Set up a mock for the JSONP request.
-  var jsonp = this.expectNew_('goog.net.Jsonp', cm.ShareBox.JSON_PROXY_URL);
-  expectCall(jsonp.send)({
-    'url': cm.ShareBox.GOOGL_API_URL,
-    'post_json': goog.json.serialize({'longUrl': APPSTATE_URL})
-  }, _).willOnce(function(_, callback) { callback({'id': SHORTENED_URL}); });
 
   // Confirm that checking the box puts the shortened URL in the text field...
   var checkbox = expectDescendantOf(parent, withClass(cm.css.SHORTEN_CHECKBOX));
