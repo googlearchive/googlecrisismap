@@ -120,3 +120,24 @@ indexes:
   properties:
   - name: created
     direction: desc
+
+- kind: MetadataFetchLog
+  properties:
+  - name: address
+  - name: fetch_time
+    direction: desc
+
+- kind: MetadataFetchLog
+  properties:
+  - name: address
+  - name: fetch_length
+  - name: fetch_time
+    direction: desc
+
+- kind: MetadataFetchLog
+  properties:
+  - name: address
+  - name: fetch_status
+  - name: fetch_length
+  - name: fetch_time
+    direction: desc
