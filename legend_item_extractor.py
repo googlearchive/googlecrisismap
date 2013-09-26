@@ -22,8 +22,6 @@ import StringIO
 import xml.etree.ElementTree
 import zipfile
 
-import webapp2
-
 import base_handler
 import jsonp
 
@@ -400,7 +398,7 @@ class GetLegendItems(base_handler.BaseHandler):
   KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
   KMZ_CONTENT_TYPE = 'application/vnd.google-earth.kmz'
 
-  def get(self):  # pylint: disable=g-bad-name
+  def Get(self):
     """Returns legend items extracted from kml at given URL."""
     url = jsonp.SanitizeUrl(self.request.get('url'))
     kml = self.GetKmlFromUrl(url)
@@ -454,6 +452,3 @@ class GetLegendItems(base_handler.BaseHandler):
         return content
     except xml.etree.ElementTree.ParseError:
       return None
-
-
-app = webapp2.WSGIApplication([(r'.*/.legend', GetLegendItems)])

@@ -17,13 +17,13 @@ specific language governing permissions and limitations under the License.
   <title>Google Crisis Map</title>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="maximum-scale=1.0,initial-scale=1.0,user-scalable=no">
-  <link rel="stylesheet" href="/crisismap/.static/mapviewer.css">
+  <link rel="stylesheet" href="{{root}}/.static/mapviewer.css">
   <script type="text/javascript" src="{{maps_api_url}}"></script>
-  <script type="text/javascript" src="/crisismap/.js/crisismap_main__{{ui_lang|urlencode}}.js"></script>
+  <script type="text/javascript" src="{{root}}/.js/crisismap_main__{{ui_lang|urlencode}}.js"></script>
   <script type="text/javascript">
     var cm_config = {{cm_config_json|safe}};
   </script>
-  <script type="text/javascript" src="/crisismap/.static/main.js"></script>
+  <script type="text/javascript" src="{{root}}/.static/main.js"></script>
 </head>
 <body class="cm-body" onload="main()">
   <div id="cm-frame"></div>

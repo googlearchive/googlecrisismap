@@ -17,8 +17,8 @@ function ToolbarViewTest() {
   cm.TestBase.call(this);
   this.parent_ = cm.ui.create('div');
   this.mapModel_ = createMockInstance(cm.MapModel);
-  this.toolbar_ = new cm.ToolbarView(this.parent_, this.mapModel_,
-      true, true, false);
+  this.toolbar_ = new cm.ToolbarView(
+      this.parent_, this.mapModel_, true, true, false);
 }
 ToolbarViewTest.prototype = new cm.TestBase();
 registerTestSuite(ToolbarViewTest);
@@ -103,7 +103,7 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
 
   // Test the toolbar view with a map ID; should offer diffs and JSON.
   this.setForTest_('goog.net.XhrIo.send', createMockFunction());
-  expectCall(goog.net.XhrIo.send)('/crisismap/.diff/map_id',
+  expectCall(goog.net.XhrIo.send)('/root/.diff/xyz',
       _, 'POST', 'new_json=%7B%22foo%22%3A%22bar%22%7D')
       .willOnce(function(url, callback) {
         callback({'target': {
@@ -116,8 +116,8 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
           }
         }});
       });
-  new cm.ToolbarView(this.parent_, this.mapModel_,
-      true, true, false, 'map_id');
+  new cm.ToolbarView(
+      this.parent_, this.mapModel_, true, true, false, '/root/.diff/xyz');
 
   // Test that the saved diff is displayed first.
   var diffLink = expectDescendantOf(this.parent_, withText('Diff'));

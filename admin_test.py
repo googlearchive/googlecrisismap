@@ -35,23 +35,18 @@ class AdminTest(test_utils.BaseTest):
 
   def testGet_WithPermissions(self):
     test_utils.SetUser('admin@xyz.com')
-    handler = test_utils.SetupHandler(
-        '/crisismap/xyz.com/.admin', admin.Admin())
-    handler.get('xyz.com')
-    self.assertEqual(200, handler.response.status_int)
-    result = handler.response.body
+    response = test_utils.DoGet('/xyz.com/.admin')
+    self.assertEquals(200, response.status_int)
     # All users with any kind of permissions should be present
-    self.assertTrue('admin@xyz.com' in result)
-    self.assertTrue('catalog@xyz.com' in result, result)
-    self.assertTrue('outsider@not-xyz.com' in result)
+    self.assertTrue('admin@xyz.com' in response.body)
+    self.assertTrue('catalog@xyz.com' in response.body, response.body)
+    self.assertTrue('outsider@not-xyz.com' in response.body)
 
   def testGet_NoPermissions(self):
     # xyz.com does not grant administrative permissions to the entire
     # domain, so this should produce a permissions failure
     test_utils.SetUser('nobody@xyz.com')
-    handler = test_utils.SetupHandler(
-        '/crisismap/xyz.com/.admin', admin.Admin())
-    self.assertRaises(perms.AuthorizationError, handler.get, 'xyz.com')
+    self.assertEquals(403, test_utils.DoGet('/xyz.com/.admin').status_int)
 
   def testPost(self):
     # Give catalog@ domain admin; revoke perms for outsider@; create
@@ -63,24 +58,19 @@ class AdminTest(test_utils.BaseTest):
         ('new_email.DOMAIN_ADMIN', 'True'),
         ('new_email.MAP_CREATOR', 'True'),
         ('new_email.CATALOG_EDITOR', 'True')
-        ])
+    ])
     test_utils.BecomeAdmin()
-    handler = test_utils.SetupHandler('/crisismap/xyz.com/.admin',
-                                      admin.Admin(), post_data)
-    handler.post('xyz.com')
-    response = handler.response
+    response = test_utils.DoPost('/xyz.com/.admin', post_data)
     # Should redirect back to the admin page
     self.assertTrue(300 <= response.status_int < 400)
-    self.assertTrue(
-        '/crisismap/xyz.com/.admin' in response.headers['Location'])
+    self.assertTrue('/root/xyz.com/.admin' in response.headers['Location'])
 
     self.assertItemsEqual([perms.Role.DOMAIN_ADMIN, perms.Role.CATALOG_EDITOR],
                           perms.GetDomainRoles('catalog@xyz.com', 'xyz.com'))
     self.assertFalse(perms.GetDomainRoles('outsider@not-xyz.com', 'xyz.com'))
-    self.assertItemsEqual(
-        [perms.Role.DOMAIN_ADMIN, perms.Role.MAP_CREATOR,
-         perms.Role.CATALOG_EDITOR],
-        perms.GetDomainRoles('admin2@xyz.com', 'xyz.com'))
+    self.assertItemsEqual([perms.Role.DOMAIN_ADMIN, perms.Role.MAP_CREATOR,
+                           perms.Role.CATALOG_EDITOR],
+                          perms.GetDomainRoles('admin2@xyz.com', 'xyz.com'))
 
   def testValidateEmail(self):
     self.assertTrue(admin.ValidateEmail('user@domain.subdomain.com'))

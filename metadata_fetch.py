@@ -109,10 +109,10 @@ import time
 import xml.etree.ElementTree
 import zipfile
 
-import webapp2
-
+import base_handler
 import cache
 import maproot
+import model
 
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
@@ -357,14 +357,15 @@ def ScheduleFetch(address, countdown=None):
       countdown = DetermineFetchDelay(metadata)
     logging.info('Scheduling fetch in %d s: %s', countdown, address)
     taskqueue.add(
-        queue_name='metadata', method='GET', url='/crisismap/.metadata_fetch',
-        params={'source': address}, countdown=countdown)
+        queue_name='metadata', countdown=countdown, method='GET',
+        url=model.Config.Get('root_path', '') + '/.metadata_fetch',
+        params={'source': address})
 
 
-class MetadataFetch(webapp2.RequestHandler):
+class MetadataFetch(base_handler.BaseHandler):
   """Fetches the metadata for a source."""
 
-  def get(self):  # pylint: disable=g-bad-name
+  def Get(self):
     """Updates the cached metadata for a source, if it's active."""
     source = self.request.get('source')
     if cache.Get(['metadata_active', source]):
@@ -372,5 +373,3 @@ class MetadataFetch(webapp2.RequestHandler):
       ScheduleFetch(source)
     else:
       logging.info('Source is no longer active: %s', source)
-
-app = webapp2.WSGIApplication([('.*', MetadataFetch)])

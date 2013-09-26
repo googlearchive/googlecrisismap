@@ -20,8 +20,6 @@ import pickle
 import re
 import urlparse
 
-import webapp2
-
 import base_handler
 
 from google.appengine.api import memcache
@@ -177,7 +175,7 @@ class Jsonp(base_handler.BaseHandler):
   """
   # This class needs no __init__ method.  # pylint: disable=no-init
 
-  def get(self):  # pylint: disable=g-bad-name
+  def Get(self):
     url = self.request.get('url', '')
     post_json = self.request.get('post_json', '')
     use_cache = not self.request.get('no_cache')
@@ -186,5 +184,3 @@ class Jsonp(base_handler.BaseHandler):
     if hl:
       LocalizeMapRoot(data, hl)
     self.WriteJson(data)
-
-app = webapp2.WSGIApplication([('.*', Jsonp)])

@@ -17,8 +17,6 @@ __author__ = 'joeysilva@google.com (Joey Silva)'
 import difflib
 import json
 
-import webapp2
-
 import base_handler
 import model
 
@@ -31,7 +29,7 @@ def FormatJsonForDisplay(input_json):
 class Diff(base_handler.BaseHandler):
   """Handler to produce HTML diffs of formatted maproot JSON."""
 
-  def post(self, map_id):  # pylint: disable=g-bad-name
+  def Post(self, map_id):
     new_json = self.request.get('new_json')
     map_object = model.Map.Get(map_id)
     if new_json is None:
@@ -58,6 +56,3 @@ class Diff(base_handler.BaseHandler):
                 context=True)
         })
       self.WriteJson({'saved_diff': saved_diff, 'catalog_diffs': catalog_diffs})
-
-
-app = webapp2.WSGIApplication([(r'.*/.diff/([\w.-]+)', Diff)])

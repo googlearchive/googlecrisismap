@@ -16,8 +16,6 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import re
 
-import webapp2
-
 import base_handler
 import model
 
@@ -25,11 +23,8 @@ import model
 class Publish(base_handler.BaseHandler):
   """Handler for creating or updating a CatalogEntry."""
 
-  def post(self, domain):  # pylint: disable=g-bad-name
+  def Post(self, domain, user):  # pylint: disable=unused-argument
     """Creates, updates, or removes a catalog entry."""
-    domain = self.request.get('domain', domain)
-    if not domain:
-      raise base_handler.Error(400, 'No domain specified.')
     label = self.request.get('label').strip()
     if self.request.get('remove'):
       model.CatalogEntry.Delete(domain, label)
@@ -48,8 +43,3 @@ class Publish(base_handler.BaseHandler):
       entry.SetMapVersion(map_object)
       entry.Put()
       self.redirect('.maps')
-
-
-# The domain can come from the URL path or the 'domain' query parameter.
-app = webapp2.WSGIApplication([(r'.*/([\w.-]+\.\w+)\/.publish', Publish),
-                               (r'.*/().publish', Publish)])

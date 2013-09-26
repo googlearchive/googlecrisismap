@@ -24,7 +24,6 @@ import urlparse
 import webapp2
 import webob
 
-import base_handler
 import model
 import mox
 
@@ -35,11 +34,54 @@ from google.appengine.ext import testbed
 # mox.IgnoreArg() is such a horrible way to spell "I don't care".
 mox.ANY = mox.IgnoreArg()
 
+# For tests, assume the app resides under this URL.
+ROOT_URL = 'http://app.com/root'
+ROOT_PATH = urlparse.urlsplit(ROOT_URL).path
 
-def SetupRequest(url, post_data=None):
+
+def DoGet(path):
+  """Dispatches a GET request according to the routes in app.py.
+
+  Args:
+    path: The part of the URL path after (not including) the root URL.
+
+  Returns:
+    The HTTP response from the handler as a webapp2.Response object.
+  """
+  return DispatchRequest(SetupRequest(path))
+
+
+def DoPost(path, data):
+  """Dispatches a POST request according to the routes in app.py.
+
+  Args:
+    path: The part of the URL path after (not including) the root URL.
+    data: The POST data as a string.
+
+  Returns:
+    The HTTP response from the handler as a webapp2.Response object.
+  """
+  request = SetupRequest(path)
+  request.method = 'POST'
+  request.body = data
+  request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+  return DispatchRequest(request)
+
+
+def DispatchRequest(request):
+  response = webapp2.Response()
+  # Can't import app at the top of this file because testbed isn't ready yet.
+  import app  # pylint: disable=g-import-not-at-top
+  app.app.router.dispatch(request, response)
+  return response
+
+
+def SetupRequest(path, lang='en'):
   """Sets up a webapp2.Request object for testing."""
-  handler = base_handler.BaseHandler()
-  return SetupHandler(url, handler, post_data).request
+  request = webapp2.Request(webob.Request.blank(ROOT_URL + path).environ)
+  request.root_path = ROOT_PATH
+  request.lang = lang
+  return request
 
 
 def SetUser(email, user_id=None, is_admin=False):
@@ -72,12 +114,6 @@ def SetupHandler(url, handler, post_data=None):
     request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
   handler.initialize(request, response)
 
-  # Passing Unicode to redirect() is fatal in production.  Make it so in tests.
-  def TestRedirect(uri, *kwargs):
-    if type(uri) != str:
-      raise TypeError('redirect() must be called with an 8-bit string')
-    original_redirect(uri, *kwargs)
-  original_redirect, handler.redirect = handler.redirect, TestRedirect
   return handler
 
 
@@ -98,10 +134,20 @@ def CreateMapAsAdmin(**kwargs):
   return map_object, map_object.GetCurrent().id
 
 
+def TestRedirect(self, uri):
+  # Passing Unicode to redirect() is fatal in production; make it so in tests.
+  if type(uri) != str:
+    raise TypeError('redirect() must be called with an 8-bit string')
+  original_redirect(self, uri)
+
+original_redirect = webapp2.RequestHandler.redirect
+
+
 class BaseTest(unittest.TestCase):
   """Base Tests for appengine classes."""
 
   def setUp(self):
+    self.mox = mox.Mox()
     self.testbed = testbed.Testbed()
     self.testbed.activate()
     root = os.path.dirname(__file__) or '.'
@@ -110,7 +156,9 @@ class BaseTest(unittest.TestCase):
     self.testbed.init_urlfetch_stub()
     self.testbed.init_user_stub()
     self.testbed.init_taskqueue_stub(root_path=root)
-    self.mox = mox.Mox()
+    model.Config.Set('root_path', ROOT_PATH)
+
+    self.mox.stubs.Set(webapp2.RequestHandler, 'redirect', TestRedirect)
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -132,11 +180,13 @@ class BaseTest(unittest.TestCase):
     """Gets the POST parameters for a task as a list of (key, value) pairs."""
     return urlparse.parse_qsl(self.GetTaskBody(task))
 
-  def ExecuteTask(self, task, handler):
+  def ExecuteTask(self, task):
     """Executes a task from popTasks, using a given handler."""
-    handler = SetupHandler(task['url'], handler, self.GetTaskBody(task))
-    (task['method'] == 'POST' and handler.post or handler.get)()
-    return handler
+    self.assertEquals(ROOT_PATH, task['url'][:len(ROOT_PATH)])
+    path = task['url'][len(ROOT_PATH):]
+    if task['method'] == 'POST':
+      return DoPost(path, self.GetTaskBody(task))
+    return DoGet(path)
 
   def SetForTest(self, parent, child_name, new_child):
     """Sets an attribute of an object, just for the duration of the test."""

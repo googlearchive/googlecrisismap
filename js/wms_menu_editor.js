@@ -22,8 +22,6 @@ goog.require('goog.Uri');
 goog.require('goog.dom.classes');
 goog.require('goog.net.Jsonp');
 
-var TILESTACHE_QUERY_URL = '/crisismap/.wms/query';
-
 // Only support layers published with web/spherical mercator projections.
 // https://developers.google.com/maps/documentation/javascript/maptypes#WorldCoordinates
 var SPHERICAL_MERCATOR_PROJECTIONS = ['EPSG:3857', 'ESPG:3785', 'EPSG:900913'];
@@ -45,11 +43,18 @@ var QUERY_DELAY_MS = 500; // 0.5s
  * @param {{div_class: string, menu_class: string}} options
  *     options.div_class: a CSS class for the div containing all the buttons.
  *     options.menu_class: a CSS class for the dropdown menu.
+ *     options.wms_query_url: URL to the WMS layer query service.
  * @param {google.maps.MVCObject} draft The inspector's draft object.
  * @extends cm.MenuEditor
  * @constructor
  */
 cm.WmsMenuEditor = function(parentElem, id, options, draft) {
+  /**
+   * @type string
+   * @private
+   */
+  this.wmsQueryUrl_ = options.wms_query_url;
+
   /**
    * True if a query has been sent for the WMS services's available layers,
    * but the handler has not been invoked.
@@ -151,11 +156,9 @@ cm.WmsMenuEditor.prototype.updateMenuOptions_ = function() {
                                 layers.length > 0);
         this.updateSelect_(layers);
       } else {
-        var requestUri = new goog.Uri(TILESTACHE_QUERY_URL);
-        requestUri.setParameterValue('server_url', url);
-        requestUri.setParameterValue(
-            'projections', SPHERICAL_MERCATOR_PROJECTIONS.join(','));
-        var query = new goog.net.Jsonp(requestUri);
+        var query = new goog.net.Jsonp(this.wmsQueryUrl_ +
+            '?server_url=' + encodeURIComponent(url) +
+            '&projections=' + SPHERICAL_MERCATOR_PROJECTIONS.join(','));
         this.waitingForResponse_ = true;
         query.send(null, handleWmsQueryResponse, goog.bind(function() {
           this.waitingForResponse_ = false;

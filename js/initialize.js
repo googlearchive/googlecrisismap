@@ -239,7 +239,8 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
       new cm.ShareButton(mapView.getMap(), appState,
                          !config['hide_facebook_button'],
                          !config['hide_google_plus_button'],
-                         !config['hide_twitter_button']);
+                         !config['hide_twitter_button'],
+                         config['json_proxy_url']);
     }
   }
   if (!(config['hide_my_location_button'] || preview)) {
@@ -319,7 +320,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     goog.module.require('edit', 'cm.ToolbarView', function(ToolbarView) {
       var toolbarView = new ToolbarView(
           panelElem, mapModel, config['save_url'], config['dev_mode'], touch,
-          config['map_id']);
+          config['diff_url']);
     });
     goog.module.require('edit', 'cm.EditPresenter', function(EditPresenter) {
       var edit_presenter = new EditPresenter(

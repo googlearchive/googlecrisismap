@@ -15,10 +15,8 @@
 __author__ = 'rew@google.com (Becky Willrich)'
 
 import re
-import webapp2
 
 import base_handler
-import utils
 import perms
 
 
@@ -36,9 +34,8 @@ def ValidateDomain(domain):
 class Admin(base_handler.BaseHandler):
   """Handler for the domain-specific admin page."""
 
-  def get(self, domain):  # pylint: disable=g-bad-name
+  def Get(self, domain, user):
     """Displays the administration page for the given domain."""
-    admin = utils.GetCurrentUser()
     perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain)
 
     all_users = perms.GetSubjectsInDomain(domain)
@@ -47,7 +44,7 @@ class Admin(base_handler.BaseHandler):
     emails = sorted(((u, all_users[u]) for u in all_users if '@' in u),
                     cmp=lambda x, y: cmp(x[0], y[0]))
 
-    context = {'domain': domain, 'admin': admin,
+    context = {'domain': domain, 'admin': user,
                'users': emails, 'domains': domains}
     self.response.out.write(self.RenderTemplate('admin.html', context))
 
@@ -83,12 +80,9 @@ class Admin(base_handler.BaseHandler):
       del new_perms['new_email']
     return new_perms
 
-  def post(self, domain):  # pylint: disable=g-bad-name
-    perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain)
+  def Post(self, domain, user):
+    perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain, user)
     new_perms = self.FindNewPerms(self.request.POST, domain)
     for user_or_domain, new_roles in new_perms.iteritems():
       perms.SetDomainRoles(user_or_domain, domain, new_roles)
     self.redirect(self.request.path_qs)
-
-
-app = webapp2.WSGIApplication([(r'.*/([\w.-]+\.\w+)/.admin', Admin)])

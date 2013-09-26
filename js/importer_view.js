@@ -67,12 +67,19 @@ var MSG_NO_PREVIEW =
 
 /**
  * A dialog to import a clone of an existing layer as a new layer.
+ * @param {string} apiMapsUrl URL from which to GET maps with layers to import.
  * @constructor
  */
-cm.ImporterView = function() {
+cm.ImporterView = function(apiMapsUrl) {
   /**
-   * Array of catalog maps loaded from the server. Cached and reused until time
-   * equal to cm.ImporterView.MAPS_CACHE_TTL_MS_ has passed.
+   * @type {string}
+   * @private
+   */
+  this.apiMapsUrl_ = apiMapsUrl;
+
+  /**
+   * Array of published maps loaded from the server. Cached and reused until
+   * time equal to cm.ImporterView.MAPS_CACHE_TTL_MS_ has passed.
    * TODO(joeysilva): Add refresh button to importer.
    * @type {Array.<{maproot: Object, label: string}>|undefined}
    * @private
@@ -80,8 +87,7 @@ cm.ImporterView = function() {
   this.maps_;
 
   /**
-   * Timestamp recording when the maps were last loaded from the server, in
-   * UTC milliseconds.
+   * Time when the maps were last loaded from the server, in UTC milliseconds.
    * @type {number|undefined}
    * @private
    */
@@ -256,7 +262,7 @@ cm.ImporterView.prototype.openImporter = function() {
     cm.ui.clear(this.layerListElem_);
     cm.ui.append(this.layerListElem_,
         cm.ui.create('span', {}, 'Loading...'));
-    goog.net.XhrIo.send('/crisismap/.api/maps', goog.bind(function(event) {
+    goog.net.XhrIo.send(this.apiMapsUrl_, goog.bind(function(event) {
       if (!this.popup_.parentNode) {
         return;
       }
@@ -282,7 +288,6 @@ cm.ImporterView.prototype.openImporter = function() {
 cm.ImporterView.prototype.renderLayerList_ = function(maps) {
   cm.ui.clear(this.layerListElem_);
   goog.array.forEach(maps, function(map) {
-    var label = map['label'];
     var model = cm.MapModel.newFromMapRoot(map['maproot']);
     var layers = model.get('layers');
     if (layers.getLength()) {
@@ -290,9 +295,9 @@ cm.ImporterView.prototype.renderLayerList_ = function(maps) {
           cm.ui.create('div', {'class': cm.css.MAP_TITLE},
               cm.ui.create('span', {},
                   /** @type {string} */(model.get('title'))),
-              this.renderPreviewLink_(label)));
+              this.renderPreviewLink_(map['url'])));
       layers.forEach(goog.bind(function(layer) {
-        this.renderLayerElem_(this.layerListElem_, layer, model, label);
+        this.renderLayerElem_(this.layerListElem_, layer, model, map['url']);
       }, this));
     }
   }, this);
@@ -312,14 +317,13 @@ cm.ImporterView.prototype.renderLayerList_ = function(maps) {
  * @param {Element} parent Parent element to add the layer element to.
  * @param {cm.LayerModel} layerModel The LayerModel to render a row for.
  * @param {cm.MapModel} mapModel MapModel of the layer's map.
- * @param {string} mapLabel Label of the published map the layer belongs to, for
- *     constructing the map's url, e.g. /crisismap/<mapLabel>.
+ * @param {string} mapUrl URL of the map (without query parameters).
  * @param {number=} opt_depth Depth level for sublayers, set recursively.
  *     Defaults to 0 (root level).
  * @private
  */
-cm.ImporterView.prototype.renderLayerElem_ = function(parent, layerModel,
-    mapModel, mapLabel, opt_depth) {
+cm.ImporterView.prototype.renderLayerElem_ = function(
+    parent, layerModel, mapModel, mapUrl, opt_depth) {
   var depth = opt_depth || 0;
   var index = this.layerModels_.length;
   this.layerModels_[index] = layerModel;
@@ -333,7 +337,7 @@ cm.ImporterView.prototype.renderLayerElem_ = function(parent, layerModel,
           cm.ui.create('span', {'class': cm.css.LAYER_TITLE},
               /** @type {string} */(layerModel.get('title'))),
           previewLink = this.renderPreviewLink_(
-              mapLabel, layerModel, /** @type {cm.LatLonBox|undefined} */
+              mapUrl, layerModel, /** @type {cm.LatLonBox|undefined} */
               (layerModel.get('viewport') || mapModel.get('viewport')))),
       folderElem =
           cm.ui.create('div', {'class': cm.css.FOLDER_CONTAINER}));
@@ -347,7 +351,7 @@ cm.ImporterView.prototype.renderLayerElem_ = function(parent, layerModel,
 
     sublayers.forEach(goog.bind(function(sublayer) {
       this.renderLayerElem_(
-          folderElem, sublayer, mapModel, mapLabel, depth + 1);
+          folderElem, sublayer, mapModel, mapUrl, depth + 1);
     }, this));
 
     cm.events.listen(expanderElem, 'click', goog.bind(
@@ -398,8 +402,7 @@ cm.ImporterView.prototype.handleLayerClick_ = function(layerElem) {
 /**
  * Creates a link to preview either the given map in a new tab, or the given
  * layer in a preview box.
- * @param {string} mapLabel Label indicating where this map is published, used
- *     to construct the map URL /crisismap/<mapLabel>.
+ * @param {string} mapUrl URL of the map (without query parameters).
  * @param {cm.LayerModel=} opt_layerModel If specified, this link will display a
  *     popup box previewing this layer. Otherwise the link will open a new
  *     window that previews the entire map.
@@ -410,10 +413,9 @@ cm.ImporterView.prototype.handleLayerClick_ = function(layerElem) {
  * @return {Element} The preview link.
  * @private
  */
-cm.ImporterView.prototype.renderPreviewLink_ = function(mapLabel,
-    opt_layerModel, opt_viewport) {
+cm.ImporterView.prototype.renderPreviewLink_ = function(
+    mapUrl, opt_layerModel, opt_viewport) {
   var previewLink;
-  var href = '/crisismap/' + mapLabel;
   if (opt_layerModel) {
     var ids = new goog.structs.Set();
     var foundVisibleLeaf = false;
@@ -443,7 +445,7 @@ cm.ImporterView.prototype.renderPreviewLink_ = function(mapLabel,
       // Construct the iframe URL. Only set the viewport explicitly if the layer
       // model specifies a viewport.
       var layerViewport = opt_layerModel.get('viewport');
-      href = href + '?preview=1&layers=' + ids.getValues().join() +
+      var href = mapUrl + '?preview=1&layers=' + ids.getValues().join() +
           (layerViewport ? '&llbox=' + layerViewport.round(4) : '');
 
       cm.events.listen(previewLink, 'click', function(e) {
@@ -480,7 +482,7 @@ cm.ImporterView.prototype.renderPreviewLink_ = function(mapLabel,
     }
   } else {
     previewLink = cm.ui.create('a',
-        {'class': cm.css.PREVIEW_LINK, 'target': '_blank', 'href': href});
+        {'class': cm.css.PREVIEW_LINK, 'target': '_blank', 'href': mapUrl});
   }
   return previewLink;
 };

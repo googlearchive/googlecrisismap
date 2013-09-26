@@ -16,7 +16,6 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import json
 
-import api
 import model
 import test_utils
 
@@ -32,35 +31,25 @@ class ApiTest(test_utils.BaseTest):
                                 editors=['editor@gmail.com'],
                                 viewers=['viewer@gmail.com'])
 
-  def testMapsGet(self):
+  def testGetMap(self):
     """Fetches a map through the API."""
     json_dict = {'json': True, 'stuff': [0, 1]}
     maproot_json = json.dumps(json_dict)
     self.map.PutNewVersion(maproot_json)
-    handler = test_utils.SetupHandler('/api/maps/%s' % self.map.id, api.Maps())
-    handler.get(self.map.id)
-    result_dict = json.loads(handler.response.body)
-    expect_dict = {'json': json_dict}
-    self.assertEquals(expect_dict, result_dict)
+    response = test_utils.DoGet('/.api/maps/%s' % self.map.id)
+    self.assertEquals({'json': json_dict}, json.loads(response.body))
 
-  def testBadMapsGet(self):
+  def testGetInvalidMap(self):
     """Attempts to fetch a map that doesn't exist."""
-    nonexistent_id = 'xxx' + self.map.id
-    handler = test_utils.SetupHandler(
-        '/crisismap/.api/maps/%s' % nonexistent_id, api.Maps())
-    handler.get(nonexistent_id)
-    self.assertEquals(404, handler.response.status_int)
+    self.assertEquals(404, test_utils.DoGet('/.api/maps/xyz').status_int)
 
-  def testMapsPost(self):
+  def testPostMap(self):
     """Posts a new version of a map."""
-    json_dict = {'json': True, 'stuff': [0, 1]}
-    maproot_json = json.dumps(json_dict)
-    handler = test_utils.SetupHandler(
-        '/crisismap/.api/maps/%s' % self.map.id, api.Maps(),
-        'json=%s' % maproot_json)
-    handler.post(self.map.id)
-    # response 201 indicates Location was set.
-    self.assertEquals(201, handler.response.status_int)
+    maproot_json = '{"stuff": [0, 1]}'
+    response = test_utils.DoPost(
+        '/.api/maps/%s' % self.map.id, 'json=%s' % maproot_json)
+    # Status 201 indicates Location was set.
+    self.assertEquals(201, response.status_int)
     # Now we refetch the map because the object changed underneath us.
     map_object = model.Map.Get(self.map.id)
     # verify that the pieces were saved properly
@@ -93,12 +82,10 @@ class ApiTest(test_utils.BaseTest):
     model.Map.Create(json.dumps(draft), 'xyz.com')
 
     test_utils.ClearUser()
-    handler = test_utils.SetupHandler(
-        '/crisismap/.api/maps', api.PublishedMaps())
-    handler.get()
-    maps = json.loads(handler.response.body)
-    self.assertEquals([{'label': 'Map2', 'maproot': map2},
-                       {'label': 'Map1', 'maproot': map1}], maps)
+    response = test_utils.DoGet('/.api/maps')
+    self.assertEquals([{'url': '/root/google.com/Map2', 'maproot': map2},
+                       {'url': '/root/google.com/Map1', 'maproot': map1}],
+                      json.loads(response.body))
 
 
 if __name__ == '__main__':

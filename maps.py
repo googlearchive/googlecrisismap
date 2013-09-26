@@ -19,8 +19,6 @@ import os
 import urllib
 import urlparse
 
-import webapp2
-
 import base_handler
 import cache
 import metadata
@@ -181,14 +179,14 @@ def GetMapMenuItems(domain, root_path):
 
   # Add menu items for the CatalogEntry entities that are marked 'listed'.
   if domain:
-    if domain == model.Config.Get('primary_domain'):
+    if domain == model.Config.Get('primary_domain', ''):
       menu_items = [
-          {'title': entry.title, 'url': root_path + entry.label}
+          {'title': entry.title, 'url': root_path + '/' + entry.label}
           for entry in list(model.CatalogEntry.GetListed(domain))]
     else:
       menu_items = [
           {'title': entry.title,
-           'url': root_path + '%s/%s' % (entry.domain, entry.label)}
+           'url': root_path + '/%s/%s' % (entry.domain, entry.label)}
           for entry in list(model.CatalogEntry.GetListed(domain))]
 
   # Return all the menu items sorted by title.
@@ -207,10 +205,11 @@ def GetMapsApiClientId(host_port):
   return ''
 
 
-def GetConfig(request, root_path, map_object=None, catalog_entry=None):
+def GetConfig(request, map_object=None, catalog_entry=None):
   dev_mode = request.get('dev') and AllowDeveloperMode()
-  map_catalog = GetMapMenuItems(catalog_entry and catalog_entry.domain or
-                                model.Config.Get('primary_domain'), root_path)
+  map_catalog = GetMapMenuItems(
+      catalog_entry and catalog_entry.domain or
+      model.Config.Get('primary_domain'), request.root_path)
 
   # Construct the URL for the Maps JavaScript API.
   api_url_params = {
@@ -232,31 +231,39 @@ def GetConfig(request, root_path, map_object=None, catalog_entry=None):
       'login_url': users.create_login_url(request.url),
       'logout_url': users.create_logout_url(request.url),
       'map_catalog': map_catalog,
-      'maps_api_url': maps_api_url
+      'maps_api_url': maps_api_url,
+      # Each endpoint that the JS client code uses gets an entry in config.
+      'json_proxy_url': request.root_path + '/.jsonp',
+      'wms_configure_url': request.root_path + '/.wms/configure',
+      'wms_tiles_url': request.root_path + '/.wms/tiles'
   }
 
   # Add settings from the selected client config, if any.
   config.update(GetClientConfig(request.get('client'),
                                 request.headers.get('referer'), dev_mode))
 
-  # If we have MapRoot data from the datastore, include it.
-  if catalog_entry:
+  # Add the MapRoot data and other map-specific information.
+  if catalog_entry:  # published map
     config['map_root'] = json.loads(catalog_entry.maproot_json)
     config['map_id'] = catalog_entry.map_id
     config['label'] = catalog_entry.label
     key = catalog_entry.map_version_key
-  elif map_object:
+  elif map_object:  # draft map
     config['map_root'] = json.loads(map_object.GetCurrentJson())
     config['map_id'] = map_object.id
-    config['save_url'] = '/crisismap/.api/maps/%s' % map_object.id
-    config['share_url'] = '/crisismap/.share/%s' % map_object.id
+    config['diff_url'] = request.root_path + '/.diff/' + map_object.id
+    config['save_url'] = request.root_path + '/.api/maps/' + map_object.id
+    config['share_url'] = request.root_path + '/.share/' + map_object.id
+    config['api_maps_url'] = request.root_path + '/.api/maps'
+    config['legend_url'] = request.root_path + '/.legend'
+    config['wms_query_url'] = request.root_path + '/.wms/query'
     config['enable_editing'] = map_object.CheckAccess(perms.Role.MAP_EDITOR)
     config['draft_mode'] = True
     key = map_object.current_version_key
   if map_object or catalog_entry:
     cache_key, sources = metadata.CacheSourceAddresses(key, config['map_root'])
     config['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
-    config['metadata_url'] = '/crisismap/.metadata?key=' + cache_key
+    config['metadata_url'] = request.root_path + '/.metadata?key=' + cache_key
     metadata.ActivateSources(sources)
 
   if dev_mode:
@@ -265,7 +272,7 @@ def GetConfig(request, root_path, map_object=None, catalog_entry=None):
 
     # To use a local copy of the Maps API, use dev=1&local_maps_api=1.
     if request.get('local_maps_api'):
-      config['maps_api_url'] = '/crisismap/.static/maps_api.js'
+      config['maps_api_url'] = request.root_path + '/.static/maps_api.js'
 
     # In developer mode only, allow query params to override the config.
     # Developers can also specify map_root directly as a query param.
@@ -280,9 +287,8 @@ def GetConfig(request, root_path, map_object=None, catalog_entry=None):
 class MapByLabel(base_handler.BaseHandler):
   """Handler for displaying a published map by its domain and label."""
 
-  def get(self, domain, label):  # pylint: disable=g-bad-name
+  def Get(self, label, domain=None):  # pylint: disable=g-bad-name
     """Displays a published map by its domain and publication label."""
-    root_path = domain and '../' or ''
     domain = domain or model.Config.Get('primary_domain', '')
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
@@ -291,7 +297,7 @@ class MapByLabel(base_handler.BaseHandler):
       if label == 'maps':
         return self.redirect('.maps')
       raise base_handler.Error(404, 'Label %s/%s not found.' % (domain, label))
-    config = GetConfig(self.request, root_path, None, entry)
+    config = GetConfig(self.request, catalog_entry=entry)
     config['label'] = label
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
@@ -307,7 +313,7 @@ class MapByLabel(base_handler.BaseHandler):
 class MapById(base_handler.BaseHandler):
   """Handler for displaying a map by its map ID."""
 
-  def get(self, domain, map_id):  # pylint: disable=g-bad-name
+  def Get(self, map_id, domain=None):  # pylint: disable=g-bad-name
     """Displays a map in draft mode by its map ID."""
     map_object = model.Map.Get(map_id)
     if not map_object:
@@ -326,7 +332,7 @@ class MapById(base_handler.BaseHandler):
         url += '?' + urllib.urlencode(self.request.GET.items())
       return self.redirect(url)
 
-    config = GetConfig(self.request, '../../', map_object)
+    config = GetConfig(self.request, map_object=map_object)
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
@@ -341,9 +347,9 @@ class MapById(base_handler.BaseHandler):
 class MapList(base_handler.BaseHandler):
   """Handler for the user's list of maps."""
 
-  def get(self, domain):  # pylint: disable=g-bad-name
+  def Get(self, user, domain=None):  # pylint: disable=g-bad-name
     """Produces the map listing page."""
-    maps = list(model.Map.GetViewable(utils.GetCurrentUser(), domain))
+    maps = list(model.Map.GetViewable(user, domain))
     creator_domains = perms.GetDomainsWithRole(perms.Role.MAP_CREATOR)
     catalog_domains = perms.GetDomainsWithRole(perms.Role.CATALOG_EDITOR)
     title = 'Maps for all domains'
@@ -365,16 +371,3 @@ class MapList(base_handler.BaseHandler):
         'creator_domains': creator_domains,
         'catalog_domains': catalog_domains
     }))
-
-
-# We handle URLs with or without a domain in front of '/.maps'.
-app = webapp2.WSGIApplication([
-    (r'.*/().maps', MapList),  # list of all maps
-    (r'.*/([\w.-]+\.\w+)/.maps', MapList),  # map list, filtered to a domain
-    (r'/crisismap/()([\w-]+)', MapByLabel),  # default to the primary domain
-    (r'/crisismap/([\w.-]+\.\w+)/([\w-]+)', MapByLabel),  # specified domain
-    (r'/crisismap/().maps/([\w-]+)', MapById),
-    (r'/crisismap/([\w.-]+\.\w+)/.maps/([\w-]+)', MapById)
-])
-
-

@@ -21,20 +21,20 @@ registerTestSuite(MapPickerTest);
 
 /** Tests construction of the menu. */
 MapPickerTest.prototype.createMenu = function() {
-  this.setForTest_('goog.global.location', 'http://example.com/crisismap/map2');
+  this.setForTest_('goog.global.location', 'http://example.com/root/map2');
   var menu = cm.MapPicker.createMenu_([
-    {title: 'Item One', url: '/crisismap/map1'},
-    {title: 'Item Two', url: '/crisismap/map2'}
+    {title: 'Item One', url: '/root/map1'},
+    {title: 'Item Two', url: '/root/map2'}
   ]);
   expectThat(menu, isElement('ul'), withClass(cm.css.MAP_PICKER));
   // /map1 should be a live link, and should not be selected
   var item1 = expectDescendantOf(menu, withText('Item One'));
-  expectThat(item1, isElement('a', withHref('/crisismap/map1')));
+  expectThat(item1, isElement('a', withHref('/root/map1')));
   expectThat(item1.parentNode,
              isElement('li', not(withClass(cm.css.SELECTED))));
   // /map2 should not be a link, and should be selected
   var item2 = expectDescendantOf(menu, withText('Item Two'));
-  expectThat(item2, isElement('a', not(withHref('/crisismap/map2'))));
+  expectThat(item2, isElement('a', not(withHref('/root/map2'))));
   expectThat(item2.parentNode, isElement('li', withClass(cm.css.SELECTED)));
 };
 
@@ -69,8 +69,8 @@ MapPickerTest.prototype.menuButton = function() {
   var body = cm.ui.document.body;
   var parent = cm.ui.create('div');
   new cm.MapPicker(parent, [
-    {title: 'Item One', url: '/crisismap/map1'},
-    {title: 'Item Two', url: '/crisismap/map2'}
+    {title: 'Item One', url: '/root/map1'},
+    {title: 'Item Two', url: '/root/map2'}
   ]);
   var button = expectDescendantOf(parent, withClass(cm.css.MAP_PICKER_BUTTON));
 

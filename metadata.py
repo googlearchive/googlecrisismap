@@ -23,8 +23,6 @@ import hmac
 import logging
 import os
 
-import webapp2
-
 import base_handler
 import cache
 import maproot
@@ -90,7 +88,7 @@ class Metadata(base_handler.BaseHandler):
           returned JSON is wrapped in a JavaScript function call.
   """
 
-  def get(self):  # pylint: disable=g-bad-name
+  def Get(self):
     """Retrieves metadata for the specified cache key and source addresses."""
     cache_key = self.request.get('key')
     sources = cache.Get(['source_addresses', cache_key]) or []
@@ -99,5 +97,3 @@ class Metadata(base_handler.BaseHandler):
     sources += self.request.get_all('source')
     self.WriteJson(dict((s, cache.Get(['metadata', s])) for s in sources))
     ActivateSources(sources)
-
-app = webapp2.WSGIApplication([(r'.*', Metadata)])

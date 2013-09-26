@@ -16,7 +16,7 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import webapp2
+import base_handler
 
 from google.appengine.ext import db
 
@@ -25,11 +25,9 @@ class Redirection(db.Model):
   url = db.StringProperty()
 
 
-class Redirect(webapp2.RequestHandler):
+class Redirect(base_handler.BaseHandler):
   """Configurable redirection service."""
 
-  def get(self, key_name):  # pylint: disable=g-bad-name
-    redirection = Redirection.get_by_key_name(key_name)
+  def Get(self, label):
+    redirection = Redirection.get_by_key_name(label)
     self.redirect(redirection and str(redirection.url) or '/')
-
-app = webapp2.WSGIApplication([(r'/crisismap/.redirect/([\w.-]+)', Redirect)])

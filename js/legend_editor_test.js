@@ -65,7 +65,7 @@ LegendEditorTest.prototype.createEditor_ = function() {
   }
 
   var legendEditor = new cm.LegendEditor(
-      this.parent_, 'id', undefined, this.draft_);
+      this.parent_, 'id', {legend_url: '/root/.legend'}, this.draft_);
 
   // Call the request callback if there is one.
   if (this.requestCallback_) {
@@ -243,7 +243,7 @@ LegendEditorTest.prototype.generateExtractResponse_ = function() {
  */
 LegendEditorTest.prototype.expectExtractRequest_ = function(url) {
   expectCall(goog.net.XhrIo.send)(
-      '/crisismap/.legend?url=' + encodeURIComponent(url), _).
+      '/root/.legend?url=' + encodeURIComponent(url), _).
       willOnce(goog.bind(function(url, callback) {
         this.requestCallback_ = callback;
       }, this));
@@ -372,7 +372,7 @@ LegendEditorTest.prototype.testExtractRequest = function() {
   this.requestCallback_(response);
 
   // Test that null and empty URLs don't trigger requests, and reset the palette
-  // to have default colors..
+  // to have default colors.
   this.expectColorPaletteUpdate_();
   this.draft_.set('url', null);
   this.expectColorPaletteUpdate_();

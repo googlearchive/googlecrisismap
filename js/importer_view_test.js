@@ -15,12 +15,12 @@ goog.require('cm.css');
 
 function ImporterViewTest() {
   cm.TestBase.call(this);
-  this.view_ = new cm.ImporterView();
+  this.view_ = new cm.ImporterView('/root/.api/maps');
 
   // Layers will be keyed by title in this.rows_; therefore the titles must be
   // unique.
   this.maps_ = [
-    {label: 'map_a', maproot: {
+    {url: '/root/example.com/map_a', maproot: {
       title: 'Map A', layers: [
         {title: 'Layer A', id: 'layer_a', type: cm.LayerModel.Type.KML},
         {title: 'Folder A', id: 'folder_a', type: cm.LayerModel.Type.FOLDER,
@@ -29,7 +29,7 @@ function ImporterViewTest() {
         ]}
       ]
     }},
-    {label: 'map_b', maproot: {
+    {url: '/root/example.com/map_b', maproot: {
       title: 'Map B', layers: [
         {title: 'Layer B', id: 'layer_b', type: cm.LayerModel.Type.KML},
         {title: 'Folder B', id: 'folder_b', type: cm.LayerModel.Type.FOLDER,
@@ -64,7 +64,7 @@ ImporterViewTest.prototype.openImporter_ = function() {
   });
 
   this.setForTest_('goog.net.XhrIo.send', createMockFunction());
-  expectCall(goog.net.XhrIo.send)('/crisismap/.api/maps', _)
+  expectCall(goog.net.XhrIo.send)('/root/.api/maps', _)
       .willOnce(function(url, callback, method, data) {
         callback({target: {
           isSuccess: function() {
@@ -83,18 +83,18 @@ ImporterViewTest.prototype.openImporter_ = function() {
       isElement('div', withClass(cm.css.LAYER_ITEM)));
   var rowCounter = 0;
   this.rows_ = {};
-  var addLayer = function(layer, mapLabel) {
+  var addLayer = function(layer, url) {
     me.rows_[layer.title] =
-        {mapLabel: mapLabel, layer: layer, elem: rowElems[rowCounter++]};
+        {layer: layer, elem: rowElems[rowCounter++]};
     if (layer.sublayers) {
       goog.array.forEach(layer.sublayers, function(layer) {
-        addLayer(layer, mapLabel);
+        addLayer(layer);
       });
     }
   };
   goog.array.forEach(this.maps_, function(map) {
     goog.array.forEach(map.maproot.layers, function(layer) {
-      addLayer(layer, map.label);
+      addLayer(layer);
     });
   }, this);
   expectEq(rowCounter, rowElems.length);
@@ -115,10 +115,10 @@ ImporterViewTest.prototype.testOpenImporter = function() {
   // Confirm that the map headings are there, with preview links.
   expectDescendantOf(this.popup_, 'span', withText('Map A'));
   expectDescendantOf(this.popup_, 'a', withClass(cm.css.PREVIEW_LINK,
-                     withAttr('href', '/crisismap/map_a')));
+                     withAttr('href', '/root/example.com/map_a')));
   expectDescendantOf(this.popup_, 'span', withText('Map B'));
   expectDescendantOf(this.popup_, 'a', withClass(cm.css.PREVIEW_LINK,
-                     withAttr('href', '/crisismap/map_b')));
+                     withAttr('href', '/root/example.com/map_b')));
 
   // Confirm the layer rows are there, with correct titles and preview links.
   for (var title in this.rows_) {
@@ -270,7 +270,7 @@ ImporterViewTest.prototype.testCreateNew = function() {
 /** Tests that preview links are correctly created. */
 ImporterViewTest.prototype.testPreviewLinks = function() {
   this.maps_ = [
-    {label: 'map_a', maproot: {
+    {url: '/root/example.com/map_a', maproot: {
      title: 'Map A', layers: [
        // Leaf layer, default-off.
        {title: 'Layer A', id: 'layer_a', type: cm.LayerModel.Type.KML},
@@ -317,7 +317,7 @@ ImporterViewTest.prototype.testPreviewLinks = function() {
   ];
   this.openImporter_();
 
-  var previewSrc = '/crisismap/map_a?preview=1&layers=';
+  var previewSrc = '/root/example.com/map_a?preview=1&layers=';
 
   // Test that leaf layers have previews, regardless of visibility.
   var link = expectDescendantOf(this.rows_['Layer A'].elem,

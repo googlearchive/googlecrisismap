@@ -14,14 +14,13 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
+import inspect
 import json
 import os
 
 import webapp2
 
-# TODO(kpy): Remove this line when circular model/perms import is resolved.
-import model  # pylint: disable=unused-import
-
+import model  # TODO(kpy): Move model.Config into its own file.
 import perms
 # pylint: disable=g-import-not-at-top
 try:
@@ -66,7 +65,7 @@ def SelectSupportedLanguage(language_codes):
   return DEFAULT_LANGUAGE
 
 
-def ActivateLanguage(hl_param=None, accept_lang=None):
+def ActivateLanguage(hl_param, accept_lang):
   """Determines the UI language to use.
 
   This function takes as input the hl query parameter and the Accept-Language
@@ -104,44 +103,76 @@ class Error(Exception):
 
 
 class BaseHandler(webapp2.RequestHandler):
-  """Base class for operations that could through an AuthorizationError."""
+  """Base class for request handlers.
 
-  @staticmethod
-  def RenderTemplate(template_name, context=None):
-    """Renders a template from the templates/ directory.
+  Subclasses should define methods named 'Get' and/or 'Post'.
+    - If the method has a required (or optional) argument named 'domain', then
+      a domain is required (or permitted) in the path or in a 'domain' query
+      parameter (see main.OptionalDomainRoute), and the domain will be passed
+      in as that argument.
+    - If the method has a required (or optional) argument named 'user', then
+      user sign-in is required (or optional) for that handler, and the User
+      object will be passed in as that argument.
+    - Other arguments to the method should appear in <angle_brackets> in the
+      corresponding route's path pattern (see the routing table in main.py).
+  """
 
-    Args:
-      template_name: A string, the filename of the template to render.
-      context: An optional dictionary of template variables.
-    Returns:
-      A string, the rendered template.
-    """
-    path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
-    return template.render(path, context or {})
+  def HandleRequest(self, **kwargs):
+    """A wrapper around the Get or Post method defined in the handler class."""
+    try:
+      method = getattr(self, self.request.method.capitalize(), None)
+      if not method:
+        raise Error(405, '%s method not allowed.' % self.request.method)
 
-  def initialize(self, request, response):  # pylint: disable=g-bad-name
-    # webapp2 __init__ calls initialize automatically; we call it again here.
-    if request is None:
-      return
-    super(BaseHandler, self).initialize(request, response)
-    self.request.lang = ActivateLanguage(
-        request.get('hl'), request.headers.get('accept-language'))
+      # Require/allow domain name and user sign-in based on whether the method
+      # takes arguments named 'domain' and 'user'.
+      args, _, _, defaults = inspect.getargspec(method)
+      required_args = args[:len(args) - len(defaults or [])]
+      if 'domain' in required_args and 'domain' not in kwargs:
+        raise Error(400, 'Domain not specified.')
+      if 'domain' in kwargs and 'domain' not in args:
+        raise Error(404, 'Not found.')
+      if 'user' in args:
+        kwargs['user'] = users.get_current_user()
+      if 'user' in required_args and not kwargs['user']:
+        return self.redirect(users.create_login_url(self.request.url))
 
-  def handle_exception(self, exception, debug):  # pylint: disable=g-bad-name
-    """Renders a basic template on error."""
-    if isinstance(exception, perms.AuthorizationError):
+      # Fill in some useful request variables.
+      self.request.lang = ActivateLanguage(
+          self.request.get('hl'), self.request.headers.get('accept-language'))
+      self.request.root_path = model.Config.Get('root_path', '')
+
+      # Call the handler, making nice pages for errors derived from Error.
+      method(**kwargs)
+
+    except perms.AuthorizationError as exception:
       self.response.set_status(403, message=exception.message)
       self.response.out.write(self.RenderTemplate('unauthorized.html', {
           'exception': exception,
           'login_url': users.create_login_url(self.request.url)
       }))
-    elif isinstance(exception, Error):
+    except Error as exception:
       self.response.set_status(exception.status, message=exception.message)
       self.response.out.write(self.RenderTemplate('error.html', {
           'exception': exception
       }))
-    else:
-      super(BaseHandler, self).handle_exception(exception, debug)
+
+  get = HandleRequest
+  post = HandleRequest
+
+  def RenderTemplate(self, template_name, context):
+    """Renders a template from the templates/ directory.
+
+    Args:
+      template_name: A string, the filename of the template to render.
+      context: An optional dictionary of template variables.  The {{root}}
+          variable will be automatically set to the root_path of the app.
+    Returns:
+      A string, the rendered template.
+    """
+    path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
+    context = dict(context, root=model.Config.Get('root_path', ''))
+    return template.render(path, context)
 
   def WriteJson(self, data):
     """Writes out a JSON or JSONP serialization of the given data."""

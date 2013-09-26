@@ -32,13 +32,16 @@ goog.require('goog.json');
  * @param {cm.AppState} appState The application state model.
  * @param {cm.MetadataModel} metadataModel The layer metadata model.
  * @param {boolean} touchDevice True if the map is displayed on a touch device.
- * @param {?Object} opt_config The configuration settings. 2 fields are used:
+ * @param {?Object} opt_config Configuration settings.  These fields are used:
  *     minimal_map_controls: Minimize controls (small zoom control, no scale
  *         control, no pegman)?
  *     panel_side: The side of the map the panel will be placed on,
  *         which dictates placement of the map controls.
  *     enable_osm_map_type: Show OSM as an option in the base map menu.  If the
  *         map's 'map_type' is OSM, we show OSM regardless of this setting.
+ *     json_proxy_url: URL to the JSON proxy service.
+ *     wms_configure_url: URL to the WMS tileset configuration service.
+ *     wms_tiles_url: URL to the WMS tile cache.
  * @param {boolean=} opt_preview Whether or not this is a preview view.
  * @constructor
  * @extends google.maps.MVCObject
@@ -96,22 +99,24 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   /** @private {Element} A copyright notice to show on the map. */
   this.copyrightDiv_ = cm.ui.create('div', {'class': cm.css.MAP_COPYRIGHT});
 
+  /** @private {Object} The configuration settings. */
+  this.config_ = opt_config || {};
+
   /** @private {boolean} Allow OSM as a base map type. */
-  this.osmEnabled_ = (opt_config || {})['enable_osm_map_type'];
+  this.osmEnabled_ = this.config_['enable_osm_map_type'];
 
   // The navigation controls must be moved (on non-touch devices) from TOP_LEFT
   // or the searchbox will be positioned to the left or right of it instead of
   // stacked vertically.  Placing the navigation controls in the LEFT_TOP allows
   // the search box to be positioned directly above it.
-  var config = opt_config || {};
   var zoomControlPosition = google.maps.ControlPosition.LEFT_BOTTOM;
   var scaleControlPosition = google.maps.ControlPosition.RIGHT_BOTTOM;
-  if (config['panel_side'] === 'left') {
+  if (this.config_['panel_side'] === 'left') {
     zoomControlPosition = google.maps.ControlPosition.RIGHT_BOTTOM;
     scaleControlPosition = google.maps.ControlPosition.LEFT_BOTTOM;
   }
   var minimalMapControls =
-      config['minimal_map_controls'] || touchDevice || opt_preview;
+      this.config_['minimal_map_controls'] || touchDevice || opt_preview;
   var zoomControlStyle = minimalMapControls ?
       google.maps.ZoomControlStyle.SMALL :
       google.maps.ZoomControlStyle.DEFAULT;
@@ -434,12 +439,12 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
 
     case cm.LayerModel.Type.TILE:
       this.overlays_[id] = new cm.TileOverlay(
-        layer, this.map_, this.appState_, this.metadataModel_);
+        layer, this.map_, this.appState_, this.metadataModel_, this.config_);
       break;
 
     case cm.LayerModel.Type.WMS:
       this.overlays_[id] = new cm.TileOverlay(
-        layer, this.map_, this.appState_, this.metadataModel_);
+        layer, this.map_, this.appState_, this.metadataModel_, this.config_);
       break;
 
     case cm.LayerModel.Type.FUSION:

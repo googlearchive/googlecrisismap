@@ -95,18 +95,18 @@ class MapTest(test_utils.BaseTest):
     test_utils.BecomeAdmin()
     model.CatalogEntryModel(key_name='foo.com:m1', domain='foo.com',
                             label='m1', title='Map 1', is_listed=True).put()
-    model.CatalogEntryModel(key_name='primary.com:m1', domain='primary.com',
+    model.CatalogEntryModel(key_name='primary.com:m2', domain='primary.com',
                             label='m2', title='Map 2', is_listed=True).put()
 
-    self.assertEquals([{'title': 'Map 1', 'url': '../foo.com/m1'}],
-                      maps.GetMapMenuItems('foo.com', '../'))
-    self.assertEquals([{'title': 'Map 2', 'url': '../m2'}],
-                      maps.GetMapMenuItems('primary.com', '../'))
+    self.assertEquals([{'title': 'Map 1', 'url': '/root/foo.com/m1'}],
+                      maps.GetMapMenuItems('foo.com', '/root'))
+    self.assertEquals([{'title': 'Map 2', 'url': '/root/m2'}],
+                      maps.GetMapMenuItems('primary.com', '/root'))
 
   def testClientConfigOverride(self):
     """Verifies that query parameters can override client config settings."""
     test_utils.BecomeAdmin()
-    config = maps.GetConfig(test_utils.SetupRequest('/?dev=1&show_login=1'), '')
+    config = maps.GetConfig(test_utils.SetupRequest('/?dev=1&show_login=1'))
     self.assertEquals(True, config['show_login'])
 
   def testGetMapsApiClientId(self):
@@ -126,15 +126,15 @@ class MapTest(test_utils.BaseTest):
 
   def testMapsApiUrlI18n(self):
     """Verifies that language and region are set correctly for the Maps API."""
-    config = maps.GetConfig(test_utils.SetupRequest('/'), '')
+    config = maps.GetConfig(test_utils.SetupRequest('/'))
     self.assertTrue('language=en' in config['maps_api_url'])
     self.assertFalse('region=' in config['maps_api_url'])
 
-    config = maps.GetConfig(test_utils.SetupRequest('/?hl=ja'), '')
+    config = maps.GetConfig(test_utils.SetupRequest('/?hl=ja', 'ja'))
     self.assertTrue('language=ja' in config['maps_api_url'])
     self.assertFalse('region=' in config['maps_api_url'])
 
-    config = maps.GetConfig(test_utils.SetupRequest('/?hl=th&gl=IN'), '')
+    config = maps.GetConfig(test_utils.SetupRequest('/?hl=th&gl=IN', 'th'))
     self.assertTrue('language=th' in config['maps_api_url'])
     self.assertTrue('region=IN' in config['maps_api_url'])
 
@@ -149,18 +149,13 @@ class MapListTest(test_utils.BaseTest):
     m2 = model.Map.Create('{"title": "Arf"}', 'dogs.org', viewers=['x@y.com'])
     test_utils.SetUser('x@y.com')
 
-    handler = test_utils.SetupHandler('/crisismap/.maps', maps.MapList())
-    handler.get('')
-    result = handler.response.body
+    result = test_utils.DoGet('/.maps').body
     self.assertTrue('Moo' in result, result)
     self.assertTrue('.maps/' + m1.id in result, result)
     self.assertTrue('Arf' in result, result)
     self.assertTrue('.maps/' + m2.id in result, result)
 
-    handler = test_utils.SetupHandler(
-        '/crisismap/dogs.org/.maps', maps.MapList())
-    handler.get('dogs.org')
-    result = handler.response.body
+    result = test_utils.DoGet('/dogs.org/.maps').body
     self.assertTrue('Moo' not in result, result)
     self.assertTrue('.maps/' + m1.id not in result, result)
     self.assertTrue('Arf' in result, result)

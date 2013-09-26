@@ -14,8 +14,6 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-import webapp2
-
 import base_handler
 import model
 import utils
@@ -24,7 +22,7 @@ import utils
 class Catalog(base_handler.BaseHandler):
   """Handler for the list of published maps for a given domain."""
 
-  def get(self, domain):  # pylint: disable=g-bad-name
+  def Get(self, domain, user):  # pylint: disable=unused-argument
     """Displays the list of catalog entries."""
     entries = model.CatalogEntry.GetAll(domain)
     self.response.out.write(self.RenderTemplate('catalog.html', {
@@ -33,7 +31,7 @@ class Catalog(base_handler.BaseHandler):
         'user_domain': utils.GetCurrentUserDomain()
     }))
 
-  def post(self, domain):  # pylint: disable=g-bad-name
+  def Post(self, domain, user):  # pylint: disable=unused-argument
     """Changes the visibility of catalog entries in Map Picker."""
     entries = model.CatalogEntry.GetAll(domain)
     for entry in entries:
@@ -43,6 +41,3 @@ class Catalog(base_handler.BaseHandler):
         entry.is_listed = value
         entry.Put()
     self.redirect('.catalog')
-
-
-app = webapp2.WSGIApplication([(r'.*/([\w.-]+\.\w+)/.catalog', Catalog)])

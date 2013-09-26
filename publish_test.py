@@ -14,9 +14,7 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import base_handler
 import model
-import publish
 import test_utils
 
 
@@ -31,21 +29,15 @@ class PublishTest(test_utils.BaseTest):
 
   def testPost(self):
     """Tests the Publish handler."""
-    handler = test_utils.SetupHandler(
-        '/crisismap/foo.com/.publish', publish.Publish(),
-        'label=abc&map=%s' % self.map_id)
-    handler.post('foo.com')
+    test_utils.DoPost('/foo.com/.publish', 'label=abc&map=%s' % self.map_id)
     entry = model.CatalogEntry.Get('foo.com', 'abc')
     self.assertEquals(self.map_id, entry.map_id)
     self.assertFalse(entry.is_listed)
 
   def testRepublish(self):
     """Verifies that the is_listed status of an existing entry is preserved."""
-    # Publish a listed entry.
-    handler = test_utils.SetupHandler(
-        '/crisismap/foo.com/.publish', publish.Publish(),
-        'label=abc&map=%s' % self.map_id)
-    handler.post('foo.com')
+    # Publish an entry and make it listed.
+    test_utils.DoPost('/foo.com/.publish', 'label=abc&map=%s' % self.map_id)
     entry = model.CatalogEntry.Get('foo.com', 'abc')
     entry.is_listed = True
     entry.Put()
@@ -54,14 +46,11 @@ class PublishTest(test_utils.BaseTest):
     vid = self.map_object.PutNewVersion('{"title": "new version"}')
 
     # Republish.
-    handler = test_utils.SetupHandler(
-        '/crisismap/foo.com/.publish', publish.Publish(),
-        'label=abc&map=%s' % self.map_id)
-    handler.post('foo.com')
+    test_utils.DoPost('/foo.com/.publish', 'label=abc&map=%s' % self.map_id)
+
+    # Confirm that the entry is still listed and points at the new version.
     entry = model.CatalogEntry.Get('foo.com', 'abc')
     self.assertTrue(entry.is_listed)
-
-    # Confirm that we get the new data.
     self.assertEquals(vid, entry.model.map_version.key().id())
     self.assertEquals('{"title": "new version"}', entry.maproot_json)
 
@@ -69,19 +58,16 @@ class PublishTest(test_utils.BaseTest):
     """Tests to makes sure invalid labels don't get published."""
     invalid_labels = ['', '!', 'f#oo', '?a', 'qwerty!', '9 3']
     for label in invalid_labels:
-      handler = test_utils.SetupHandler(
-          '/crisismap/foo.com/.publish', publish.Publish(),
-          'label=%s&map=%s' % (label, self.map_id))
-      self.assertRaises(base_handler.Error, handler.post, 'foo.com')
+      response = test_utils.DoPost(
+          '/foo.com/.publish', 'label=%s&map=%s' % (label, self.map_id))
+      self.assertEquals(400, response.status_int)
 
   def testValidLabels(self):
     """Tests to makes sure valid labels do get published."""
     valid_labels = ['a', 'B', '2', 'a2', 'q-w_e-r_t-y', '93']
     for label in valid_labels:
-      handler = test_utils.SetupHandler(
-          '/crisismap/foo.com/.publish', publish.Publish(),
-          'label=%s&map=%s' % (label, self.map_id))
-      handler.post('foo.com')
+      test_utils.DoPost(
+          '/foo.com/.publish', 'label=%s&map=%s' % (label, self.map_id))
       entry = model.CatalogEntry.Get('foo.com', label)
       self.assertNotEqual(entry, None)
       self.assertEquals(self.map_id, entry.map_id)
@@ -91,9 +77,7 @@ class PublishTest(test_utils.BaseTest):
     """Tests removal of a catalog entry."""
     model.CatalogEntry.Create('foo.com', 'abc', self.map_object)
     self.assertNotEqual(None, model.CatalogEntry.Get('foo.com', 'abc'))
-    handler = test_utils.SetupHandler(
-        '/crisismap/foo.com/.publish', publish.Publish(), 'label=abc&remove=1')
-    handler.post('foo.com')
+    test_utils.DoPost('/foo.com/.publish', 'label=abc&remove=1')
     self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'abc'))
 
 if __name__ == '__main__':

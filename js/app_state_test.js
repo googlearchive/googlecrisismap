@@ -242,7 +242,7 @@ AppStateTest.prototype.testGetVisibleLayerIds = function() {
 AppStateTest.prototype.testGetUri = function() {
   // Provide a fake location URL that includes some pre-existing parameters.
   this.setForTest_('goog.global',
-      {'location': 'http://google.org/crisismap/foo' +
+      {'location': 'http://app.com/root/foo' +
           '?lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9'});
 
   // Add state to the app state.
@@ -258,7 +258,7 @@ AppStateTest.prototype.testGetUri = function() {
   this.appState_.set('layer_opacities', {'a': 1, 'b': 34});
   // crisis should be removed; id, hl, llbox, t, and layers should
   // be set; lat, lng, z should be removed.
-  expectEq('http://google.org/crisismap/foo' +
+  expectEq('http://app.com/root/foo' +
            '?hl=fr' +
            '&llbox=12%2C11%2C-33%2C-34.123' +
            '&t=SATELLITE' +
@@ -267,7 +267,7 @@ AppStateTest.prototype.testGetUri = function() {
 
   // Include the 'base' parameter in the location.
   this.setForTest_('goog.global',
-      {'location': 'http://google.org/crisismap?' +
+      {'location': 'http://app.com/root?' +
           'crisis=foo&lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9&' +
           'base=http://elsewhere.org/whatever'});
 

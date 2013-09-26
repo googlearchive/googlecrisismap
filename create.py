@@ -14,8 +14,6 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import webapp2
-
 import base_handler
 import model
 
@@ -23,16 +21,8 @@ import model
 class Create(base_handler.BaseHandler):
   """Handler that creates a new map."""
 
-  def post(self, domain):  # pylint: disable=g-bad-name
-    domain = self.request.get('domain', domain)
-    if not domain:
-      raise base_handler.Error(400, 'No domain specified.')
+  def Post(self, domain, user):  # pylint: disable=unused-argument
     domain_role = model.GetInitialDomainRole(domain)
     map_object = model.Map.Create(
         '{"title": "Untitled map"}', domain, domain_role=domain_role)
     self.redirect('.maps/%s' % map_object.id)
-
-
-# The domain can come from the URL path or the 'domain' query parameter.
-app = webapp2.WSGIApplication([(r'.*/([\w.-]+\.\w+)/.create', Create),
-                               (r'.*/().create', Create)])

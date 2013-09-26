@@ -51,14 +51,21 @@ var MSG_REVERT = goog.getMsg('Revert');
 /**
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
- * @param {Object.<{preview_class: string}>} options Editor options:
- *     options.previewclass: a CSS class for the rendered HTML preview area
+ * @param {Object} options Editor options:
+ *     options.preview_class: a CSS class for the rendered HTML preview area
  *         (which will be applied in addition to the "cm-preview" class).
+ *     options.legend_url: URL to the legend item extractor service.
  * @param {google.maps.MVCObject} draft Inspector's draft object.
  * @extends cm.HtmlEditor
  * @constructor
  */
 cm.LegendEditor = function(parentElem, id, options, draft) {
+  /**
+   * @type {string}
+   * @private
+   */
+  this.legendUrl_ = options.legend_url;
+
   /**
    * Flag set to true when a KML extract request is sent. Reset upon receiving
    * the response. No other requests will be sent while this flag is set, but
@@ -265,7 +272,8 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
                    goog.bind(this.showHtmlEditor_, this, false, undefined));
   cm.events.listen(revertLink, 'click', this.handleRevertClick_, this);
 
-  this.showHtmlEditor_(false);
+  // Use graphical editing mode only if the legend service is available.
+  this.showHtmlEditor_(!this.legendUrl_);
 };
 goog.inherits(cm.LegendEditor, cm.HtmlEditor);
 
@@ -384,6 +392,10 @@ cm.LegendEditor.prototype.previewValid_ = function() {
  * @private
  */
 cm.LegendEditor.prototype.showHtmlEditor_ = function(showHtml, opt_value) {
+  if (!this.legendUrl_) {
+    showHtml = true;  // no legend service means no graphical editing
+  }
+
   goog.style.setElementShown(this.htmlEditorElem, showHtml);
   goog.style.setElementShown(this.legendEditorElem_, !showHtml);
 
@@ -656,7 +668,8 @@ cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
       goog.style.setElementShown(this.featurePaletteContainer_, true);
 
       this.extractRequestSent_ = true;
-      goog.net.XhrIo.send('/crisismap/.legend?url=' + encodeURIComponent(url),
+      // In edit mode, the app root is always at "../..".
+      goog.net.XhrIo.send(this.legendUrl_ + '?url=' + encodeURIComponent(url),
                           goog.bind(function(event) {
         if (this.disposed_) {
           return;

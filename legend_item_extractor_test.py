@@ -20,7 +20,6 @@ import urllib
 import xml.etree.ElementTree as ElementTree
 import zipfile
 
-import base_handler
 import legend_item_extractor
 from legend_item_extractor import GetLegendItems
 import mox
@@ -31,9 +30,6 @@ from google.appengine.api import urlfetch
 
 
 class LegendItemExtractorTest(test_utils.BaseTest):
-  def setUp(self):
-    super(LegendItemExtractorTest, self).setUp()
-
   def CreateIconFromString(self, xml_iconstyle):
     return legend_item_extractor.ToIconStyleDict(
         ElementTree.fromstring(xml_iconstyle))
@@ -581,41 +577,38 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     GetLegendItems.GetKmlFromUrl(url).AndReturn(kml)
     self.mox.StubOutWithMock(legend_item_extractor, 'Extract')
     legend_item_extractor.Extract(kml).AndReturn(items)
-    self.mox.ReplayAll()
 
-    handler = test_utils.SetupHandler(
-        '/crisismap/.legend?url=' + urllib.quote(url), GetLegendItems())
-    handler.get()
-    self.assertEquals(
-        json.dumps({'icon_styles': items[0], 'line_styles': items[1],
-                    'polygon_styles': items[2],
-                    'static_icon_urls': list(items[3]),
-                    'colors': list(items[4])}),
-        handler.response.body)
+    self.mox.ReplayAll()
+    response = test_utils.DoGet('/.legend?url=' + urllib.quote(url))
+    self.assertEquals({
+        'icon_styles': items[0],
+        'line_styles': items[1],
+        'polygon_styles': items[2],
+        'static_icon_urls': list(items[3]),
+        'colors': list(items[4])
+    }, json.loads(response.body))
+    self.mox.VerifyAll()
 
   def testGetLegendItemsInvalidUrl(self):
     """Tests the GetLegendItems handler for invalid URLs."""
     url = 'http://www.maps.com:123/?map=321'
-
     self.mox.StubOutWithMock(GetLegendItems, 'GetKmlFromUrl')
     GetLegendItems.GetKmlFromUrl(url).AndReturn(None)
-    self.mox.ReplayAll()
 
-    handler = test_utils.SetupHandler(
-        '/crisismap/.legend?url=' + urllib.quote(url), GetLegendItems())
-    self.assertRaises(base_handler.Error, handler.get)
+    self.mox.ReplayAll()
+    response = test_utils.DoGet('/.legend?url=' + urllib.quote(url))
+    self.assertEquals(400, response.status_int)
+    self.mox.VerifyAll()
 
   def testGetLegendItemsUnsafeUrl(self):
     """Tests the GetLegendItems handler for unsafe URLs."""
     url = '/etc/passwd'
-    handler = test_utils.SetupHandler(
-        '/crisismap/.legend?url=' + urllib.quote(url), GetLegendItems())
-    self.assertRaises(base_handler.Error, handler.get)
+    response = test_utils.DoGet('/.legend?url=' + urllib.quote(url))
+    self.assertEquals(400, response.status_int)
 
     url = 'ftp://www.maps.com:123/?map=321'
-    handler = test_utils.SetupHandler(
-        '/crisismap/.legend?url=' + urllib.quote(url), GetLegendItems())
-    self.assertRaises(base_handler.Error, handler.get)
+    response = test_utils.DoGet('/.legend?url=' + urllib.quote(url))
+    self.assertEquals(400, response.status_int)
 
 
 if __name__ == '__main__':

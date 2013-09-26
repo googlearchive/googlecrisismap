@@ -60,12 +60,12 @@ var MSG_UNSAVED_CHANGES = goog.getMsg(
  * @param {boolean} enableSave True to enable the "Save" function.
  * @param {boolean} devMode True to enable the "Show JSON" function.
  * @param {boolean} touch True if the map is being edited on a touch device.
- * @param {string=} opt_mapId ID of this map, used in devMode to diff the
- *     current maproot against the original maproot.
+ * @param {string=} opt_diffUrl URL used in devMode to diff the current
+ *     maproot against the original maproot.
  * @constructor
  */
 cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
-    opt_mapId) {
+    opt_diffUrl) {
   // Initially, neither the undo nor the redo operation can be done.
   var undoLink = cm.ui.createLink('Undo');
   var redoLink = cm.ui.createLink('Redo');
@@ -156,10 +156,10 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
   }
 
   if (devMode) {
-    var diffJsonLink = cm.ui.createLink(opt_mapId ? 'Diff' : 'Show JSON');
+    var diffJsonLink = cm.ui.createLink(opt_diffUrl ? 'Diff' : 'Show JSON');
     cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, diffJsonLink);
     cm.events.listen(diffJsonLink, 'click', goog.bind(
-        this.handleDiffJsonClick_, this, mapModel, opt_mapId));
+        this.handleDiffJsonClick_, this, mapModel, opt_diffUrl));
   }
 
   parentElem.appendChild(toolbarElem);
@@ -171,11 +171,12 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
  * current, unsaved draft. Will simply show the current, unsaved draft if no
  * map ID is provided.
  * @param {cm.MapModel} mapModel The map model.
- * @param {string=} opt_mapId Map ID used to retrieve diff of currently saved
- *     and published versions of this map.
+ * @param {string=} opt_diffUrl URL used to retrieve diffs between the current,
+ *     currently saved, and published versions of this map.
  * @private
  */
-cm.ToolbarView.prototype.handleDiffJsonClick_ = function(mapModel, opt_mapId) {
+cm.ToolbarView.prototype.handleDiffJsonClick_ =
+    function(mapModel, opt_diffUrl) {
   var popup = cm.ui.create('div', {'class': [cm.css.POPUP, cm.css.DIFF]});
   cm.ui.createCloseButton(
       popup, function() { goog.dom.removeNode(popup); });
@@ -185,8 +186,7 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ = function(mapModel, opt_mapId) {
   var showJsonLink, showDiffLink;
   var contentElem = cm.ui.create('div');
 
-  // Method to show JSON. Used by JSON link, and when diffs cannot be
-  // loaded.
+  // Method to show JSON. Used by JSON link, and when diffs cannot be loaded.
   var showJson = function() {
     contentElem.innerHTML = goog.string.htmlEscape(
         new goog.format.JsonPrettyPrinter(
@@ -199,11 +199,11 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ = function(mapModel, opt_mapId) {
     cm.ui.showPopup(popup);
   };
 
-  if (opt_mapId) {
-    // Request diffs and show them if there is a map ID.
+  if (opt_diffUrl) {
+    // Request diffs and show them.
     var loading = cm.ui.create('span', {}, 'Loading diff...');
     cm.ui.append(popup, loading);
-    goog.net.XhrIo.send('/crisismap/.diff/' + opt_mapId, function(e) {
+    goog.net.XhrIo.send(opt_diffUrl, function(e) {
       cm.ui.remove(loading);
       if (e.target.isSuccess()) {
         // Stored diffs, along with method to show one based on the select

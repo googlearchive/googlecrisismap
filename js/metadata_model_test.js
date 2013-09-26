@@ -17,7 +17,7 @@ var MAPROOT = {'layers': [
   {'id': '3', 'type': 'TRAFFIC'}
 ]};
 
-var METADATA_URL = '/crisismap/.metadata?key=foobar';
+var METADATA_URL = '/root/.metadata?key=foobar';
 
 
 function MetadataModelTest() {

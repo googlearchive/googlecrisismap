@@ -14,43 +14,25 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import os
-
 import redirect
 import test_utils
-
-from google.appengine.ext import testbed
 
 
 class RedirectTest(test_utils.BaseTest):
   """Tests for the Redirect request handler."""
 
-  def setUp(self):
-    test_utils.BaseTest.setUp(self)
-    self.testbed = testbed.Testbed()
-    self.testbed.activate()
-    root = os.path.dirname(__file__) or '.'
-    self.testbed.init_datastore_v3_stub(require_indexes=True, root_path=root)
-
   def testGet(self):
     """Tests a simple redirection."""
-    redirect.Redirection(key_name='foo', url='http://example.com/').put()
-    handler = test_utils.SetupHandler(
-        'http://google.org/crisismap/.redirect/foo', redirect.Redirect())
-    handler.get('foo')
-    self.assertEquals(302, handler.response.status_int)
-    self.assertEquals('http://example.com/',
-                      handler.response.headers['Location'])
+    redirect.Redirection(key_name='foo', url='http://elsewhere.com/').put()
+    response = test_utils.DoGet('/.redirect/foo')
+    self.assertEquals(302, response.status_int)
+    self.assertEquals('http://elsewhere.com/', response.headers['Location'])
 
   def testGetNonexistentRedirection(self):
     """Tests a nonexistent redirection target."""
-    handler = redirect.Redirect()
-    handler = test_utils.SetupHandler(
-        'http://google.org/crisismap/.redirect/xyz', redirect.Redirect())
-    handler.get('xyz')
-    self.assertEquals(302, handler.response.status_int)
-    self.assertEquals('http://google.org/',
-                      handler.response.headers['Location'])
+    response = test_utils.DoGet('/.redirect/xyz')
+    self.assertEquals(302, response.status_int)
+    self.assertEquals('http://app.com/', response.headers['Location'])
 
 if __name__ == '__main__':
   test_utils.main()

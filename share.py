@@ -14,8 +14,6 @@
 
 __author__ = 'muzny@google.com (Grace Muzny)'
 
-import webapp2
-
 import base_handler
 import model
 import perms
@@ -25,10 +23,10 @@ from google.appengine.api import mail
 from google.appengine.api import users
 
 
-class Share(webapp2.RequestHandler):
+class Share(base_handler.BaseHandler):
   """An interface for sharing maps between users."""
 
-  def post(self, map_id):  # pylint: disable=g-bad-name
+  def Post(self, map_id, domain=None):  # pylint: disable=unused-argument
     """Adds the recipient to the appropriate permission areas."""
     map_object = model.Map.Get(map_id)
     if map_object is None:
@@ -59,12 +57,10 @@ class Share(webapp2.RequestHandler):
     """Sends recipient_email an email with info of map and permission level."""
     email = utils.GetCurrentUserEmail()
     subject = '%s has shared "%s" with you' % (email, map_object.title)
-    url = self.request.host_url + '/crisismap/.maps/' + map_object.id
+    url = self.request.root_path + '/.maps/' + map_object.id
     body = """
 Your permission level for %s has changed to %s.
 Access the map at: %s
 
 %s""" % (map_object.title, role, url, message)
     mail.send_mail(email, recipient_email, subject, body)
-
-app = webapp2.WSGIApplication([(r'/crisismap/.share/([\w-]+)', Share)])

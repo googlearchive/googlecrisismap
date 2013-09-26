@@ -98,6 +98,7 @@ languages.py: js/language_defs
 
 # Generate the CSS constants from all the JS files.
 external/css.js: $(shell echo js/*.js)
+	@mkdir -p external
 	@python js/generate_css_constants.py js/*.js > $@
 
 # Download a local copy of the Maps API JavaScript.

@@ -31,7 +31,8 @@ WmsMenuEditorTest.prototype.createEditor_ = function() {
       parent, 'wms_editor',
       {choices: [{value: 'x', label: 'Choice X'},
                  {value: 'y', label: 'Choice Y'},
-                 {value: 'z', label: 'Choice Z'}]},
+                 {value: 'z', label: 'Choice Z'}],
+       wms_query_url: '/root/.wms/query'},
       this.draft_);
   this.optionX_ = expectDescendantOf(parent, 'option', withText('Choice X'));
   this.optionY_ = expectDescendantOf(parent, 'option', withText('Choice Y'));
@@ -59,7 +60,8 @@ WmsMenuEditorTest.prototype.testConstructor = function() {
 /** Tests handling a query response from a valid WMS service. */
 WmsMenuEditorTest.prototype.testValidReply = function() {
   this.createEditor_();
-  var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
+  var tilestacheQuery = this.expectNew_(
+      'goog.net.Jsonp', containsRegExp(/^\/root\/\.wms\/query\?/));
   var replyCallback = null;
   tilestacheQuery.send = function(_, r, e) {
     replyCallback = r;

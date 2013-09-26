@@ -39,6 +39,8 @@ goog.require('goog.net.XhrIo');
  * @param {cm.MapModel} mapModel The map model.
  * @param {cm.ArrangeView} arranger The nested folder arranger view.
  * @param {Object} opt_config Configuration settings.  These fields are used:
+ *     api_maps_url: The URL from which to GET maps with layers to import.
+ *     legend_url: The URL of the legend item extractor service.
  *     share_url: The URL to which to POST to share the map.
  *     save_url: The URL to which to POST to save the edited map data.
  *     enable_osm_map_type_editing: Allow OSM as a base map option?
@@ -46,10 +48,10 @@ goog.require('goog.net.XhrIo');
  * @constructor
  */
 cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
-  var importer = new cm.ImporterView();
+  var config = opt_config || {};
+  var importer = new cm.ImporterView(config['api_maps_url']);
   var inspector = new cm.InspectorView();
   var sharer = new cm.ShareEmailView();
-  var config = opt_config || {};
 
   /**
    * @type Array.<cm.Command>
@@ -144,7 +146,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
      preview_class: cm.css.LAYER_DESCRIPTION},
     {key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
-     preview_class: cm.css.LAYER_LEGEND},
+     preview_class: cm.css.LAYER_LEGEND, legend_url: config['legend_url']},
     {key: 'viewport', label: '"Zoom to area" viewport',
      type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
     {key: 'min_zoom', label: 'Minimum zoom level',
@@ -212,7 +214,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      conditions: {'type': isType(cm.LayerModel.Type.WMS)},
      multiple: true,
      choices: [],
-     menu_class: cm.css.WMS_MENU_EDITOR},
+     menu_class: cm.css.WMS_MENU_EDITOR,
+     wms_query_url: config['wms_query_url']},
     {key: 'tile_coordinate_type', label: 'Tile coordinates',
      type: cm.editors.Type.MENU,
      conditions: {'type': isType(cm.LayerModel.Type.TILE)},

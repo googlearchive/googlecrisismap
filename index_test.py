@@ -14,54 +14,31 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import os
-
-import index
 import model
 import test_utils
-
-from google.appengine.ext import testbed
 
 
 class IndexTest(test_utils.BaseTest):
   """Tests for the crisismap.Index request handler."""
 
-  def setUp(self):
-    test_utils.BaseTest.setUp(self)
-    self.testbed = testbed.Testbed()
-    self.testbed.activate()
-    root = os.path.dirname(__file__) or '.'
-    self.testbed.init_datastore_v3_stub(require_indexes=True, root_path=root)
-    self.testbed.init_memcache_stub()
-
   def testGetDestinationWithCrisisParam(self):
     """Tests GetDestination with old-style id= and crisis= parameters."""
-    handler = test_utils.SetupHandler(
-        'http://foo/crisismap?id=abc&layers=def', index.Index())
-    handler.get()
-    self.assertEquals('http://foo/crisismap/abc?layers=def',
-                      handler.response.headers['Location'])
-
-    handler = test_utils.SetupHandler(
-        'http://foo/crisismap?crisis=abc&layers=def', index.Index())
-    handler.get()
-    self.assertEquals('http://foo/crisismap/abc?layers=def',
-                      handler.response.headers['Location'])
+    self.assertEquals(
+        'http://app.com/root/abc?layers=def',
+        test_utils.DoGet('/?id=abc&layers=def').headers['Location'])
+    self.assertEquals(
+        'http://app.com/root/abc?layers=def',
+        test_utils.DoGet('/?crisis=abc&layers=def').headers['Location'])
 
   def testGetDestinationDefault(self):
     """Tests GetDestination with no label parameter."""
-    handler = test_utils.SetupHandler(
-        'http://foo/crisismap?layers=abc', index.Index())
-    handler.get()
-    self.assertEquals('http://foo/crisismap/empty?layers=abc',
-                      handler.response.headers['Location'])
-
+    self.assertEquals(
+        'http://app.com/root/empty?layers=abc',
+        test_utils.DoGet('/?layers=abc').headers['Location'])
     model.Config.Set('default_label', 'qwerty')
-    handler = test_utils.SetupHandler(
-        'http://foo/crisismap?layers=abc', index.Index())
-    handler.get()
-    self.assertEquals('http://foo/crisismap/qwerty?layers=abc',
-                      handler.response.headers['Location'])
+    self.assertEquals(
+        'http://app.com/root/qwerty?layers=abc',
+        test_utils.DoGet('/?layers=abc').headers['Location'])
 
 
 if __name__ == '__main__':

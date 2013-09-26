@@ -15,7 +15,7 @@ specific language governing permissions and limitations under the License.
 
 {% block navbar %}
   <div class="cm-button-area">
-    <form method="post" action="/crisismap/.create">
+    <form method="post" action=".create">
       {% if creator_domains|length > 1 %}
         <select name="domain">
           {% for domain in creator_domains %}
@@ -53,7 +53,7 @@ specific language governing permissions and limitations under the License.
         <td>{{m.created|timesince}} ago by {{m.creator}}</td>
         <td>{{m.last_updated|timesince}} ago by {{m.last_updater}}</td>
         <td>
-          <form action="/crisismap/.delete" method="post">
+          <form action=".delete" method="post">
             <input name="map" type=hidden value="{{m.id}}">
             <input type=submit value="Delete Map">
           </form>
@@ -61,7 +61,7 @@ specific language governing permissions and limitations under the License.
         <td class="cm-publish-status">
           {% for e in m.catalog_entries %}
             <div>
-              <a href="/crisismap/{{e.domain}}/{{e.label}}">
+              <a href="{{root}}/{{e.domain}}/{{e.label}}">
                 {{e.domain}}/{{e.label}}
               </a>
               <span class="cm-publish-age">
@@ -74,14 +74,14 @@ specific language governing permissions and limitations under the License.
               </span>
               {% if e.domain in catalog_domains %}
                 {% ifnotequal e.map_version_key m.current_version_key %}
-                  <form action="/crisismap/.publish" method="post">
+                  <form action=".publish" method="post">
                     <input name="label" type=hidden value="{{e.label}}">
                     <input name="map" type=hidden value="{{m.id}}">
                     <input name="domain" type=hidden value="{{e.domain}}">
                     <input type=submit value="Republish">
                   </form>
                 {% endifnotequal %}
-                <form action="/crisismap/.publish" method="post">
+                <form action=".publish" method="post">
                   <input name="remove" type=hidden value="1">
                   <input name="domain" type=hidden value="{{e.domain}}">
                   <input name="label" type=hidden value="{{e.label}}">
@@ -91,7 +91,7 @@ specific language governing permissions and limitations under the License.
             </div>
           {% endfor %}
           {% if catalog_domains %}
-            <form action="/crisismap/.publish" method="post">
+            <form action=".publish" method="post">
               <select name="domain">
                 {% for domain in catalog_domains %}
                   <option value="{{domain}}">{{domain}}</option>

@@ -16,8 +16,7 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import urllib
 
-import webapp2
-
+import base_handler
 import model
 
 
@@ -27,7 +26,7 @@ def GetDestination(request):
   # For backward compatibility, support the id= and crisis= parameters.
   label = (request.get('id') or request.get('crisis') or
            model.Config.Get('default_label') or 'empty')
-  url = request.host_url + '/crisismap/' + label
+  url = request.root_path + '/' + label
 
   # Preserve all the query parameters except those that set the label.
   params = dict((key, value) for (key, value) in request.GET.items()
@@ -35,11 +34,9 @@ def GetDestination(request):
   return url + (params and '?' + urllib.urlencode(params) or '')
 
 
-class Index(webapp2.RequestHandler):
+class Index(base_handler.BaseHandler):
   """Redirector from '/' or '/crisismap' to the appropriate map page."""
 
-  def get(self):  # pylint: disable=g-bad-name
+  def Get(self, domain=''):  # pylint: disable=unused-argument
+    # TODO(kpy): When domain is specified, redirect to domain's default label.
     self.redirect(str(GetDestination(self.request)))  # non-Unicode is required
-
-
-app = webapp2.WSGIApplication([('.*', Index)])

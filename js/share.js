@@ -37,11 +37,13 @@ goog.require('goog.ui.Popup');
  * @param {boolean} showFacebookButton Show the Facebook button in the popup?
  * @param {boolean} showGooglePlusButton Show the Google+ button in the popup?
  * @param {boolean} showTwitterButton Show the Twitter button in the popup?
+ * @param {string} jsonProxyUrl URL to the JSON proxy service.
  * @constructor
  * @extends {goog.Disposable}
  */
 cm.ShareButton = function(map, appState, showFacebookButton,
-                          showGooglePlusButton, showTwitterButton) {
+                          showGooglePlusButton, showTwitterButton,
+                          jsonProxyUrl) {
   goog.Disposable.call(this);
 
   var button = cm.ui.create('div', {'class': cm.css.MAPBUTTON, 'index': 1},
@@ -53,7 +55,8 @@ cm.ShareButton = function(map, appState, showFacebookButton,
    * @private
    */
   this.popup_ = new cm.SharePopup(appState, button, showFacebookButton,
-                                  showGooglePlusButton, showTwitterButton);
+                                  showGooglePlusButton, showTwitterButton,
+                                  jsonProxyUrl);
 
   // When the button is clicked, show the popup and make the button selected.
   // 'mousedown' is better than 'click' in this circumstance because it prevents
@@ -91,13 +94,14 @@ cm.ShareButton.prototype.disposeInternal = function() {
  * @param {boolean} showFacebookButton Show the Facebook button in the popup?
  * @param {boolean} showGooglePlusButton Show the Google+ button in the popup?
  * @param {boolean} showTwitterButton Show the Twitter button in the popup?
+ * @param {string} jsonProxyUrl URL to the JSON proxy service.
  * @param {goog.dom.DomHelper=} opt_domHelper The (optional) DOM helper.
  * @constructor
  * @extends {goog.Disposable}
  */
 cm.SharePopup = function(appState, button, showFacebookButton,
                          showGooglePlusButton, showTwitterButton,
-                         opt_domHelper) {
+                         jsonProxyUrl, opt_domHelper) {
   goog.Disposable.call(this);
 
   /**
@@ -121,7 +125,7 @@ cm.SharePopup = function(appState, button, showFacebookButton,
    */
   this.shareBox_ = new cm.ShareBox(this.element_, appState, showFacebookButton,
                                    showGooglePlusButton, showTwitterButton,
-                                   opt_domHelper);
+                                   jsonProxyUrl, opt_domHelper);
 
   /**
    * @type {!goog.ui.Popup}
@@ -174,19 +178,22 @@ cm.SharePopup.prototype.isVisible = function() {
  * @param {boolean} showFacebookButton Show the Facebook button in the popup?
  * @param {boolean} showGooglePlusButton Show the Google+ button in the popup?
  * @param {boolean} showTwitterButton Show the Twitter button in the popup?
+ * @param {string} jsonProxyUrl URL to the JSON proxy service.
  * @param {goog.dom.DomHelper=} opt_domHelper The (optional) DOM helper.
  * @constructor
  * @extends {goog.Disposable}
  */
 cm.ShareBox = function(parentElem, appState, showFacebookButton,
-                       showGooglePlusButton, showTwitterButton, opt_domHelper) {
+                       showGooglePlusButton, showTwitterButton,
+                       jsonProxyUrl, opt_domHelper) {
   goog.Disposable.call(this);
 
-  /**
-   * @type {!cm.AppState}
-   * @private
-   */
+  /** @private {!cm.AppState} */
   this.appState_ = appState;
+
+  /** @private {string} */
+  this.jsonProxyUrl_ = jsonProxyUrl;
+
   var language = /** @type string */(appState.get('language'));
   var touch = cm.util.browserSupportsTouch();
 
@@ -365,6 +372,7 @@ cm.ShareBox.createTwitterButton_ = function(language, touch) {
   } else {
     // TODO(arb): this leaks internal hostnames with original_referrer when
     // triggered from dev versions (under dev_appserver).
+    // TODO(kpy): The counturl should be specific to the map being shown.
     return cm.ui.create('iframe', {
       'class': cm.css.TWITTER_SHARE_BUTTON,
       'src': '//platform.twitter.com/widgets/tweet_button.html?lang=' +
@@ -382,7 +390,7 @@ cm.ShareBox.prototype.updateLinks = function() {
 
   if (this.shortenCheckbox_.checked) {
     var that = this;
-    new goog.net.Jsonp(cm.ShareBox.JSON_PROXY_URL).send({
+    new goog.net.Jsonp(this.jsonProxyUrl_).send({
       'url': cm.ShareBox.GOOGL_API_URL,
       'post_json': goog.json.serialize({'longUrl': url})
     }, function(result) { that.setShareUrl_(url, result['id']); });
@@ -435,11 +443,8 @@ cm.ShareBox.prototype.setShareUrl_ = function(url, opt_shortUrl) {
  */
 cm.ShareButton.MSG_SHARE_BUTTON_ = goog.getMsg('Share');
 
-/** URL for the goo.gl URL Shortener API. */
+/** @const {string} URL for the goo.gl URL Shortener API. */
 cm.ShareBox.GOOGL_API_URL = 'https://www.googleapis.com/urlshortener/v1/url';
-
-/** URL for the JSON proxy. TODO(kpy): make this configurable for CW &c. */
-cm.ShareBox.JSON_PROXY_URL = '/crisismap/.jsonp';
 
 /**
  * @desc Title for the share box.

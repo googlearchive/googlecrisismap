@@ -15,6 +15,7 @@ goog.require('cm.css');
 
 function EditPresenterTest() {
   cm.TestBase.call(this);
+  this.config_ = {legend_url: '/root/.legend', api_maps_url: '/root/.api/maps'};
 }
 EditPresenterTest.prototype = new cm.TestBase();
 registerTestSuite(EditPresenterTest);
@@ -22,8 +23,8 @@ registerTestSuite(EditPresenterTest);
 /** Tests that the EditPresenter responds correctly to IMPORT events. */
 EditPresenterTest.prototype.testImportEvent = function() {
   var map = new cm.MapModel();
-  var importer = this.expectNew_('cm.ImporterView');
-  var presenter = new cm.EditPresenter(null, map, null);
+  var importer = this.expectNew_('cm.ImporterView', '/root/.api/maps');
+  var presenter = new cm.EditPresenter(null, map, null, this.config_);
   expectCall(importer.openImporter)();
   cm.events.emit(goog.global, cm.events.IMPORT, {});
 };
@@ -32,7 +33,7 @@ EditPresenterTest.prototype.testImportEvent = function() {
 EditPresenterTest.prototype.testInspectEvent = function() {
   var map = new cm.MapModel();
   var inspector = this.expectNew_('cm.InspectorView');
-  var presenter = new cm.EditPresenter(null, map, null);
+  var presenter = new cm.EditPresenter(null, map, null, this.config_);
 
   // Emitting an INSPECT event on a map should open an inspector on the map.
   expectCall(inspector.inspect)('Edit map details', allOf([
@@ -54,7 +55,8 @@ EditPresenterTest.prototype.testInspectEvent = function() {
               type: cm.editors.Type.HTML,
               preview_class: cm.css.LAYER_DESCRIPTION}),
     contains({key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
-              preview_class: cm.css.LAYER_LEGEND}),
+              preview_class: cm.css.LAYER_LEGEND,
+              legend_url: '/root/.legend'}),
     contains({key: 'viewport', label: '"Zoom to area" viewport',
               type: cm.editors.Type.LAT_LON_BOX, app_state: null}),
     contains({key: 'min_zoom', type: cm.editors.Type.NUMBER,

@@ -26,17 +26,11 @@ goog.require('goog.Uri');
 goog.require('goog.net.Jsonp');
 goog.require('goog.net.XhrIo');
 
-var JSON_PROXY_URL = '/crisismap/.jsonp';
-
 // Period to refresh the dynamic tile index json.
 var INDEX_REFRESH_PERIOD_MS = 180000; // 3 min
 
 // Period to wait for tiles to load before swapping in a new tile url.
 var MAX_TILE_LOAD_MS = 2000; // 2s
-
-var TILESET_CONFIGURE_URL = '/crisismap/.wms/configure';
-
-var TILECACHE_URL = '/crisismap/.wms/tiles';
 
 /**
  * A map overlay which displays tiles and a bounding box.  It wraps an
@@ -47,11 +41,27 @@ var TILECACHE_URL = '/crisismap/.wms/tiles';
  * @param {cm.MetadataModel} metadataModel The metadata model.  If the layer is
  *     specified with a tile index, the TileOverlay will update the metadata
  *     update_time field using the update_time in the tile index.
+ * @param {?Object} opt_config Configuration settings.  These fields are used:
+ *     json_proxy_url: URL to the JSON proxy service.
+ *     wms_configure_url: URL to the WMS tileset configuration service.
+ *     wms_tiles_url: URL to the WMS tile cache.
  * @constructor
  * @extends google.maps.MVCObject
  */
-cm.TileOverlay = function(layer, map, appState, metadataModel) {
+cm.TileOverlay = function(layer, map, appState, metadataModel, opt_config) {
   google.maps.MVCObject.call(this);
+
+  /**
+   * @type {cm.LayerModel}
+   * @private
+   */
+  this.layer_ = layer;
+
+  /**
+   * @type {google.maps.Map}
+   * @private
+   */
+  this.map_ = map;
 
   /**
    * @type {cm.AppState}
@@ -66,10 +76,10 @@ cm.TileOverlay = function(layer, map, appState, metadataModel) {
   this.metadataModel_ = metadataModel;
 
   /**
-   * @type {google.maps.Map}
+   * @type {Object}
    * @private
    */
-  this.map_ = map;
+  this.config_ = opt_config || {};
 
   /**
    * @type {cm.ProxyTileMapType}
@@ -143,12 +153,6 @@ cm.TileOverlay = function(layer, map, appState, metadataModel) {
    * @private
    */
   this.requestDescriptor_ = null;
-
-  /**
-   * @type {cm.LayerModel}
-   * @private
-   */
-  this.layer_ = layer;
 
   /**
    * To be populated if bounds are specified.
@@ -509,7 +513,7 @@ cm.TileOverlay.prototype.handleTileIndex_ = function(indexJson) {
  */
 cm.TileOverlay.prototype.updateTileUrlPattern_ = function() {
   if (this.get('url_is_tile_index')) {
-    var uri = new goog.Uri(JSON_PROXY_URL);
+    var uri = new goog.Uri(this.config_['json_proxy_url']);
     uri.setParameterValue('url', this.get('url'));
     this.tileIndexFetcher_ = new goog.net.Jsonp(uri);
     // Refresh the tile index every so often to pick up changes
@@ -533,8 +537,8 @@ cm.TileOverlay.prototype.updateTileUrlPattern_ = function() {
     } else {
       var tilesetId = /** @type string */(this.get('wms_tileset_id'));
       if (tilesetId) {
-        this.tileUrlPattern_ = TILECACHE_URL + '/' + tilesetId +
-            '/{Z}/{X}/{Y}.png';
+        this.tileUrlPattern_ = this.config_['wms_tiles_url'] + '/' +
+            tilesetId + '/{Z}/{X}/{Y}.png';
         this.initialize_();
         // Display the tiles if the layer is enabled.
         if (this.onMap_) {
@@ -595,7 +599,8 @@ cm.TileOverlay.prototype.updateWmsTilesetId_ = function() {
       var postArgs = 'server_url=' + encodeURIComponent(wmsUrl) +
                      '&projection=' + encodeURIComponent(wmsProjection) +
                      '&layers=' + encodeURIComponent(wmsLayers.join(','));
-      goog.net.XhrIo.send(TILESET_CONFIGURE_URL, goog.bind(function(e) {
+      goog.net.XhrIo.send(this.config_['wms_configure_url'],
+                          goog.bind(function(e) {
         if (e.target.isSuccess()) {
           var tilesetId = e.target.getResponseJson();
           this.set('wms_tileset_id', tilesetId);

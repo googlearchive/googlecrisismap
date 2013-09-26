@@ -28,6 +28,11 @@ function MapViewTest() {
   this.mapModel_ = createMockInstance(cm.MapModel);
   this.appState_ = createMockInstance(cm.AppState);
   this.metadataModel_ = createMockInstance(cm.MetadataModel);
+  this.config_ = {
+    json_proxy_url: '/root/.jsonp',
+    wms_configure_url: '/root/.wms/configure',
+    wms_tiles_url: '/root/.wms/tiles'
+  };
   this.stubReturnVisibleLayerIds_([]);
 
   this.setForTest_('goog.dom.htmlToDocumentFragment', createMockFunction());
@@ -307,11 +312,12 @@ MapViewTest.prototype.addOverlayTile = function() {
       {id: 'choc-chip', type: cm.LayerModel.Type.TILE});
   this.stubReturnVisibleLayerIds_(['choc-chip']);
 
-  var overlay = this.expectNew_('cm.TileOverlay', layerModel, this.map_,
-                                this.appState_, this.metadataModel_);
+  var overlay = this.expectNew_(
+      'cm.TileOverlay', layerModel, this.map_,
+      this.appState_, this.metadataModel_, this.config_);
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
-                 this.metadataModel_, false);
+                 this.metadataModel_, false, this.config_);
 };
 
 /** Tests adding a Traffic overlay. */
@@ -494,7 +500,7 @@ MapViewTest.prototype.propertiesChanged = function() {
 
   // Change the layer type to a tile
   expectCall(overlay.setMap)(null);
-  overlay = this.expectNew_('cm.TileOverlay', _, _, _, _);
+  overlay = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
   expectCall(overlay.setMap)(null);
   model.set('type', cm.LayerModel.Type.TILE);
 
@@ -571,7 +577,7 @@ MapViewTest.prototype.layersAddedEvent = function() {
   expectCall(overlay1.setMap)(this.map_);
   var layer2 = this.addLayer_({id: 'banana',
                               type: cm.LayerModel.Type.TILE});
-  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _);
+  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
   expectCall(overlay2.setMap)(this.map_);
   this.stubReturnVisibleLayerIds_(['banana', 'mango']);
 
@@ -590,7 +596,7 @@ MapViewTest.prototype.layersRemovedEvent = function() {
   expectCall(overlay1.setMap)(this.map_);
   var layer2 = this.addLayer_({id: 'banana',
                               type: cm.LayerModel.Type.TILE});
-  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _);
+  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
   expectCall(overlay2.setMap)(this.map_);
   this.stubReturnVisibleLayerIds_(['banana', 'mango']);
 
@@ -715,7 +721,7 @@ MapViewTest.prototype.infoWindowClosesWhenLayerTurnedOff = function() {
 
   // ...expect two layers to be created and added to the map...
   var overlay1 = this.expectNew_('google.maps.TransitLayer');
-  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _);
+  var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
   expectCall(overlay1.setMap)(this.map_);
   expectCall(overlay2.setMap)(this.map_);
 

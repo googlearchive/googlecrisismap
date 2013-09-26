@@ -19,6 +19,11 @@ function TileOverlayTest() {
   this.layer_.getSourceAddress = function() { return 'XYZ:xyz'; };
   this.appState_ = new google.maps.MVCObject();
   this.metadataModel_ = new cm.MetadataModel();
+  this.config_ = {
+    json_proxy_url: '/root/.jsonp',
+    wms_configure_url: '/root/.wms/configure',
+    wms_tiles_url: '/root/.wms/tiles'
+  };
 
   this.projection_ = createMockFunction();
   this.projection_.fromLatLngToPoint = createMockFunction('fromLatLngToPoint');
@@ -35,8 +40,8 @@ registerTestSuite(TileOverlayTest);
  * @private
  */
 TileOverlayTest.prototype.createTileOverlay_ = function() {
-  return new cm.TileOverlay(
-      this.layer_, this.map_, this.appState_, this.metadataModel_);
+  return new cm.TileOverlay(this.layer_, this.map_, this.appState_,
+                            this.metadataModel_, this.config_);
 };
 
 /** Tests the default constructor. */
@@ -181,7 +186,7 @@ TileOverlayTest.prototype.updateWmsTileUrlPattern = function() {
 
   var newTilesetId = 'afd4b44574318c291c30160c9249ae99';
   tileOverlay.set('wms_tileset_id', newTilesetId);
-  expectEq(TILECACHE_URL + '/' + newTilesetId + '/{Z}/{X}/{Y}.png',
+  expectEq('/root/.wms/tiles/' + newTilesetId + '/{Z}/{X}/{Y}.png',
            tileOverlay.tileUrlPattern_);
 };
 

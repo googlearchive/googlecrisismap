@@ -17,7 +17,6 @@ __author__ = 'joeysilva@google.com (Joey Silva)'
 import difflib
 import json
 
-import diff
 import model
 import mox
 import test_utils
@@ -57,10 +56,7 @@ class DiffTest(test_utils.BaseTest):
                         context=mox.IgnoreArg()).AndReturn(catalog_diff)
 
     self.mox.ReplayAll()
-    handler = test_utils.SetupHandler(
-        '/crisismap/.diff/%s' % map_object.id, diff.Diff(),
-        post_data='new_json=' + new_json)
-    handler.post(map_object.id)
+    test_utils.DoPost('/.diff/%s' % map_object.id, 'new_json=' + new_json)
 
 
 if __name__ == '__main__':
