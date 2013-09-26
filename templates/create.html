@@ -78,23 +78,23 @@ specific language governing permissions and limitations under the License.
 </div>
 
 <div class="cm-popup" id="create-domain-popup" style="display:none">
-  <h2>Setting up {{user.domain}}</h2>
+  <h2>Setting up {{user.ga_domain}}</h2>
   <div class="cm-section">
     <div class="cm-p">
-      It looks like no one has set up <b>{{user.domain}}</b> in Google
+      It looks like no one has set up <b>{{user.ga_domain}}</b> in Google
       Crisis Map yet. Google Crisis Map organizes maps under <b>domains</b>
       to allow for easy collaboration with your colleagues. You are signed in
-      as <b>{{user.email}}</b>, so your domain is <b>{{user.domain}}</b>;
+      as <b>{{user.email}}</b>, so your domain is <b>{{user.ga_domain}}</b>;
       to create a map, you need to first set up that domain.
     </div>
     <div class="cm-p">
-      You can set up {{user.domain}} now or switch to a different account.
+      You can set up {{user.ga_domain}} now or switch to a different account.
       (Domain setup is not required for gmail.com accounts.)
     </div>
   </div>
   <div class="cm-button-area">
     <input type="submit" class="cm-submit cm-button"
-        value="Set up {{user.domain}}"
+        value="Set up {{user.ga_domain}}"
         onclick="$('create-domain-form').submit()">
     <a href="{{logout_url}}">
       <input type="button" class="cm-button"
@@ -104,14 +104,14 @@ specific language governing permissions and limitations under the License.
 </div>
 
 <div class="cm-popup" id="cannot-create-map-popup" style="display:none">
-  <h2>Not permitted to create maps in {{email_domain}}</h2>
+  <h2>Not permitted to create maps in {{user.email_domain}}</h2>
   <div class="cm-section">
     <div class="cm-p">
       Google Crisis Map organizes maps under <b>domains</b>
       to allow for easy collaboration with your colleagues.
       You are signed in as <b>{{user.email}}</b>,
       but you don't have permission to create maps in the domain
-      <b>{{email_domain}}</b>.
+      <b>{{user.email_domain}}</b>.
     </div>
     <div class="cm-p">
       You can ask any domain administrator to grant you permission,

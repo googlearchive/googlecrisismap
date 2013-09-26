@@ -91,15 +91,15 @@ specific language governing permissions and limitations under the License.
     {% for u in previous_users %}
       <tr class="{% if u.id == user.id %}current {% endif %}user">
         <td class="sign-in"
-            onclick="login(this, '{{u.id}}:{{u.domain|default:""}}:{{u.email}}')">
+            onclick="login(this, '{{u.id}}:{{u.ga_domain|default:""}}:{{u.email}}')">
           <div class="button">
             {% if u.id == user.id %}Signed in{% else %}Sign in{% endif %}
           </div><div class="arrow"></div>
         </td>
         <td><span class="label">id:</span> {{u.id}}</td>
         <td>
-          <span class="label">domain:</span>
-          {{u.domain|default:'<span class="none">none</span>'}}
+          <span class="label">ga_domain:</span>
+          {{u.ga_domain|default:'<span class="none">none</span>'}}
         </td>
         <td><span class="label">email:</span> {{u.email}}</td>
         <td style="width:100%"></td>
@@ -112,13 +112,13 @@ specific language governing permissions and limitations under the License.
   {% for u in new_users %}
     <tr class="user">
       <td class="sign-in"
-          onclick="login(this, '{{u.id}}:{{u.domain|default:""}}:{{u.email}}')">
+          onclick="login(this, '{{u.id}}:{{u.ga_domain|default:""}}:{{u.email}}')">
         <div class="button">Sign in</div><div class="arrow"></div>
       </td>
       <td><span class="label">id:</span> {{u.id}}</td>
       <td>
-        <span class="label">domain:</span>
-        {{u.domain|default:'<span class="none">none</span>'}}
+        <span class="label">ga_domain:</span>
+        {{u.ga_domain|default:'<span class="none">none</span>'}}
       </td>
       <td><span class="label">email:</span> {{u.email}}</td>
       <td style="width:100%"></td>

@@ -28,8 +28,8 @@ specific language governing permissions and limitations under the License.
 
 <body class="cm-body">
   <div class="cm-userbar">
-    {% if user.domain %}
-      {{email_username}}@<b>{{user.domain}}</b>
+    {% if user.ga_domain %}
+      {{user.email_username}}@<b>{{user.ga_domain}}</b>
     {% else %}
       {{user.email}}
     {% endif %}
@@ -72,8 +72,8 @@ specific language governing permissions and limitations under the License.
         {% else %}
           <input type="button" class="cm-create cm-button"
               title="Create a new map" value="Create map"
-              onclick={% if user.domain and not navbar.domain_exists %}
-                        "showPopup($('create-domain-popup')"
+              onclick={% if user.ga_domain and not navbar.domain_exists %}
+                        "showPopup($('create-domain-popup'))"
                       {% else %}
                         {% comment %}
                           This message covers both cases:
@@ -97,13 +97,13 @@ specific language governing permissions and limitations under the License.
           </a></li>
         {% endfor %}
 
-        {% if user.domain and not navbar.domain_exists %}
+        {% if user.ga_domain and not navbar.domain_exists %}
           <li>
             <form id="create-domain-form" method="post"
-                  action="{{root}}/{{user.domain}}/.admin">
+                  action="{{root}}/{{user.ga_domain}}/.admin">
               <input type="hidden" name="form" value="create-domain">
               <a href="#" onclick="this.parentNode.submit()">
-                Create domain {{user.domain}}
+                Create domain {{user.ga_domain}}
               </a>
             </form>
           </li>

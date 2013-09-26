@@ -134,8 +134,7 @@ class PermsTests(test_utils.BaseTest):
 
   def testMapCreatorDomains(self):
     """Verifies that the map_creator_domains setting is respected."""
-    with test_utils.RootLogin():
-      perms.Grant('foo.com', perms.Role.MAP_CREATOR, 'xyz.com')
+    perms.Grant('foo.com', perms.Role.MAP_CREATOR, 'xyz.com')
 
     # All users at foo.com have the CREATOR role for xyz.com.
     with test_utils.DomainLogin('insider', 'foo.com'):
@@ -149,6 +148,11 @@ class PermsTests(test_utils.BaseTest):
       self.assertRaises(
           perms.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
 
+    # All users in gmail.test get MAP_CREATOR.
+    perms.Grant('gmail.test', perms.Role.MAP_CREATOR, 'gmail.test')
+    with test_utils.Login('gmail_user'):
+      self.assertTrue(perms.CheckAccess(perms.Role.MAP_CREATOR, 'gmail.test'))
+
   def testDomainAdminRole(self):
     with test_utils.RootLogin():
       perms.Grant('xyz.com', perms.Role.DOMAIN_ADMIN, 'xyz.com')
@@ -160,7 +164,7 @@ class PermsTests(test_utils.BaseTest):
       self.assertTrue(perms.CheckAccess(perms.Role.DOMAIN_ADMIN, 'xyz.com'))
     with test_utils.Login('stranger'):
       self.assertFalse(perms.CheckAccess(perms.Role.DOMAIN_ADMIN, 'xyz.com'))
-    with test_utils.DomainLogin('domain_stranger', 'not-xyz.com'):
+    with test_utils.DomainLogin('stranger_with_ga_domain', 'not-xyz.com'):
       self.assertFalse(perms.CheckAccess(perms.Role.DOMAIN_ADMIN, 'xyz.com'))
     with test_utils.RootLogin():
       self.assertTrue(perms.CheckAccess(perms.Role.DOMAIN_ADMIN, 'xyz.com'))

@@ -62,9 +62,9 @@ def SetupRequest(path, lang='en'):
 class LoginContext(object):
   """A context manager that sets and restores the user login for testing."""
 
-  def __init__(self, uid, domain, email):
-    self.login_info = uid, domain, email
-    self.user = users.User(id=uid, domain=domain, email=email)
+  def __init__(self, uid, ga_domain, email):
+    self.login_info = uid, ga_domain, email
+    self.user = users.User(id=uid, ga_domain=ga_domain, email=email)
 
   def __enter__(self):
     self.original = users._GetLoginInfo

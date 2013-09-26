@@ -157,6 +157,15 @@ class BaseHandler(webapp2.RequestHandler):
       self.response.out.write(self.RenderTemplate('error.html', {
           'exception': exception
       }))
+    except perms.NotCatalogEntryOwnerError as exception:
+      # TODO(kpy): Either add a template for this type of error, or use an
+      # error representation that can be handled by one common error template.
+      self.response.set_status(403, message=exception.message)
+      self.response.out.write(self.RenderTemplate('error.html', {
+          'exception': utils.Struct(
+              message='That publication label is owned '
+              'by someone else; you can\'t replace or delete it.')
+      }))
     except Error as exception:
       self.response.set_status(exception.status, message=exception.message)
       self.response.out.write(self.RenderTemplate('error.html', {
@@ -175,7 +184,6 @@ class BaseHandler(webapp2.RequestHandler):
           are automatically added to this context:
             - {{root}} is the root_path of the app
             - {{user}} is the signed-in user
-            - {{email_username}} is the part of the user's address before '@'
             - {{login_url}} is a URL to a sign-in page
             - {{logout_url}} is a URL that signs the user out
             - {{navbar}} contains variables used by the navigation sidebar
@@ -184,12 +192,10 @@ class BaseHandler(webapp2.RequestHandler):
     """
     path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
     user = users.GetCurrent()
-    context = dict(context, root=config.Get('root_path') or '',
-                   user=user,
-                   email_username=user and user.email.split('@')[0],
-                   email_domain=user and user.email.split('@')[1],
+    root = config.Get('root_path') or ''
+    context = dict(context, root=root, user=user,
                    login_url=users.GetLoginUrl(self.request.url),
-                   logout_url=users.GetLogoutUrl(self.request.url),
+                   logout_url=users.GetLogoutUrl(root + '/.maps'),
                    navbar=self._GetNavbarContext(user))
     return template.render(path, context)
 
@@ -210,6 +216,6 @@ class BaseHandler(webapp2.RequestHandler):
         'admin_domains': get_domains(perms.Role.DOMAIN_ADMIN),
         'catalog_domains': get_domains(perms.Role.CATALOG_EDITOR),
         'creator_domains': get_domains(perms.Role.MAP_CREATOR),
-        'domain_exists': user.domain and domains.Domain.Get(user.domain),
+        'domain_exists': domains.Domain.Get(user.email_domain),
         'is_admin': perms.CheckAccess(perms.Role.ADMIN)
     } or {}

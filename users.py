@@ -59,7 +59,7 @@ class _UserModel(ndb.Model):
   # See https://developers.google.com/appengine/articles/auth for details.
   # Note that this is not a simple function of the e-mail address -- it can be
   # present or not present for various e-mail addresses with the same domain.
-  domain = ndb.StringProperty(default='')
+  ga_domain = ndb.StringProperty(default='')
 
   # The last known e-mail address for the user.  This can change over time.
   email = ndb.StringProperty(default='')
@@ -89,8 +89,13 @@ class User(utils.Struct):
   """
 
   def __repr__(self):
-    return 'User(id=%r, domain=%r, email=%r)' % (
-        self.id, self.domain, self.email)
+    return 'User(id=%r, ga_domain=%r, email=%r)' % (
+        self.id, self.ga_domain, self.email)
+
+  # This is not an old-style class.  # pylint: disable=property-on-old-class
+  email_username = property(lambda self: self.email.split('@')[0])
+  email_domain = property(lambda self: self.email.split('@')[-1])
+  # pylint: enable=property-on-old-class
 
 
 def _GetModel(uid):
@@ -140,7 +145,7 @@ def _EmailToGaeUserId(email):
 
 
 def _GetLoginInfo():
-  """Gets the effective uid, domain, and e-mail address of the current user.
+  """Gets the effective uid, GA domain, and e-mail address of the current user.
 
   The effective user is normally determined by the Google Account login state.
   Note that uid is an application-local user ID, not the Google Account ID.
@@ -148,7 +153,7 @@ def _GetLoginInfo():
   the crisismap_login cookie can be used to impersonate any login.
 
   Returns:
-    Three strings (uid, domain, email), or ('', '', '') if not signed in.
+    Three strings (uid, ga_domain, email), or ('', '', '') if not signed in.
   """
   # os.environ is safe to read on a multithreaded server, as it's thread-local
   # in the Python 2.7 runtime (see http://goo.gl/VmGRa, http://goo.gl/wwcNN, or
@@ -160,15 +165,15 @@ def _GetLoginInfo():
     cookies = dict(pair.strip().split('=', 1) for pair in header.split(';'))
     login_parts = cookies.get('crisismap_login', '').split(':')
     if len(login_parts) == 3:
-      return tuple(login_parts)  # valid cookie format is "uid:domain:email"
+      return tuple(login_parts)  # valid cookie format is "uid:ga_domain:email"
 
   gae_user = gae_users.get_current_user()  # a google.appengine.api.users.User
   if gae_user and gae_user.user_id():
-    domain, email = os.environ.get('USER_ORGANIZATION', ''), gae_user.email()
+    ga_domain, email = os.environ.get('USER_ORGANIZATION', ''), gae_user.email()
     # If user has signed in before, we have a mapping to an existing UserModel.
     ga = _GoogleAccount.get_by_id(gae_user.user_id())
     if ga:
-      return ga.uid, domain, email
+      return ga.uid, ga_domain, email
     else:
       # This user has never signed in before *and* GetForEmail() has never been
       # called with an e-mail address that was, at the time, associated with
@@ -183,7 +188,7 @@ def _GetLoginInfo():
       # this, we could try _EmailToGaeUserId on all the inactive UserModels.
       uid = model and model.key.id() or _GenerateNextUid()
       _GoogleAccount(id=gae_user.user_id(), uid=uid).put()
-      return uid, domain, email
+      return uid, ga_domain, email
   return '', '', ''
 
 
@@ -199,14 +204,14 @@ def Get(uid):
 
 def GetCurrent():
   """Returns the User object for the effective signed-in user, or None."""
-  uid, domain, email = _GetLoginInfo()
+  uid, ga_domain, email = _GetLoginInfo()
   if uid:
-    # The domain and e-mail address associated with an account can change;
+    # The GA domain and e-mail address associated with an account can change;
     # update or create the UserModel entity as needed.
     model = (_UserModel.get_by_id(uid) or
              _UserModel(id=uid, created=datetime.datetime.utcnow()))
-    if (model.active, model.domain, model.email) != (True, domain, email):
-      model.active, model.domain, model.email = True, domain, email
+    if (model.active, model.ga_domain, model.email) != (True, ga_domain, email):
+      model.active, model.ga_domain, model.email = True, ga_domain, email
       model.put()
     return User.FromModel(model)
 
@@ -242,9 +247,9 @@ def GetForEmail(email):
       uid = email.split('@')[0]  # guaranteed non-numeric
     else:
       uid = _GenerateNextUid()
-    # We have the uid and the e-mail address for this user, but not the domain.
-    # Initially assume no domain; when the user logs in, the domain property
-    # will be updated by GetCurrent().
+    # We have the uid and the e-mail address for this user, but not ga_domain.
+    # Initially assume no ga_domain; when the user logs in, the ga_domain
+    # property will be updated by GetCurrent().
     model = _UserModel(id=uid, email=email, created=datetime.datetime.utcnow())
     model.put()
 

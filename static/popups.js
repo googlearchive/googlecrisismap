@@ -100,11 +100,13 @@ function showPublishPopup(mapid) {
 
 /**
  * Displays the welcome popup if this is the first time this function has
- * been called in the current session within the last hour.
+ * been called in the current session for this uid within the last hour.
+ * @param {string} uid The uid for the current user.
  */
-function showWelcomePopup() {
-  if (!(';' + document.cookie).match(/; *welcome_popup_shown=/)) {
+function showWelcomePopup(uid) {
+  var cookieName = 'welcome_popup_' + uid.replace(/\W/g, '');
+  if (!(';' + document.cookie).match('; *' + cookieName + '=')) {
     showPopup($('welcome-popup'));
   }
-  document.cookie = 'welcome_popup_shown=1; max-age=3600';
+  document.cookie = cookieName + '=shown; max-age=3600';
 }

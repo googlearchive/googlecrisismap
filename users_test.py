@@ -54,7 +54,7 @@ class UsersTest(test_utils.BaseTest):
       user = users.GetCurrent()  # should allocate the first uid, '1'
       self.assertEquals('1', user.id)
       user = users.Get('1')
-      self.assertEquals('alpha.test', user.domain)
+      self.assertEquals('alpha.test', user.ga_domain)
       self.assertEquals('alice@alpha.test', user.email)
 
   def testGetCurrent_GoogleAccountMapping(self):
@@ -73,13 +73,13 @@ class UsersTest(test_utils.BaseTest):
                     USER_ORGANIZATION='alpha.test'):
       users.GetCurrent()  # should allocate the first uid, '1'
       user = users.Get('1')
-      self.assertEquals('alpha.test', user.domain)
+      self.assertEquals('alpha.test', user.ga_domain)
       self.assertEquals('alice@alpha.test', user.email)
     with EnvContext(USER_ID='123456789', USER_EMAIL='bob@beta.test',
                     USER_ORGANIZATION='beta.test'):
       users.GetCurrent()  # should update the existing UserModel
       user = users.Get('1')
-      self.assertEquals('beta.test', user.domain)
+      self.assertEquals('beta.test', user.ga_domain)
       self.assertEquals('bob@beta.test', user.email)
 
   def testGetCurrent_ImpersonationNotAllowed(self):
@@ -90,7 +90,7 @@ class UsersTest(test_utils.BaseTest):
                     HTTP_COOKIE='crisismap_login=t1000:sky.net:arnold@sky.net'):
       user = users.GetCurrent()
       self.assertEquals('1', user.id)  # cookie should be ignored
-      self.assertEquals('alpha.test', user.domain)
+      self.assertEquals('alpha.test', user.ga_domain)
       self.assertEquals('alice@alpha.test', user.email)
 
   def testGetCurrent_ImpersonationInProd(self):
@@ -101,7 +101,7 @@ class UsersTest(test_utils.BaseTest):
                     HTTP_COOKIE='crisismap_login=t1000:sky.net:arnold@sky.net'):
       user = users.GetCurrent()
       self.assertEquals('t1000', user.id)  # cookie should be used
-      self.assertEquals('sky.net', user.domain)
+      self.assertEquals('sky.net', user.ga_domain)
       self.assertEquals('arnold@sky.net', user.email)
 
   def testGetCurrent_ImpersonationInDev(self):
@@ -112,17 +112,17 @@ class UsersTest(test_utils.BaseTest):
                     HTTP_COOKIE='crisismap_login=t1000:sky.net:arnold@sky.net'):
       user = users.GetCurrent()
       self.assertEquals('t1000', user.id)  # cookie should be used
-      self.assertEquals('sky.net', user.domain)
+      self.assertEquals('sky.net', user.ga_domain)
       self.assertEquals('arnold@sky.net', user.email)
 
   def testGetAll(self):
-    users._UserModel(id='test1', domain='xyz.com', email='test1@xyz.com').put()
-    users._UserModel(id='test2', domain='abc.com', email='test2@abc.com').put()
+    users._UserModel(id='one', ga_domain='xyz.com', email='one@xyz.com').put()
+    users._UserModel(id='two', ga_domain='abc.com', email='two@abc.com').put()
     [user1, user2] = sorted(users.GetAll(), key=lambda u: u.id)
-    self.assertEquals(('test1', 'xyz.com', 'test1@xyz.com'),
-                      (user1.id, user1.domain, user1.email))
-    self.assertEquals(('test2', 'abc.com', 'test2@abc.com'),
-                      (user2.id, user2.domain, user2.email))
+    self.assertEquals(('one', 'xyz.com', 'one@xyz.com'),
+                      (user1.id, user1.ga_domain, user1.email))
+    self.assertEquals(('two', 'abc.com', 'two@abc.com'),
+                      (user2.id, user2.ga_domain, user2.email))
 
   def testGetForEmail_NonexistentGoogleAccounts(self):
     self.mox.stubs.Set(users, '_EmailToGaeUserId', {}.get)
@@ -172,13 +172,13 @@ class UsersTest(test_utils.BaseTest):
     self.assertEquals('1', users.GetForEmail('Funky.Speller@gmail.com').id)
 
   def testSetWelcomeMessageDismissed(self):
-    users._UserModel(id='1', domain='xyz.com', email='1@xyz.com').put()
+    users._UserModel(id='1', ga_domain='xyz.com', email='1@xyz.com').put()
     self.assertEquals(False, users.Get('1').welcome_message_dismissed)
     users.SetWelcomeMessageDismissed('1', True)
     self.assertEquals(True, users.Get('1').welcome_message_dismissed)
 
   def testSetMarketingConsent(self):
-    users._UserModel(id='1', domain='xyz.com', email='1@xyz.com').put()
+    users._UserModel(id='1', ga_domain='xyz.com', email='1@xyz.com').put()
     self.assertEquals(False, users.Get('1').marketing_consent_answered)
     self.assertEquals(False, users.Get('1').marketing_consent)
     users.SetMarketingConsent('1', False)

@@ -128,11 +128,8 @@ def _Query(subject, role, target):
 
 
 def _QueryForUser(user, role, target):
-  """Gets all _Permissions for the user's ID and (if present) GA domain."""
-  perms = _Query(user.id, role, target)
-  if user.domain:
-    perms += _Query(user.domain, role, target)
-  return perms
+  """Gets all _Permissions for the user's ID and e-mail domain."""
+  return _Query(user.id, role, target) + _Query(user.email_domain, role, target)
 
 
 def _Exists(subject, role, target):
@@ -142,7 +139,8 @@ def _Exists(subject, role, target):
 
 def _ExistsForUser(user, role, target):
   """Returns True if a _Permission exists for the user's ID or GA domain."""
-  return _Exists(user.id, role, target) or _Exists(user.domain, role, target)
+  return (_Exists(user.id, role, target) or
+          _Exists(user.email_domain, role, target))
 
 
 def Grant(subject, role, target):
@@ -241,7 +239,7 @@ class AccessPolicy(object):
       return True
     if not user:
       return False
-    domain_role = (user.domain and user.domain in map_object.domains and
+    domain_role = (user.email_domain in map_object.domains and
                    map_object.domain_role) or None
 
     # Map permissions exist in a hierarchy - editors can always view;
