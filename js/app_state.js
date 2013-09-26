@@ -52,6 +52,18 @@ cm.AppState = function(opt_language) {
   this.set('enabled_layer_ids', new goog.structs.Set());
 
   /**
+   * The query in the filter.
+   * type string
+   */
+  this.set('filter_query', '');
+
+  /**
+   * The set of layers currently matched by a layer filter query.
+   * type Array.<string>
+   */
+  this.set('matched_layer_ids', []);
+
+  /**
    * The dictionary to keep opacity values of layers.  Indexed by layer ID.  The
    * values in the dictionary are integers from 0 to 100.  All layers that
    * don't appear in the dictionary are assumed to have opacity 100.
@@ -84,6 +96,8 @@ cm.AppState.fromAppState = function(appState) {
       /** @type {string} */ (appState.get('language')));
   newAppState.set('enabled_layer_ids',
       appState.get('enabled_layer_ids').clone());
+  newAppState.set('matched_layer_ids', goog.array.clone(
+      /** @type {Array.<string>} */ (appState.get('matched_layer_ids'))));
   newAppState.set('layer_opacities', goog.object.clone(
       /** @type {Object} */ (appState.get('layer_opacities'))));
   newAppState.set('viewport', appState.get('viewport'));
@@ -112,6 +126,46 @@ cm.AppState.prototype.setLayerEnabled = function(id, newValue) {
     newValue ? layerIds.add(id) : layerIds.remove(id);
     this.notify('enabled_layer_ids');
   }
+};
+
+/**
+ * Get the current filter query.
+ * @return {string} The filter query.
+ */
+cm.AppState.prototype.getFilterQuery = function() {
+  return /** @type string */ (this.get('filter_query'));
+};
+
+/**
+ * Set the current filter query.
+ * @param {string} query The query.
+ */
+cm.AppState.prototype.setFilterQuery = function(query) {
+  this.set('filter_query', query);
+};
+
+/**
+ * Returns whether a layer is matched by the current filter query.
+ * @param {string} id A layer ID.
+ * @return {boolean} True if matches the current query.
+ */
+cm.AppState.prototype.getLayerMatched = function(id) {
+  return goog.array.contains(/** @type Array.<string> */
+    (this.get('matched_layer_ids')), id);
+};
+
+/**
+ * Resets the set of layers matching the current filter query.
+ * This function should only be called as a handler for FILTER_MATCHES_CHANGED,
+ * in order to maintain consistency with the filter_query property.
+ * TODO(romano): Consider moving 'matched_layer_ids' from the app state into
+ * a function of the map model that computes this set from a given query.
+ * The map model will also cache the matched IDs as long as the model remains
+ * unchanged.
+ * @param {Array.<string>} ids The layer IDs.
+ */
+cm.AppState.prototype.setMatchedLayers = function(ids) {
+  this.set('matched_layer_ids', ids);
 };
 
 /**
@@ -258,6 +312,10 @@ cm.AppState.prototype.getUri = function() {
   uri.setParameterValue('llbox', viewport.round(4).toString());
   uri.setParameterValue('t', this.get('map_type'));
   uri.setParameterValue('layers', this.getLayersParameter_());
+  // Add the layer filter query, if there is one.
+  if (this.get('filter_query')) {
+    uri.setParameterValue('q', this.get('filter_query'));
+  }
   return uri;
 };
 
@@ -300,6 +358,7 @@ cm.AppState.prototype.setFromUri = function(uri) {
     this.set('enabled_layer_ids', enabledLayerIds);
     this.set('layer_opacities', opacities);
   }
+  this.set('filter_query', uri.getParameterValue('q') || '');
 };
 
 /**

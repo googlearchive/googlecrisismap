@@ -24,6 +24,7 @@ goog.require('cm.MapModel');
 goog.require('cm.MetadataModel');
 goog.require('cm.css');
 goog.require('cm.events');
+goog.require('cm.layerFilter');
 goog.require('cm.ui');
 goog.require('cm.util');
 goog.require('goog.array');
@@ -34,6 +35,15 @@ goog.require('goog.style');
 
 /** @const @type string */
 var EMPTY_PNG = '//maps.gstatic.com/mapfiles/transparent.png';
+
+/**
+ * @const @type number
+ * The layer filter input element is shown if there are at least
+ * LAYER_FILTER_VISIBILITY_THRESHOLD layers in the map model.
+ * NOTE(user): The number was somewhat arbitrarily chosen;
+ * it may be changed as necessary.
+ */
+var LAYER_FILTER_VISIBILITY_THRESHOLD = 8;
 
 /**
  * Panel view, containing the map information and layers list.
@@ -142,6 +152,20 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
   this.scrollTop_;
 
   /**
+   * @type Element
+   * @private
+   */
+  this.layerFilterBox_;
+
+  /**
+   * Shows how many layers match the current layer filter query, if there
+   * is a query.
+   * @type Element
+   * @private
+   */
+  this.matchingLayersMessage_;
+
+  /**
    * @type !Object
    * @private
    */
@@ -192,6 +216,12 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
                       cm.ui.createLink(cm.MSG_SET_DEFAULT_VIEW_LINK) : null,
                   setDefaultViewLink && cm.ui.create('br'),
                   resetLink = cm.ui.createLink(cm.MSG_RESET_VIEW_LINK)),
+              this.layerFilterBox_ = cm.ui.create('input',
+                {'type': 'text',
+                 'class': cm.css.LAYER_FILTER,
+                 'placeholder': cm.MSG_LAYER_FILTER_PLACEHOLDER}),
+              this.matchingLayersMessage_ = cm.ui.create('span',
+                {'class': cm.css.LAYER_FILTER_INFO}),
               this.panelLayers_ = cm.ui.create('div',
                   {'class': cm.css.PANEL_LAYERS})
           )));
@@ -213,6 +243,28 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
       cm.events.emit(me.panelInner_, goog.events.EventType.RESIZE);
     });
   }
+  // Enable the layer filter.
+  cm.events.listen(this.layerFilterBox_,
+    ['change', 'input', 'cut', 'paste', 'keyup'], function() {
+    cm.events.emit(this, cm.events.FILTER_QUERY_CHANGED,
+      {'query': this.layerFilterBox_.value});
+    this.filterLayers_();
+  }, this);
+  // Set up a one-time listener because the app state filter_query is set from
+  // the URL after the panel view is constructed.
+  var filterToken = cm.events.onChange(this.appState_, 'filter_query',
+    function() {
+      cm.events.unlisten(filterToken);
+      this.layerFilterBox_.value = this.appState_.getFilterQuery();
+      this.filterLayers_();
+  }, this);
+  // Show or hide the layer filter as appropriate.
+  this.updateLayerFilterVisibility_();
+  // TODO(romano): There should be UX decison made about how the editor and
+  // layer filter interact, since this listener could result in a layer
+  // disappearing after being edited.
+  cm.events.listen(goog.global, cm.events.MODEL_CHANGED, this.filterLayers_,
+                   this);
 
   // Populate the title and description and listen for changes.
   this.updateTitle_();
@@ -249,6 +301,8 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
   cm.events.listen(layers, 'remove_at', function(i, layer) {
     this.removeLayer_(layer);
   }, this);
+  cm.events.listen(layers, ['insert_at', 'remove_at'],
+    this.updateLayerFilterVisibility_, this);
 
   // Create a close button in the panel container that hides the layers panel.
   cm.ui.createCloseButton(parentElem, function() {
@@ -317,8 +371,6 @@ cm.PanelView.prototype.updateTitle_ = function() {
   var title = /** @type string */(this.model_.get('title'));
   cm.ui.setText(this.titleElem_, title);
   cm.ui.document.title = title;
-  // var documentTitleElem = goog.dom.getElementsByTagNameAndClass('title')[0];
-  // goog.dom.setTextContent(documentTitleElem, title);
   cm.events.emit(this.panelInner_, goog.events.EventType.RESIZE);
 };
 
@@ -334,6 +386,35 @@ cm.PanelView.prototype.updateDescription_ = function() {
   // just fine.  Block tags in layer descriptions are harmless, though.
   // Requires further investigation.
   cm.events.emit(this.panelInner_, goog.events.EventType.RESIZE);
+};
+
+/**
+ * Runs a filter query and updates the matched layers in the appState.
+ * @private
+ */
+cm.PanelView.prototype.filterLayers_ = function() {
+  // Retrieve the query from the AppState in case it was set by the q= URL
+  // parameter.
+  var query = this.appState_.getFilterQuery();
+  var matches = cm.layerFilter.matchAllLayers(this.model_, query);
+  // Hide the message about total matching layers if there isn't a query.
+  goog.dom.classes.enable(this.matchingLayersMessage_, cm.css.HIDDEN, !query);
+  if (query) {
+    cm.ui.setText(this.matchingLayersMessage_,
+      (new goog.i18n.MessageFormat(cm.MSG_NUMBER_MATCHING_LAYERS)).format(
+        {'NUM_LAYERS': matches.length}));
+  }
+  cm.events.emit(this, cm.events.FILTER_MATCHES_CHANGED, {matches: matches});
+};
+
+/**
+ * Shows or hides the layer filter depending on the number of layers in the map.
+ * @private
+ */
+cm.PanelView.prototype.updateLayerFilterVisibility_ = function() {
+  var hide = this.model_.getAllLayerIds().length <
+    LAYER_FILTER_VISIBILITY_THRESHOLD;
+  goog.dom.classes.enable(this.layerFilterBox_, cm.css.HIDDEN, hide);
 };
 
 /**
@@ -404,3 +485,4 @@ cm.PanelView.prototype.removeLayer_ = function(layer) {
 cm.PanelView.prototype.getBounds = function() {
   return goog.style.getBounds(this.parentElem_);
 };
+

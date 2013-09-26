@@ -238,6 +238,15 @@ cm.getMsgLastUpdatedTime = function(formattedTime) {
   return MSG_LAST_UPDATED;  // Closure forces this silly circumlocution
 };
 
+/**
+ * @desc Information text that shows how many descendants of a layer match
+ * a layer filter query.
+ */
+cm.MSG_NUMBER_MATCHING_SUBLAYERS = goog.getMsg('{NUM_LAYERS, plural, ' +
+  '=0 {No matching layers in this folder}' +
+  '=1 {1 matching layer in this folder}' +
+  'other {# matching layers in this folder}}');
+
 
 // Legend editor
 
@@ -287,6 +296,21 @@ cm.MSG_DRAFT_TOOLTIP = goog.getMsg(
 
 /** @desc Label for a link that resets the map to its default view. */
 cm.MSG_RESET_VIEW_LINK = goog.getMsg('Reset to default view');
+
+/**
+ * @desc Placeholder text for an input for entering a layer filter query.
+ * The message describes what the input element does.
+ */
+cm.MSG_LAYER_FILTER_PLACEHOLDER = goog.getMsg('Filter layers');
+
+/**
+ * @desc Information text that shows how many layers are matched by the
+ * layer filter query.
+ */
+cm.MSG_NUMBER_MATCHING_LAYERS = goog.getMsg('{NUM_LAYERS, plural, ' +
+  '=0 {No layers or folders match the filter query}' +
+  '=1 {1 layer or folder matches the filter query}' +
+  'other {# layers and folders match the filter query}}');
 
 
 // Share popup

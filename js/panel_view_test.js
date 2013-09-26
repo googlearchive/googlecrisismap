@@ -21,6 +21,8 @@ function PanelViewTest() {
   this.mapModel_.set('layers', new google.maps.MVCArray());
   this.mapModel_.set('description',
       cm.Html.fromSanitizedHtml('A giant green monster attacked!'));
+  this.mapModel_.getLayerIds = function() { return []; };
+  this.mapModel_.getAllLayerIds = function() { return []; };
   this.metadataModel_ = new google.maps.MVCObject();
   this.appState_ = new cm.AppState();
   this.config_ = {'enable_editing': false};
@@ -121,6 +123,7 @@ PanelViewTest.prototype.testLayerEventsForwarded = function() {
   cm.events.listen(goog.global, cm.events.DELETE_LAYER, function() {
     layerDeleted = true;
   });
+
   cm.events.emit(layerEntry, cm.events.TOGGLE_LAYER);
   expectTrue(layerToggled);
   cm.events.emit(layerEntry, cm.events.ZOOM_TO_LAYER);
@@ -241,6 +244,35 @@ PanelViewTest.prototype.testUpdateTitle = function() {
   this.panelView_.model_.set('title', 'New Title');
   expectDescendantOf(parent, 'h1', withText('New Title'));
   expectEq('New Title', cm.ui.document.title);
+};
+
+/** Tests filterLayers_. */
+PanelViewTest.prototype.testFilterLayers = function() {
+  var parent = this.createView_();
+  var query = 'some query';
+  var newQuery = 'something else';
+  var layerFilterInput = findDescendantOf(parent,
+    withClass(cm.css.LAYER_FILTER));
+  // Test two-way binding: when appState changes, input box value changes.
+  this.appState_.setFilterQuery(query);
+  expectEq(query, layerFilterInput.value);
+
+  // But only activates once since in practice, this should only happen on
+  // page load.
+  this.appState_.setFilterQuery(newQuery);
+  expectEq(query, layerFilterInput.value);
+
+  // Test that when the input box changes, the app state changes.
+  // However, since the Presenter acts as a proxy for the
+  // FILTER_QUERY_CHANGED event, we test that that event is fired on the
+  // panel view and trust the presenter to update the app state.
+  layerFilterInput.value = query;
+  cm.events.listen(this.panelView_, cm.events.FILTER_QUERY_CHANGED,
+    function(event) {
+      newQuery = event.query;
+  });
+  cm.events.emit(layerFilterInput, 'input');
+  expectEq(newQuery, query);
 };
 
 /**

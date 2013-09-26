@@ -21,6 +21,8 @@ registerTestSuite(AppStateTest);
 /** Test the AppState constructor. */
 AppStateTest.prototype.testConstruction = function() {
   expectEq(0, this.appState_.get('enabled_layer_ids').getCount());
+  expectEq('', this.appState_.get('filter_query'));
+  expectEq([], this.appState_.get('matched_layer_ids'));
   expectEq(this.viewport_, this.appState_.get('viewport'));
   expectEq(cm.MapModel.Type.ROADMAP, this.appState_.get('map_type'));
 };
@@ -29,6 +31,7 @@ AppStateTest.prototype.testConstruction = function() {
 AppStateTest.prototype.testFromAppState = function() {
   this.appState_.set('language', 'es');
   this.appState_.get('enabled_layer_ids').add('x');
+  this.appState_.get('matched_layer_ids').push('y');
   this.appState_.set('layer_opacities', {a: 50});
   this.appState_.set('viewport', new cm.LatLonBox(10, -10, 20, -20));
   this.appState_.set('map_type', cm.MapModel.Type.SATELLITE);
@@ -38,6 +41,10 @@ AppStateTest.prototype.testFromAppState = function() {
   expectEq(this.appState_.get('language'), newAppState.get('language'));
   expectEq(this.appState_.get('enabled_layer_ids'),
            newAppState.get('enabled_layer_ids'));
+  expectEq(this.appState_.get('filter_query'),
+           newAppState.get('filter_query'));
+  expectEq(this.appState_.get('matched_layer_ids'),
+           newAppState.get('matched_layer_ids'));
   expectEq(this.appState_.get('layer_opacities'),
            newAppState.get('layer_opacities'));
   expectEq(this.appState_.get('viewport'),
@@ -45,7 +52,7 @@ AppStateTest.prototype.testFromAppState = function() {
   expectEq(this.appState_.get('map_type'), newAppState.get('map_type'));
 
   // Check that object references are not the same.
-  var keys = ['enabled_layer_ids', 'layer_opacities'];
+  var keys = ['enabled_layer_ids', 'matched_layer_ids', 'layer_opacities'];
   goog.array.forEach(keys, function(key) {
     expectTrue(newAppState.get(key) !== this.appState_.get(key));
   }, this);
@@ -311,6 +318,18 @@ AppStateTest.prototype.testSetFromUriLayers = function() {
   var opacities = this.appState_.get('layer_opacities');
   expectEq(1, opacities['c']);
   expectEq(66, opacities['d']);
+};
+
+/**
+ * Verifies that the AppState layer filter query is set according
+ * to the 'q' param.
+ */
+AppStateTest.prototype.testSetFromUriFilterQuery = function() {
+  var uri = new goog.Uri('');
+  uri.setParameterValue('q', 'awesome');
+
+  this.appState_.setFromUri(uri);
+  expectEq(this.appState_.get('filter_query'), 'awesome');
 };
 
 /** Test that the setFromMapModel() method works correctly. */

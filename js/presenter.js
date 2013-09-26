@@ -97,6 +97,17 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
   cm.events.listen(goog.global, cm.events.GO_TO_MY_LOCATION, function(event) {
     this.zoomToUserLocation(DEFAULT_MY_LOCATION_ZOOM_LEVEL);
   }, this);
+
+  cm.events.listen(panelView, cm.events.FILTER_QUERY_CHANGED, function(event) {
+    // TODO(user): Figure out when to log an analytics event
+    // (after a delay, on a backspace press, etc) so we don't
+    // get an analytics log per keypress.
+    appState.setFilterQuery(event.query);
+  });
+  cm.events.listen(panelView, cm.events.FILTER_MATCHES_CHANGED,
+    function(event) {
+      appState.setMatchedLayers(event.matches);
+  });
 };
 
 

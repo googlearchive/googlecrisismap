@@ -47,3 +47,16 @@ PresenterTest.prototype.zoomToUserLocation = function() {
   expectCall(this.mapView_.set)('center', new google.maps.LatLng(40, -75));
   this.presenter_.zoomToUserLocation(12);
 };
+
+/**
+ * Tests that when the layer filter query changes, that change is reflected
+ * in the app state.
+ */
+PresenterTest.prototype.filterQueryChanged = function() {
+  var query = 'a query';
+  this.appState_.setFilterQuery('');
+  expectEq('', this.appState_.getFilterQuery());
+  cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED,
+    {query: query});
+  expectEq(query, this.appState_.getFilterQuery());
+};

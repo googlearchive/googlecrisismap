@@ -210,6 +210,12 @@ cm.events.RESET_VIEW = 'RESET_VIEW';
 /** The user pressed the my location button. */
 cm.events.GO_TO_MY_LOCATION = 'GO_TO_MY_LOCATION';
 
+/** The user changed the query for filtering layers. */
+cm.events.FILTER_QUERY_CHANGED = 'FILTER_QUERY_CHANGED';
+
+/** The set of layers matched by layer filtering changed. */
+cm.events.FILTER_MATCHES_CHANGED = 'FILTER_MATCHES_CHANGED';
+
 // NOTE(kpy): Everything below this line is not specific to Crisis Map.
 // -------------------------------------------------------------------------
 

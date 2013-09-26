@@ -15,6 +15,38 @@ html, body {
   margin: 0;
   padding: 0;
 }
+/* MOE:begin_strip (Kennedy is internal) */
+/* Standard Google input boxes, from the Kennedy spec.
+   kd_compontents.css, go/kennedyspec. */
+/* MOE:end_strip */
+input[type=text] {
+  height: 29px;
+  background-color: #FFF;
+  /* line-height: 27px; */
+  padding-left: 8px;
+  color: #333;
+  border: 1px solid #d9d9d9;
+  border-top: 1px solid #c0c0c0;
+  display: inline-block;
+  vertical-align: top;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  -webkit-border-radius: 1px;
+}
+input[type=text]:hover {
+  border: 1px solid #b9b9b9;
+  border-top: 1px solid #a0a0a0;
+  -webkit-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
+  -moz-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
+  box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
+}
+input[type=text]:focus {
+  -webkit-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
+  -moz-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
+  box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
+  outline: none;
+  border: 1px solid #4d90fe;
+}
 .cm-body, .cm-frame, .cm-frame input, .cm-frame button,
 .cm-popup, .cm-popup input, .cm-about {
   font-size: 13px;
@@ -390,6 +422,20 @@ html, body {
 }
 .cm-panel input[type=checkbox] {
   margin-bottom: -2px;
+}
+.cm-layer-filter-info {
+  display: block;
+  font-size: 11px;
+  color: #999;
+}
+.cm-layer-filter {
+  margin: 10px 0;
+}
+/* We need [type=] to be more specific than the input declaration above */
+.cm-layer-filter[type=text]:hover, .cm-layer-filter[type=text]:focus {
+  box-shadow: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
 }
 
 /* Map */

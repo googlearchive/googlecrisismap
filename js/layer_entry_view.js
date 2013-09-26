@@ -28,6 +28,7 @@ goog.require('goog.date.relative');
 goog.require('goog.dom.classes');
 goog.require('goog.format');
 goog.require('goog.i18n.DateTimeFormat');
+goog.require('goog.i18n.MessageFormat');
 goog.require('goog.ui.Slider');
 
 /**
@@ -185,6 +186,14 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   this.warningElem_;
 
   /**
+   * Displays the message 'N matching sublayers' when layer filtering
+   * matches N descendants of a collapsed folder.
+   * @type Element
+   * @private
+   */
+  this.matchingSublayersMessage_;
+
+  /**
    * The opacity slider, or null if this is not a TILES layer.
    * @type {?goog.ui.Slider}
    * @private
@@ -272,7 +281,9 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
               {'class': cm.css.LAYER_DESCRIPTION}),
           this.timeElem_ = cm.ui.create('div', {'class': cm.css.TIMESTAMP})
       ),
-      this.sublayersElem_ = cm.ui.create('div', {'class': cm.css.SUBLAYERS})
+      this.sublayersElem_ = cm.ui.create('div', {'class': cm.css.SUBLAYERS}),
+      this.matchingSublayersMessage_ = cm.ui.create('span',
+          {'class': cm.css.LAYER_FILTER_INFO})
   );
   if (opt_index !== undefined && opt_index < parentElem.childNodes.length) {
     parentElem.insertBefore(this.entryElem_, parentElem.childNodes[opt_index]);
@@ -313,6 +324,10 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   cm.events.onChange(model, 'type', this.updateSliderVisibility_, this);
 
   cm.events.onChange(appState, 'enabled_layer_ids', this.updateEnabled_, this);
+  cm.events.onChange(appState, 'matched_layer_ids',
+                     this.updateFiltered_, this);
+  cm.events.onChange(appState, ['matched_layer_ids', 'enabled_layer_ids'],
+                     this.updateMatchingSublayersMessage_, this);
 
   // When the source address changes, update which metadata entry we listen to.
   cm.events.onChange(model, ['type', 'url'],
@@ -396,6 +411,23 @@ cm.LayerEntryView.prototype.getEntryElement = function() {
   return this.entryElem_;
 };
 
+/**
+ * Accessor for whether this layer's model is a folder.
+ * @return {boolean} True if it is a folder.
+ */
+cm.LayerEntryView.prototype.isFolder = function() {
+  return this.model_.get('type') === cm.LayerModel.Type.FOLDER;
+};
+
+/**
+ * Accessor for whether this layer's model is enabled.
+ * @return {boolean} True if it is enabled.
+ */
+cm.LayerEntryView.prototype.isEnabled = function() {
+  var id = /** @type string */(this.model_.get('id'));
+  return this.appState_.getLayerEnabled(id);
+};
+
 /** @private Updates the panel entry to match the model. */
 cm.LayerEntryView.prototype.updateTitle_ = function() {
   // We don't want any HTML code to be rendered other than word break related
@@ -432,10 +464,9 @@ cm.LayerEntryView.prototype.updateWarning_ = function() {
 
 /** @private Updates the panel entry to match the model. */
 cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
-  var isFolder = this.model_.get('type') === cm.LayerModel.Type.FOLDER;
   var tip = '';
   cm.ui.clear(this.downloadElem_);
-  if (!isFolder) {
+  if (!this.isFolder()) {
     var type = /** @type cm.LayerModel.Type */(this.model_.get('type'));
     var hideLink = this.metadataModel_.fetchErrorOccurred(this.model_) ||
         this.model_.get('suppress_download_link');
@@ -605,11 +636,10 @@ if (this.model_.isSingleSelect()) {
 cm.LayerEntryView.prototype.updateFolderDecorator_ = function() {
   // Show folder decorations except when the folder is locked and
   // editing is disabled.
-  var folder = (this.model_.get('type') === cm.LayerModel.Type.FOLDER);
   var locked = (this.model_.get('folder_type') ===
       cm.LayerModel.FolderType.LOCKED);
   goog.dom.classes.enable(this.folderDecorator_, cm.css.HIDDEN,
-      !folder || (locked && !this.config_['enable_editing']));
+      !this.isFolder() || (locked && !this.config_['enable_editing']));
 };
 
 /**
@@ -623,8 +653,7 @@ cm.LayerEntryView.prototype.updateFolderDecorator_ = function() {
  * @suppress {visibility}
  */
 cm.LayerEntryView.prototype.updateEnabled_ = function() {
-  var id = /** @type string */(this.model_.get('id'));
-  var enabled = this.appState_.getLayerEnabled(id);
+  var enabled = this.isEnabled();
   this.checkboxElem_.checked = enabled;
   var selectedId = this.model_.isSingleSelect() &&
       this.appState_.getFirstEnabledSublayerId(this.model_) || null;
@@ -674,7 +703,84 @@ cm.LayerEntryView.prototype.updateEnabled_ = function() {
     this.slider_.handleRangeModelChange(null);  // force UI update
   }
 
+
   this.updateSingleSelect_();
+};
+
+/**
+ * Handler for hiding and showing the view depending on whether the view's
+ * layer is filtered by the filter query. A layer entry will be hidden if
+ * and only if it doesn't match the filter query, has no parent that matches
+ * the filter query, and has no descendant that matches the filter query.
+ * @private
+ */
+cm.LayerEntryView.prototype.updateFiltered_ = function() {
+  // Unfiltered here means that the layer is not filtered out by the query.
+  var unfiltered = this.appState_.getLayerMatched(
+    /** @type string */ (this.model_.get('id')));
+  // If the layer is not matched, check its ancestors. The layer is still shown
+  // if any ancestor layer is matched.
+  var parentLayer = this.model_.get('parent');
+  while (!unfiltered && parentLayer) {
+    unfiltered = this.appState_.getLayerMatched(
+      /** @type string */ (parentLayer.get('id')));
+    parentLayer = parentLayer.get('parent');
+  }
+  // The layer is also shown if any of its descendants are matched.
+  if (!unfiltered && this.isFolder()) {
+    cm.util.forLayerAndDescendants(this.model_, function(sublayer) {
+      if (sublayer.get('id') !== this.model_.get('id')) {
+        unfiltered = unfiltered || this.appState_.getLayerMatched(
+          /** @type string */ (sublayer.get('id')));
+      }
+    }, null, this);
+  }
+  // Hide the element if it's filtered.
+  goog.dom.classes.enable(this.getEntryElement(), cm.css.HIDDEN, !unfiltered);
+};
+
+/**
+ * Handler for updating this layer's matching sublayers message according to
+ * the current layer filter query.
+ * If this view's layer is not a folder, this function does nothing.
+ * @private
+ */
+cm.LayerEntryView.prototype.updateMatchingSublayersMessage_ = function() {
+  // Only applies to folders.
+  if (!this.isFolder()) {
+    return;
+  }
+  // Hide the matching sublayers message if this layer is enabled.
+  goog.dom.classes.enable(this.matchingSublayersMessage_,
+    cm.css.HIDDEN, this.isEnabled());
+  var query = this.appState_.getFilterQuery();
+  // If this is a folder and there's a query, check for matching sublayers
+  // and update matchingSublayersMessage_. The message will only be shown
+  // if there is a matching sublayer and this layer is collapsed.
+  // First, reset the content of the matched sublayers message: if there's no
+  // query, we don't want a message.
+  cm.ui.setText(this.matchingSublayersMessage_, '');
+  if (!this.isEnabled() && query) {
+    var matchedSublayers = 0;
+    cm.util.forLayerAndDescendants(this.model_, function(layer) {
+      // Count up the matched descendants.
+      // TODO(romano): This treats single-select folders like regular,
+      // unlocked folders. The decision of whether to count a single-select
+      // folder's matching descendants should depend on the state of the select
+      // menu (i.e. examine only the selected sublayer), so a listener should
+      // be added to observe changes to that selection.
+      var layerId = /** @type string */(layer.get('id'));
+      if (layerId !== this.model_.get('id') &&
+          this.appState_.getLayerMatched(layerId)) {
+         matchedSublayers++;
+      }
+    }, null, this);
+    if (matchedSublayers) {
+      cm.ui.setText(this.matchingSublayersMessage_,
+      (new goog.i18n.MessageFormat(cm.MSG_NUMBER_MATCHING_SUBLAYERS)).format(
+        {'NUM_LAYERS': matchedSublayers}));
+    }
+  }
 };
 
 /**

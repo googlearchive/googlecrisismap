@@ -17,8 +17,7 @@ function LayerEntryViewTest() {
 
   // The LayerModel is just a simple MVCObject, so it's much simpler to test it
   // as an MVCObject than to create a mock instance.
-  this.layerModel_ = new google.maps.MVCObject();
-  this.layerModel_.set('id', 'layer0');
+  this.layerModel_ = this.createFakeLayer_('layer0');
   this.layerModel_.set('title', 'monsters');
   this.layerModel_.set(
       'description', cm.Html.fromSanitizedHtml('lots of monsters'));
@@ -27,10 +26,6 @@ function LayerEntryViewTest() {
           'red - evil monsters<br/>' +
           'dark red - eviler monsters'));
   this.layerModel_.set('type', cm.LayerModel.Type.FUSION);
-  this.layerModel_.set('sublayers', new google.maps.MVCArray());
-  this.layerModel_.getSublayerIds = function() { return []; };
-  this.layerModel_.isSingleSelect = function() { return false; };
-  this.layerModel_.getSourceAddress = function() { return 'XYZ:xyz'; };
 
   this.metadataModel_ = new cm.MetadataModel();
 
@@ -72,6 +67,29 @@ LayerEntryViewTest.prototype.createView_ = function(
                                      this.metadataModel_, this.appState_,
                                      opt_config, index);
   return parent;
+};
+
+/**
+ * Creates a fake folder with an empty sublayer list.
+ * @param {string} id The ID.
+ * @param {boolean=} opt_folder Pass true if this layer should be a folder.
+ * @param {string=} opt_source The return value for getSourceAddress.
+ * @param {string=} opt_singleSelect The return value for isSingleSelect.
+ * @return {google.maps.MVCArray} The new layer.
+ * @private
+ */
+LayerEntryViewTest.prototype.createFakeLayer_ = function(id, opt_folder,
+  opt_source, opt_singleSelect) {
+    layer = new google.maps.MVCObject();
+    layer.set('id', id);
+    if (opt_folder) {
+      layer.set('type', cm.LayerModel.Type.FOLDER);
+    }
+    layer.set('sublayers', new google.maps.MVCArray());
+    layer.isSingleSelect = function() { return (opt_singleSelect || false); };
+    layer.getSourceAddress = function() { return (opt_source || 'XYZ:xyz'); };
+    layer.getSublayerIds = function() { return [] };
+    return layer;
 };
 
 /**
@@ -217,8 +235,8 @@ LayerEntryViewTest.prototype.updateTitleWithWordBreaks = function() {
   var parent = this.createView_();
   var longTitle = '<b>thisisaverylooooooooooooooooooongone</b>';
   this.layerModel_.set('title', longTitle);
-  var wordBrokenTitle = '&lt;b&gt;thisisa<wbr>verylooooo<wbr>oooooooooo<wbr>' +
-                        'oooongone&lt;<wbr>/b&gt;';
+  var wordBrokenTitle = '&lt;b&gt;thisisa<wbr>verylooooo<wbr>' +
+                        'oooooooooo<wbr>oooongone&lt;<wbr>/b&gt;';
   expectDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
       withInnerHtml(wordBrokenTitle));
   expectNoDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
@@ -494,6 +512,12 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
   var parent = this.createView_();
   var checkbox = expectDescendantOf(parent, inputType('checkbox'));
   expectFalse(checkbox.checked);  // layer is initially toggled off
+  // Defaults for queries made by layer filtering when enabled layers
+  // are changed.
+  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
+    returnWith(true));
+  expectCall(this.appState_.getFilterQuery)().willRepeatedly(
+    returnWith(''));
 
   // Enable the layer.
   expectCall(this.appState_.getLayerEnabled)('layer0')
@@ -525,14 +549,9 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
 LayerEntryViewTest.prototype.createSingleSelect_ = function(sublayerIds) {
   var children = [];
   goog.array.forEach(sublayerIds, function(id) {
-    var childModel = new google.maps.MVCObject;
-    childModel.set('id', id);
-    childModel.set('sublayers', new google.maps.MVCArray());
-    childModel.isSingleSelect = function() { return false; };
-    childModel.getSublayerIds = function() { return []; };
-    childModel.getSourceAddress = function() { return 'ABC:abc'; };
+    var childModel = this.createFakeLayer_(id, true, 'ABC:abc', false);
     children.push(childModel);
-  });
+  }, this);
 
   this.layerModel_.set('sublayers', new google.maps.MVCArray(children));
   this.layerModel_.isSingleSelect = function() { return true; };
@@ -549,6 +568,12 @@ LayerEntryViewTest.prototype.createSingleSelect_ = function(sublayerIds) {
  */
 LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
   var children = this.createSingleSelect_(['child1', 'child2'], 0);
+  // Defaults for queries made by layer filtering when enabled layers
+  // are changed.
+  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
+    returnWith(true));
+  expectCall(this.appState_.getFilterQuery)().willRepeatedly(
+    returnWith(''));
 
   // Initialize the single-select menu with a single enabled child.
   expectCall(this.appState_.getLayerEnabled)('child1')
@@ -598,6 +623,12 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
 /** Tests displaying layer details of single-select folders in the editor. */
 LayerEntryViewTest.prototype.updateEnabledSingleSelectInEditor = function() {
   var children = this.createSingleSelect_(['child1', 'child2'], 0);
+  // Defaults for queries made by layer filtering when enabled layers
+  // are changed.
+  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
+    returnWith(true));
+  expectCall(this.appState_.getFilterQuery)().willRepeatedly(
+    returnWith(''));
 
   // Initialize the single-select menu with a single enabled child.
   expectCall(this.appState_.getLayerEnabled)('child1')
@@ -643,6 +674,12 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelectInEditor = function() {
  */
 LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
   var children = this.createSingleSelect_(['child1', 'child2']);
+  // Defaults for queries made by layer filtering when enabled layers
+  // are changed.
+  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
+    returnWith(true));
+  expectCall(this.appState_.getFilterQuery)().willRepeatedly(
+    returnWith(''));
 
   // Initialize the single-select menu with 'child2' and its parent enabled.
   expectCall(this.appState_.getFirstEnabledSublayerId)(this.layerModel_)
@@ -680,14 +717,9 @@ LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
 
 /** Tests that a locked folder's sublayers are not shown. */
 LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
-  var childModel = new google.maps.MVCObject;
-  childModel.set('id', 'child');
-  childModel.set('sublayers', new google.maps.MVCArray());
-  childModel.isSingleSelect = function() { return false; };
-  childModel.getSublayerIds = function() { return []; };
+  var childModel = this.createFakeLayer_('child', true, 'PQR:pqr', false);
   this.layerModel_.getSublayerIds = function() { return ['child']; };
   this.layerModel_.isSingleSelect = function() { return false; };
-  childModel.getSourceAddress = function() { return 'PQR:pqr'; };
 
   this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
   this.layerModel_.set('sublayers', new google.maps.MVCArray([childModel]));
@@ -783,6 +815,66 @@ LayerEntryViewTest.prototype.testMetadataUpdates = function() {
   // ...the file-size tooltip should go away.
   downloadElem = expectDescendantOf(parent, 'a', withText('Download KML'));
   expectEq('', downloadElem.parentNode.title);
+};
+
+/**
+ * Tests that matchingSublayersMessage is updated when appState changes.
+ */
+LayerEntryViewTest.prototype.testUpdateMatchingSublayersMessage = function() {
+  var parent = this.createView_();
+  this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
+  var query = 'q';
+  var layerId = this.layerModel_.get('id');
+  expectEq('', cm.ui.getText(this.view_.matchingSublayersMessage_));
+
+  // Setup expectations and calls.
+  // We need the layers to be disabled, or the sublayer messages won't show.
+  expectCall(this.appState_.getLayerEnabled)(_)
+    .willRepeatedly(returnWith(false));
+  sub1 = this.createFakeLayer_('sub1');
+  sub1.set('parent', this.layerModel_);
+  sub2 = this.createFakeLayer_('sub2');
+  sub2.set('parent', this.layerModel_);
+  this.layerModel_.get('sublayers').setAt(0, sub1);
+  this.layerModel_.get('sublayers').setAt(1, sub2);
+
+  // Expectations for the actual test.
+  // Set the filter query to always be query.
+  expectCall(this.appState_.getFilterQuery)()
+    .willRepeatedly(returnWith('not empty'));
+
+  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
+    returnWith(false));
+  cm.events.emit(this.appState_, 'matched_layer_ids_changed');
+  expectEq('', cm.ui.getText(this.view_.matchingSublayersMessage_));
+  expectDescendantOf(parent, withClass(cm.css.LAYER_FILTER_INFO));
+  expectNoDescendantOf(parent, allOf([withClass(cm.css.LAYER_FILTER_INFO),
+    withClass(cm.css.HIDDEN)]));
+
+  // Make 'sub1' match.
+  expectCall(this.appState_.getLayerMatched)('sub1').willRepeatedly(
+    returnWith(true));
+  cm.events.emit(this.appState_, 'matched_layer_ids_changed');
+  expectEq('1 matching layer in this folder', cm.ui.getText(
+    this.view_.matchingSublayersMessage_));
+  expectNoDescendantOf(parent, allOf([withClass(cm.css.LAYER_FILTER_INFO),
+    withClass(cm.css.HIDDEN)]));
+
+  // Make 'sub2' match as well.
+  expectCall(this.appState_.getLayerMatched)('sub2').willRepeatedly(
+    returnWith(true));
+  cm.events.emit(this.appState_, 'matched_layer_ids_changed');
+  expectEq('2 matching layers in this folder', cm.ui.getText(
+    this.view_.matchingSublayersMessage_));
+  expectNoDescendantOf(parent, allOf([withClass(cm.css.LAYER_FILTER_INFO),
+    withClass(cm.css.HIDDEN)]));
+
+  // When the layer is enabled, the sublayer message is hidden.
+  expectCall(this.appState_.getLayerEnabled)(layerId)
+    .willRepeatedly(returnWith(true));
+  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  expectDescendantOf(parent, allOf([withClass(cm.css.LAYER_FILTER_INFO),
+    withClass(cm.css.HIDDEN)]));
 };
 
 /**
