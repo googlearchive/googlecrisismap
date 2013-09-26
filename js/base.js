@@ -33,6 +33,9 @@ cm = {};
 
 // Generic messages.
 
+/** @desc Proper name for the product. */
+cm.MSG_PRODUCT_NAME = goog.getMsg('Google Crisis Map');
+
 /** @desc Label for an OK button on a dialog with OK and Cancel buttons. */
 cm.MSG_OK = goog.getMsg('OK');
 
