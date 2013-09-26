@@ -23,15 +23,25 @@ class Prefs(base_handler.BaseHandler):
 
   def Get(self, user):
     """Displays user preferences."""
-    user_profile = profiles.Profile.Get(user.email())
-    consent = user_profile.marketing_consent if user_profile else None
-
     self.response.out.write(self.RenderTemplate('prefs.html', {
-        'pref_marketing_consent': consent
-        }))
+        'profile': profiles.Profile.Get(user)
+    }))
 
   def Post(self, user):
     """Updates user preferences."""
-    profiles.Profile.SetMarketingConsent(
-        user.email(), bool(self.request.get('marketing_consent')))
-    self.redirect('.maps')
+    # The 'save_keys' parameter determines which keys to save.  This lets us
+    # selectively save individual preferences, while distinguishing between a
+    # checkbox that is unchecked (which produces no query parameter at all)
+    # and a key that we don't intend to change.
+    save_keys = self.request.get('save_keys').split(',')
+    if 'marketing_consent' in save_keys:
+      profiles.Profile.SetMarketingConsent(
+          user, bool(self.request.get('marketing_consent')))
+    if 'welcome_message_dismissed' in save_keys:
+      profiles.Profile.SetWelcomeMessageDismissed(
+          user, bool(self.request.get('welcome_message_dismissed')))
+
+    if self.request.get('redirect'):
+      self.redirect(self.request.root_path + self.request.get('redirect'))
+    else:
+      self.response.set_status(204)

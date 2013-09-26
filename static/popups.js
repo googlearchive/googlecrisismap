@@ -15,48 +15,44 @@
  */
 
 /**
- * Return the element with the given ID.
- * @param {string} id The element ID.
- * @return {Element} The element.
+ * @param {string} id An element ID.
+ * @return {Element} The DOM element with the given ID.
  */
 function $(id) {
-  return document.getElementById(id) || {};
-}
-
-/** Handle clicking on 'Create Map' in the popup. */
-function handleCreate() {
-  $('create-popup-domain').value = $('domain').value;
+  return document.getElementById(id);
 }
 
 /** Update the UI of the popup. */
 function updateCreatePopup() {
-  var orgNameInput = $('org-name');
-  var orgNameRequired = $('required');
-  var createButton = $('create-from-popup');
-  createButton.removeAttribute('disabled');
-  // Require organization name only if the checkbox indicating an acceptable
-  // organization is selected.
+  $('create-popup-submit').removeAttribute('disabled');
+  // Require organization name only if the acceptable_org checkbox is checked.
   if ($('acceptable-org').checked) {
-    orgNameInput.style.display = 'inline';
-    orgNameRequired.style.display = 'inline';
-    if (orgNameInput.value.replace(/^\s+|\s+$/g, '').length === 0) {
-      createButton.setAttribute('disabled', 'disabled');
+    $('organization-name').style.display = 'block';
+    if ($('organization-input').value.replace(/^\s*/g, '') === '') {
+      $('create-popup-submit').setAttribute('disabled', 'disabled');
     }
   } else {
-    orgNameInput.style.display = 'none';
-    orgNameRequired.style.display = 'none';
+    $('organization-name').style.display = 'none';
   }
-  // Require at least one use case checkbox to be selected.
+  // Require at least one use-case checkbox to be selected.
   if (!$('acceptable-purpose').checked && !$('acceptable-org').checked) {
-    createButton.setAttribute('disabled', 'disabled');
+    $('create-popup-submit').setAttribute('disabled', 'disabled');
   }
 }
 
 /**
- * Position the popup div containing the form.
- * @param {Element} popup The div to position.
+ * Hide an element.
+ * @param {Element} element A DOM element to hide.
  */
-function positionCreatePopup(popup) {
+function hide(element) {
+  element.style.display = 'none';
+}
+
+/**
+ * Show an element as a centered popup window.
+ * @param {Element} popup A DOM element to show as a popup.
+ */
+function showPopup(popup) {
   popup.style.display = 'block';
   var x = Math.max(0, (document.body.offsetWidth - popup.offsetWidth) / 2);
   var y = Math.max(0, (document.body.offsetHeight - popup.offsetHeight) / 2);
@@ -66,11 +62,16 @@ function positionCreatePopup(popup) {
 
 /** Display the popup required before creating a map. */
 function showCreatePopup() {
-  positionCreatePopup($('create-popup'));
+  showPopup($('create-popup'));
+  var inputs = $('create-popup').getElementsByTagName('input');
+  for (var i = 0; i < inputs.length; i++) {
+    inputs[i].addEventListener('change', updateCreatePopup);
+    inputs[i].addEventListener('keyup', updateCreatePopup);
+  }
   updateCreatePopup();
 }
 
-/** Hide the popup. */
-function hideCreatePopup() {
-  $('create-popup').style.display = 'none';
+/** Handle clicking on 'Create Map' in the popup. */
+function submitCreatePopup() {
+  $('create-popup-domain').value = $('domain').value;
 }

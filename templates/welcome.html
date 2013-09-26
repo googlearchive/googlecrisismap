@@ -1,0 +1,58 @@
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+<script type="text/javascript" src="{{root}}/.static/popups.js"></script>
+<div class="cm-popup" id="welcome-popup" style="display:none">
+  <form method="post" action="{{root}}/.prefs">
+    <h2>Welcome to Google Crisis Map <sup>BETA</sup></h2>
+    <div class="cm-section">
+      <div class="cm-p">
+        Google Crisis Map is an open source tool from
+        <a href="http://google.org/crisisresponse">Google Crisis Response</a>
+        that you can use to create and publish map "mashups"
+        for crisis, humanitarian, and social good purposes.
+      </div>
+      <div class="cm-p">
+        A map "mashup" combines layers of map data from around the web.
+        You can use many kinds of data with Google Crisis Map,
+        including KML files, GeoRSS feeds, tile servers,
+        Google My Maps, Google Maps Engine, and Google Fusion Tables.
+        To get started, see:
+        <!-- TODO(kpy): Add the URLs for these links. -->
+        <ul>
+          <li><a href="https://www.youtube.com/watch?v=vgYzmsH0efc" target="_blank">Introductory video</a>
+          <li><a href="#" target="_blank">Help documentation</a>
+          <li><a href="#" target="_blank">Examples of maps by the Google Crisis Response team</a>
+        </ul>
+      </div>
+      <div class="cm-p">
+        Google Crisis Map is in beta, so it may have a few rough edges.
+        Please use the <b>Feedback</b> link
+        in the top-right corner to let us know how it works for you.  Thanks!
+      </div>
+    </div>
+    <div class="cm-section">
+      <label>
+        <input type="checkbox" id="welcome-dismiss-checkbox"
+            name="welcome_message_dismissed">
+        Got it.  Don't show this message again.
+      </label>
+    </div>
+    <div class="cm-button-area">
+      <input type=hidden name="save_keys" value="welcome_message_dismissed">
+      <input type="submit" class="cm-submit cm-button" value="OK"
+          onclick="hide($('welcome-popup'))">
+    </div>
+  </form>
+</div>
+<script>showPopup($('welcome-popup'))</script>

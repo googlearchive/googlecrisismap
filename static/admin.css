@@ -11,7 +11,7 @@ specific language governing permissions and limitations under the License. */
 
 /* Common layout styles for administration pages */
 .cm-header {
-  padding:12px 16px;
+  padding:12px;
   border-bottom:1px solid #ebebeb;
 }
 .cm-body a {
@@ -20,20 +20,32 @@ specific language governing permissions and limitations under the License. */
 .cm-body a:hover {
   text-decoration: underline;
 }
+.cm-userbar {
+  float:right;
+  padding:12px;
+}
 .cm-navbar {
   float:left;
-  padding:7px 16px;
-  width:150px;
+  padding:12px 12px;
+  width:144px;
 }
 .cm-navbar ul {
-  margin-top:10px;
+  margin-top:12px;
   padding:0;
-  line-height:150%;
+  line-height:18px;
   list-style-type:none;
 }
 .cm-content {
-  margin-left:182px; /* cm-navbar width + left padding + right padding */
-  margin-right: 16px;
+  margin-left:168px; /* cm-navbar width + left padding + right padding */
+  margin-right:12px;
+}
+.cm-p {
+  margin:12px 0;
+}
+
+/* BETA label */
+sup {
+  font-size: 61.8%; /* golden ratio */
 }
 
 /* Map listing page */
@@ -109,13 +121,24 @@ h2 + h3 {
 }
 
 /* Acceptable Use Policy */
-.cm-create-popup-title {
-  margin:10px 0px 0px 30px;
+.cm-popup {
+  line-height:18px;
 }
-
-.cm-create-popup-content {
-  font-size:14px;
+.cm-popup h2:first-child {
+  margin:0;
+}
+.cm-popup input {
+  font-size:13px;
   font-family:arial,sans-serif;
-  line-height:16px;
-  margin:30px;
+  color:#222;
+}
+.cm-popup .cm-section {
+  margin:24px 0;
+}
+.cm-popup .cm-checkbox-area {
+  display:inline-block;
+  width:24px;
+}
+.cm-popup #organization-name {
+  margin-top:6px;
 }

@@ -23,7 +23,7 @@ class PrefsTest(test_utils.BaseTest):
 
   def setUp(self):
     super(PrefsTest, self).setUp()
-    test_utils.SetUser('random@gmail.com')
+    self.user = test_utils.SetUser('random@gmail.com')
 
   def testGet(self):
     """Tests the Prefs GET handler."""
@@ -32,16 +32,27 @@ class PrefsTest(test_utils.BaseTest):
 
   def testPost(self):
     """Tests the Prefs POST handler."""
-    self.assertEquals(None,
-                      profiles.Profile.Get('random@gmail.com'))
-    self.DoPost('/.prefs', 'marketing_consent=True')
-    self.assertTrue(profiles.Profile.Get('random@gmail.com').marketing_consent)
-    self.assertTrue(profiles.Profile.Get('random@gmail.com').
-                    marketing_consent_answered)
-    self.DoPost('/.prefs', '')
-    self.assertFalse(profiles.Profile.Get('random@gmail.com').marketing_consent)
-    self.assertTrue(profiles.Profile.Get('random@gmail.com').
-                    marketing_consent_answered)
+    self.assertEquals(None, profiles.Profile.Get(self.user))
+
+    # There should be no effect unless save_keys is set.
+    self.DoPost('/.prefs', 'marketing_consent=on')
+    self.assertEquals(None, profiles.Profile.Get(self.user))
+
+    # save_keys indicates which keys to save (even if the POST data doesn't
+    # contain a particular key's name because its checkbox is off)
+    self.DoPost('/.prefs', 'save_keys=marketing_consent')
+    self.assertFalse(profiles.Profile.Get(self.user).marketing_consent)
+    self.assertTrue(profiles.Profile.Get(self.user).marketing_consent_answered)
+
+    # No save_keys, no effect.
+    self.DoPost('/.prefs', 'marketing_consent=on')
+    self.assertFalse(profiles.Profile.Get(self.user).marketing_consent)
+    self.assertTrue(profiles.Profile.Get(self.user).marketing_consent_answered)
+
+    # With save_keys, this should turn marketing_consent on.
+    self.DoPost('/.prefs', 'save_keys=marketing_consent&marketing_consent=on')
+    self.assertTrue(profiles.Profile.Get(self.user).marketing_consent)
+    self.assertTrue(profiles.Profile.Get(self.user).marketing_consent_answered)
 
 
 if __name__ == '__main__':

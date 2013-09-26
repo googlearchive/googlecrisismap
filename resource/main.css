@@ -399,9 +399,10 @@ html, body {
 
 /* Popups and dialogs */
 .cm-popup {
+  line-height:18px;
   position:absolute;
   border:1px solid #ccc;
-  padding:20px;
+  padding:24px;
   z-index:1;
   background-color:white;
   min-width:240px;
@@ -410,6 +411,9 @@ html, body {
   -moz-box-shadow:0 4px 16px rgba(0,0,0,0.2);
   -ms-box-shadow:0 4px 16px rgba(0,0,0,0.2);
   box-shadow:0 4px 16px rgba(0,0,0,0.2);
+}
+.cm-popup h2:first-child {
+  margin-top: 0;
 }
 .cm-popup > :first-child {
   margin-top:0;
@@ -1214,7 +1218,7 @@ textarea.cm-legend-text {
 
 /* Standard Google button styles */
 .cm-popup .cm-button-area {
-  margin:21px 0 5px;
+  margin:24px 0 0;
 }
 .cm-button-area .cm-button {
   margin-right:14px;

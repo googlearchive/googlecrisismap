@@ -107,4 +107,7 @@ specific language governing permissions and limitations under the License.
       </tr>
     {% endfor %}
   </table>
+  {% if not profile.welcome_message_dismissed %}
+    {% include "welcome.html" %}
+  {% endif %}
 {% endblock content %}

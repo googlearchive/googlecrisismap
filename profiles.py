@@ -22,24 +22,29 @@ class ProfileModel(db.Model):
   """Private class for a user's profile."""
   marketing_consent = db.BooleanProperty(default=False)
   marketing_consent_answered = db.BooleanProperty(default=False)
-
-  def SetMarketingConsent(self, value):
-    """Update the user consent to receive marketing communication."""
-    self.marketing_consent = value
-    self.marketing_consent_answered = True
-    self.put()
+  welcome_message_dismissed = db.BooleanProperty(default=False)
 
 
 class Profile(object):
-  """Public class for accessing a users profile."""
+  """Public class for accessing a user's profile."""
 
   @staticmethod
-  def Get(user_email):
+  def Get(user):
     """Return an object representing the user's profile."""
-    return utils.StructFromModel(ProfileModel.get_by_key_name(user_email))
+    return utils.StructFromModel(ProfileModel.get_by_key_name(
+        utils.NormalizeEmail(user.email())))
 
   @staticmethod
-  def SetMarketingConsent(user_email, value):
+  def SetWelcomeMessageDismissed(user, value):
     """Update the user's preference."""
-    profile = ProfileModel.get_or_insert(user_email)
-    profile.SetMarketingConsent(value)
+    profile = ProfileModel.get_or_insert(utils.NormalizeEmail(user.email()))
+    profile.welcome_message_dismissed = value
+    profile.put()
+
+  @staticmethod
+  def SetMarketingConsent(user, value):
+    """Update the user's preference."""
+    profile = ProfileModel.get_or_insert(utils.NormalizeEmail(user.email()))
+    profile.marketing_consent = value
+    profile.marketing_consent_answered = True
+    profile.put()

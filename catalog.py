@@ -24,20 +24,15 @@ class Catalog(base_handler.BaseHandler):
 
   def Get(self, domain, user):  # pylint: disable=unused-argument
     """Displays the list of catalog entries."""
-    user_profile = profiles.Profile.Get(user.email())
-    consent_answered = (user_profile.marketing_consent_answered if
-                        user_profile else False)
-
     self.response.out.write(self.RenderTemplate('catalog.html', {
         'domain': domain,
-        'entries': list(model.CatalogEntry.GetAll(domain)),
-        'marketing_consent_answered': consent_answered
+        'entries': model.CatalogEntry.GetAll(domain),
+        'profile': profiles.Profile.Get(user)
     }))
 
   def Post(self, domain, user):  # pylint: disable=unused-argument
     """Changes the visibility of catalog entries in Map Picker."""
-    entries = model.CatalogEntry.GetAll(domain)
-    for entry in entries:
+    for entry in model.CatalogEntry.GetAll(domain):
       # Only checked checkboxes' values are sent from the client.
       value = bool(self.request.get(entry.label))
       if bool(entry.is_listed) != value:

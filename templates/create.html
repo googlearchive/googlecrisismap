@@ -11,27 +11,68 @@ OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 specific language governing permissions and limitations under the License.
 {% endcomment %}
 
-<script type="text/javascript" src="{{root}}/.static/create_popup.js"></script>
-<div class="cm-popup" id="create-popup" style="display:none;">
-<h2 class="cm-create-popup-title">Acceptable Use</h2>
-<form method="post" action=".create">
-  <input type="hidden" name="domain" id="create-popup-domain">
-  <div class="cm-create-popup-content">
-    <b>Heads up!</b> You are about to create a new map. Before you can use Google Crisis Map, you must read and accept the <a href="http://www.google.org/crisisresponse/crisismap/use_policy.html" target="_blank">Acceptable Use Policy</a> and agree to one of the following:<br><br>
-    <input checked=true type="checkbox" name="acceptable_purpose" id="acceptable-purpose" onchange="updateCreatePopup()">
-    <label for="acceptable-purpose">I am creating a map to be used for crisis, humanitarian, social good, or testing purposes.</label><br><br>
-    <input type="checkbox" name="acceptable_org" id="acceptable-org" onchange="updateCreatePopup()">
-    <label for="acceptable-org">I am acting on behalf of a U.S. 501(c)(3) or international non-profit organization.</label><br><br>
-    <input type="text" style="width:400px" name="organization" id="org-name" placeholder=" Enter the name of your organization, if applicable." onchange="updateCreatePopup()" onkeyup="updateCreatePopup()"><div id="required" style="display:inline;color:#dd4b39">&nbsp;Required<br></div>
-    <span>Note: Google.org reserves the right to take down any map that violates the acceptable use policy. For situations not addressed above, please <a href="https://docs.google.com/forms/d/1bJTGaQ_gZUOrlF48WtOWR7rBlaeADRSosCuUWa5Etek/viewform" target="_blank">apply for permission</a> to create a map.</span><br><br>
-    {% if not marketing_consent_answered %}
-      <input type="checkbox" name="marketing_consent" id="marketing" checked>
-      <label for="marketing">I would like to receive email about other Google products and services related to Google Crisis Map.</label><br>
+<script src="{{root}}/.static/popups.js"></script>
+<div class="cm-popup" id="create-popup" style="display:none">
+  <h2>Acceptable use</h2>
+  <form method="post" action=".create" id="create-popup-form">
+    <input type="hidden" name="domain" id="create-popup-domain">
+    <div class="cm-section">
+      <div class="cm-p">
+        <b>Heads up!</b> You are about to create a new map.
+        Before you can make maps, you must read and accept the
+        <a href="http://www.google.org/crisisresponse/crisismap/use_policy.html"
+            target="_blank">Acceptable Use Policy</a>
+        and agree to one of the following:
+      </div>
+      <div class="cm-p">
+        <label>
+          <span class="cm-checkbox-area">
+            <input type=checkbox name="acceptable_purpose"
+                id="acceptable-purpose">
+          </span>
+          I am creating a map for crisis, humanitarian, social good,
+          or testing purposes.
+        </label>
+      </div>
+      <div class="cm-p">
+        <label>
+          <span class="cm-checkbox-area">
+            <input type=checkbox name="acceptable_org" id="acceptable-org">
+          </span>
+          I am acting on behalf of a U.S. 501(c)(3) or
+          a non-profit organization outside the U.S.
+        </label>
+        <div id="organization-name">
+          <span class="cm-checkbox-area"></span>
+          <input type="text" size=50 name="organization" id="organization-input"
+              placeholder="Required: Enter the name of your organization">
+        </div>
+      </div>
+      <div class="cm-p">
+        Note: Google.org reserves the right to take down maps
+        that violate the Acceptable Use Policy.
+        For situations not addressed above, please
+        <a href="https://docs.google.com/forms/d/1bJTGaQ_gZUOrlF48WtOWR7rBlaeADRSosCuUWa5Etek/viewform" target="_blank">apply for permission</a>.
+      </div>
+    </div>
+    {% if not profile.marketing_consent_answered %}
+      <div class="cm-section">
+        May we contact you to suggest other mapping or crisis tools?
+        <div class="cm-p">
+          <label>
+            <span class="cm-checkbox-area">
+              <input type=checkbox name="marketing_consent" checked>
+            </span>
+            Yes, I'd like to receive e-mail about related products and services.
+          </label>
+        </div>
+      </div>
     {% endif %}
     <div class="cm-button-area">
-      <input type="submit" class="cm-submit cm-button" title="Create Map" value="Create Map" id="create-from-popup" onclick="handleCreate()">
-      <input type="button" class="cm-button" title="Cancel" value="Cancel" onclick="hideCreatePopup()">
+      <input type="submit" class="cm-submit cm-button" value="Create Map"
+          id="create-popup-submit" onclick="submitCreatePopup()">
+      <input type="button" class="cm-button" value="Cancel"
+          onclick="hide($('create-popup'))">
     </div>
-  </div>
-</form>
+  </form>
 </div>

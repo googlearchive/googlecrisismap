@@ -24,6 +24,7 @@ class ConfigTests(test_utils.BaseTest):
   def setUp(self):
     test_utils.BaseTest.setUp(self)
     config.Delete('root_path')  # clear this key from setUp
+    config.Delete('default_domain')  # clear this key from setUp
 
   def testConfig(self):
     """Tests storage of simple and structured values in Config entities."""

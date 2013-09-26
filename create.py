@@ -18,7 +18,6 @@ import base_handler
 import logs
 import model
 import profiles
-import utils
 
 
 class Create(base_handler.BaseHandler):
@@ -36,6 +35,5 @@ class Create(base_handler.BaseHandler):
         acceptable_org=acceptable_org,
         org_name=acceptable_org and self.request.get('organization') or '')
     profiles.Profile.SetMarketingConsent(
-        utils.GetCurrentUserEmail(),
-        self.request.get('marketing_consent') == 'on')
+        user, bool(self.request.get('marketing_consent')))
     self.redirect('.maps/%s' % map_object.id)

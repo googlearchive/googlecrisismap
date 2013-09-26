@@ -367,14 +367,11 @@ class MapList(base_handler.BaseHandler):
       published.setdefault(entry.map_id, []).append(entry)
     for m in maps:
       m.catalog_entries = published.get(m.id, [])
-    user_profile = profiles.Profile.Get(user.email())
-    consent_answered = (user_profile.marketing_consent_answered if
-                        user_profile else False)
 
     self.response.out.write(self.RenderTemplate('map_list.html', {
         'title': title,
         'maps': maps,
         'creator_domains': creator_domains,
         'catalog_domains': catalog_domains,
-        'marketing_consent_answered': consent_answered
+        'profile': profiles.Profile.Get(user)
     }))

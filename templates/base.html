@@ -27,11 +27,17 @@ specific language governing permissions and limitations under the License.
 </head>
 
 <body class="cm-body">
+  <div class="cm-userbar">
+    <a href="{{root}}/.prefs">Preferences</a>
+    &#xb7;
+    <a href="https://docs.google.com/spreadsheet/embeddedform?formkey=dEJLVXhkbGNobWNNTnUzRGZGQ2tJbXc6MQ"
+        target="_blank"
+        title="Send us your suggestions and problem reports.">Feedback</a>
+  </div>
   <div class="cm-header">
     {# Header above page content #}
     {% block header %}
-      <a href="{{root}}"><h1>Google Crisis Map</h1></a>
-      <span style="float:right"><a href="{{root}}/.prefs">Preferences</a></span>
+      <a href="{{root}}"><h1>Google Crisis Map <sup>BETA</sup></h1></a>
     {% endblock header %}
   </div>
 

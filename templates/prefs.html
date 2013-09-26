@@ -14,18 +14,25 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 {% block content %}
   <form method="post">
-    <table class="cm-map-list" summary="User preferences.">
+    <table class="cm-map-list" summary="User preferences">
     <tr>
-      <th></th>
-      <th>Preference</th>
+      <th colspan=5 class="cm-map-list-header">Preferences</th>
     </tr>
     <tr>
-      <th>
-        <input type="checkbox" name="marketing_consent" {% if pref_marketing_consent %} checked  {% endif %}>
-      </th>
-      <td>I would like to receive email about other Google products and services related to Google Crisis Map.</td>
+      <td>
+        May we contact you to suggest other mapping or crisis tools?
+        <p>
+          <label>
+            <input type="checkbox" name="marketing_consent"
+                {{profile.marketing_consent|yesno:"checked,"}}>
+            Yes, I'd like to receive e-mail about related products and services.
+          </label>
+        </p>
+      </td>
     </tr>
     </table>
+    <input type="hidden" name="save_keys" value="marketing_consent">
+    <input type="hidden" name="redirect" value="/.maps">
     <input type="submit" value="Save changes">
   </form>
 {% endblock content %}
