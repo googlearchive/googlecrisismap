@@ -158,8 +158,10 @@ def Migrate(write_data=False):  # dry run by default
   print '\n\nPermissions:'
   for p in perms.PermissionModel.all():
     if '@' in p.subject:
+      nperm = perms._Permission(EmailToUid(p.subject), p.role, p.target)
       np = perms.PermissionModel(
-          subject=EmailToUid(p.subject), role=p.role, target=p.target)
+          key_name=perms._PermissionKey(nperm),
+          subject=nperm.subject, role=nperm.role, target=nperm.target)
       print '\x1b[37msu=%s\x1b[0m -> su=%s / ro=%s / ta=%s' % (
           p.subject, np.subject, np.role, np.target)
 
