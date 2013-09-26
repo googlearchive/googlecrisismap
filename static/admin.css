@@ -147,13 +147,8 @@ h2 + h3 {
 /* Publisher name popup */
 .cm-popup .cm-preview.cm-map-publisher {
   color:#666;
-  font-size:12px;
-  margin:18px 0;
-  padding:6px 12px;
-  -webkit-box-shadow:0 2px 4px rgba(0,0,0,0.4);
-  -moz-box-shadow:0 2px 4px rgba(0,0,0,0.4);
-  -ms-box-shadow:0 2px 4px rgba(0,0,0,0.4);
-  box-shadow:0 2px 4px rgba(0,0,0,0.4);
+  font-size:12px;  /* match the footer text */
+  padding:0 24px;
 }
 .cm-popup .cm-preview.cm-map-publisher input {
   font-size:12px;

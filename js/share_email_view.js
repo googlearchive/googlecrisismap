@@ -19,36 +19,49 @@ goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.net.XhrIo');
 
-/** @desc Text for title of popup. */
-var MSG_INVITE_TITLE = goog.getMsg('Invite user to collaborate');
+/** @desc Heading of the dialog for inviting another user to collaborate. */
+var MSG_INVITE_TITLE = goog.getMsg('Invite someone to collaborate');
 
-/** @desc Text for alert when share handler returns a 404. */
+/**
+ * @desc Error message to show for a server error when trying to invite
+ *     another user to collaborate (this is pretty rare).
+ */
 var MSG_EMAIL_ERROR = goog.getMsg(
     'Sorry, there was a problem inviting someone to collaborate on this map.');
 
-/** @desc Text for label of message box. */
-var MSG_MESSAGE = goog.getMsg('Message text');
+/**
+ * @desc Label for text box for a personal message to include when
+ *     inviting another user to collaborate.
+ */
+var MSG_INVITE_MESSAGE = goog.getMsg('Message text');
 
-/** @desc Text for label of message box. */
-var MSG_EMAIL = goog.getMsg('User\'s email');
+/**
+ * @desc Placeholder inside the text box for a personal message to include
+ *     when inviting another user to collaborate.
+ */
+var MSG_INVITE_MESSAGE_PLACEHOLDER =
+    goog.getMsg('Include a personal message...');
 
-/** @desc Text for label viewer option. */
-var MSG_VIEWER = goog.getMsg('viewer');
+/** @desc Label for input field for the e-mail address of a user to invite. */
+var MSG_EMAIL = goog.getMsg('E-mail address');
 
-/** @desc Text for label of editor option. */
-var MSG_EDITOR = goog.getMsg('editor');
+/** @desc Radio button label for granting view-only access. */
+var MSG_VIEWER = goog.getMsg('Viewer');
 
-/** @desc Text for label of owner option. */
-var MSG_OWNER = goog.getMsg('owner');
+/** @desc Radio button label for granting edit access. */
+var MSG_EDITOR = goog.getMsg('Editor');
 
-/** @desc Text for label of message box. */
+/** @desc Radio button label for granting full ownership access. */
+var MSG_OWNER = goog.getMsg('Owner');
+
+/** @desc Label for radio buttons for choosing the level of access to grant. */
 var MSG_PERMISSION = goog.getMsg('Permission type');
 
-/** @desc Label for the Invite button on a dialog with Invite and Cancel. */
-var MSG_INVITE = goog.getMsg('Invite');
+/** @desc Label for the Invite button on the "Invite a collaborator" dialog. */
+var MSG_INVITE_BUTTON = goog.getMsg('Invite');
 
-/** @desc Label for the Cancel button on a dialog with Invite and Cancel. */
-var MSG_CANCEL_BTN = goog.getMsg('Cancel');
+/** @desc Label for the Cancel button on the "Invite a collaborator" dialog. */
+var MSG_CANCEL_BUTTON = goog.getMsg('Cancel');
 
 /** Regex for verifying email addresses on a shallow level. */
 var EMAIL_PATTERN = '^(.+)@(.+)$';
@@ -133,12 +146,13 @@ cm.ShareEmailView = function() {
   this.popup_ = cm.ui.create('div',
                              {'class': [cm.css.SHARE_EMAILER, cm.css.POPUP]},
       this.titleElem_ = cm.ui.create('h2', {}, MSG_INVITE_TITLE),
-      this.tableElem_ = cm.ui.create('table'),
+      this.tableElem_ = cm.ui.create('table', {'class': 'cm-editors'}),
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
       this.inviteBtn_ = cm.ui.create(
-          'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_INVITE),
+          'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
+          MSG_INVITE_BUTTON),
       this.cancelBtn_ = cm.ui.create(
-          'button', {'class': cm.css.BUTTON}, MSG_CANCEL_BTN)));
+          'button', {'class': cm.css.BUTTON}, MSG_CANCEL_BUTTON)));
 
   cm.events.listen(this.inviteBtn_, 'click', this.handleShare_, this);
   cm.events.listen(this.cancelBtn_, 'click', this.handleCancel_, this);
@@ -152,44 +166,46 @@ cm.ShareEmailView.prototype.share = function(share_url) {
   this.shareUrl_ = share_url;
 
   cm.ui.clear(this.tableElem_);
-  this.emailInput_ = cm.ui.create('input');
-  this.messageBox_ = cm.ui.create('textarea');
-  this.viewer_ = cm.ui.create('input', {'type': 'radio',
-                                        'name': 'role',
-                                        'value': 'MAP_VIEWER',
-                                        'checked': 'true'});
-  this.editor_ = cm.ui.create('input', {'type': 'radio',
-                                        'name': 'role',
-                                        'value': 'MAP_EDITOR'});
-  this.owner_ = cm.ui.create('input', {'type': 'radio',
-                                       'name': 'role',
-                                       'value': 'MAP_OWNER'});
-  this.emailLabel_ = cm.ui.create('label', {}, MSG_EMAIL);
+  this.emailInput_ = cm.ui.create(
+      'input', {'type': 'text', 'id': 'cm-input-email'});
+  this.messageBox_ = cm.ui.create(
+      'textarea', {'id': 'cm-input-message',
+                   'placeholder': MSG_INVITE_MESSAGE_PLACEHOLDER});
+  this.viewer_ = cm.ui.create(
+      'input', {'type': 'radio', 'name': 'role', 'id': 'cm-role-viewer',
+                'value': 'MAP_VIEWER', 'checked': 'true'});
+  this.editor_ = cm.ui.create(
+      'input', {'type': 'radio', 'name': 'role', 'id': 'cm-role-editor',
+                'value': 'MAP_EDITOR'});
+  this.owner_ = cm.ui.create(
+      'input', {'type': 'radio', 'name': 'role', 'id': 'cm-role-owner',
+                'value': 'MAP_OWNER'});
+  this.emailLabel_ = cm.ui.create(
+      'label', {'for': 'cm-input-email'}, MSG_EMAIL);
 
-  cm.ui.append(this.tableElem_,
-               cm.ui.create('tr', {},
-                            cm.ui.create('th', {}, this.emailLabel_),
-                            cm.ui.create('td', {}, this.emailInput_)),
-               cm.ui.create('tr', {},
-                            cm.ui.create('th', {},
-                                         cm.ui.create('label', {},
-                                                      MSG_PERMISSION)),
-                            cm.ui.create('td', {},
-                                         this.viewer_,
-                                         cm.ui.create('label', {},
-                                                      MSG_VIEWER),
-                                         this.editor_,
-                                         cm.ui.create('label', {},
-                                                      MSG_EDITOR),
-                                         this.owner_,
-                                         cm.ui.create('label', {},
-                                                      MSG_OWNER))),
-               cm.ui.create('tr', {},
-                            cm.ui.create('th', {},
-                                         cm.ui.create('label', {},
-                                                      MSG_MESSAGE)),
-                            cm.ui.create('td', {}, this.messageBox_)));
+  cm.ui.append(
+      this.tableElem_,
+      cm.ui.create(
+          'tr', {'class': 'cm-text-input-row'},
+          cm.ui.create('th', {}, this.emailLabel_),
+          cm.ui.create('td', {}, this.emailInput_)),
+      cm.ui.create(
+          'tr', {},
+          cm.ui.create(
+              'th', {}, cm.ui.create('label', {}, MSG_PERMISSION)),
+          cm.ui.create(
+              'td', {}, this.viewer_,
+              cm.ui.create('label', {'for': 'cm-role-viewer'}, MSG_VIEWER),
+              ' ', this.editor_,
+              cm.ui.create('label', {'for': 'cm-role-editor'}, MSG_EDITOR),
+              ' ', this.owner_,
+              cm.ui.create('label', {'for': 'cm-role-owner'}, MSG_OWNER))),
+      cm.ui.create(
+          'tr', {'class': 'cm-textarea-row'},
+          cm.ui.create('th', {}, cm.ui.create('label', {}, MSG_INVITE_MESSAGE)),
+          cm.ui.create('td', {}, this.messageBox_)));
   cm.ui.showPopup(this.popup_);
+  this.emailInput_.focus();
 };
 
 /**

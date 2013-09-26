@@ -35,7 +35,8 @@ cm.TextEditor = function(parentElem, id, options) {
    * @private
    */
   this.input_ = cm.ui.create('input',
-      {'id': id, 'class': options && options.input_class || null});
+      {'id': id, 'type': 'text',
+       'class': options && options.input_class || null});
   parentElem.appendChild(this.input_);
 
   // When the user makes an edit in the UI, update the MVCObject property.

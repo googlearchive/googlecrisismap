@@ -15,7 +15,8 @@ html, body {
   margin:0;
   padding:0;
 }
-.cm-body, .cm-frame, .cm-frame input, .cm-frame button, .cm-popup, .cm-about {
+.cm-body, .cm-frame, .cm-frame input, .cm-frame button,
+.cm-popup, .cm-popup input, .cm-about {
   font-size:13px;
   font-family:arial,sans-serif;
   color:#222;
@@ -33,6 +34,7 @@ html, body {
 .cm-layout-rtl .cm-footer {
   direction:rtl;
 }
+
 /* Style for a single box container. */
 .cm-frame {
   width:100%;
@@ -67,6 +69,17 @@ html, body {
 .cm-panel h3, .cm-popup h3 {  /* item headings */
   font-size:14px;
   font-weight:normal;
+}
+
+/* Tables */
+.cm-frame table, .cm-popup table {
+  border-collapse:collapse;
+}
+.cm-frame tr, .cm-popup tr {
+  vertical-align:baseline;
+}
+.cm-frame th, .cm-popup th {
+  text-align:left;
 }
 
 /* Links */
@@ -566,7 +579,7 @@ span.cm-g-flag {
   padding:6px;
   background-color:white;
   border-top:1px solid #ccc;
-  color:#555;
+  color:#666;
   font-size:12px;
 }
 .cm-embedded .cm-footer {
@@ -968,28 +981,44 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
   z-index:1;
 }
 
-/* Inspector dialog */
-.cm-inspector h2 {
-  display:inline-block;
-}
-.cm-inspector table.cm-editors {
+/* Map inspector, Layer inspector, and Collaborate dialog */
+.cm-editors {
   width:100%;
 }
-.cm-inspector table.cm-editors tr {
-  vertical-align:baseline;
-}
-.cm-inspector table.cm-editors > tr > th,
-.cm-inspector table.cm-editors > tr > td,
-.cm-share-emailer th, .cm-share-emailer td {
+.cm-editors > tr > th, .cm-editors > tr > td {
   padding-top:8px;
 }
-.cm-inspector table.cm-editors th, .cm-share-emailer th {
-  text-align:left;
+.cm-editors > tr > th {
   padding-right:8px;
   font-weight:normal;
   color:#666;
   white-space:nowrap;
   width:1%;
+}
+.cm-editors > .cm-text-input-row > th,
+.cm-editors > .cm-text-editor > th {
+  vertical-align:top;
+  padding-top:12px;  /* align label with content of text input field */
+}
+.cm-editors > .cm-text-input-row input[type="text"],
+.cm-editors > .cm-text-editor input[type="text"] {
+  width:100%;
+  max-width:394px;  /* total outside width 400px */
+}
+.cm-editors > .cm-textarea-row > th,
+.cm-editors > .cm-html-editor > th {
+  vertical-align:top;
+  padding-top:11px;  /* align label with first line of text in textarea */
+}
+.cm-editors > .cm-textarea-row textarea,
+.cm-editors > .cm-html-editor textarea {
+  width:100%;
+  max-width:392px;  /* total outside width 400px */
+  height:6em;
+  font-family:arial;
+  font-size:13px;
+  padding:3px;
+  border:1px solid #c0c0c0;
 }
 
 /* Legend editor */
@@ -1101,41 +1130,7 @@ textarea.cm-legend-text {
   width:100%;
 }
 
-/* ShareEmailer dialog */
-.cm-share-emailer {
-  width:400px;
-}
-.cm-share-emailer table {
-  width:100%;
-}
-.cm-share-emailer textarea {
-  width:100%;
-  max-width:392px;  /* total outside width 400px */
-  height:6em;
-  font-family:arial;
-  font-size:13px;
-  padding:3px;
-  border:1px solid #c0c0c0;
-}
-
-.cm-email-error {
-  color:#a00;
-}
-
-/* Editor dialog */
-.cm-html-editor th, .cm-share-emailer th {
-  vertical-align:top;
-  padding-top:12px;
-}
-.cm-html-editor textarea {
-  width:100%;
-  max-width:392px;  /* total outside width 400px */
-  height:6em;
-  font-family:arial;
-  font-size:13px;
-  padding:3px;
-  border:1px solid #c0c0c0;
-}
+/* Editors */
 .cm-html-editor .cm-disclosure {
   margin:4px 0 0;
 }
@@ -1175,11 +1170,6 @@ textarea.cm-legend-text {
 .cm-number-editor .cm-validation-error {
   display:inline;
   margin-left:0.5em;
-}
-
-.cm-text-editor input {
-  width:100%;
-  max-width:394px;  /* total outside width 400px */
 }
 
 .cm-lat-lon-box-editor table.cm-extents {
@@ -1222,6 +1212,17 @@ textarea.cm-legend-text {
 }
 .cm-arranger {
   cursor:move;
+}
+
+/* Collaborate dialog */
+.cm-share-emailer {
+  width:400px;
+}
+.cm-share-emailer label + input {
+  margin-left:12px;
+}
+.cm-email-error {
+  color:#a00;
 }
 
 /* Standard Google button styles */
