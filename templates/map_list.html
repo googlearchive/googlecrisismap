@@ -56,7 +56,8 @@ specific language governing permissions and limitations under the License.
         <td>
           <form action=".delete" method="post">
             <input name="map" type=hidden value="{{m.id}}">
-            <input type=submit value="Delete Map">
+            <input type="button" value="Delete Map"
+                onclick="confirm('Really delete this map?') && this.parentNode.submit()">
           </form>
         </td>
         <td class="cm-publish-status">
