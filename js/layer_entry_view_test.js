@@ -108,18 +108,6 @@ LayerEntryViewTest.prototype.testEnableEditingFlags = function() {
   expectDescendantOf(parent, 'a', withText('Edit'));
   expectDescendantOf(parent, 'a', withText('Delete'));
 
-
-  // Test the enable_wms_layer_editing client config variable.
-  var slider = this.expectNew_('goog.ui.Slider');
-  slider.setMoveToPointEnabled = slider.render = slider.getValue =
-      slider.setValue = slider.dispose = function() {};
-  slider.getValueThumb = function() { return new FakeElement('div'); };
-  this.layerModel_.set('type', cm.LayerModel.Type.WMS);
-  parent = this.createView_({enable_editing: true});
-  expectNoDescendantOf(parent, 'a', withText('Edit'));
-  parent = this.createView_(
-      {enable_editing: true, enable_wms_layer_editing: true});
-  expectDescendantOf(parent, 'a', withText('Edit'));
 };
 
 /**

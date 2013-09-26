@@ -229,9 +229,6 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
 
   // Figure out whether to enable editing.
   var enableEditing = this.config_['enable_editing'];
-  if (layerType === cm.LayerModel.Type.WMS) {
-    enableEditing = enableEditing && this.config_['enable_wms_layer_editing'];
-  }
 
   // These links will be replaced by icons (e.g. pencil, rubbish bin). Mocks:
   // http://folder/nsavio/dotorg/crisis_response/crisis_maps/20120424&s

@@ -112,31 +112,6 @@ EditPresenterTest.prototype.testEnableOsmMapTypeEditing = function() {
 };
 
 
-/** Tests the 'enable_wms_layer_editing' client config variable. */
-EditPresenterTest.prototype.testEnableWmsLayerType = function() {
-  var WMS_CHOICE = {value: 'WMS', label: 'WMS'};
-  var layer = new cm.LayerModel();
-  var inspector = this.expectNew_('cm.InspectorView'), specs;
-  inspector.inspect = function(title, editorSpecs, object) {
-    specs = editorSpecs;
-  };
-
-  // This should call inspector.inspect, which captures the 'editorSpecs' arg.
-  var presenter = new cm.EditPresenter(null, null, null, {});
-  cm.events.emit(goog.global, cm.events.INSPECT, {object: layer});
-  // The WMS option should not be present.
-  var spec = findEditorSpec('type', specs);
-  expectThat(spec.choices, not(contains(WMS_CHOICE)));
-
-  // Try again, with 'enable_wms_layer_editing' set to true.
-  presenter = new cm.EditPresenter(null, null, null,
-                                   {enable_wms_layer_editing: true});
-  cm.events.emit(goog.global, cm.events.INSPECT, {object: layer});
-  // The WMS option should be present this time.
-  spec = findEditorSpec('type', specs);
-  expectThat(spec.choices, contains(WMS_CHOICE));
-};
-
 /** Tests that the EditPresenter responds correctly to ARRANGE events. */
 EditPresenterTest.prototype.testArrangerEvent = function() {
   var arranger = this.expectNew_('cm.ArrangeView',

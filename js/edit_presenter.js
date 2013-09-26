@@ -44,7 +44,6 @@ goog.require('goog.net.XhrIo');
  *     share_url: The URL to which to POST to share the map.
  *     save_url: The URL to which to POST to save the edited map data.
  *     enable_osm_map_type_editing: Allow OSM as a base map option?
- *     enable_wms_layer_editing: Allow WMS in the layer type menu?
  * @constructor
  */
 cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
@@ -100,14 +99,10 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.LayerModel.Type.TRANSIT, label: 'Google Transit'},
     {value: cm.LayerModel.Type.WEATHER, label: 'Google Weather'},
     {value: cm.LayerModel.Type.CLOUD, label: 'Google Cloud Imagery'},
-    {value: cm.LayerModel.Type.MAP_DATA, label: 'Google Maps Engine'}
+    {value: cm.LayerModel.Type.MAP_DATA, label: 'Google Maps Engine'},
+    {value: cm.LayerModel.Type.WMS, label: 'WMS'}
   ];
 
-
-  // TODO(romano): remove this check once WMS is production-ready.
-  if (config['enable_wms_layer_editing']) {
-    layerTypeChoices.push({value: cm.LayerModel.Type.WMS, label: 'WMS'});
-  }
 
   var mapTypeChoices = [
     {value: cm.MapModel.Type.ROADMAP, label: 'Road map'},
