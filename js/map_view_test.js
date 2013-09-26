@@ -65,7 +65,8 @@ function MapViewTest() {
       ],
      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
     },
-    mapTypeControl: true
+    mapTypeControl: true,
+    scrollwheel: true
   };
   // Tests can adjust expectedMapTypeControlOptions_ for different expectations.
   this.expectedMapTypeControlOptions_ = {
@@ -211,6 +212,13 @@ MapViewTest.prototype.minimalControls = function() {
       google.maps.ZoomControlStyle.SMALL;
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                   this.metadataModel_, false, {'minimal_map_controls': true});
+};
+
+/** Scroll wheel zoom should be disabled in embedded mode. */
+MapViewTest.prototype.embeddedMode = function() {
+  this.expectedMapOptions_.scrollwheel = false;
+  new cm.MapView(this.elem_, this.mapModel_, this.appState_,
+                  this.metadataModel_, false, undefined, false, true);
 };
 
 /** Tests preview view. */

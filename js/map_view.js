@@ -33,8 +33,8 @@ goog.require('goog.json');
  * @param {cm.MapModel} mapModel The map model.
  * @param {cm.AppState} appState The application state model.
  * @param {cm.MetadataModel} metadataModel The layer metadata model.
- * @param {boolean} touchDevice True if the map is displayed on a touch device.
- * @param {?Object} opt_config Configuration settings.  These fields are used:
+ * @param {boolean=} opt_touch True if the map is displayed on a touch device.
+ * @param {?Object=} opt_config Configuration settings.  These fields are used:
  *     minimal_map_controls: Minimize controls (small zoom control, no scale
  *         control, no pegman)?
  *     panel_side: The side of the map the panel will be placed on,
@@ -44,12 +44,13 @@ goog.require('goog.json');
  *     json_proxy_url: URL to the JSON proxy service.
  *     wms_configure_url: URL to the WMS tileset configuration service.
  *     wms_tiles_url: URL to the WMS tile cache.
- * @param {boolean=} opt_preview Whether or not this is a preview view.
+ * @param {boolean=} opt_preview True if this is a preview display of the map.
+ * @param {boolean=} opt_embedded True if the map is being embedded in a page.
  * @constructor
  * @extends google.maps.MVCObject
  */
 cm.MapView = function(parentElem, mapModel, appState, metadataModel,
-                      touchDevice, opt_config, opt_preview) {
+                      opt_touch, opt_config, opt_preview, opt_embedded) {
   /**
    * @type cm.MapModel
    * @private
@@ -118,7 +119,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
     scaleControlPosition = google.maps.ControlPosition.LEFT_BOTTOM;
   }
   var minimalMapControls =
-      this.config_['minimal_map_controls'] || touchDevice || opt_preview;
+      this.config_['minimal_map_controls'] || opt_touch || opt_preview;
   var zoomControlStyle = minimalMapControls ?
       google.maps.ZoomControlStyle.SMALL :
       google.maps.ZoomControlStyle.DEFAULT;
@@ -140,7 +141,8 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
       ],
       'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
     },
-    'mapTypeControl': !opt_preview
+    'mapTypeControl': !opt_preview,
+    'scrollwheel': !opt_embedded
   });
 
   // The MapView has its own "mapTypeId", "center", and "zoom" properties so we

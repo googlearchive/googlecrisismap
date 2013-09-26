@@ -344,7 +344,7 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
   // The MapView must be created first because it replaces the contents of the
   // map <div> element, and other views add stuff within that <div> element.
   var mapView = new cm.MapView(mapElem, mapModel, appState, metadataModel,
-                               touch, config, preview);
+                               touch, config, preview, embedded);
   this.map_ = mapView.getMap();
   var self = this;
   goog.array.forEach(this.getMapCallbacks_, function(callback) {
