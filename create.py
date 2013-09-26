@@ -16,13 +16,21 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import base_handler
 import model
+import user_data
 
 
 class Create(base_handler.BaseHandler):
   """Handler that creates a new map."""
 
   def Post(self, domain, user):  # pylint: disable=unused-argument
+    """Creates a new map."""
     domain_role = model.GetInitialDomainRole(domain)
     map_object = model.Map.Create(
         '{"title": "Untitled map"}', domain, domain_role=domain_role)
+    acceptable_org = bool(self.request.get('acceptable_org'))
+    user_data.UserActionLog.Log(
+        user_data.Action.CREATE, map_id=map_object.id,
+        acceptable_purpose=bool(self.request.get('acceptable_purpose')),
+        acceptable_org=acceptable_org,
+        org_name=acceptable_org and self.request.get('organization') or '')
     self.redirect('.maps/%s' % map_object.id)

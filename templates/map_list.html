@@ -14,21 +14,22 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 
 {% block navbar %}
+  {% include "create.html" %}
   <div class="cm-button-area">
-    <form method="post" action=".create">
+    <form>
       {% if creator_domains|length > 1 %}
-        <select name="domain">
+        <select id="domain">
           {% for domain in creator_domains %}
             <option value="{{domain}}">{{domain}}</option>
           {% endfor %}
         </select>
       {% else %}
         {% if creator_domains %}
-          <input type="hidden" name="domain" value="{{creator_domains.0}}">
+          <input type="hidden" id="domain" value="{{creator_domains.0}}">
         {% endif %}
       {% endif %}
-      <input type="submit" class="cm-create cm-button"
-          title="Create a new map" value="Create map">
+      <input type="button" class="cm-create cm-button" onclick="showCreatePopup()"
+             title="Create a new map" value="Create map">
     </form>
   </div>
   {{block.super}}

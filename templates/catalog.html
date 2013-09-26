@@ -14,10 +14,11 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 
 {% block navbar %}
+  {% include "create.html" %}
   <div class="cm-button-area">
     <form method="post" action=".create">
       <input type="hidden" name="domain" value="{{domain}}">
-      <input type="submit" class="cm-create cm-button"
+      <input type="submit" class="cm-create cm-button" onclick="showCreatePopup()"
           title="Create a new map" value="Create map">
     </form>
   </div>
