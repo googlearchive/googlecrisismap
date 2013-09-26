@@ -183,6 +183,11 @@ cm.events.SHARE_EMAIL = 'SHARE_EMAIL';
 /** The user requested to change the opacity of a layer. */
 cm.events.CHANGE_OPACITY = 'CHANGE_OPACITY';
 
+// TODO(rew): the presenter should listen to this and upstate AppState
+// with the currently selected tab
+/** The user changed the selection in a tab view. */
+cm.events.TAB_SELECTION_CHANGED = 'TAB_SELECTION_CHANGED';
+
 /** The user requested to toggle whether a layer is enabled (not undoable). */
 cm.events.TOGGLE_LAYER = 'TOGGLE_LAYER';
 

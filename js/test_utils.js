@@ -156,6 +156,23 @@ FakeElement.prototype.getAttributeNode = function(name) {
 };
 
 /**
+ * Fake implementaiton of getElementsByTagName, used by goog.ui.TabBar.
+ * @param {string} name The name of the tag being sought.
+ * @return {Array.<FakeElement>}
+ */
+FakeElement.prototype.getElementsByTagName = function(name) {
+  var result = [];
+  for (var i = 0; i < this.childNodes.length; i++) {
+    var child = this.childNodes[i];
+    if (child.nodeName === name) {
+      result.push(child);
+    }
+    result.concat(child.getElementsByTagName(name));
+  }
+  return result;
+};
+
+/**
  * Fake implementation of setAttribute.
  * @param {string} name The attribute's name.
  * @param {string} value The attribute's value.
@@ -431,6 +448,7 @@ cm.TestBase = function() {
                               cm.ui.create('div', {'id': 'aboutText'}));
   var fakeHtml = cm.ui.create('html', {}, fakeBody);
   var fakeDocument = {
+    'addEventListener': function() {},
     'body': fakeBody,
     'createElement': FakeUi.create,
     'createTextNode': function(text) {
