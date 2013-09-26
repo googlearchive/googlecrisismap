@@ -268,7 +268,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     # Creating another entry with the same path_name should succeed.
     model.CatalogEntry.Create('foo.com', 'label', mm)
 
-  def testDelete(self):
+  def testCatalogDelete(self):
     mm, _ = test_utils.CreateMapAsAdmin(viewers=['random_user@gmail.com'])
     model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
 
@@ -346,6 +346,29 @@ class CatalogEntryTests(test_utils.BaseTest):
     maps = model.CatalogEntry.GetListed('foo.com')
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
+
+  def testMapDelete(self):
+    m, _ = test_utils.CreateMapAsAdmin(owners=['owner@example.com'],
+                                       editors=['editor@example.com'],
+                                       viewers=['viewer@example.com'])
+    map_id = m.id
+    delete_datetime = self.SetTime(1234567890)
+
+    # Non-owners should not be able to delete the map.
+    test_utils.SetUser('editor@example.com')
+    m = model.Map.Get(map_id)
+    self.assertRaises(perms.AuthorizationError, m.Delete)
+
+    test_utils.SetUser('viewer@example.com')
+    m = model.Map.Get(map_id)
+    self.assertRaises(perms.AuthorizationError, m.Delete)
+
+    # Owners should be able to delete the map.
+    test_utils.SetUser('owner@example.com')
+    m = model.Map.Get(map_id)
+    m.Delete()
+    self.assertEquals(delete_datetime, m.deleted)
+    self.assertEquals('owner@example.com', m.deleter.email())
 
 
 if __name__ == '__main__':

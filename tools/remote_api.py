@@ -18,6 +18,8 @@
 Instead of running this script directly, use the 'console' shell script,
 which sets up the PYTHONPATH and other necessary environment variables."""
 
+# This file conforms to PEP 8.  # pylint: disable=bad-indentation,g-bad-name
+
 import code
 import getpass
 import logging
@@ -112,11 +114,11 @@ def connect(url, email=None, password=None, exit_on_failure=False):
     return url, app_id
 
 def main():
-    parser = optparse.OptionParser(usage='''%prog [options] <appserver_url>
+    parser = optparse.OptionParser(usage='''%prog [options] <server_url> [args]
 
 Starts an interactive Python console connected to an App Engine datastore.
-Use the <appserver_url> argument to set the protocol, hostname, port number,
-and path to the remote_api handler.  If <appserver_url> does not include a
+Use the <server_url> argument to set the protocol, hostname, port number,
+and path to the remote_api handler.  If <server_url> does not include a
 protocol or port number, the default protocol is HTTPS.  The default path is
 /_ah/remote_api (the default for "remote_api: on" in app.yaml).  Examples:
 
@@ -129,8 +131,9 @@ protocol or port number, the default protocol is HTTPS.  The default path is
   # Connect to foo.org, port 80, try /bar/baz, then try /bar/baz/remote_api
   % %prog http://foo.org/bar/baz
 
-  # Connect to localhost, port 6789, path /_ah/remote_api
-  % %prog :6789''')
+  # Connect to localhost, port 6789, path /_ah/remote_api, and run "foo.py -x"
+  % %prog :6789 foo.py -- -x''')
+
     parser.add_option('-e', dest='email',
                       help='user e-mail (default: $USER_EMAIL)')
     parser.add_option('-c', dest='command', help='Python command to execute')
@@ -138,10 +141,10 @@ protocol or port number, the default protocol is HTTPS.  The default path is
 
     # Connect to the app server.
     if args:
-        url, app_id = connect(args[0], options.email, exit_on_failure=True)
+        url, app_id = connect(args.pop(0), options.email, exit_on_failure=True)
         banner = 'Connected to: ' + url
     else:
-        banner = 'Not connected.  Use connect(appserver_url) to connect.'
+        banner = 'Not connected.  Use connect(server_url) to connect.'
 
     # Set up more useful representations for interactive data manipulation
     # and debugging.  Alas, the App Engine runtime relies on the specific
@@ -158,6 +161,9 @@ protocol or port number, the default protocol is HTTPS.  The default path is
 
     if options.command:
         exec options.command
+    elif args:
+        sys.argv[:] = args
+        execfile(args[0], {})
     else:
         code.interact(banner, None, locals())
 

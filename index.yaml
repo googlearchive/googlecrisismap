@@ -73,33 +73,33 @@ indexes:
 - kind: MapModel
   properties:
   - name: domains
-  - name: is_deleted
+  - name: deleted
   - name: last_updated
     direction: desc
 
 - kind: MapModel
   properties:
-  - name: is_deleted
+  - name: deleted
   - name: created
     direction: desc
 
 - kind: MapModel
   properties:
-  - name: is_deleted
+  - name: deleted
   - name: last_updated
     direction: desc
 
 - kind: MapModel
   properties:
   - name: visibility
-  - name: is_deleted
+  - name: deleted
   - name: created
     direction: desc
 
 - kind: MapModel
   properties:
   - name: visibility
-  - name: is_deleted
+  - name: deleted
   - name: last_updated
     direction: desc
 

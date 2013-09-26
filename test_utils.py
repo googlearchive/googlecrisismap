@@ -84,9 +84,11 @@ def SetupHandler(url, handler, post_data=None):
 def DatetimeWithUtcnow(now):
   """Creates a replacement for datetime.datetime with a stub for utcnow()."""
   # datetime.datetime is a built-in type, so we can't reassign its 'utcnow'
-  # member; we have to subclass datetime.datetime instead.
+  # member; we have to subclass datetime.datetime instead.  The App Engine
+  # SDK randomly uses both utcnow() and now(), so we have to patch both. :/
   return type('datetime.datetime', (datetime.datetime,),
-              {'utcnow': staticmethod(lambda: now)})
+              {'utcnow': staticmethod(lambda: now),
+               'now': staticmethod(lambda: now)})
 
 
 def CreateMapAsAdmin(**kwargs):
@@ -154,6 +156,7 @@ class BaseTest(unittest.TestCase):
       return determine_eta_posix(eta, countdown, current_time)
     self.SetForTest(taskqueue.Task, '_Task__determine_eta_posix',
                     staticmethod(FakeDetermineEtaPosix))
+    return now
 
   def assertBetween(self, low, high, actual):
     """Checks that a value is within a desired range."""

@@ -15,6 +15,7 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import base64
+import datetime
 import json
 import os
 import random
@@ -24,6 +25,9 @@ import perms
 import utils
 
 from google.appengine.ext import db
+
+# A datetime value to represent null (the datastore cannot query on None).
+NEVER = datetime.datetime.utcfromtimestamp(0)
 
 
 def StructFromModel(model):
@@ -192,6 +196,11 @@ class MapModel(db.Model):
   last_updated = db.DateTimeProperty(auto_now=True)
   last_updater = db.UserProperty(auto_current_user=True)
 
+  # To mark a map as deleted, set this to anything other than NEVER; the map
+  # won't be returned by Map.Get* methods, though it remains in the datastore.
+  deleted = db.DateTimeProperty(default=NEVER)
+  deleter = db.UserProperty()
+
   # List of users who can set the flags and permission lists on this object.
   owners = db.StringListProperty()
 
@@ -218,10 +227,8 @@ class MapModel(db.Model):
   # Cache of the most recent MapVersion.
   current_version = db.ReferenceProperty(reference_class=MapVersionModel)
 
-  # Whether the map is deleted. This is lazy deletion, so MapModel or
-  # MapVersionModel entities related to this map are not actually deleted. If
-  # this flag is set, then the map is unreachable by users. If this value is
-  # set to true, it can only be reversed within the Datastore.
+  # TODO(kpy): This property is here just so that migrate_map_is_deleted.py can
+  # run.  After the migration is complete, it should be removed.
   is_deleted = db.BooleanProperty(default=False)
 
 
@@ -470,7 +477,8 @@ class Map(object):
   id = property(lambda self: str(self.model.key().name()))
 
   # Make the other properties of the underlying MapModel readable on the Map.
-  for x in ['creator', 'created', 'last_updated', 'last_updater',
+  for x in ['created', 'creator', 'last_updated', 'last_updater',
+            'deleted', 'deleter',  # soon to be added here: 'blocked', 'blocker'
             'title', 'description', 'current_version', 'world_readable',
             'owners', 'editors', 'viewers', 'domains', 'domain_role']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
@@ -482,7 +490,7 @@ class Map(object):
   @staticmethod
   def _GetAll(domain=None):
     """NO ACCESS CHECK.  Yields all non-deleted maps; can filter by domain."""
-    query = MapModel.all().filter('is_deleted =', False)
+    query = MapModel.all().filter('deleted =', NEVER)
     if domain:
       query = query.filter('domains =', domain)
     for model in query.order('-last_updated'):
@@ -512,11 +520,10 @@ class Map(object):
     if key_name == '0':
       return EmptyMap()
     model = MapModel.get_by_key_name(key_name)
-    if not model or model.is_deleted:
-      return None
-    map_object = Map(model)
-    map_object.AssertAccess(perms.Role.MAP_VIEWER)
-    return map_object
+    if model and model.deleted == NEVER:
+      map_object = Map(model)
+      map_object.AssertAccess(perms.Role.MAP_VIEWER)
+      return map_object
 
   @staticmethod
   def Create(maproot_json, domain, owners=None, editors=None, viewers=None,
@@ -580,7 +587,8 @@ class Map(object):
   def Delete(self):
     """Marks a map as deleted (so it won't be returned by Get or GetAll)."""
     self.AssertAccess(perms.Role.MAP_OWNER)
-    self.model.is_deleted = True
+    self.model.deleted = datetime.datetime.utcnow()
+    self.model.deleter = utils.GetCurrentUser()
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
 
