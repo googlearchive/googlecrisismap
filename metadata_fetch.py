@@ -104,6 +104,7 @@ import email.utils
 import hashlib
 import json
 import logging
+import re
 import StringIO
 import time
 import xml.etree.ElementTree
@@ -208,32 +209,39 @@ def GetKml(content):
         return archive.read(name)
 
 
-def GetAllXmlTags(content):
-  """Gets a list of all tag names (without XML namespaces) in a string of XML.
+def ParseXml(content):
+  """Parses an XML string into an xml.etree.ElementTree.Element object."""
+  try:
+    return xml.etree.ElementTree.XML(content)
+  except xml.etree.ElementTree.ParseError:
+    # When an XML string says it's UTF-8 but actually isn't, try assuming that
+    # it's Latin-1.  (This matches the behaviour of google.maps.KmlLayer.)
+    try:
+      return xml.etree.ElementTree.XML(
+          '<?xml version="1.0" encoding="latin-1"?>' +
+          re.sub(r'^\s*<\?xml[^>]*\?>', '', content))
+    except xml.etree.ElementTree.ParseError:
+      raise ValueError('Not well-formed XML')
 
-  Args:
-    content: A string with valid XML structure.
 
-  Returns:
-    A list of all the tag names, with their XML namespaces removed.
-  """
-  return [element.tag.split('}')[-1]
-          for element in xml.etree.ElementTree.XML(content).getiterator()]
+def GetAllXmlTags(root_element):
+  """Gets a list of all tags (without XML namespaces) in an XML tree."""
+  return [element.tag.split('}')[-1] for element in root_element.getiterator()]
 
 
-def HasUnsupportedKml(content):
+def HasUnsupportedKml(root_element):
   """Checks whether a KML file has any features unsupported by the Maps API.
 
   This method does not perform full checking; for example, it does not check
   whether KML files referenced in NetworkLinks contain unsupported features.
 
   Args:
-    content: A string of KML content.
+    root_element: An XML Element object containing the parsed file.
 
   Returns:
     True if there are any unsupported features found in the KML file.
   """
-  tags = GetAllXmlTags(content)
+  tags = GetAllXmlTags(root_element)
   return (tags.count('Placemark') > KML_MAX_FEATURES or
           tags.count('NetworkLink') > KML_MAX_NETWORK_LINKS or
           not KML_SUPPORTED_TAGS.issuperset(tags))
@@ -268,25 +276,29 @@ def GatherMetadata(layer_type, response):
   if 'Etag' in response.headers:
     metadata['fetch_etag'] = response.headers['Etag']
 
-  try:
+  if layer_type in [maproot.LayerType.KML, maproot.LayerType.GEORSS]:
+    try:
+      root_element = ParseXml(content)
+    except ValueError:
+      logging.warn('Content is not valid XML')
+      metadata['ill_formed'] = True
+      return metadata
+
+    tags = GetAllXmlTags(root_element)
+
     if layer_type == maproot.LayerType.KML:
       # TODO(cimamoglu): Look for placemarks within network links.
-      tags = GetAllXmlTags(content)
       if not set(tags) & set(['Placemark', 'NetworkLink', 'GroundOverlay']):
         metadata['has_no_features'] = True
       if set(tags) & set(['NetworkLink', 'GroundOverlay']):
         if 'update_time' in metadata:
           del metadata['update_time']  # we don't know the actual update time
-      if HasUnsupportedKml(content):
+      if HasUnsupportedKml(root_element):
         metadata['has_unsupported_kml'] = True
 
     if layer_type == maproot.LayerType.GEORSS:
-      if 'item' not in GetAllXmlTags(content):
+      if 'item' not in tags:
         metadata['has_no_features'] = True
-
-  except xml.etree.ElementTree.ParseError:
-    logging.warn('Content is not valid XML')
-    metadata['ill_formed'] = True
 
   return metadata
 

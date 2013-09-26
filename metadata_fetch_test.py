@@ -89,37 +89,49 @@ class MetadataFetchTest(test_utils.BaseTest):
     self.assertEquals('asdf', metadata_fetch.GetKml(
         CreateZip([('xyz.kml', 'asdf'), ('abc.kml', 'zxcv')])))
 
-  def testGetAllXmlTags(self):
-    kml = """<?xml version="1.0" encoding="UTF-8"?>
-             <kml xmlns="http://earth.google.com/kml/2.2">
-             <Document><name>blah</name><name>re</name><description>foo
-             </description></Document></kml>"""
-    self.assertEquals(['kml', 'Document', 'name', 'name', 'description'],
-                      metadata_fetch.GetAllXmlTags(kml))
+  def testParseXml(self):
+    # ParseXml should accept ASCII text declared as UTF-8
+    xml = metadata_fetch.ParseXml(
+        '<?xml version="1.0" encoding="UTF-8"?><a>foo</a>')
+    self.assertEquals('foo', xml.text)
+
+    # ParseXml should accept UTF-8 text declared as UTF-8
+    xml = metadata_fetch.ParseXml(
+        '<?xml version="1.0" encoding="UTF-8"?><a>f\xc3\xb8o</a>')
+    self.assertEquals(u'f\xf8o', xml.text)
+
+    # ParseXml should handle non-UTF-8 text declared incorrectly as UTF-8
+    xml = metadata_fetch.ParseXml(
+        '<?xml version="1.0" encoding="UTF-8"?><a>f\xf8o</a>')
+    self.assertEquals(u'f\xf8o', xml.text)
 
   def testHasUnsupportedKml(self):
-    supported_kml = """<?xml version="1.0" encoding="UTF-8"?>
-                       <kml xmlns="http://earth.google.com/kml/2.2">
-                       <Document><name>blah</name></Document></kml>"""
+    supported_kml = metadata_fetch.ParseXml(
+        """<?xml version="1.0" encoding="UTF-8"?>
+           <kml xmlns="http://earth.google.com/kml/2.2">
+           <Document><name>blah</name></Document></kml>""")
     # Unsupported tag.
-    unsupported_kml_1 = """<?xml version="1.0" encoding="UTF-8"?>
-                           <kml xmlns="http://earth.google.com/kml/2.2">
-                           <Document><geomColor></geomColor></Document></kml>"""
+    unsupported_kml_1 = metadata_fetch.ParseXml(
+        """<?xml version="1.0" encoding="UTF-8"?>
+           <kml xmlns="http://earth.google.com/kml/2.2">
+           <Document><geomColor></geomColor></Document></kml>""")
     # Supported tags, but case matters.
-    unsupported_kml_2 = """<?xml version="1.0" encoding="UTF-8"?>
-                           <kml xmlns="http://earth.google.com/kml/2.2">
-                           <Document><NAME></NAME></Document></kml>"""
+    unsupported_kml_2 = metadata_fetch.ParseXml(
+        """<?xml version="1.0" encoding="UTF-8"?>
+           <kml xmlns="http://earth.google.com/kml/2.2">
+           <Document><NAME></NAME></Document></kml>""")
     # Supported tags, but maximum number of network links is exceeded.
-    unsupported_kml_3 = """<?xml version="1.0" encoding="UTF-8"?>
-                           <kml xmlns="http://earth.google.com/kml/2.2">
-                           <Document><NetworkLink>foo</NetworkLink>
-                           <NetworkLink>foo</NetworkLink><NetworkLink>foo
-                           </NetworkLink><NetworkLink>foo</NetworkLink>
-                           <NetworkLink>foo</NetworkLink><NetworkLink>foo
-                           </NetworkLink><NetworkLink>foo</NetworkLink>
-                           <NetworkLink>foo</NetworkLink><NetworkLink>foo
-                           </NetworkLink><NetworkLink>foo</NetworkLink>
-                           <NetworkLink>foo</NetworkLink></Document></kml>"""
+    unsupported_kml_3 = metadata_fetch.ParseXml(
+        """<?xml version="1.0" encoding="UTF-8"?>
+           <kml xmlns="http://earth.google.com/kml/2.2">
+           <Document><NetworkLink>foo</NetworkLink>
+           <NetworkLink>foo</NetworkLink><NetworkLink>foo
+           </NetworkLink><NetworkLink>foo</NetworkLink>
+           <NetworkLink>foo</NetworkLink><NetworkLink>foo
+           </NetworkLink><NetworkLink>foo</NetworkLink>
+           <NetworkLink>foo</NetworkLink><NetworkLink>foo
+           </NetworkLink><NetworkLink>foo</NetworkLink>
+           <NetworkLink>foo</NetworkLink></Document></kml>""")
 
     self.assertFalse(metadata_fetch.HasUnsupportedKml(supported_kml))
     self.assertTrue(metadata_fetch.HasUnsupportedKml(unsupported_kml_1))
