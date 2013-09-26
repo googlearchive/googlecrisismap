@@ -23,9 +23,9 @@ find . -name '*.pyc' -exec rm -f {} ';'
 if py.test-2.7 --version 2>/dev/null; then
     # Use py.test if it's available (it's faster and produces a nicer report).
     if [ -n "$1" ]; then
-        py.test-2.7 "$@"
+        py.test-2.7 --tb=short "$@"
     else
-        py.test-2.7 *_test.py
+        py.test-2.7 --tb=short *_test.py
     fi
 else
     # Otherwise, just execute the tests one by one.
