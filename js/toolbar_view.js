@@ -44,6 +44,9 @@ var MSG_UNTITLED_LAYER = goog.getMsg('Untitled Layer');
 /** @desc Link text to add a new folder to the map. */
 var MSG_ADD_NEW_FOLDER = goog.getMsg('Add folder');
 
+/** @desc Link text to return to map list. */
+var MSG_BACK_TO_MAP_LIST = goog.getMsg('Back to map list');
+
 /** @desc Default title for an empty folder. */
 var MSG_UNTITLED_FOLDER = goog.getMsg('Untitled Folder');
 
@@ -59,13 +62,14 @@ var MSG_UNSAVED_CHANGES = goog.getMsg(
  * @param {cm.MapModel} mapModel The map model.
  * @param {boolean} enableSave True to enable the "Save" function.
  * @param {boolean} devMode True to enable the "Show JSON" function.
+ * @param {string} mapListUrl The URL endpoint for the user's map list.
  * @param {boolean} touch True if the map is being edited on a touch device.
  * @param {string=} opt_diffUrl URL used in devMode to diff the current
  *     maproot against the original maproot.
  * @constructor
  */
-cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
-    opt_diffUrl) {
+cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
+    touch, opt_diffUrl) {
   // Initially, neither the undo nor the redo operation can be done.
   var undoLink = cm.ui.createLink('Undo');
   var redoLink = cm.ui.createLink('Redo');
@@ -83,9 +87,11 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, touch,
       goog.dom.classes.enable(redoLink, cm.css.DISABLED, !e.redo_possible);
   }, this);
 
-  var toolbarElem = cm.ui.create('div', {'class': cm.css.TOOLBAR},
-                                 undoLink, cm.ui.SEPARATOR_DOT,
-                                 redoLink, cm.ui.SEPARATOR_DOT);
+  var toolbarElem = cm.ui.create('div', {'class': cm.css.TOOLBAR});
+  var backToMapsLink = cm.ui.createLink(MSG_BACK_TO_MAP_LIST, mapListUrl);
+  cm.ui.append(toolbarElem, backToMapsLink, cm.ui.SEPARATOR_DOT,
+               undoLink, cm.ui.SEPARATOR_DOT, redoLink, cm.ui.SEPARATOR_DOT);
+
   if (!touch) {
     var arrangeLink = cm.ui.createLink(MSG_ARRANGE_LAYERS_LINK);
     cm.ui.append(toolbarElem, arrangeLink, cm.ui.SEPARATOR_DOT);

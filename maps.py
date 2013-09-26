@@ -253,6 +253,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
   elif map_object:  # draft map
     result['map_root'] = json.loads(map_object.GetCurrentJson())
     result['map_id'] = map_object.id
+    result['map_list_url'] = request.root_path + '/.maps'
     result['diff_url'] = request.root_path + '/.diff/' + map_object.id
     result['save_url'] = request.root_path + '/.api/maps/' + map_object.id
     result['share_url'] = request.root_path + '/.share/' + map_object.id

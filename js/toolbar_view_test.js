@@ -18,7 +18,7 @@ function ToolbarViewTest() {
   this.parent_ = cm.ui.create('div');
   this.mapModel_ = createMockInstance(cm.MapModel);
   this.toolbar_ = new cm.ToolbarView(
-      this.parent_, this.mapModel_, true, true, false);
+      this.parent_, this.mapModel_, true, true, '/root/.maps', false);
 }
 ToolbarViewTest.prototype = new cm.TestBase();
 registerTestSuite(ToolbarViewTest);
@@ -117,7 +117,8 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
         }});
       });
   new cm.ToolbarView(
-      this.parent_, this.mapModel_, true, true, false, '/root/.diff/xyz');
+      this.parent_, this.mapModel_, true, true, '/root/.maps', false,
+      '/root/.diff/xyz');
 
   // Test that the saved diff is displayed first.
   var diffLink = expectDescendantOf(this.parent_, withText('Diff'));
