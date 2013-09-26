@@ -154,6 +154,7 @@ h2 + h3 {
 .cm-perms-user-settings table td {
     text-align:center;
     padding-left:6px;
+    padding-right:6px;
 }
 
 .cm-perms-user-settings table th {

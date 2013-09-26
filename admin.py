@@ -25,14 +25,14 @@ import utils
 INITIAL_DOMAIN_ROLE_CHOICES = (
     (domains.NO_ROLE, 'Have no access to the map'),
     (perms.Role.MAP_VIEWER, 'Be able to view the map'),
-    (perms.Role.MAP_EDITOR, 'Be able to edit the map'),
-    (perms.Role.MAP_OWNER, 'Have full rights to the map'),
+    (perms.Role.MAP_EDITOR, 'Be able to view and edit the map'),
+    (perms.Role.MAP_OWNER, 'Be able to view, edit and delete the map'),
 )
 
 USER_PERMISSION_CHOICES = (
     (perms.Role.MAP_CREATOR, 'Can create maps'),
-    (perms.Role.CATALOG_EDITOR, 'Can edit the catalog'),
-    (perms.Role.DOMAIN_ADMIN, 'Has admin permissions'),
+    (perms.Role.CATALOG_EDITOR, 'Can publish maps'),
+    (perms.Role.DOMAIN_ADMIN, 'Can manage users'),
 )
 
 

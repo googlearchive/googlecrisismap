@@ -21,7 +21,7 @@ specific language governing permissions and limitations under the License.
     <input type="hidden" name="form" value="domain-settings">
     <ul>
       <li>
-        <span class="cm-perms-setting-label">Default label:</span>
+        <span class="cm-perms-setting-label">Default published map:</span>
         <span class="cm-perms-setting-value">
           <select name='default_label'>
             {% if domain.default_label not in labels and domain.default_label != 'empty' %}
@@ -43,13 +43,6 @@ specific language governing permissions and limitations under the License.
               </option>
             {% endif %}
           </select>
-        </span>
-      </li>
-      <li>
-        <span class="cm-perms-setting-label">Publisher owns their labels:</span>
-        <span class="cm-perms-setting-value">
-          <input type="checkbox" name="has_sticky_catalog_entries"
-              {{domain.has_sticky_catalog_entries|yesno:"checked"}}>
         </span>
       </li>
       <li>
@@ -103,7 +96,7 @@ specific language governing permissions and limitations under the License.
 <div class="cm-perms-new-user-form">
   <form method="post">
     <input type="hidden" name="form" value="add-user">
-    <p>User's email or domain name:
+    <p>User's email:
       <input type="text" name="new_email" label="Email">
     <p>Can create maps:
       <input type="checkbox" name="new_email.MAP_CREATOR" label="Map Creator">
