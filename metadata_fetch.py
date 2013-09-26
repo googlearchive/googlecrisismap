@@ -274,7 +274,8 @@ def GatherMetadata(layer_type, response):
       if not set(tags) & set(['Placemark', 'NetworkLink', 'GroundOverlay']):
         metadata['has_no_features'] = True
       if set(tags) & set(['NetworkLink', 'GroundOverlay']):
-        del metadata['update_time']  # we don't know the actual update time
+        if 'update_time' in metadata:
+          del metadata['update_time']  # we don't know the actual update time
       if HasUnsupportedKml(content):
         metadata['has_unsupported_kml'] = True
 

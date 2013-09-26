@@ -170,6 +170,28 @@ class MetadataFetchTest(test_utils.BaseTest):
     }, metadata_fetch.GatherMetadata('KML', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=content)))
 
+    # Valid KML with a NetworkLink, but no ETag or Last-modified header.
+    content = '<kml><Document><NetworkLink/></Document></kml>'
+    self.assertEquals({
+        'fetch_status': 200,
+        'fetch_length': len(content),
+        'length': len(content),
+        'md5_hash': hashlib.md5(content).hexdigest()
+    }, metadata_fetch.GatherMetadata('KML', utils.Struct(
+        status_code=200, headers={}, content=content)))
+
+    # Valid KML with a NetworkLink, which invalidates the update time.
+    content = '<kml><Document><NetworkLink/></Document></kml>'
+    self.assertEquals({
+        'fetch_status': 200,
+        'fetch_length': len(content),
+        'fetch_last_modified': LAST_MODIFIED_STRING,
+        'fetch_etag': ETAG,
+        'length': len(content),
+        'md5_hash': hashlib.md5(content).hexdigest()
+    }, metadata_fetch.GatherMetadata('KML', utils.Struct(
+        status_code=200, headers=RESPONSE_HEADERS, content=content)))
+
   def testGatherMetadataGeorss(self):
     # Valid GeoRSS.
     content = '<rss><channel><item></item></channel></rss>'
