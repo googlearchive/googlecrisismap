@@ -181,8 +181,14 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   cm.events.onChange(this.mapModel_, ['base_map_style', 'base_map_style_name'],
                      this.updateMapTypeMenu, this);
   // When the map type changes to custom or OSM, the menu may need updating.
-  cm.events.onChange(this.appState_, 'map_type', this.updateMapTypeMenu, this);
+  cm.events.onChange(appState, 'map_type', this.updateMapTypeMenu, this);
   this.updateMapTypeMenu();
+
+  // The map type menu has to be forced to a larger width when OSM is an
+  // available option -- once just after the map finishes loading, and then
+  // again whenever the map type changes.
+  cm.events.listen(this.map_, 'idle', this.updateMapTypeMenuWidth, this);
+  cm.events.onChange(this.map_, 'mapTypeId', this.updateMapTypeMenuWidth, this);
 
   // Expose our 'viewport' property as a property of the AppState.
   this.bindTo('viewport', appState);
@@ -340,8 +346,8 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
     this.map_.mapTypes.set(id, /** @type google.maps.MapType */(styledMap));
     mapTypeIds.push(id);
   }
-  if (this.osmEnabled_ || currentMapType === cm.MapModel.Type.OSM ||
-      modelMapType === cm.MapModel.Type.OSM) {
+  if (this.osmEnabled_ || modelMapType === cm.MapModel.Type.OSM ||
+      currentMapType === cm.MapModel.Type.OSM) {
     // Add the OSM map type to the map type registry and show it in the menu.
     id = /** @type string */(
         cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]);
@@ -363,6 +369,24 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
       'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
     }
   });
+};
+
+/**
+ * Forces the map type menu to be wide enough to contain the "OpenStreetMap"
+ * label, when OSM is an available option in the menu.
+ */
+cm.MapView.prototype.updateMapTypeMenuWidth = function() {
+  var controls = this.map_.controls[google.maps.ControlPosition.TOP_RIGHT];
+  var controlParent = (controls.getAt(0) || {}).parentNode;
+  if (controlParent) {  // controls may be empty during initialization
+    if (this.map_.mapTypes.get(/** @type string */(
+        cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]))) {
+      controlParent.lastChild.style.width = '125px';
+      // Trigger a layout update so the controls don't overlap.
+      controls.push(cm.ui.create('div', {'index': -1}));
+      controls.pop();
+    }
+  }
 };
 
 /** Updates the copyright notice based on the currently selected map type. */
@@ -702,4 +726,4 @@ cm.MapView.prototype.zoomToLayer = function(id) {
 cm.MapView.MSG_OSM_COPYRIGHT_HTML = goog.getMsg(
     'Map data \u00a9 ' +
     '<a href="http://www.openstreetmap.org/copyright" target="_blank">' +
-    'OpenStreetMap</a> contributors');
+    '<b>OpenStreetMap</b></a> contributors');

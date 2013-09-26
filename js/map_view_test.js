@@ -78,7 +78,10 @@ function MapViewTest() {
   expectCall(this.map_.setOptions)(
       this.expectedMapTypeControlOptions_).willRepeatedly(returnWith(null));
 
-  this.map_.controls = [[], [], [], [], [], [], [], [], [], [], [], [], []];
+  this.map_.controls = [];
+  for (var i = 0; i < 13; i++) {
+    this.map_.controls.push({getAt: function() { }, push: function() { }});
+  }
   this.map_.mapTypes = createMockInstance(google.maps.MapTypeRegistry);
 
   this.infoWindow_ = this.expectNew_('google.maps.InfoWindow');
