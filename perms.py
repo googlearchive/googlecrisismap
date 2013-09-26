@@ -194,6 +194,20 @@ def GetSubjectsInDomain(domain):
   return result
 
 
+def GetDomains(subject, role):
+  """Retrieves all the domains where the subject has role permissions."""
+  # Order is important here; we go from strongest role to weakest, because
+  # stronger roles implicitly grant the weaker ones.
+  DOMAIN_ROLES = (Role.DOMAIN_ADMIN, Role.CATALOG_EDITOR, Role.MAP_CREATOR)
+  if role not in DOMAIN_ROLES:
+    return []
+  perm_list = Query(subject, None, None)
+  # Because stronger roles grant weaker ones, we take from the front of the
+  # list to the role we are searching for.
+  qualifying_roles = DOMAIN_ROLES[:DOMAIN_ROLES.index(role)+1]
+  return list(set(p.target for p in perm_list if p.role in qualifying_roles))
+
+
 class AccessPolicy(object):
   """Wraps up authorization for user actions."""
 

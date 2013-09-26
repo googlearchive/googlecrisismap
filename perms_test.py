@@ -295,6 +295,22 @@ class PermsTests(test_utils.BaseTest):
     perms.Revoke(subject, role, target)
     self.assertFalse(perms.CheckAccess(role, target))
 
+  def testGetDomains(self):
+    subj = 'subject@anywhere.com'
+    test_utils.BecomeAdmin()
+    perms.Grant(subj, perms.Role.MAP_CREATOR, 'map-creator.com')
+    perms.Grant(subj, perms.Role.CATALOG_EDITOR, 'catalog-editor.com')
+    perms.Grant(subj, perms.Role.DOMAIN_ADMIN, 'domain-admin.com')
+    self.assertEqual([], perms.GetDomains('foo@bar.com', 'not-a-domain-role'))
+    self.assertItemsEqual(
+        ['domain-admin.com'], perms.GetDomains(subj, perms.Role.DOMAIN_ADMIN))
+    self.assertItemsEqual(
+        ['domain-admin.com', 'catalog-editor.com'],
+        perms.GetDomains(subj, perms.Role.CATALOG_EDITOR))
+    self.assertItemsEqual(
+        ['domain-admin.com', 'catalog-editor.com', 'map-creator.com'],
+        perms.GetDomains(subj, perms.Role.MAP_CREATOR))
+
 
 if __name__ == '__main__':
   test_utils.main()
