@@ -71,9 +71,6 @@ class ClientConfig(db.Model):
   # Whether or not to activate the editing UI
   enable_editing = db.BooleanProperty(default=False)
 
-  # Whether to enable metadata pipeline
-  enable_metadata_pipeline = db.BooleanProperty(default=False)
-
   # Which side to show the layers panel on ('left' or 'right')
   panel_side = db.StringProperty(default='right')
 
