@@ -15,7 +15,9 @@
  */
 goog.provide('cm.MetadataModel');
 
+goog.require('goog.Timer');
 goog.require('goog.net.Jsonp');
+goog.require('goog.structs.Set');
 
 
 /**
