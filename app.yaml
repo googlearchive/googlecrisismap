@@ -33,6 +33,10 @@ handlers:
   login: admin
 
 # Static file handlers
+- url: /favicon.ico
+  static_files: static/favicon.ico
+  upload: static/favicon.ico
+
 - url: .*/.static/(.*)
   static_files: static/\1
   upload: static/(.*)
