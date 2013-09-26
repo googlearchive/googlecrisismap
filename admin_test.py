@@ -43,7 +43,8 @@ class AdminDomainTest(test_utils.BaseTest):
     post_data = dict(form='create-domain', xsrf_token='XSRF')
     return self.DoPost(AdminUrl(domain), post_data, status=status)
 
-  def DoUserPermissionsPost(self, domain, new_perms, new_user=None, status=302):
+  def DoUserPermissionsPost(self, domain, new_perms, new_user=None,
+                            domain_role=None, status=302):
     post_data = dict(form='user-permissions', xsrf_token='XSRF')
     for user, role, should_delete in new_perms:
       post_data['%s.permission' % user] = role
@@ -52,6 +53,7 @@ class AdminDomainTest(test_utils.BaseTest):
     new_email, new_role = new_user or ('', perms.Role.MAP_CREATOR)
     post_data['new_user'] = new_email
     post_data['new_user.permission'] = new_role
+    post_data['domain_role'] = domain_role or 'NO_ROLE'
     return self.DoPost(AdminUrl(domain), post_data, status=status)
 
   def DoNewUserPost(self, domain, email, role, status=302):
@@ -144,6 +146,22 @@ class AdminDomainTest(test_utils.BaseTest):
                                  (('outsider', 'DOMAIN_ADMIN', True),))
     self.assertNotIn('outsider', perms.GetSubjectsForTarget('xyz.com'))
 
+  def testPost_SetDomainRole(self):
+    with test_utils.RootLogin():
+      perms.Grant('xyz.com', perms.Role.DOMAIN_ADMIN, 'xyz.com')
+      perms.Grant('xyz.com', perms.Role.MAP_CREATOR, 'xyz.com')
+      self.DoUserPermissionsPost(
+          'xyz.com', (), domain_role=perms.Role.CATALOG_EDITOR)
+    self.assertEqual({perms.Role.CATALOG_EDITOR},
+                     perms.GetSubjectsForTarget('xyz.com')['xyz.com'])
+
+  def testPost_SetDomainRoleNone(self):
+    with test_utils.RootLogin():
+      perms.Grant('xyz.com', perms.Role.CATALOG_EDITOR, 'xyz.com')
+      self.DoUserPermissionsPost(
+          'xyz.com', (), domain_role=admin.NO_PERMISSIONS)
+    self.assertNotIn('xyz.com', perms.GetSubjectsForTarget('xyz.com'))
+
   def testPost_MultipleChangesDontInterfere(self):
     with test_utils.RootLogin():
       # Demote insider to MAP_CREATOR; revoke all permissions for outsider;
@@ -151,11 +169,13 @@ class AdminDomainTest(test_utils.BaseTest):
       self.DoUserPermissionsPost(
           'xyz.com', (('insider', perms.Role.MAP_CREATOR, False),
                       ('outsider', perms.Role.DOMAIN_ADMIN, True)),
-          new_user=('recipient@gmail.test', perms.Role.CATALOG_EDITOR))
+          new_user=('recipient@gmail.test', perms.Role.CATALOG_EDITOR),
+          domain_role=perms.Role.DOMAIN_ADMIN)
     new_perms = perms.GetSubjectsForTarget('xyz.com')
     self.assertEqual({perms.Role.MAP_CREATOR}, new_perms['insider'])
     self.assertNotIn('outsider', new_perms)
     self.assertEqual({perms.Role.CATALOG_EDITOR}, new_perms['recipient'])
+    self.assertEqual({perms.Role.DOMAIN_ADMIN}, new_perms['xyz.com'])
 
   def testPost_NewUserInvalidEmail(self):
     with test_utils.RootLogin():
@@ -218,6 +238,14 @@ class AdminDomainTest(test_utils.BaseTest):
     self.assertEqual('label-b', domain.default_label)
     self.assertFalse(domain.has_sticky_catalog_entries)
     self.assertEqual(perms.Role.MAP_EDITOR, domain.initial_domain_role)
+
+  def testDomainSettingsPost_NoInitialDomainRole(self):
+    with test_utils.RootLogin():
+      domains.Domain.Create(
+          'xyz.com', initial_domain_role=perms.Role.MAP_CREATOR)
+      self.DoDomainSettingsPost(
+          'xyz.com', 'label', False, admin.NO_PERMISSIONS)
+    self.assertEqual(None, domains.Domain.Get('xyz.com').initial_domain_role)
 
   def testSetRolesForDomain(self):
     # Anyone at xyz.com can create maps on xyz or on abc.com

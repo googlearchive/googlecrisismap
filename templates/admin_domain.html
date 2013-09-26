@@ -77,6 +77,24 @@ specific language governing permissions and limitations under the License.
         <th scope="col">Permissions</th>
         <th scope="col">Delete</th>
       </tr>
+      <tr>
+        <td class="cm-perms-subject">Anyone at {{domain.name}}</td>
+        <td>
+          <select name="domain_role">
+            <option value="NO_PERMISSIONS"
+                {% if not domain_role %}selected{% endif %}>
+              Has no permissions
+            </option>
+            {% for choice in user_permission_choices %}
+              <option value="{{choice.0}}"
+                  {% if choice.0 == domain_role %}selected{% endif %}>
+                {{choice.1}}
+              </option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>&nbsp;</td>
+      </tr>
       {% for user_role in user_roles %}
         <tr>
           <td class="cm-perms-subject">{{user_role.0.email}}</td>
