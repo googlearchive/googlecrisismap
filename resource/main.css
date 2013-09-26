@@ -236,6 +236,7 @@ html, body {
 /* Panel contents */
 .cm-panel-header {
   position:relative;
+  margin-top:12px;
 }
 
 /* Make the map title and description appear editable. */
@@ -266,6 +267,11 @@ html, body {
   cursor:default;
   color:#666;
   vertical-align:2px;
+}
+.cm-map-publisher {
+  color:#999;
+  font-size:11px;
+  margin:0 0 6px;
 }
 .cm-map-description, .cm-preview.cm-map-description {
   font-size:12px;
@@ -299,7 +305,7 @@ html, body {
 .cm-panel-inner {
   overflow-x:visible;
   overflow-y:hidden;
-  padding:20px 0 10px 10px;
+  padding:6px 0 10px 10px;
   position:absolute;
   top:0;
   bottom:0;
@@ -319,7 +325,6 @@ html, body {
 }
 .cm-panel-outer-header {
   overflow-x:visible;
-  margin-top:35px;
   margin-right:10px;
 }
 .cm-panel-layers {
@@ -784,9 +789,7 @@ input[type=checkbox]:checked::after {
 
 /* Toolbar */
 .cm-toolbar {
-  position:absolute;
-  top:4px;
-  margin-right:12px;
+  font-size:11px;
 }
 .cm-toolbar a.cm-disabled,
 .cm-toolbar a.cm-disabled:hover {

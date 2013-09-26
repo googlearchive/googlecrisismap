@@ -25,8 +25,11 @@ goog.require('cm.MetadataModel');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
+goog.require('cm.util');
 goog.require('goog.array');
 goog.require('goog.dom.classes');
+goog.require('goog.events.EventType');
+goog.require('goog.module');
 
 /** @const @type string */
 var EMPTY_PNG = '//maps.gstatic.com/mapfiles/transparent.png';
@@ -59,8 +62,8 @@ var MSG_DRAFT_TOOLTIP = goog.getMsg(
  *     enable_editing: Allow any editing at all?
  * @constructor
  */
-cm.PanelView = function(frameElem, parentElem, mapContainer,
-                        model, metadataModel, appState, opt_config) {
+cm.PanelView = function(frameElem, parentElem, mapContainer, model,
+                        metadataModel, appState, opt_config) {
   /**
    * @type Element
    * @private
@@ -164,11 +167,14 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
   cm.events.listen(expand, 'click', toggleCollapseOnClick);
   mapContainer.appendChild(expand);
 
-  // Create the elements for the map title and description.
+  // Create the panel elements: editing toolbar (if editing), outer header,
+  // links, and layer list.
   var setDefaultViewLink, resetLink;
   var publisherName = this.config_['publisher_name'];
+  var toolbarContainer;
   cm.ui.append(parentElem,
       this.panelInner_ = cm.ui.create('div', {'class': cm.css.PANEL_INNER},
+          toolbarContainer = cm.ui.create('div', {}),
           this.panelOuterHeader_ = cm.ui.create(
               'div', {'class': cm.css.PANEL_OUTER_HEADER},
               collapse,
@@ -180,7 +186,8 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
                       MSG_DRAFT_LABEL) : null,
                   this.titleElem_ = cm.ui.create('h1',
                       {'class': cm.css.MAP_TITLE}),
-                  publisherName ? cm.ui.create('div', {},
+                  publisherName ? cm.ui.create('div',
+                      {'class': cm.css.MAP_PUBLISHER},
                       'Published by ' + publisherName) : null),
               this.descElem_ = cm.ui.create(
                   'div', {'class': cm.css.MAP_DESCRIPTION})),
@@ -197,11 +204,23 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
     this.descElem_.style.display = 'none';
   }
 
-  // Populate the elements with the current values.
+  // Populate the editing toolbar.
+  if (this.config_['enable_editing']) {
+    // This loads the 'edit' module, then calls the function in arg 3, passing
+    // it the object that the module exported with the name 'cm.ToolbarView'.
+    var me = this;
+    goog.module.require('edit', 'cm.ToolbarView', function(ToolbarView) {
+      var toolbarView = new ToolbarView(
+          toolbarContainer, me.model_, !!me.config_['save_url'],
+          me.config_['dev_mode'], me.config_['map_list_url'],
+          cm.util.browserSupportsTouch(), me.config_['diff_url']);
+      cm.events.emit(me.panelInner_, goog.events.EventType.RESIZE);
+    });
+  }
+
+  // Populate the title and description and listen for changes.
   this.updateTitle_();
   this.updateDescription_();
-
-  // Keep this view up to date with changes in the model.
   cm.events.onChange(model, 'title', this.updateTitle_, this);
   cm.events.onChange(model, 'description', this.updateDescription_, this);
 
@@ -241,22 +260,35 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
   // Add views for all the layers.
   goog.array.forEach(layers.getArray(), this.addLayer_, this);
 
+  // Listen to changes in the inner panel's height.
+  this.positionPanelLayers_();
+  cm.events.listen(this.panelInner_, goog.events.EventType.RESIZE,
+                   this.positionPanelLayers_, this);
+
   // Listen to the open/close events triggered on the layers panel container.
   cm.events.listen(parentElem, 'panelopen', this.open_, this);
   cm.events.listen(parentElem, 'panelclose', this.close_, this);
 };
 
 /**
- * Adjusts the top of the panel layers container and, if necessary, the maximum
- * height of the whole panel. This is triggered in initialize.js by resizing
- * of the browser window, so that the map's height can be passed in.
+ * Set the panel's maxHeight. This is triggered in initialize.js when the
+ * browser window is resized, so that the map's height can be passed in.
  * @param {number?} height The maximum height of the panel, in pixels.
  */
-cm.PanelView.prototype.updatePanelPositionAndSize = function(height) {
-  this.panelLayers_.style.top = this.panelLayersTop_.offsetTop + 'px';
+cm.PanelView.prototype.setMaxHeight = function(height) {
+  this.panelMaxHeight_ = height;
   this.parentElem_.style.maxHeight = height ? height + 'px' : '';
-  this.panelLayers_.style.maxHeight =
-      height ? (height - this.panelLayersTop_.offsetTop) + 'px' : '';
+  this.positionPanelLayers_();
+};
+
+/**
+ * Adjusts the top and maxHeight of the panel layers container.
+ * @private
+ */
+cm.PanelView.prototype.positionPanelLayers_ = function() {
+  this.panelLayers_.style.maxHeight = this.panelMaxHeight_ ?
+      (this.panelMaxHeight_ - this.panelLayersTop_.offsetTop) + 'px' : '';
+  this.panelLayers_.style.top = this.panelLayersTop_.offsetTop + 'px';
 };
 
 /**
@@ -287,9 +319,7 @@ cm.PanelView.prototype.updateTitle_ = function() {
   var title = /** @type string */(this.model_.get('title'));
   cm.ui.setText(this.titleElem_, title);
   cm.ui.document.title = title;
-
-  // Trigger updates to the panel size and position.
-  cm.events.emit(goog.global, 'resize');
+  cm.events.emit(this.panelInner_, goog.events.EventType.RESIZE);
 };
 
 /**
@@ -303,9 +333,7 @@ cm.PanelView.prototype.updateDescription_ = function() {
   // are any block tags in the map description.  Remove them and scrolling works
   // just fine.  Block tags in layer descriptions are harmless, though.
   // Requires further investigation.
-
-  // Trigger updates to the panel size and position.
-  cm.events.emit(goog.global, 'resize');
+  cm.events.emit(this.panelInner_, goog.events.EventType.RESIZE);
 };
 
 /**

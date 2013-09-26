@@ -117,8 +117,7 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
   // In floating or embedded mode, the panel has variable height based on its
   // content, but we need to limit its maximum height to fit over the map.
   var floatMaxHeight = getMapHeight() - 10;  // allow 5px top and bottom margin
-  panelView.updatePanelPositionAndSize(embedded || floating ?
-      floatMaxHeight : null);
+  panelView.setMaxHeight(embedded || floating ? floatMaxHeight : null);
 
   // TODO(kpy): Rework this value.  The relevant Maps API bug, which hid the
   // searchbox behind other controls, has since been fixed.
@@ -320,14 +319,6 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     // Mark the body as editable so other styles can adjust accordingly.
     goog.dom.classes.add(frameElem, cm.css.EDIT);
 
-    // This loads the 'edit' module, then calls the function in arg 3, passing
-    // it the object that the module exported with the name 'cm.ToolbarView'.
-    goog.module.require('edit', 'cm.ToolbarView', function(ToolbarView) {
-      var innerPanelElem = cm.ui.getByClass(cm.css.PANEL_INNER, panelElem);
-      var toolbarView = new ToolbarView(
-          innerPanelElem, mapModel, !!config['save_url'], config['dev_mode'],
-          config['map_list_url'], touch, config['diff_url']);
-    });
     goog.module.require('edit', 'cm.EditPresenter', function(EditPresenter) {
       var edit_presenter = new EditPresenter(
           appState, mapModel, arranger, config);
