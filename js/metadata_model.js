@@ -109,9 +109,9 @@ cm.MetadataModel.prototype.hasUnsupportedFeatures = function(layer) {
  * @param {cm.LayerModel} layer The layer model.
  * @return {boolean} True if the attempt to fetch the data gave a server error.
  */
-cm.MetadataModel.prototype.httpErrorOccurred = function(layer) {
+cm.MetadataModel.prototype.fetchErrorOccurred = function(layer) {
   var metadata = this.get(layer.getSourceAddress()) || {};
-  return !!metadata['http_error_occurred'];
+  return !!metadata['fetch_error_occurred'];
 };
 
 

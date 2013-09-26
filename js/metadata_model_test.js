@@ -40,7 +40,7 @@ function MetadataModelTest() {
     },
     'KML:http://j.com/z.kml': {
       'length': 0,
-      'http_error_occurred': true,
+      'fetch_error_occurred': true,
       'has_unsupported_kml': true
     }
   }, METADATA_URL);
@@ -54,14 +54,14 @@ MetadataModelTest.prototype.testGetters = function() {
   var layer1 = this.mapModel_.getLayer('1');
   expectTrue(this.metadataModel_.isEmpty(layer1));
   expectFalse(this.metadataModel_.hasUnsupportedFeatures(layer1));
-  expectFalse(this.metadataModel_.httpErrorOccurred(layer1));
+  expectFalse(this.metadataModel_.fetchErrorOccurred(layer1));
   expectEq(10, this.metadataModel_.getLength(layer1));
   expectEq(123000000, this.metadataModel_.getUpdateTime(layer1));
 
   var layer5 = this.mapModel_.getLayer('5');
   expectTrue(this.metadataModel_.isEmpty(layer5));
   expectTrue(this.metadataModel_.hasUnsupportedFeatures(layer5));
-  expectTrue(this.metadataModel_.httpErrorOccurred(layer5));
+  expectTrue(this.metadataModel_.fetchErrorOccurred(layer5));
   expectEq(0, this.metadataModel_.getLength(layer5));
   expectEq(null, this.metadataModel_.getUpdateTime(layer5));
 };
@@ -118,7 +118,7 @@ MetadataModelTest.prototype.testUpdates = function() {
         'update_time': 123457000
       },
       'KML:http://j.com/z.kml': {
-        'http_error_occurred': true
+        'fetch_error_occurred': true
       },
       'GEORSS:http://foo': {
         'length': 789,
@@ -137,7 +137,7 @@ MetadataModelTest.prototype.testUpdates = function() {
   expectEq(123457000, this.metadataModel_.getUpdateTime(layer1));
 
   expectFalse(this.metadataModel_.hasUnsupportedFeatures(layer5));
-  expectTrue(this.metadataModel_.httpErrorOccurred(layer5));
+  expectTrue(this.metadataModel_.fetchErrorOccurred(layer5));
 
   expectEq(123459000, this.metadataModel_.getUpdateTime(layer4));
   expectEq(789, this.metadataModel_.getLength(layer4));

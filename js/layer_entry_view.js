@@ -495,7 +495,7 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
   cm.ui.clear(this.downloadElem_);
   if (!isFolder) {
     var type = /** @type cm.LayerModel.Type */(this.model_.get('type'));
-    var hideLink = this.metadataModel_.httpErrorOccurred(this.model_) ||
+    var hideLink = this.metadataModel_.fetchErrorOccurred(this.model_) ||
         this.model_.get('suppress_download_link');
     if (!hideLink) {
       var url = /** @type string */(this.model_.get('url'));
