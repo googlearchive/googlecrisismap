@@ -12,7 +12,7 @@
 
 """Script to migrate permissions.
 
-Migrates permissions from their historical location in Config (see model.py) to
+Migrates permissions from their historical location in Config (see config.py) to
 their new home in PermissionModel (see perms.py).  This file added to Perforce
 for historical reasons; it can safely be deleted once the migration is complete.
 """
@@ -32,21 +32,17 @@ ROLE_PREFIX = 'global_roles:'
 
 
 def Migrate(do_it=False):
+  Populate(do_it)
+  Purge(do_it)
+
+
+def Populate(do_it):
   old_configs = config.GetAll()
   for key, value in old_configs.iteritems():
     if not key.startswith(ROLE_PREFIX):
-      if key == 'default_publisher_domain':
-        print 'Deleting legacy entry %s' % key
-        if do_it:
-          config.Delete(key)
-      else:
-        print 'Ignoring config %s; not a permission.' % key
       continue
     user = key[len(ROLE_PREFIX):]
     if not re.search(r'^[\w@.-]+$', user):
-      print 'Found bogus entry %s; deleting' % key
-      if do_it:
-        config.Delete(key)
       continue
     print 'Translating perms for %s (%s)' % (user, value)
     if '@' in user:
@@ -65,5 +61,23 @@ def Migrate(do_it=False):
           perms.Grant(user, perm[0], perm[1])
       else:
         print '...User %s has unexpected permission %s; ignoring' % (user, perm)
+
+
+def Purge(do_it):
+  old_configs = config.GetAll()
+  for key, _ in old_configs.iteritems():
+    if not key.startswith(ROLE_PREFIX):
+      if key == 'default_publisher_domain':
+        print 'Deleting legacy entry %s' % key
+        if do_it:
+          config.Delete(key)
+      else:
+        print 'Ignoring config %s; not a permission.' % key
+      continue
+    user = key[len(ROLE_PREFIX):]
+    if not re.search(r'^[\w@.-]+$', user):
+      print 'Deleting bogus entry %s' % key
+    else:
+      print 'Deleting permissions for user %s' % user
     if do_it:
       config.Delete(key)
