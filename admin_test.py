@@ -15,9 +15,11 @@ __author__ = 'rew@google.com (Becky Willrich)'
 import urllib
 
 import admin
+import domains
 import model
 import perms
 import test_utils
+import utils
 
 
 class AdminTest(test_utils.BaseTest):
@@ -41,6 +43,9 @@ class AdminTest(test_utils.BaseTest):
     self.assertTrue('admin@xyz.com' in response.body)
     self.assertTrue('catalog@xyz.com' in response.body, response.body)
     self.assertTrue('outsider@not-xyz.com' in response.body)
+    # Navigation bar should be present; cm-navbar is the class of the
+    # navigation bar's <div>.
+    self.assertTrue('cm-navbar' in response.body)
 
   def testGet_NoPermissions(self):
     # xyz.com does not grant administrative permissions to the entire
@@ -69,6 +74,21 @@ class AdminTest(test_utils.BaseTest):
     self.assertItemsEqual([perms.Role.DOMAIN_ADMIN, perms.Role.MAP_CREATOR,
                            perms.Role.CATALOG_EDITOR],
                           perms.GetDomainRoles('admin2@xyz.com', 'xyz.com'))
+
+  def testPost_CreateDomain(self):
+    self.assertIsNone(domains.Domain.Get('bar.com'))
+    post_data = urllib.urlencode([('catalog@bar.com.CATALOG_EDITOR', 'on')])
+    test_utils.SetUser('foo@bar.com')
+
+    # This should fail with an authorization failure
+    self.DoPost('/bar.com/.admin', post_data, status=403)
+
+    # Adding the create flag should allow it to succeed
+    self.DoPost('/bar.com/.admin?create=1', post_data, status=302)
+    self.assertTrue(domains.Domain.Get('bar.com'))
+    # The current user should have been granted administrative rights
+    self.assertTrue(perms.CheckAccess(
+        perms.Role.DOMAIN_ADMIN, 'bar.com', utils.GetCurrentUser()))
 
   def testValidateEmail(self):
     self.assertTrue(admin.ValidateEmail('user@domain.subdomain.com'))
@@ -126,6 +146,7 @@ class AdminMapTest(test_utils.BaseTest):
     self.DoPost('/.admin/' + map_id, 'wipe=1')
     self.assertEquals(None, model.Map.Get(map_id))
     self.assertEquals(None, model.Map.GetDeleted(map_id))
+
 
 if __name__ == '__main__':
   test_utils.main()

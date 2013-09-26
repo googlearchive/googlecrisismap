@@ -17,7 +17,6 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 import base_handler
 import model
 import profiles
-import utils
 
 
 class Catalog(base_handler.BaseHandler):
@@ -25,15 +24,13 @@ class Catalog(base_handler.BaseHandler):
 
   def Get(self, domain, user):  # pylint: disable=unused-argument
     """Displays the list of catalog entries."""
-    entries = model.CatalogEntry.GetAll(domain)
     user_profile = profiles.Profile.Get(user.email())
     consent_answered = (user_profile.marketing_consent_answered if
                         user_profile else False)
 
     self.response.out.write(self.RenderTemplate('catalog.html', {
         'domain': domain,
-        'entries': list(entries),
-        'user_domain': utils.GetCurrentUserDomain(),
+        'entries': list(model.CatalogEntry.GetAll(domain)),
         'marketing_consent_answered': consent_answered
     }))
 

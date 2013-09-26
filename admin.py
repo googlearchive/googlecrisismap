@@ -17,8 +17,10 @@ __author__ = 'rew@google.com (Becky Willrich)'
 import re
 
 import base_handler
+import domains
 import model
 import perms
+import utils
 
 
 def ValidateEmail(email):
@@ -49,13 +51,13 @@ class Admin(base_handler.BaseHandler):
     """Displays the administration page for the given domain."""
     perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain)
     all_users = perms.GetSubjectsInDomain(domain)
-    domains = sorted(((u, all_users[u]) for u in all_users if '@' not in u),
-                     cmp=lambda x, y: cmp(x[0], y[0]))
+    domain_list = sorted(((u, all_users[u]) for u in all_users if '@' not in u),
+                         cmp=lambda x, y: cmp(x[0], y[0]))
     emails = sorted(((u, all_users[u]) for u in all_users if '@' in u),
                     cmp=lambda x, y: cmp(x[0], y[0]))
 
     self.response.out.write(self.RenderTemplate('admin_domain.html', {
-        'domain': domain, 'admin': user, 'users': emails, 'domains': domains
+        'domain': domain, 'admin': user, 'users': emails, 'domains': domain_list
     }))
 
   def GetGeneralAdmin(self):
@@ -97,11 +99,26 @@ class Admin(base_handler.BaseHandler):
     return new_perms
 
   def Post(self, domain, user):
-    perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain, user)
-    new_perms = self.FindNewPerms(self.request.POST, domain)
-    for user_or_domain, new_roles in new_perms.iteritems():
-      perms.SetDomainRoles(user_or_domain, domain, new_roles)
-    self.redirect(self.request.path_qs)
+    """Sets permissions for the domain, creating if appropriate."""
+    if self.request.get('create'):
+      self.CreateDomain(domain, user)
+      self.redirect(self.request.path)
+    else:
+      perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain, user)
+      new_perms = self.FindNewPerms(self.request.POST, domain)
+      for user_or_domain, new_roles in new_perms.iteritems():
+        perms.SetDomainRoles(user_or_domain, domain, new_roles)
+      self.redirect(self.request.path_qs)
+
+  def CreateDomain(self, domain_name, user):
+    domain = domains.Domain.Get(domain_name)
+    if domain:
+      raise base_handler.Error(404, 'Domain %s already exists' % domain_name)
+    email = utils.NormalizeEmail(user.email())
+    perms.Grant(email, perms.Role.DOMAIN_ADMIN, domain_name)
+    perms.Grant(email, perms.Role.CATALOG_EDITOR, domain_name)
+    perms.Grant(email, perms.Role.MAP_CREATOR, domain_name)
+    domains.Domain.Create(domain_name)
 
 
 class AdminMap(base_handler.BaseHandler):

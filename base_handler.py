@@ -21,12 +21,13 @@ import os
 import webapp2
 
 import config
+import domains
 import perms
+import utils
 # pylint: disable=g-import-not-at-top
 try:
   import languages
 except ImportError:
-  import utils
   languages = utils.Struct(ALL_LANGUAGES=['en'])
 
 from google.appengine.api import users
@@ -177,6 +178,7 @@ class BaseHandler(webapp2.RequestHandler):
     """
     path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
     context = dict(context, root=config.Get('root_path') or '')
+    context['navbar'] = self._GetNavbarContext()
     return template.render(path, context)
 
   def WriteJson(self, data):
@@ -189,3 +191,14 @@ class BaseHandler(webapp2.RequestHandler):
     else:  # just emit the JSON literal
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(output)
+
+  def _GetNavbarContext(self):
+    email = utils.GetCurrentUserEmail()
+    domain_name = utils.GetCurrentUserDomain()
+    return {
+        'user_domain': domain_name,
+        'admin_domains': perms.GetDomains(email, perms.Role.DOMAIN_ADMIN),
+        'catalog_domains': perms.GetDomains(email, perms.Role.CATALOG_EDITOR),
+        'add_domain_create_link': domains.Domain.Get(domain_name) is None,
+        'is_admin': perms.CheckAccess(perms.Role.ADMIN, perms.GLOBAL_TARGET),
+    }

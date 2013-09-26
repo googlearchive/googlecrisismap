@@ -42,8 +42,31 @@ specific language governing permissions and limitations under the License.
       {# Navigation links #}
       {% block navlinks %}
         <li><a href="{{root}}/.maps">Your list of maps</a></li>
-        {% if user_domain %}
-          <li><a href="{{root}}/{{user_domain}}/.catalog">Published maps</a></li>
+
+        {% for catalog_domain in navbar.catalog_domains %}
+          <li><a href="{{root}}/{{catalog_domain}}/.catalog">
+              Published maps ({{catalog_domain}})
+          </a></li>
+        {% endfor %}
+
+        {% if navbar.add_domain_create_link %}
+          <li>
+            <form method="post" action="{{root}}/{{navbar.user_domain}}/.admin?create=1">
+              <a href="#" onclick="this.parentNode.submit()">
+                Create domain {{navbar.user_domain}}
+              </a>
+            </form>
+          </li>
+        {% endif %}
+
+        {% for admin_domain in navbar.admin_domains %}
+          <li><a href="{{root}}/{{admin_domain}}/.admin">
+              Administer {{admin_domain}}
+          </a></li>
+        {% endfor %}
+
+        {% if navbar.is_admin %}
+          <li><a href="{{root}}/.admin">Administer maps</a></li>
         {% endif %}
       {% endblock navlinks %}
     </ul>
