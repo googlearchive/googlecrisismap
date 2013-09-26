@@ -25,7 +25,10 @@ function PanelViewTest() {
   this.mapModel_.getAllLayerIds = function() { return []; };
   this.metadataModel_ = new google.maps.MVCObject();
   this.appState_ = new cm.AppState();
-  this.config_ = {'enable_editing': false};
+  this.config_ = {
+    'enable_editing': false,
+    'enable_layer_filter': true
+  };
 }
 PanelViewTest.prototype = new cm.TestBase();
 registerTestSuite(PanelViewTest);
@@ -51,10 +54,11 @@ PanelViewTest.prototype.testConstructor = function() {
                      withText('A giant green monster attacked!'));
 };
 
-/** Tests hiding the map title and description. */
+/** Tests the config flag that hides the map title and description. */
 PanelViewTest.prototype.testConstructorHiddenHeader = function() {
   this.config_ = {
     'enable_editing': false,
+    'enable_layer_filter': true,
     'hide_panel_header': true
   };
   var parent = this.createView_();
@@ -65,6 +69,7 @@ PanelViewTest.prototype.testConstructorHiddenHeader = function() {
   expectEq('none', description.style.display);
 };
 
+/** Tests the link to reset the current view of the map. */
 PanelViewTest.prototype.testResetViewLink = function() {
   var parent = this.createView_();
   var link = expectDescendantOf(parent, withText(cm.MSG_RESET_VIEW_LINK));
@@ -241,7 +246,7 @@ PanelViewTest.prototype.testCollapseAndExpand = function() {
   expectEq('', cm.ui.document.body.className);
 };
 
-/** Tests updateTitle_. */
+/** Tests that map title changes propagate to document title changes. */
 PanelViewTest.prototype.testUpdateTitle = function() {
   var parent = this.createView_();
   expectDescendantOf(parent, 'h1', withText('Monster Attack 2000'));
@@ -250,13 +255,17 @@ PanelViewTest.prototype.testUpdateTitle = function() {
   expectEq('New Title', cm.ui.document.title);
 };
 
-/** Tests filterLayers_. */
+/**
+ * Tests the binding between the AppState's query and the layer filter's
+ * input value.
+ */
 PanelViewTest.prototype.testFilterLayers = function() {
   var parent = this.createView_();
   var query = 'some query';
   var newQuery = 'something else';
   var layerFilterInput = findDescendantOf(parent,
     withClass(cm.css.LAYER_FILTER));
+
   // Test two-way binding: when appState changes, input box value changes.
   this.appState_.setFilterQuery(query);
   expectEq(query, layerFilterInput.value);
@@ -277,6 +286,13 @@ PanelViewTest.prototype.testFilterLayers = function() {
   });
   cm.events.emit(layerFilterInput, 'input');
   expectEq(newQuery, query);
+};
+
+/** Tests that the layer filter is controlled by the config variable. */
+PanelViewTest.prototype.testFilterLayers = function() {
+  this.config_ = {'enable_layer_filter': false};
+  var parent = this.createView_();
+  expectNoDescendantOf(parent, withClass(cm.css.LAYER_FILTER));
 };
 
 /**

@@ -196,6 +196,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
   // links, and layer list.
   var setDefaultViewLink, resetLink;
   var publisherName = this.config_['publisher_name'];
+  var enableLayerFilter = this.config_['enable_layer_filter'];
   var toolbarContainer;
   cm.ui.append(parentElem,
       this.panelInner_ = cm.ui.create('div', {'class': cm.css.PANEL_INNER},
@@ -224,10 +225,10 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
                       cm.ui.createLink(cm.MSG_SET_DEFAULT_VIEW_LINK) : null,
                   setDefaultViewLink && cm.ui.create('br'),
                   resetLink = cm.ui.createLink(cm.MSG_RESET_VIEW_LINK)),
-              this.layerFilterBox_ = cm.ui.create('input',
+              this.layerFilterBox_ = enableLayerFilter ? cm.ui.create('input',
                 {'type': 'text',
                  'class': cm.css.LAYER_FILTER,
-                 'placeholder': cm.MSG_LAYER_FILTER_PLACEHOLDER}),
+                 'placeholder': cm.MSG_LAYER_FILTER_PLACEHOLDER}) : null,
               this.matchingLayersMessage_ = cm.ui.create('span',
                 {'class': cm.css.LAYER_FILTER_INFO}),
               this.panelLayers_ = cm.ui.create('div',
@@ -251,28 +252,31 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
       cm.events.emit(me.panelInner_, goog.events.EventType.RESIZE);
     });
   }
-  // Enable the layer filter.
-  cm.events.listen(this.layerFilterBox_,
-    ['change', 'input', 'cut', 'paste', 'keyup'], function() {
-    cm.events.emit(this, cm.events.FILTER_QUERY_CHANGED,
-      {'query': this.layerFilterBox_.value});
-    this.filterLayers_();
-  }, this);
-  // Set up a one-time listener because the app state filter_query is set from
-  // the URL after the panel view is constructed.
-  var filterToken = cm.events.onChange(this.appState_, 'filter_query',
-    function() {
-      cm.events.unlisten(filterToken);
-      this.layerFilterBox_.value = this.appState_.getFilterQuery();
-      this.filterLayers_();
-  }, this);
-  // Show or hide the layer filter as appropriate.
-  this.updateLayerFilterVisibility_();
-  // TODO(romano): There should be UX decison made about how the editor and
-  // layer filter interact, since this listener could result in a layer
-  // disappearing after being edited.
-  cm.events.listen(goog.global, cm.events.MODEL_CHANGED, this.filterLayers_,
-                   this);
+  if (this.layerFilterBox_) {
+    // Enable the layer filter.
+    cm.events.listen(this.layerFilterBox_,
+      ['change', 'input', 'cut', 'paste', 'keyup'], function() {
+        cm.events.emit(this, cm.events.FILTER_QUERY_CHANGED,
+                       {'query': this.layerFilterBox_.value});
+        this.filterLayers_();
+      }, this);
+    // Set up a one-time listener because the app state filter_query is set from
+    // the URL after the panel view is constructed.
+    var filterToken = cm.events.onChange(this.appState_, 'filter_query',
+      function() {
+        cm.events.unlisten(filterToken);
+        this.layerFilterBox_.value = this.appState_.getFilterQuery();
+        this.filterLayers_();
+      }, this);
+    // Show or hide the layer filter as appropriate.
+    this.updateLayerFilterVisibility_();
+
+    // TODO(romano): There should be UX decison made about how the editor and
+    // layer filter interact, since this listener could result in a layer
+    // disappearing after being edited.
+    cm.events.listen(goog.global, cm.events.MODEL_CHANGED, this.filterLayers_,
+                     this);
+  }
 
   // Populate the title and description and listen for changes.
   this.updateTitle_();
@@ -420,9 +424,12 @@ cm.PanelView.prototype.filterLayers_ = function() {
  * @private
  */
 cm.PanelView.prototype.updateLayerFilterVisibility_ = function() {
-  var hide = this.model_.getAllLayerIds().length <
-    LAYER_FILTER_VISIBILITY_THRESHOLD;
-  goog.dom.classes.enable(this.layerFilterBox_, cm.css.HIDDEN, hide);
+  if (this.layerFilterBox_) {
+    // TODO(romano): do not count layers in locked folders.
+    var hide = this.model_.getAllLayerIds().length <
+        LAYER_FILTER_VISIBILITY_THRESHOLD;
+    goog.dom.classes.enable(this.layerFilterBox_, cm.css.HIDDEN, hide);
+  }
 };
 
 /**
@@ -458,8 +465,8 @@ cm.PanelView.prototype.close_ = function() {
 cm.PanelView.prototype.addLayer_ = function(layer, index) {
   var id = /** @type string */(layer.get('id'));
   this.layerEntryViews_[id] = new cm.LayerEntryView(
-      this.panelLayers_, layer, this.metadataModel_,
-      this.appState_, this.config_, index);
+      this.panelLayers_, layer, this.metadataModel_, this.appState_,
+      this.config_, index);
   var view = this.layerEntryViews_[id];
   cm.events.listen(view, cm.events.DELETE_LAYER, function(e) {
     cm.events.emit(goog.global, cm.events.DELETE_LAYER,

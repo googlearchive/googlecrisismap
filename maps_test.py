@@ -60,7 +60,8 @@ class MapTest(test_utils.BaseTest):
                        'enable_osm_map_type': False,
                        'enable_osm_map_type_editing': False,
                        'minimal_map_controls': False,
-                       'hide_panel_header': False},
+                       'hide_panel_header': False,
+                       'enable_layer_filter': False},
                       client_config.AsDict())
 
     config_dict = client_config.AsDict()

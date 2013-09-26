@@ -101,6 +101,9 @@ class ClientConfig(db.Model):
   # Whether to allow OpenStreetMap as a base map option in the editor.
   enable_osm_map_type_editing = db.BooleanProperty(default=False)
 
+  # Whether to enable the layer filter in the panel.
+  enable_layer_filter = db.BooleanProperty(default=False)
+
   # Note: When adding future settings, the default value should reflect the
   # behavior prior to the introduction of the new setting.  To avoid confusion
   # with None, the default value for Boolean settings should always be False.
