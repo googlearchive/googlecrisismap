@@ -11,45 +11,45 @@ specific language governing permissions and limitations under the License. */
 
 /* Buttons are styled to match the Maps API Visual Refresh. */
 .cm-mapbutton {
-  font-family:Roboto,Arial,sans-serif;
-  font-size:11px;
-  color:#000;
-  text-align:center;
-  margin:5px;
-  padding:1px 6px;
-  overflow:hidden;
-  background:white;
+  font-family: roboto, arial, sans-serif;
+  font-size: 11px;
+  color: #000;
+  text-align: center;
+  margin: 5px;
+  padding: 1px 6px;
+  overflow: hidden;
+  background: white;
   background-clip: padding-box;
   -webkit-background-clip: padding-box;
-  border:1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 2px;
-  box-shadow:0 1px 4px -1px rgba(0, 0, 0, 0.3);
-  -moz-box-shadow:0 1px 4px -1px rgba(0, 0, 0, 0.3);
-  -webkit-box-shadow:0 1px 4px -1px rgba(0, 0, 0, 0.3);
-  cursor:pointer;
-  user-select:none;
-  -moz-user-select:none;
-  -webkit-user-select:none;
+  box-shadow: 0 1px 4px -1px rgba(0, 0, 0, 0.3);
+  -moz-box-shadow: 0 1px 4px -1px rgba(0, 0, 0, 0.3);
+  -webkit-box-shadow: 0 1px 4px -1px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
 }
 
-.cm-mapbutton:hover {
-  background-color:#ebebeb;
+.cm-mapbutton: hover {
+  background-color: #ebebeb;
 }
 
 .cm-mapbutton.cm-selected,
-.cm-mapbutton.cm-selected :hover {
-  background-color:#e0e0e0;
-  box-shadow:0 1px 4px -2px rgba(0, 0, 0, 0.3);
-  -moz-box-shadow:0 1px 4px -2px rgba(0, 0, 0, 0.3);
-  -webkit-box-shadow:0 1px 4px -2px rgba(0, 0, 0, 0.3);
+.cm-mapbutton.cm-selected : hover {
+  background-color: #e0e0e0;
+  box-shadow: 0 1px 4px -2px rgba(0, 0, 0, 0.3);
+  -moz-box-shadow: 0 1px 4px -2px rgba(0, 0, 0, 0.3);
+  -webkit-box-shadow: 0 1px 4px -2px rgba(0, 0, 0, 0.3);
 }
 
 .cm-touch .cm-mapbutton {
-  font-size:14px;
-  line-height:221%;
-  padding:1.38px 9.67px;
+  font-size: 14px;
+  line-height: 221%;
+  padding: 1.38px 9.67px;
 }
 
 .cm-touch .cm-mapbutton.cm-selected {
-  padding:1.38px 8.28px;
+  padding: 1.38px 8.28px;
 }

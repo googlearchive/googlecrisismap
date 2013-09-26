@@ -11,181 +11,181 @@ specific language governing permissions and limitations under the License. */
 
 /* Common layout styles for administration pages */
 .cm-body a {
-  color:#15c;
-  text-decoration:none;
+  color: #15c;
+  text-decoration: none;
 }
 .cm-body a:hover {
-  text-decoration:underline;
+  text-decoration: underline;
 }
 .cm-header {
-  padding:12px;
-  border-bottom:1px solid #ebebeb;
-  height:23px; /* makes header 48px total height */
+  padding: 12px;
+  border-bottom: 1px solid #ebebeb;
+  height: 23px; /* makes header 48px total height */
 }
 .cm-header a, .cm-header a:hover {
-  color:inherit;
-  text-decoration:none;
+  color: inherit;
+  text-decoration: none;
 }
 .cm-userbar {
-  float:right;
-  padding:5px 12px; /* aligns with 24px grid */
+  float: right;
+  padding: 5px 12px; /* aligns with 24px grid */
 }
 .cm-navbar {
-  float:left;
-  padding:12px 12px;
-  width:144px;
+  float: left;
+  padding: 12px 12px;
+  width: 144px;
 }
 .cm-navbar .cm-button-area {
-  margin-top:-1px; /* aligns with 12px grid */
+  margin-top: -1px; /* aligns with 12px grid */
 }
 .cm-navbar .cm-domain-select {
-  height:24px;
+  height: 24px;
 }
 .cm-navbar .cm-domain-select select {
-  margin-left:0;
+  margin-left: 0;
 }
 .cm-navbar .cm-create.cm-button {
-  margin:0 0 1px;
+  margin: 0 0 1px;
 }
 .cm-navbar ul {
-  margin-top:5px; /* aligns with 24px grid */
-  padding:0;
-  line-height:18px;
-  list-style-type:none;
+  margin-top: 5px; /* aligns with 24px grid */
+  padding: 0;
+  line-height: 18px;
+  list-style-type: none;
 }
 .cm-navbar li {
-  padding-top:6px;
+  padding-top: 6px;
 }
 .cm-content {
-  margin-left:168px; /* cm-navbar width + left padding + right padding */
-  margin-right:12px;
+  margin-left: 168px; /* cm-navbar width + left padding + right padding */
+  margin-right: 12px;
 }
 .cm-p {
-  margin:12px 0;
+  margin: 12px 0;
 }
 
 /* Main heading */
 .cm-header h1 {
-  display:block;
-  margin:2px 0; /* aligns with 12px grid */
+  display: block;
+  margin: 2px 0; /* aligns with 12px grid */
 }
 /* BETA label */
 .cm-body sup {
-  font-size:61.8%; /* golden ratio */
+  font-size: 61.8%; /* golden ratio */
 }
 
 /* Common tags */
 th, td {
-  vertical-align:baseline;
+  vertical-align: baseline;
 }
-input[type="text"], textarea {
-  font-size:13px;
-  font-family:arial,sans-serif;
-  color:#222;
+input[type='text'], textarea {
+  font-size: 13px;
+  font-family: arial, sans-serif;
+  color: #222;
 }
 
 /* Map listing page */
 .cm-map-list {
-  max-width:840px;
-  border-collapse:collapse;
+  max-width: 840px;
+  border-collapse: collapse;
 }
 .cm-map-list th.cm-map-list-header {
-  font-size:11px;
-  color:#666;
-  text-transform:none;
+  font-size: 11px;
+  color: #666;
+  text-transform: none;
 }
 .cm-map-list th, .cm-map-list td {
-  padding:2px 4px;
-  text-align:left;
-  vertical-align:baseline;
-  cursor:default;
-  line-height:18px;
+  padding: 2px 4px;
+  text-align: left;
+  vertical-align: baseline;
+  cursor: default;
+  line-height: 18px;
 }
 .cm-map-list th {
-  text-transform:uppercase;
-  border-bottom:1px solid #eee;
-  font-size:11px;
-  color:#666;
-  white-space:nowrap;
-  padding:4px 16px 1px 4px; /* baseline on 24px grid */
-  height:17px; /* total height 24px */
+  text-transform: uppercase;
+  border-bottom: 1px solid #eee;
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  padding: 4px 16px 1px 4px; /* baseline on 24px grid */
+  height: 17px; /* total height 24px */
 }
 .cm-map-list tr:hover td {
-  background:#ffd;
+  background: #ffd;
 }
 .cm-map-list .cm-title-column {
-  overflow-x:hidden;
-  min-width:16em;
+  overflow-x: hidden;
+  min-width: 16em;
 }
 .cm-map-list .cm-title-column div,
 .cm-map-list .cm-publish-column div {
-  position:relative;
-  padding-right:20px;
+  position: relative;
+  padding-right: 20px;
 }
 .cm-map-list .cm-title-column a {
-  color:#222;
+  color: #222;
 }
 .cm-map-list .cm-title-column a:hover {
-  color:#15c;
+  color: #15c;
 }
 .cm-map-list .cm-updated-column {
-  overflow-x:hidden;
-  white-space:nowrap;
-  width:1%;
+  overflow-x: hidden;
+  white-space: nowrap;
+  width: 1%;
 }
 .cm-map-list .cm-delete-button {
-  width:18px;
-  height:18px;
-  background:url('delete_x.png');
-  position:absolute;
-  top:-1px;
-  right:0;
+  width: 18px;
+  height: 18px;
+  background: url('delete_x.png');
+  position: absolute;
+  top: -1px;
+  right: 0;
 }
 .cm-map-list .cm-publish-column .cm-delete-button {
-  top:auto;
-  bottom:3px;
+  top: auto;
+  bottom: 3px;
 }
 .cm-map-list .cm-delete-button:hover {
-  background:url('delete_x_hover.png');
+  background: url('delete_x_hover.png');
 }
 .cm-map-list .cm-email,
 .cm-map-list .cm-publish-column .cm-date,
 .cm-map-list .cm-publish-age {
-  font-size:11px;
-  color:#999;
+  font-size: 11px;
+  color: #999;
 }
 .cm-map-list .cm-publish-column {
-  white-space:nowrap;
-  width:1%;
+  white-space: nowrap;
+  width: 1%;
 }
 .cm-map-list td.cm-publish-column {
-  padding:0 4px;
-  line-height:22px;
+  padding: 0 4px;
+  line-height: 22px;
 }
 .cm-map-list td.cm-publish-column div {
-  padding-top:2px;
+  padding-top: 2px;
 }
 .cm-map-list .cm-publish-column form {
-  display:inline;
+  display: inline;
 }
 .cm-map-list .cm-publish-column input.cm-label-input {
-  width:6em;
-  padding-bottom:0;
+  width: 6em;
+  padding-bottom: 0;
 }
 .cm-map-list .cm-publish-button {
-  vertical-align:top;
-  margin-top:3px;
+  vertical-align: top;
+  margin-top: 3px;
 }
 .cm-map-list div .cm-publish-button {
-  margin-top:1px;
+  margin-top: 1px;
 }
 .cm-map-list .cm-publish-domain {
-  color:#999;
+  color: #999;
 }
 .cm-map-list .cm-delete-button,
 .cm-map-list .cm-publish-button,
 .cm-map-list .cm-publish-domain {
-  visibility:hidden;
+  visibility: hidden;
 }
 .cm-map-list tr:hover .cm-delete-button,
 .cm-map-list tr:hover .cm-publish-button,
@@ -193,143 +193,143 @@ input[type="text"], textarea {
 .cm-map-list tbody tr:first-child .cm-publish-domain,
 .cm-map-list tr:hover .cm-publish-domain,
 .cm-map-list .cm-active .cm-publish-domain {
-  visibility:visible;
+  visibility: visible;
 }
 .cm-date-template {
-  visibility:hidden; /* hide date templates until they are rendered */
-  position:absolute;
+  visibility: hidden; /* hide date templates until they are rendered */
+  position: absolute;
 }
 
 /* Map admin page */
 h3 {
-  margin:2em 0 1em;
+  margin: 2em 0 1em;
 }
 h2 + h3 {
-  margin-top:0;
+  margin-top: 0;
 }
 .cm-map-details {
-  width:100%;
-  border-collapse:collapse;
+  width: 100%;
+  border-collapse: collapse;
 }
 .cm-map-details th {
-  text-align:left;
-  font-weight:normal;
-  color:#666;
-  width:14em;
+  text-align: left;
+  font-weight: normal;
+  color: #666;
+  width: 14em;
 }
 .cm-disabled, .cm-none {
-  color:#aaa;
+  color: #aaa;
 }
 .cm-map-details .cm-user {
-  color:#093;
+  color: #093;
 }
 .cm-warning {
-  color:#c00;
-  margin:1em 0;
+  color: #c00;
+  margin: 1em 0;
 }
 
 /* Error page */
 .cm-error-box {
-  margin:12px;
-  padding:12px;
-  border:1px solid #f44;
+  margin: 12px;
+  padding: 12px;
+  border: 1px solid #f44;
 }
 
 /* Acceptable use popup */
 .cm-popup {
-  line-height:18px;
+  line-height: 18px;
 }
 .cm-popup h2:first-child {
-  margin:0;
+  margin: 0;
 }
 .cm-popup .cm-section {
-  margin:24px 0;
+  margin: 24px 0;
 }
 .cm-popup .cm-checkbox-area {
-  display:inline-block;
-  width:24px;
+  display: inline-block;
+  width: 24px;
 }
 .cm-popup #organization-name {
-  margin-top:6px;
+  margin-top: 6px;
 }
 
 /* Publisher name popup */
 .cm-popup .cm-preview.cm-map-publisher {
-  color:#666;
-  font-size:12px; /* match the footer text */
-  padding:0 24px;
+  color: #666;
+  font-size: 12px; /* match the footer text */
+  padding: 0 24px;
 }
 .cm-popup .cm-preview.cm-map-publisher input {
-  font-size:12px;
+  font-size: 12px;
 }
 
 /* Domain administration page */
 .cm-perms-subheading {
-  margin-top:35px;
-  margin-bottom:17px;
+  margin-top: 35px;
+  margin-bottom: 17px;
 }
 .cm-perms-subheading:first-child {
-  margin-top:15px;
+  margin-top: 15px;
 }
 .cm-perms-domain-settings {
-  line-height:24px;
+  line-height: 24px;
 }
 .cm-perms-domain-settings .cm-perms-setting {
-  padding-left:12px;
+  padding-left: 12px;
 }
 .cm-perms-domain-settings .cm-button-area {
-  margin:22px 0;
+  margin: 22px 0;
 }
 .cm-perms-user-settings {
-  margin-top:19px;
+  margin-top: 19px;
 }
 .cm-perms-user-settings table {
-  border-collapse:collapse;
+  border-collapse: collapse;
 }
 .cm-perms-user-settings th,
 .cm-perms-user-settings td {
-  padding:2px 4px 0;
-  text-align:left;
+  padding: 2px 4px 0;
+  text-align: left;
 }
 .cm-perms-user-settings th {
-  text-transform:uppercase;
-  border-bottom:1px solid #eee;
-  font-size:11px;
-  color:#666;
-  white-space:nowrap;
-  padding:4px 4px 0; /* baseline on 24px grid */
-  height:16px; /* total height 24px */
+  text-transform: uppercase;
+  border-bottom: 1px solid #eee;
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  padding: 4px 4px 0; /* baseline on 24px grid */
+  height: 16px; /* total height 24px */
 }
 .cm-perms-user-settings .cm-perms-subject {
-  padding-left:12px;
+  padding-left: 12px;
 }
 .cm-perms-user-settings .cm-wildcard {
-  color:#999;
+  color: #999;
 }
-.cm-perms-user-settings .cm-perms-subject input[type="text"] {
-  width:14em;
-  padding-bottom:0;
+.cm-perms-user-settings .cm-perms-subject input[type='text'] {
+  width: 14em;
+  padding-bottom: 0;
 }
 .cm-perms-user-settings .cm-perms-role select {
-  margin-left:0;
+  margin-left: 0;
 }
 .cm-perms-user-settings .cm-perms-delete {
-  text-align:center;
+  text-align: center;
 }
 .cm-perms-user-settings .cm-perms-delete input {
-  vertical-align:bottom;
-  margin-bottom:1px;
+  vertical-align: bottom;
+  margin-bottom: 1px;
 }
 .cm-perms-user-settings .cm-perms-domain-wide td {
-  padding-bottom:12px;
+  padding-bottom: 12px;
 }
 .cm-perms-user-settings .cm-perms-new-user td {
-  padding-top:12px;
+  padding-top: 12px;
 }
 .cm-perms-user-settings .cm-perms-new-user td.cm-perms-subject {
-  padding-left:9px;
-  padding-right:12px;
+  padding-left: 9px;
+  padding-right: 12px;
 }
 .cm-perms-user-settings .cm-button-area {
-  margin:23px 0;
+  margin: 23px 0;
 }
