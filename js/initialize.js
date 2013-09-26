@@ -50,7 +50,7 @@ goog.require('goog.ui.Component');
  * Sizes the map and panel elements to fit the window.
  * @param {google.maps.Map} map The map to resize.
  * @param {Element} container The box which we render inside.
- * @param {cm.SearchBox} searchbox The searchbox control to hide on very small
+ * @param {?cm.SearchBox} searchbox The searchbox control to hide on very small
  * screens.
  * @param {boolean} embedded This map should be embedded.
  * @param {boolean} touch True if the map is displayed on a touch device.
@@ -146,12 +146,14 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
 
   // TODO(kpy): Rework this value.  The relevant Maps API bug, which hid the
   // searchbox behind other controls, has since been fixed.
-  var uncoveredMapWidth =
-      mapWrapperElem.offsetWidth - (floating ? panelElem.offsetWidth : 0);
-  if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX || preview) {
-    searchbox.hide();
-  } else {
-    searchbox.show();
+  if (searchbox) {
+    var uncoveredMapWidth =
+        mapWrapperElem.offsetWidth - (floating ? panelElem.offsetWidth : 0);
+    if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX || preview) {
+      searchbox.hide();
+    } else {
+      searchbox.show();
+    }
   }
 
   // Though the API checks the window resize itself, it's good practice to
@@ -300,7 +302,10 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language) {
   // map <div> element, and other views add stuff within that <div> element.
   var mapView = new cm.MapView(mapElem, mapModel, appState, metadataModel,
                                touch, config, preview);
-  var searchbox = new cm.SearchBox(mapView.getMap());
+  var searchbox = null;
+  if (!config['hide_search_box']) {
+    searchbox = new cm.SearchBox(mapView.getMap());
+  }
   if (!preview) {
     new cm.LayersButton(mapView.getMap(), panelElem);
     if (!config['hide_share_button'] && !config['enable_editing']) {
