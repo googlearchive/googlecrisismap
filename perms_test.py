@@ -14,7 +14,6 @@
 
 import domains
 import model
-import mox
 import perms
 import test_utils
 
@@ -192,26 +191,6 @@ class PermsTests(test_utils.BaseTest):
   def testNotSignedIn(self):
     m = test_utils.CreateMap()
     self.assertFalse(perms.CheckAccess(perms.Role.MAP_EDITOR, target=m))
-
-  def testCaching(self):
-    subject, role, target = 'subject', perms.Role.DOMAIN_ADMIN, 'xyz.com'
-    self.assertEquals([], perms._Query(None, None, None))
-    perms.Grant(subject, role, target)
-    perms._Exists(subject, role, target)
-
-    self.mox.StubOutWithMock(perms, '_LoadPermissions')
-    perms._LoadPermissions(
-        mox.IgnoreArg(), mox.IgnoreArg()).AndRaise(ValueError)
-
-    self.mox.ReplayAll()
-    self.assertTrue(perms._Exists(subject, role, target))
-    perms.Revoke(subject, role, target)
-    try:
-      # This should hit our mock because the cached entry should be gone
-      perms._Exists(subject, role, target)
-    except ValueError:
-      pass
-    self.mox.VerifyAll()
 
   def testRevoke(self):
     subject, role, target = 'subject', perms.Role.CATALOG_EDITOR, 'xyz.com'

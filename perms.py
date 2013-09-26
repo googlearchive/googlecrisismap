@@ -18,7 +18,7 @@ import cache
 import users
 import utils
 
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 # A special user with ADMIN access.  Real user objects that come from a
 # Google sign-in page always have numeric IDs.
@@ -72,16 +72,17 @@ Role = utils.Struct(
 GLOBAL_TARGET = '__GLOBAL__'
 
 
-class PermissionModel(db.Model):
+class _PermissionModel(ndb.Model):
+  # The entity that is granted permission to do something: a domain or uid
+  subject = ndb.StringProperty()
+  # The type of access being granted: a Role constant
+  role = ndb.StringProperty()
+  # The thing to which access is granted: a map, a domain, or GLOBAL_TARGET
+  target = ndb.StringProperty()
 
-  # The entity (either e-mail address or a domain) granted a
-  # particular role
-  subject = db.StringProperty()
-  # The role being granted
-  role = db.StringProperty()
-  # The thing to which access is being granted; typically a map,
-  # a domain, or the global target
-  target = db.StringProperty()
+  @classmethod
+  def _get_kind(cls):  # pylint: disable=g-bad-name
+    return 'PermissionModel'  # so we can name the Python class with _ in front
 
 _Permission = collections.namedtuple(
     '_Permission', ['subject', 'role', 'target'])
@@ -91,7 +92,7 @@ def _PermissionCachePath(subject=None, target=None):
   return [_Permission, subject or '*', target or '*']
 
 
-def _PermissionKey(perm):
+def _PermissionId(perm):
   return cache.ToCacheKey([_Permission, perm.subject, perm.role, perm.target])
 
 
@@ -104,12 +105,12 @@ def _FlushRelated(perm):
 def _LoadPermissions(subject, target):
   # No role arg because we never wish to load by role; we always load more
   # (by subject or target), then filter by role.
-  models = PermissionModel.all()
+  query = _PermissionModel.query()
   if subject:
-    models.filter('subject =', subject)
+    query = query.filter(_PermissionModel.subject == subject)
   if target:
-    models.filter('target =', target)
-  return [_Permission(m.subject, m.role, m.target) for m in models]
+    query = query.filter(_PermissionModel.target == target)
+  return [_Permission(p.subject, p.role, p.target) for p in query]
 
 
 def _Query(subject, role, target):
@@ -122,6 +123,11 @@ def _Query(subject, role, target):
   Returns:
     A list of matching _Permission objects.
   """
+  if subject and role and target:
+    # When querying for just one item, let NDB take care of caching.
+    p = _Permission(subject, role, target)
+    return _PermissionModel.get_by_id(_PermissionId(p)) and [p] or []
+  # Otherwise, use cache.Get to put the query result in memcache.
   perms = cache.Get(_PermissionCachePath(subject=subject, target=target),
                     make_value=lambda: _LoadPermissions(subject, target))
   return [p for p in perms if p.role == role] if role else perms
@@ -152,17 +158,16 @@ def Grant(subject, role, target):
     target: A domain name.
   """
   perm = _Permission(subject, role, target)
-  perm_model = PermissionModel(
-      subject=subject, role=role, target=target,
-      key_name=_PermissionKey(perm))
+  perm_model = _PermissionModel(
+      subject=subject, role=role, target=target, id=_PermissionId(perm))
   perm_model.put()
   _FlushRelated(perm)
 
 
 def _Revoke(perm):
-  perm_model = PermissionModel.get_by_key_name(_PermissionKey(perm))
+  perm_model = _PermissionModel.get_by_id(_PermissionId(perm))
   if perm_model:
-    perm_model.delete()
+    perm_model.key.delete()
     _FlushRelated(perm)
 
 
