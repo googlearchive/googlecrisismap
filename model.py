@@ -65,7 +65,7 @@ class MapVersionModel(db.Model):
   # Fields below are metadata for those with edit access, not for public
   # display.  No updated field is needed; these objects are immutable.
   created = db.DateTimeProperty()
-  creator_id = db.StringProperty()
+  creator_uid = db.StringProperty()
   creator = db.UserProperty()  # DEPRECATED
 
 
@@ -87,23 +87,23 @@ class MapModel(db.Model):
 
   # Metadata for auditing and debugging purposes.
   created = db.DateTimeProperty()
-  creator_id = db.StringProperty()
+  creator_uid = db.StringProperty()
   creator = db.UserProperty()  # DEPRECATED
   updated = db.DateTimeProperty()
-  updater_id = db.StringProperty()
+  updater_uid = db.StringProperty()
   last_updated = db.DateTimeProperty()  # DEPRECATED
   last_updater = db.UserProperty()  # DEPRECATED
 
   # To mark a map as deleted, set this to anything other than NEVER; the map
   # won't be returned by Map.Get* methods, though it remains in the datastore.
   deleted = db.DateTimeProperty(default=NEVER)
-  deleter_id = db.StringProperty()
+  deleter_uid = db.StringProperty()
   deleter = db.UserProperty()  # DEPRECATED
 
   # To mark a map as blocked, set this to anything other than NEVER; then only
   # the first owner can view or edit the map, and the map cannot be published.
   blocked = db.DateTimeProperty(default=NEVER)
-  blocker_id = db.StringProperty()
+  blocker_uid = db.StringProperty()
   blocker = db.UserProperty()  # DEPRECATED
 
   # User IDs of users who can set the flags and permission lists on this object.
@@ -157,10 +157,10 @@ class CatalogEntryModel(db.Model):
 
   # Metadata about the catalog entry itself.
   created = db.DateTimeProperty()
-  creator_id = db.StringProperty()
+  creator_uid = db.StringProperty()
   creator = db.UserProperty()  # DEPRECATED
   updated = db.DateTimeProperty()
-  updater_id = db.StringProperty()
+  updater_uid = db.StringProperty()
   last_updated = db.DateTimeProperty()  # DEPRECATED
   last_updater = db.UserProperty()  # DEPRECATED
 
@@ -208,9 +208,9 @@ class CatalogEntryModel(db.Model):
     if not entity:
       entity = CatalogEntryModel(key_name=domain + ':' + label,
                                  domain=domain, label=label,
-                                 created=now, creator_id=uid)
+                                 created=now, creator_uid=uid)
     entity.updated = now
-    entity.updater_id = uid
+    entity.updater_uid = uid
     entity.title = map_object.title
     entity.map_id = map_object.id
     entity.map_version = map_object.GetCurrent().key
@@ -373,12 +373,12 @@ class CatalogEntry(object):
 
   # Make the other properties of the CatalogEntryModel visible on CatalogEntry.
   for x in ['domain', 'label', 'map_id', 'title', 'publisher_name',
-            'created', 'creator_id', 'updated', 'updater_id']:
+            'created', 'creator_uid', 'updated', 'updater_uid']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
 
   # Handy access to the user profiles associated with user IDs.
-  creator = property(lambda self: users.Get(self.creator_id))
-  updater = property(lambda self: users.Get(self.updater_id))
+  creator = property(lambda self: users.Get(self.creator_uid))
+  updater = property(lambda self: users.Get(self.updater_uid))
 
   def SetMapVersion(self, map_object):
     """Points this entry at the specified MapVersionModel."""
@@ -403,7 +403,7 @@ class CatalogEntry(object):
         not perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name)):
       perms.AssertCatalogEntryOwner(self.model)
 
-    self.model.updater_id = users.GetCurrent().id
+    self.model.updater_uid = users.GetCurrent().id
     self.model.updated = datetime.datetime.utcnow()
     self.model.put()
     # We use '*' in the cache key for the list that includes all domains.
@@ -448,17 +448,17 @@ class Map(object):
   id = property(lambda self: str(self.model.key().name()))
 
   # Make the other properties of the underlying MapModel readable on the Map.
-  for x in ['created', 'creator_id', 'updated', 'updater_id',
-            'blocked', 'blocker_id', 'deleted', 'deleter_id',
+  for x in ['created', 'creator_uid', 'updated', 'updater_uid',
+            'blocked', 'blocker_uid', 'deleted', 'deleter_uid',
             'title', 'description', 'current_version', 'world_readable',
             'owners', 'editors', 'viewers', 'domains', 'domain_role']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
 
   # Handy access to the user profiles associated with user IDs.
-  creator = property(lambda self: users.Get(self.creator_id))
-  updater = property(lambda self: users.Get(self.updater_id))
-  blocker = property(lambda self: users.Get(self.blocker_id))
-  deleter = property(lambda self: users.Get(self.deleter_id))
+  creator = property(lambda self: users.Get(self.creator_uid))
+  updater = property(lambda self: users.Get(self.updater_uid))
+  blocker = property(lambda self: users.Get(self.blocker_uid))
+  deleter = property(lambda self: users.Get(self.deleter_uid))
 
   # Handy Boolean access to the blocked or deleted status.
   is_blocked = property(lambda self: self.blocked != NEVER)
@@ -549,7 +549,7 @@ class Map(object):
     map_object = Map(MapModel(
         key_name=base64.urlsafe_b64encode(
             ''.join(chr(random.randrange(256)) for i in xrange(12))),
-        created=datetime.datetime.utcnow(), creator_id=users.GetCurrent().id,
+        created=datetime.datetime.utcnow(), creator_uid=users.GetCurrent().id,
         owners=owners, editors=editors, viewers=viewers, domains=[domain.name],
         domain_role=domain.initial_domain_role, world_readable=world_readable))
     map_object.PutNewVersion(maproot_json)  # also puts the MapModel
@@ -568,12 +568,12 @@ class Map(object):
     uid = users.GetCurrent().id
 
     new_version = MapVersionModel(parent=self.model, maproot_json=maproot_json,
-                                  created=now, creator_id=uid)
+                                  created=now, creator_uid=uid)
     # Update the MapModel from fields in the MapRoot JSON.
     self.model.title = maproot.get('title', '')
     self.model.description = maproot.get('description', '')
     self.model.updated = now
-    self.model.updater_id = uid
+    self.model.updater_uid = uid
 
     def PutModels():
       self.model.current_version = new_version.put()
@@ -598,7 +598,7 @@ class Map(object):
     """Marks a map as deleted (so it won't be returned by Get or GetAll)."""
     self.AssertAccess(perms.Role.MAP_OWNER)
     self.model.deleted = datetime.datetime.utcnow()
-    self.model.deleter_id = users.GetCurrent().id
+    self.model.deleter_uid = users.GetCurrent().id
     CatalogEntry.DeleteByMapId(self.id)
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
@@ -607,7 +607,7 @@ class Map(object):
     """Unmarks a map as deleted."""
     self.AssertAccess(perms.Role.ADMIN)
     self.model.deleted = NEVER
-    self.model.deleter_id = None
+    self.model.deleter_uid = None
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
 
@@ -616,11 +616,11 @@ class Map(object):
     perms.AssertAccess(perms.Role.ADMIN)
     if block:
       self.model.blocked = datetime.datetime.utcnow()
-      self.model.blocker_id = users.GetCurrent().id
+      self.model.blocker_uid = users.GetCurrent().id
       CatalogEntry.DeleteByMapId(self.id)
     else:
       self.model.blocked = NEVER
-      self.model.blocker_id = None
+      self.model.blocker_uid = None
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
 

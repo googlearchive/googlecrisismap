@@ -48,7 +48,7 @@ class MapTests(test_utils.BaseTest):
       current = m.GetCurrent()
       self.assertEquals(id2, current.id)
       self.assertEquals(JSON2, current.maproot_json)
-      self.assertEquals('root', current.creator_id)
+      self.assertEquals('root', current.creator_uid)
 
   def testWorldReadable(self):
     # Verify that the current version is only visible to the public after
@@ -343,7 +343,7 @@ class CatalogEntryTests(test_utils.BaseTest):
       m = model.Map.Get(map_id)
       m.Delete()
       self.assertTrue(m.is_deleted)
-      self.assertEquals('owner', m.deleter_id)
+      self.assertEquals('owner', m.deleter_uid)
 
     # The catalog entry should be gone.
     self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))
@@ -378,7 +378,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     with test_utils.RootLogin():
       m.SetBlocked(True)
       self.assertTrue(m.is_blocked)
-      self.assertEquals('root', m.blocker_id)
+      self.assertEquals('root', m.blocker_uid)
 
     # The catalog entry should be gone.
     self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))

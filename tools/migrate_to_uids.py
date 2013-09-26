@@ -115,15 +115,15 @@ def Migrate(write_data=False):  # dry run by default
   for m in model.MapModel.all().order('created'):
     print '\n\x1b[33m%s (%r):\x1b[0m' % (m.key().name(), m.title)
 
-    m.creator_id = GaeUserToUid(m.creator)
-    m.updater_id = GaeUserToUid(m.last_updater)
-    m.deleter_id = GaeUserToUid(m.deleter)
-    m.blocker_id = GaeUserToUid(m.blocker)
+    m.creator_uid = GaeUserToUid(m.creator)
+    m.updater_uid = GaeUserToUid(m.last_updater)
+    m.deleter_uid = GaeUserToUid(m.deleter)
+    m.blocker_uid = GaeUserToUid(m.blocker)
     m.updated = m.last_updated
     print '    \x1b[37mcr=%s / up=%s / de=%s / bl=%s\x1b[0m' % (
         m.creator, m.last_updater, m.deleter, m.blocker)
     print ' -> cr=%s / up=%s / de=%s / bl=%s' % (
-        m.creator_id, m.updater_id, m.deleter_id, m.blocker_id)
+        m.creator_uid, m.updater_uid, m.deleter_uid, m.blocker_uid)
 
     owners, editors, viewers = map(repr, [m.owners, m.editors, m.viewers])
     m.owners += EmailsToUids(m.owners)
@@ -136,9 +136,9 @@ def Migrate(write_data=False):  # dry run by default
     to_write.append(m)
 
     for v in model.MapVersionModel.all().ancestor(m):
-      v.creator_id = GaeUserToUid(v.creator)
+      v.creator_uid = GaeUserToUid(v.creator)
       print '  %d. \x1b[37mcr=%s\x1b[0m -> cr=%s' % (
-          v.key().id(), v.creator, v.creator_id)
+          v.key().id(), v.creator, v.creator_uid)
 
       to_write.append(v)
 
@@ -146,11 +146,11 @@ def Migrate(write_data=False):  # dry run by default
   print '\n\nCatalog entries:'
   for c in model.CatalogEntryModel.all():
     print '\n\x1b[32m%s/%s:\x1b[0m' % (c.domain, c.label)
-    c.creator_id = GaeUserToUid(c.creator)
-    c.updater_id = GaeUserToUid(c.last_updater)
+    c.creator_uid = GaeUserToUid(c.creator)
+    c.updater_uid = GaeUserToUid(c.last_updater)
     c.updated = c.last_updated
     print '    \x1b[37mcr=%s / up=%s\x1b[0m' % (c.creator, c.last_updater)
-    print ' -> cr=%s / up=%s' % (c.creator_id, c.updater_id)
+    print ' -> cr=%s / up=%s' % (c.creator_uid, c.updater_uid)
 
     to_write.append(c)
 

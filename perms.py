@@ -380,5 +380,5 @@ def AssertPublishable(map_object):
 
 def AssertCatalogEntryOwner(entry, user=None):
   user = user or users.GetCurrent()
-  if not user.id == entry.creator_id:
+  if not user.id == entry.creator_uid:
     raise NotCatalogEntryOwnerError(user, entry)
