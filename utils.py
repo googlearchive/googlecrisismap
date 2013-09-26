@@ -97,4 +97,4 @@ def SetAndTest(set_func, test_func, sleep_delta=0.05, num_tries=20):
 
 
 def IsValidEmail(email):
-  return re.match(r'^[\w.-]+@([\w-]+\.)+[\w-]+$', email)
+  return re.match(r'^[^@]+@([\w-]+\.)+[\w-]+$', email)

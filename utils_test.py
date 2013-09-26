@@ -69,6 +69,7 @@ class UtilsSetAndTestTests(test_utils.BaseTest):
 
   def testIsValidEmail(self):
     self.assertTrue(utils.IsValidEmail('user@domain.subdomain.com'))
+    self.assertTrue(utils.IsValidEmail('user+foo@domain.subdomain.com'))
     self.assertTrue(utils.IsValidEmail('a@b.c'))
     self.assertFalse(utils.IsValidEmail('a@b@c'))
     self.assertFalse(utils.IsValidEmail('@domain.com'))
