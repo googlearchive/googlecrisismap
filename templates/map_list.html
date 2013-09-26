@@ -19,7 +19,20 @@ specific language governing permissions and limitations under the License.
   <table class="cm-map-list">
     <thead>
       <tr>
-        <th colspan=5 class="cm-map-list-header">{{title}}</th>
+        <th colspan=3 class="cm-map-list-header">
+          {% if maps|length > 0 %}
+            <div class="cm-map-list-pagination">
+              {% if first > 1 %}
+                <a href="{{prev_page_url}}">&#x2039; Prev</a>&nbsp;
+              {% endif %}
+              {{first}}&ndash;{{last}}
+              {% if more_items %}
+                &nbsp;<a href="{{next_page_url}}">Next &#x203a;</a>
+              {% endif %}
+            </div>
+          {% endif %}
+          {{title}}
+        </th>
       </tr>
       <tr>
         <th class="cm-title-column">Draft map</th>

@@ -14,6 +14,7 @@
 
 __author__ = 'giencke@google.com (Pete Giencke)'
 
+import itertools
 import json
 import re
 import urllib
@@ -31,6 +32,7 @@ import utils
 from google.appengine.ext import db
 
 MAPS_API_BASE_URL = '//maps.google.com/maps/api/js'
+ITEMS_PER_PAGE = 50
 
 
 class ClientConfig(db.Model):
@@ -373,10 +375,16 @@ class MapList(base_handler.BaseHandler):
 
   def Get(self, user, domain=None):  # pylint: disable=g-bad-name
     """Produces the map listing page."""
-    maps = list(model.Map.GetViewable(user, domain))
     title = 'Maps for all domains'
     if domain:
       title = 'Maps for %s' % domain
+
+    # Get ITEMS_PER_PAGE + 1 items so we know whether there is a next page.
+    skip = int(self.request.get('skip', '0'))
+    maps = list(itertools.islice(
+        model.Map.GetViewable(user, domain), skip, skip + ITEMS_PER_PAGE + 1))
+    more_items = len(maps) > ITEMS_PER_PAGE
+    maps = maps[:ITEMS_PER_PAGE]
 
     # Attach to each Map a 'catalog_entries' attribute with a list of the
     # CatalogEntry objects that link to that Map.
@@ -390,6 +398,13 @@ class MapList(base_handler.BaseHandler):
     self.response.out.write(self.RenderTemplate('map_list.html', {
         'title': title,
         'maps': maps,
-        'catalog_domains': sorted(perms.GetAccessibleDomains(
-            user, perms.Role.CATALOG_EDITOR))
+        'first': skip + 1,
+        'last': skip + len(maps),
+        'more_items': more_items,
+        'prev_page_url':
+            self.request.path_url + '?skip=%d' % max(0, skip - ITEMS_PER_PAGE),
+        'next_page_url':
+            self.request.path_url + '?skip=%d' % (skip + ITEMS_PER_PAGE),
+        'catalog_domains': sorted(
+            perms.GetAccessibleDomains(user, perms.Role.CATALOG_EDITOR))
     }))

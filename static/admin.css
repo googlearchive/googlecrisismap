@@ -94,6 +94,12 @@ input[type='text'], textarea {
   color: #666;
   text-transform: none;
 }
+.cm-map-list .cm-map-list-pagination {
+  float: right;
+  font-size: 13px;
+  font-weight: normal;
+  color: #000;
+}
 .cm-map-list th, .cm-map-list td {
   padding: 2px 4px;
   text-align: left;

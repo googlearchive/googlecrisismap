@@ -495,11 +495,10 @@ class Map(object):
   @staticmethod
   def _GetAll(domain=None):
     """NO ACCESS CHECK.  Yields all non-deleted maps; can filter by domain."""
-    query = MapModel.all().filter('deleted =', NEVER)
+    query = MapModel.all().order('-updated').filter('deleted =', NEVER)
     if domain:
       query = query.filter('domains =', domain)
-    for model in query.order('-updated'):
-      yield Map(model)
+    return (Map(model) for model in query)
 
   @staticmethod
   def GetAll(domain=None):
