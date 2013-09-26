@@ -164,7 +164,8 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   }, this);
   cm.events.onChange(appState, 'map_type', function() {
     var mapType = appState.get('map_type') || cm.MapModel.Type.ROADMAP;
-    this.set('mapTypeId', cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapType]);
+    this.set('mapTypeId', cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapType] ||
+                          google.maps.MapTypeId.ROADMAP);
   }, this);
 
   // Expose the map's viewport as a property (see updateViewportProperty_ for

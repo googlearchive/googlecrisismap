@@ -291,6 +291,11 @@ AppStateTest.prototype.testSetFromUriMapType = function() {
   uri.setParameterValue('t', 'terrain');
   this.appState_.setFromUri(uri);
   expectEq(cm.MapModel.Type.TERRAIN, this.appState_.get('map_type'));
+
+  // When the type argument is invalid, we should default to ROADMAP.
+  uri.setParameterValue('t', 'wxyz');
+  this.appState_.setFromUri(uri);
+  expectEq(cm.MapModel.Type.ROADMAP, this.appState_.get('map_type'));
 };
 
 /** Verifies that the AppState is set according to the 'layers' param. */

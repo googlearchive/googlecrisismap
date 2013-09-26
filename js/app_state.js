@@ -271,9 +271,12 @@ cm.AppState.prototype.getUri = function() {
 cm.AppState.prototype.setFromUri = function(uri) {
   uri = new goog.Uri(uri);
 
-  var mapType = uri.getParameterValue('t');
+  var mapType = (uri.getParameterValue('t') || '').toUpperCase();
   if (mapType) {
-    this.set('map_type', mapType.toUpperCase());
+    if (!goog.object.containsValue(cm.MapModel.Type, mapType)) {
+      mapType = cm.MapModel.Type.ROADMAP;
+    }
+    this.set('map_type', mapType);
   }
   // TODO(romano): Needs error-checking to verify that the layer
   // ID lists in the 'layers' parameters is valid, and if not,

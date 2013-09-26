@@ -259,6 +259,14 @@ MapViewTest.prototype.appStateMapType = function() {
 
   // ...the map should switch to SATELLITE.
   expectEq(google.maps.MapTypeId.SATELLITE, mapView.get('mapTypeId'));
+
+  // When the AppState map_type is switched to something invalid...
+  expectCall(this.appState_.get)('map_type')
+      .willRepeatedly(returnWith('wxyz'));
+  cm.events.emit(this.appState_, 'map_type_changed');
+
+  // ...the map should default to ROADMAP.
+  expectEq(google.maps.MapTypeId.ROADMAP, mapView.get('mapTypeId'));
 };
 
 /** Tests adding a KML overlay. */
