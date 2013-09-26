@@ -116,8 +116,9 @@ MapModelTest.prototype.mapModelFromMapRoot_ = function(json, useMockLayers) {
 MapModelTest.prototype.newFromMapRoot = function() {
   var mapModel = this.mapModelFromMapRoot_(DRACULA_MAPROOT, true);
   expectEq(DRACULA_MAPROOT.title, mapModel.get('title'));
-  expectEq(DRACULA_MAPROOT.description, mapModel.get('description').getHtml());
-  expectEq(DRACULA_MAPROOT.footer, mapModel.get('footer').getHtml());
+  expectEq(DRACULA_MAPROOT.description,
+           mapModel.get('description').getUnsanitizedHtml());
+  expectEq(DRACULA_MAPROOT.footer, mapModel.get('footer').getUnsanitizedHtml());
   // The model's 'map_type' property is overriden if the
   // 'base_map_style' property is set.
   expectEq(DRACULA_MAPROOT.base_map_style['definition'],
@@ -166,8 +167,8 @@ MapModelTest.prototype.newFromEmpty = function() {
   var mapModel = this.mapModelFromMapRoot_({}, true);
 
   expectEq('', mapModel.get('title'));
-  expectEq('', mapModel.get('description').getHtml());
-  expectEq('', mapModel.get('footer').getHtml());
+  expectEq('', mapModel.get('description').getUnsanitizedHtml());
+  expectEq('', mapModel.get('footer').getUnsanitizedHtml());
   expectEq(null, mapModel.get('viewport'));
   expectEq(0, mapModel.get('layers').getLength());
 };

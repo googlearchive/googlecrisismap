@@ -172,8 +172,10 @@ function installHtmlSanitizer(html) {
   });
 }
 
-
 /**
+ * Loads the HTML sanitizer, then builds the map viewer UI.
+ * TODO(kpy): This adds a 9-kb HTTP fetch to each pageview.  Speed up pageviews
+ * by loading the sanitizer dynamically or moving sanitization to the server.
  * @param {Object} mapRoot The MapRoot JSON to parse and render.
  * @param {string|Element} frame The DOM element in which to render the UI,
  *     or the ID of such a DOM element.
@@ -188,8 +190,39 @@ function installHtmlSanitizer(html) {
  */
 function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
                     opt_config, opt_mapName, opt_language) {
-  // Create the AppState and the model; set up configuration flags.
   var config = opt_config || {};
+
+  // Initialize the dynamic module loader and tell it how to find module URLs.
+  var getModuleUrl = config['get_module_url'] || function(baseUrl, module) {
+    return baseUrl + '/.js/crisismap_' + module + '__' + opt_language + '.js';
+  };
+  goog.module.initLoader(jsBaseUrl, getModuleUrl);
+  goog.module.require('sanitizer', 'html', function(html) {
+    installHtmlSanitizer(html);
+    // We need to defer buildUi until after sanitizer_module.js is loaded,
+    // so we call buildUi inside this callback.
+    buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
+            opt_language);
+  });
+}
+
+/**
+ * Constructs the map viewer UI.
+ * @param {Object} mapRoot The MapRoot JSON to parse and render.
+ * @param {string|Element} frame The DOM element in which to render the UI,
+ *     or the ID of such a DOM element.
+ * @param {Array} opt_menuItems An array of items for the map menu, with keys:
+ *     title: The title to display in the menu.
+ *     url: The URL to navigate to when the item is clicked.
+ * @param {Object=} opt_config The configuration settings.
+ * @param {string=} opt_mapName The (optional) map_name for Analytics logging.
+ * @param {string} opt_language The (optional) BCP 47 language code.
+ */
+function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
+                 opt_language) {
+  var config = opt_config || {};
+
+  // Create the AppState and the model; set up configuration flags.
   var appState = new cm.AppState(opt_language);
   var mapModel = cm.MapModel.newFromMapRoot(mapRoot);
   document.title = /** @type string */(mapModel.get('title'));
@@ -303,12 +336,6 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     presenter.zoomToUserLocation(match[1] - 0);
   }
 
-  // Initialize the dynamic module loader and tell it how to find module URLs.
-  var getModuleUrl = config['get_module_url'] || function(baseUrl, module) {
-    return baseUrl + '/.js/crisismap_' + module + '__' + opt_language + '.js';
-  };
-  goog.module.initLoader(jsBaseUrl, getModuleUrl);
-
   // Load the 'edit' module only if editing is enabled.
   if (config['enable_editing']) {
     var arranger;
@@ -323,7 +350,6 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
       var edit_presenter = new EditPresenter(
           appState, mapModel, arranger, config);
     });
-    goog.module.require('sanitizer', 'html', installHtmlSanitizer);
   }
 
   // Trigger resizing of the panel components when initialization is done.

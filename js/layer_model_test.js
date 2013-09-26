@@ -69,9 +69,9 @@ LayerModelTest.prototype.newFromMapRootKmlLayer = function() {
   var layerModel = cm.LayerModel.newFromMapRoot(KML_MAP_ROOT_JSON);
   expectEq('prawn', layerModel.get('id'));
   expectEq('Sharks', layerModel.get('title'));
-  expectEq('<b>Whales</b>', layerModel.get('description').getHtml());
+  expectEq('<b>Whales</b>', layerModel.get('description').getUnsanitizedHtml());
   expectEq('Blue - Blue whales<br/>Grey - Grey whales',
-      layerModel.get('legend').getHtml());
+      layerModel.get('legend').getUnsanitizedHtml());
   expectEq(cm.LayerModel.Type.KML, layerModel.get('type'));
   expectTrue(layerModel.get('default_visibility'));
   expectEq(null, layerModel.get('suppress_download_link'));
@@ -95,7 +95,7 @@ LayerModelTest.prototype.newFromMapRootDefaultValues = function() {
   var EMPTY_MAPROOT = {type: 'KML', title: 'Empty map'};
   var layerModel = cm.LayerModel.newFromMapRoot(EMPTY_MAPROOT);
   expectEq('Empty map', layerModel.get('title'));
-  expectEq('', layerModel.get('description').getHtml());
+  expectEq('', layerModel.get('description').getUnsanitizedHtml());
   expectEq('layer0', layerModel.get('id'));
   expectEq(cm.LayerModel.Type.KML, layerModel.get('type'));
   expectFalse(layerModel.get('default_visibility'));
@@ -307,7 +307,6 @@ LayerModelTest.prototype.toMapRoot = function() {
 LayerModelTest.prototype.toMapRootFolders = function() {
   var json = {
     id: 'folder0',
-    description: '',
     title: '',
     visibility: 'DEFAULT_ON',
     min_zoom: 5,
@@ -315,7 +314,6 @@ LayerModelTest.prototype.toMapRootFolders = function() {
     type: 'FOLDER',
     sublayers: [{
       id: 'folder1',
-      description: '',
       title: '',
       visibility: 'DEFAULT_ON',
       min_zoom: 5,
@@ -323,7 +321,6 @@ LayerModelTest.prototype.toMapRootFolders = function() {
       type: 'FOLDER',
       sublayers: [{
         id: 'folder2',
-        description: '',
         title: '',
         visibility: 'DEFAULT_ON',
         min_zoom: 5,
@@ -331,7 +328,6 @@ LayerModelTest.prototype.toMapRootFolders = function() {
         type: 'FOLDER',
         sublayers: [{
           id: 'kml0',
-          description: '',
           title: '',
           visibility: 'DEFAULT_ON',
           min_zoom: 5,

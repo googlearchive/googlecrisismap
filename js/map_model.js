@@ -79,11 +79,8 @@ cm.MapModel.newFromMapRoot = function(maproot) {
   model.set('id', maproot['id'] || '');
   model.set('languages', maproot['languages'] || []);
   model.set('title', maproot['title'] || '');
-  // NOTE(kpy): Trusting the server to provide safe HTML!
-  model.set('description', cm.Html.fromSanitizedHtml(
-      maproot['description'] || ''));
-  // NOTE(kpy): Trusting the server to provide safe HTML!
-  model.set('footer', cm.Html.fromSanitizedHtml(maproot['footer'] || ''));
+  model.set('description', new cm.Html(maproot['description'] || ''));
+  model.set('footer', new cm.Html(maproot['footer'] || ''));
   model.set('viewport', cm.LatLonBox.fromMapRoot(
       (maproot['viewport'] || {})['lat_lon_alt_box']));
   model.set('full_extent', cm.LatLonBox.fromMapRoot(

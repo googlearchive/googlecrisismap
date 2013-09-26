@@ -178,10 +178,8 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
   model.set('id', maproot['id'] || ('layer' + cm.LayerModel.nextId_++));
   model.set('type', type);
   model.set('title', maproot['title'] || '');
-  // NOTE(kpy): Trusting the server to provide safe HTML!
-  model.set('description', cm.Html.fromSanitizedHtml(maproot['description']));
-  model.set('legend', maproot['legend'] ?
-      cm.Html.fromSanitizedHtml(maproot['legend']) : null);
+  model.set('description', new cm.Html(maproot['description'] || ''));
+  model.set('legend', new cm.Html(maproot['legend'] || ''));
   model.set('viewport', cm.LatLonBox.fromMapRoot(
       (maproot['viewport'] || {})['lat_lon_alt_box']));
   model.set('full_extent', cm.LatLonBox.fromMapRoot(
@@ -354,13 +352,13 @@ cm.LayerModel.prototype.toMapRoot = function() {
   box = /** @type cm.LatLonBox */(this.get('full_extent'));
   var fullExtent = box ? {'lat_lon_alt_box': box.round(4).toMapRoot()} : null;
   var opacity = Math.round(/** @type number */(this.get('opacity')) * 100);
+  var description = /** @type cm.Html*/(this.get('description'));
+  var legend = /** @type cm.Html*/(this.get('legend'));
   var maproot = {
     'id': this.get('id'),
     'title': this.get('title'),
-    'description':
-        /** @type cm.Html */(this.get('description')).getUnsanitizedHtml(),
-    'legend': this.get('legend') ?
-        /** @type cm.Html */(this.get('legend')).getUnsanitizedHtml() : null,
+    'description': description.getUnsanitizedHtml() || null,
+    'legend': legend.getUnsanitizedHtml() || null,
     'visibility': this.get('default_visibility') ? 'DEFAULT_ON' : 'DEFAULT_OFF',
     'viewport': viewport,
     'full_extent': fullExtent,
