@@ -15,6 +15,7 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import base64
+import collections
 import json
 import os
 import random
@@ -43,6 +44,7 @@ Role = Struct(
 
     # Domain-specific roles
     CATALOG_EDITOR='CATALOG_EDITOR',  # can edit the catalog for a domain
+    DOMAIN_ADMIN='DOMAIN_ADMIN',  # can grant permissions for the domain
     MAP_CREATOR='MAP_CREATOR',  # can create new maps
 
     # Map-specific roles
@@ -50,6 +52,9 @@ Role = Struct(
     MAP_EDITOR='MAP_EDITOR',  # can save new versions of a map
     MAP_VIEWER='MAP_VIEWER',  # can view current version of a map
 )
+
+# Prefix used when setting a config for a user/domain's roles
+ROLE_PREFIX = 'global_roles:'
 
 
 class Error(Exception):
@@ -128,6 +133,16 @@ class Config(db.Model):
       return default
     return cache.Get([Config, key], Fetcher)
 
+  @classmethod
+  def GetAll(cls):
+    all_configs = Config.all()
+    results = {}
+    for config in all_configs:
+      value = json.loads(config.value_json)
+      cache.Set([Config, config.key().name], value)
+      results[config.key().name()] = value
+    return results
+
   @staticmethod
   def Set(key, value):
     """Sets a configuration value.
@@ -175,30 +190,53 @@ def GetInitialDomainRole(domain):
   return Config.Get('initial_domain_role:' + domain)
 
 
-def SetGlobalRoles(email_or_domain, roles):
+def SetGlobalRoles(subject, roles):
   """Sets the access roles for a given user or domain that apply to all maps.
 
   Args:
-    email_or_domain: A string, either an e-mail address or a domain name.
+    subject: A string, either an e-mail address or a domain name.
     roles: A list of roles (see Role) that the user or domain should have.
-        The CATALOG_EDITOR access role for a particular domain should be
-        specified as a two-item list: [Role.CATALOG_EDITOR, domain].
+        The CATALOG_EDITOR, MAP_CREATOR, and DOMAIN_ACCESS roles for a
+        particular domain should be specified as a two-item
+        list, e.g., [Role.CATALOG_EDITOR, domain].
   """
-  Config.Set('global_roles:' + email_or_domain, roles)
+  Config.Set(ROLE_PREFIX + subject, roles)
 
 
-def GetGlobalRoles(email_or_domain):
+def GetGlobalRoles(subject):
   """Gets the access roles for a given user or domain that apply to all maps.
 
   Args:
-    email_or_domain: An e-mail address or a domain name.
+    subject: An e-mail address or a domain name.
 
   Returns:
     The list of global roles (see Role) that the user or domain has.
     The CATALOG_EDITOR access role for a particular domain is specified as
     a two-item list: [Role.CATALOG_EDITOR, domain].
   """
-  return Config.Get('global_roles:' + email_or_domain, [])
+  return Config.Get(ROLE_PREFIX + subject, [])
+
+
+def SetDomainRoles(subject, domain, new_roles):
+  """Gives the subject the listed roles to the given domain.
+
+  Args:
+    subject: An e-mail address or a domain name; the person/domain whose
+        roles are being set.
+    domain: The domain to whose access is being set.
+    new_roles: The list of roles the subject should receive; if the subject
+        currently has roles that are not in new_roles, they will be revoked.
+  """
+  global_roles = [role for role in GetGlobalRoles(subject)
+                  if not isinstance(role, list) or role[1] != domain]
+  global_roles += [[role, domain] for role in new_roles]
+  SetGlobalRoles(subject, global_roles)
+
+
+def GetDomainRoles(subject, domain):
+  """Returns the list of roles held by subject in domain."""
+  global_roles = GetGlobalRoles(subject)
+  return [r[0] for r in global_roles if isinstance(r, list) and r[1] == domain]
 
 
 def GetDomainsWithRole(role, user=None):
@@ -222,6 +260,29 @@ def GetDomainsWithRole(role, user=None):
   return sorted(domains)
 
 
+def GetSubjectsInDomain(domain):
+  """Retrieves all users granted permissions in the given domain.
+
+  Args:
+    domain: (string) the name of the domain being queried.
+
+  Returns:
+    A dictionary that maps users (or domains) to the list of granted
+    permissions.  Note that permissions they inherit from their domain
+    are NOT returned.
+  """
+  all_perms = Config.GetAll()
+  result = collections.defaultdict(list)
+  for key, value in all_perms.iteritems():
+    if not key.startswith(ROLE_PREFIX):
+      continue
+    user = key[len(ROLE_PREFIX):]
+    for perm in value:
+      if isinstance(perm, list) and perm[1] == domain:
+        result[user].append(perm[0])
+  return result
+
+
 class AccessPolicy(object):
   """Wraps up authorization for user actions."""
 
@@ -232,6 +293,13 @@ class AccessPolicy(object):
     return user and (self.HasGlobalRole(user, Role.ADMIN) or
                      (user == users.get_current_user() and
                       users.is_current_user_admin()))
+
+  def HasRoleDomainAdmin(self, user, domain):
+    """Returns True if the user should get DOMAIN_ADMIN access for a domain."""
+    # Users get domain administration access if they have DOMAIN_ADMIN access
+    # to the domain, or if they have admin access.
+    return user and (self.HasGlobalRole(user, [Role.DOMAIN_ADMIN, domain]) or
+                     self.HasRoleAdmin(user))
 
   def HasRoleCatalogEditor(self, user, domain):
     """Returns True if a user should get CATALOG_EDITOR access for a domain."""
@@ -298,8 +366,8 @@ def CheckAccess(role, target=None, user=None, policy=None):
     role: A Role constant identifying the desired access role.
     target: The object to which access is desired.  If 'role' is MAP_OWNER,
         MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
-        CATALOG_EDITOR, this must be a domain name (a string).  For other
-        roles, this argument is not used.
+        CATALOG_EDITOR, MAP_CREATOR, or DOMAIN_ADMIN, this must be a domain
+        name (a string).  For other roles, this argument is not used.
     user: (optional) A google.appengine.api.users.User object.  If not
         specified, access permissions are checked for the current user.
     policy: The access policy to apply.
@@ -329,6 +397,9 @@ def CheckAccess(role, target=None, user=None, policy=None):
   if role == Role.MAP_CREATOR:
     RequireTargetClass(basestring, 'string')
     return policy.HasRoleMapCreator(user, target)
+  if role == Role.DOMAIN_ADMIN:
+    RequireTargetClass(basestring, 'string')
+    return policy.HasRoleDomainAdmin(user, target)
 
   # Roles with a Map as the target
   RequireTargetClass(Map, 'Map')
@@ -349,8 +420,8 @@ def AssertAccess(role, target=None, user=None, policy=None):
     role: A Role constant identifying the desired access role.
     target: The object to which access is desired.  If 'role' is MAP_OWNER,
         MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
-        CATALOG_EDITOR or MAP_CREATOR, this must be a domain name (a string).
-        For other roles, this argument is not used.
+        CATALOG_EDITOR, MAP_CREATOR or DOMAIN_ADMIN, this must be a domain name
+        (a string).  For other roles, this argument is not used.
     user: (optional) A google.appengine.api.users.User object.  If not
         specified, access permissions are checked for the current user.
     policy: The access policy to apply.

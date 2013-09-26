@@ -23,7 +23,8 @@ from google.appengine.api import users
 
 def GetRolesForMap(map_object):
   """Gets the set of all roles that the current user has for a MapModel."""
-  map_roles = set(model.Role) - set(['CATALOG_EDITOR', 'MAP_CREATOR'])
+  map_roles = set(model.Role) - set(
+      ['CATALOG_EDITOR', 'MAP_CREATOR', 'DOMAIN_ADMIN'])
   return set([role for role in map_roles
               if model.CheckAccess(role, target=map_object)])
 
@@ -164,6 +165,62 @@ class MapTests(test_utils.BaseTest):
             model.Role.MAP_CREATOR, target='xyz.com'))
     self.assertRaises(
         model.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
+
+  def testDomainAdminRole(self):
+    test_utils.BecomeAdmin()
+    model.SetGlobalRoles('xyz.com', [[model.Role.DOMAIN_ADMIN, 'xyz.com']])
+    model.SetGlobalRoles(
+        'foo@not-xyz.com', [[model.Role.DOMAIN_ADMIN, 'xyz.com']])
+    test_utils.SetUser('foo@xyz.com')
+    self.assertTrue(
+        model.CheckAccess(model.Role.DOMAIN_ADMIN, 'xyz.com'))
+    test_utils.SetUser('foo@not-xyz.com')
+    self.assertTrue(
+        model.CheckAccess(model.Role.DOMAIN_ADMIN, 'xyz.com'))
+    test_utils.SetUser('bar@not-xyz.com')
+    self.assertFalse(
+        model.CheckAccess(model.Role.DOMAIN_ADMIN, 'xyz.com'))
+    test_utils.BecomeAdmin()
+    self.assertTrue(
+        model.CheckAccess(model.Role.DOMAIN_ADMIN, 'xyz.com'))
+
+  def assertEqualDomainPerms(self, expected, actual):
+    self.assertEqual(len(expected), len(actual))
+    for key, perms in expected.iteritems():
+      self.assertIn(key, actual)
+      self.assertItemsEqual(perms, actual[key])
+
+  def testSetGetDomainRoles(self):
+    test_utils.BecomeAdmin()
+    # Anyone at xyz.com can create maps on xyz or on abc.com
+    model.SetDomainRoles('xyz.com', 'xyz.com', [model.Role.MAP_CREATOR])
+    model.SetDomainRoles('xyz.com', 'abc.com', [model.Role.MAP_CREATOR])
+    # Anyone at abc.com can create maps and edit the catalog at abc.com
+    model.SetDomainRoles('abc.com', 'abc.com',
+                         [model.Role.CATALOG_EDITOR, model.Role.MAP_CREATOR])
+    # Sally is a domain admin and catalog editor for xyz.com, and a map creator
+    # for abc.com
+    model.SetDomainRoles('sally@xyz.com', 'xyz.com',
+                         [model.Role.DOMAIN_ADMIN, model.Role.CATALOG_EDITOR])
+    model.SetDomainRoles('sally@xyz.com', 'abc.com', [model.Role.MAP_CREATOR])
+    # Bob is a map creator at xyz.com, despite belonging to abc.com
+    model.SetDomainRoles('bob@abc.com', 'xyz.com', [model.Role.MAP_CREATOR])
+    # Zarg is a map creator at unimportant.org
+    model.SetDomainRoles('zarg@unimportant.org', 'unimportant.org',
+                         [model.Role.MAP_CREATOR])
+    # Ensure other values stored in Config don't interfere
+    model.SetInitialDomainRole('xyz.com', model.Role.MAP_VIEWER)
+
+    self.assertEqualDomainPerms(
+        {'xyz.com': [model.Role.MAP_CREATOR],
+         'sally@xyz.com': [model.Role.DOMAIN_ADMIN, model.Role.CATALOG_EDITOR],
+         'bob@abc.com': [model.Role.MAP_CREATOR]},
+        model.GetSubjectsInDomain('xyz.com'))
+    self.assertEqualDomainPerms(
+        {'xyz.com': [model.Role.MAP_CREATOR],
+         'abc.com': [model.Role.CATALOG_EDITOR, model.Role.MAP_CREATOR],
+         'sally@xyz.com': [model.Role.MAP_CREATOR]},
+        model.GetSubjectsInDomain('abc.com'))
 
   def testVersions(self):
     """Verifies that creating and setting versions works properly."""

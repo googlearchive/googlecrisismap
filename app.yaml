@@ -114,6 +114,10 @@ handlers:
   script: catalog.app
   login: required
 
+- url: /crisismap/a/.admin/[\w.-]+
+  script: admin.app
+  login: required
+
 - url: /crisismap/maps/[\w-]+
   script: map.app
 
