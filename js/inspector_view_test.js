@@ -295,8 +295,8 @@ InspectorViewTest.prototype.testImport = function() {
     fired = true;
   });
 
-  var link = expectDescendantOf(this.popup_, 'a',
-      withText('Copy an existing layer'));
+  var link = expectDescendantOf(
+      this.popup_, 'a', withText('Import published layers \xbb'));
   cm.events.emit(link, 'click');
   expectTrue(fired);
 

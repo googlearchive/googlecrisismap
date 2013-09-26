@@ -27,8 +27,8 @@ var MSG_OK = goog.getMsg('OK');
 /** @desc Label for the Cancel button on a dialog with OK and Cancel buttons. */
 var MSG_CANCEL = goog.getMsg('Cancel');
 
-/** @desc Link to import/copy an existing layer. */
-var MSG_COPY_EXISTING = goog.getMsg('Copy an existing layer');
+/** @desc Text of link to proceed to the "Import layers" dialog. */
+var MSG_IMPORT_LAYERS = goog.getMsg('Import published layers \xbb');
 
 /**
  * A property inspector.  Call inspect() to inspect an object's properties.
@@ -88,7 +88,7 @@ cm.InspectorView = function() {
   this.popup_ = cm.ui.create('div', {'class': [cm.css.INSPECTOR, cm.css.POPUP]},
       cm.ui.create('div', undefined,
           this.titleElem_ = cm.ui.create('h2'),
-          this.copyLayerLink_ = cm.ui.createLink(MSG_COPY_EXISTING)),
+          this.copyLayerLink_ = cm.ui.createLink(MSG_IMPORT_LAYERS)),
       this.tableElem_ = cm.ui.create('table',
           {'class': cm.css.EDITORS, 'cellpadding': '0', 'cellspacing': '0'}),
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
@@ -199,20 +199,19 @@ cm.InspectorView.prototype.inspect = function(
     }
   }
 
-  // Bring up the inspector dialog.
-  cm.ui.showPopup(this.popup_);
-  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: true});
-  this.updateConditionalEditors_();
-
   // Listen for changes that will affect conditional editors.
+  this.updateConditionalEditors_();
   for (var key in triggerKeys) {
     cm.events.onChange(this.draft_, key, this.updateConditionalEditors_, this);
   }
 
-  //  Listen on the appstate so we can close this inspector view if this layer
-  //  is disabled.
+  // Watch enabled_layer_ids and close the inspector if this layer is disabled.
   cm.events.onChange(this.appState_, 'enabled_layer_ids',
                      this.cancelIfLayerDisabled_, this);
+
+  // Bring up the inspector dialog.
+  cm.ui.showPopup(this.popup_);
+  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: true});
 };
 
 /**

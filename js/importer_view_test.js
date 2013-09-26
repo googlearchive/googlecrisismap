@@ -249,7 +249,7 @@ ImporterViewTest.prototype.testCancel = function() {
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
 };
 
-/** Tests navigation to the new layer dialog (inspector). */
+/** Tests navigation back to the new layer dialog (inspector). */
 ImporterViewTest.prototype.testCreateNew = function() {
   this.openImporter_();
 
@@ -258,8 +258,7 @@ ImporterViewTest.prototype.testCreateNew = function() {
     fired = true;
   });
 
-  var button = expectDescendantOf(this.popup_, 'a',
-      withText('Create new layer'));
+  var button = expectDescendantOf(this.popup_, 'a', withText('\xab Back'));
   cm.events.emit(button, 'click');
   expectTrue(fired);
 

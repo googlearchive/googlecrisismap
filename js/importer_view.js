@@ -30,13 +30,11 @@ goog.require('goog.net.XhrIo');
  */
 var MSG_IMPORTER_SUBMIT = goog.getMsg('Import selected layers');
 
-/**
- * @desc Label for the Cancel button on the importer dialog.
- */
+/** @desc Label for the Cancel button on the importer dialog. */
 var MSG_IMPORTER_CANCEL = goog.getMsg('Cancel');
 
-/** @desc Link to create new, blank layer. */
-var MSG_CREATE_NEW_LAYER = goog.getMsg('Create new layer');
+/** @desc Link to go back to the "Create new layer" dialog. */
+var MSG_CREATE_NEW_LAYER = goog.getMsg('\xab Back');
 
 /** @desc Title text for import dialog. */
 var MSG_IMPORT_TITLE = goog.getMsg('Select layers to import');
@@ -48,12 +46,9 @@ var MSG_IMPORT_TITLE = goog.getMsg('Select layers to import');
 var MSG_NO_LAYERS = goog.getMsg(
     'There are no layers in any published maps to import.');
 
-/**
- * @desc Text shown in the importer initially, before the user has selected
- *     anything.
- */
+/** @desc Initial text in the importer before the user has selected anything. */
 var MSG_NONE_SELECTED_INITIAL = goog.getMsg(
-    'No layers selected -- click layer names to select them');
+    'No layers are selected.  Click layer names to select them.');
 
 /** @desc [ICU Syntax] Text displaying how many layers the user has selected. */
 var MSG_LAYERS_SELECTED = goog.getMsg('{SELECTED, plural, ' +
@@ -261,7 +256,7 @@ cm.ImporterView.prototype.openImporter = function() {
   } else {
     cm.ui.clear(this.layerListElem_);
     cm.ui.append(this.layerListElem_,
-        cm.ui.create('span', {}, 'Loading...'));
+        cm.ui.create('div', {'class': cm.css.LAYER_TITLE}, 'Loading...'));
     goog.net.XhrIo.send(this.apiMapsUrl_, goog.bind(function(event) {
       if (!this.popup_.parentNode) {
         return;
@@ -306,7 +301,8 @@ cm.ImporterView.prototype.renderLayerList_ = function(maps) {
     this.layerListElem_.focus();
   } else {
     cm.ui.clear(this.layerListElem_);
-    this.layerListElem_.innerHTML = MSG_NO_LAYERS;
+    cm.ui.append(this.layerListElem_,
+        cm.ui.create('div', {'class': cm.css.LAYER_TITLE}, MSG_NO_LAYERS));
   }
 };
 
@@ -604,7 +600,7 @@ cm.ImporterView.prototype.handleResize_ = function(opt_container) {
 };
 
 /**
- * Handler for the "Create new layer" link.
+ * Handler for the link that goes back to the "Create new layer" dialog.
  * @private
  */
 cm.ImporterView.prototype.handleNewLayer_ = function() {
