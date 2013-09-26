@@ -47,6 +47,9 @@ var MSG_ADD_NEW_FOLDER = goog.getMsg('Add folder');
 /** @desc Link text to return to map list. */
 var MSG_BACK_TO_MAP_LIST = goog.getMsg('Back to map list');
 
+/** @desc Link text to documentation on how to use the map editor. */
+var MSG_HELP_LINK = goog.getMsg('Help');
+
 /** @desc Default title for an empty folder. */
 var MSG_UNTITLED_FOLDER = goog.getMsg('Untitled Folder');
 
@@ -54,6 +57,12 @@ var MSG_UNTITLED_FOLDER = goog.getMsg('Untitled Folder');
 var MSG_UNSAVED_CHANGES = goog.getMsg(
     'You have unsaved changes that will be lost if you leave' +
     ' the page without clicking the "Save" link.');
+
+/* TODO(rew): This link needs to be updated when the draft document is
+   finalized and published in its permanent location. */
+/* URL to the help document for editing maps. */
+var HELP_LINK_URL = 'https://docs.google.com/document/d/' +
+    '1cp9hLYJzGZZtM6IyO2WqIUvolU1WyCadlI_pGGtBGDY/edit#';
 
 /**
  * A command toolbar.  For now, this is just a few links, but in future will
@@ -168,6 +177,8 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
         this.handleDiffJsonClick_, this, mapModel, opt_diffUrl));
   }
 
+  var helpLink = cm.ui.createLink(MSG_HELP_LINK, HELP_LINK_URL, '_blank');
+  cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, helpLink);
   parentElem.appendChild(toolbarElem);
 };
 
