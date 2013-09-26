@@ -26,15 +26,11 @@ import metadata
 import metadata_fetch
 import model
 import test_utils
+import utils
 
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from google.appengine.api import urlfetch_errors
-
-
-class Struct(object):
-  def __init__(self, **kwargs):
-    self.__dict__.update(kwargs)
 
 
 def CreateZip(name_content_pairs):
@@ -143,7 +139,7 @@ class MetadataFetchTest(test_utils.BaseTest):
         'update_time': LAST_MODIFIED_TIMESTAMP,
         'length': len(SIMPLE_KML),
         'md5_hash': hashlib.md5(SIMPLE_KML).hexdigest()
-    }, metadata_fetch.GatherMetadata('KML', Struct(
+    }, metadata_fetch.GatherMetadata('KML', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=SIMPLE_KML)))
 
     # Valid KML with no features.
@@ -157,7 +153,7 @@ class MetadataFetchTest(test_utils.BaseTest):
         'length': len(content),
         'md5_hash': hashlib.md5(content).hexdigest(),
         'has_no_features': True
-    }, metadata_fetch.GatherMetadata('KML', Struct(
+    }, metadata_fetch.GatherMetadata('KML', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=content)))
 
     # Valid KML with unsupported features.
@@ -171,7 +167,7 @@ class MetadataFetchTest(test_utils.BaseTest):
         'length': len(content),
         'md5_hash': hashlib.md5(content).hexdigest(),
         'has_unsupported_kml': True
-    }, metadata_fetch.GatherMetadata('KML', Struct(
+    }, metadata_fetch.GatherMetadata('KML', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=content)))
 
   def testGatherMetadataGeorss(self):
@@ -185,7 +181,7 @@ class MetadataFetchTest(test_utils.BaseTest):
         'update_time': LAST_MODIFIED_TIMESTAMP,
         'length': len(content),
         'md5_hash': hashlib.md5(content).hexdigest()
-    }, metadata_fetch.GatherMetadata('GEORSS', Struct(
+    }, metadata_fetch.GatherMetadata('GEORSS', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=content)))
 
     # Valid GeoRSS with no features.
@@ -199,7 +195,7 @@ class MetadataFetchTest(test_utils.BaseTest):
         'length': len(content),
         'md5_hash': hashlib.md5(content).hexdigest(),
         'has_no_features': True
-    }, metadata_fetch.GatherMetadata('GEORSS', Struct(
+    }, metadata_fetch.GatherMetadata('GEORSS', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=content)))
 
   def testGatherMetadataInvalid(self):
@@ -214,13 +210,13 @@ class MetadataFetchTest(test_utils.BaseTest):
         'length': len(content),
         'md5_hash': hashlib.md5(content).hexdigest(),
         'ill_formed': True
-    }, metadata_fetch.GatherMetadata('KML', Struct(
+    }, metadata_fetch.GatherMetadata('KML', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=content)))
 
   def testFetchFirstTime(self):
     # Simulate a normal, successful fetch of a document for the first time.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
-    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(Struct(
+    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=SIMPLE_KML))
 
     self.mox.ReplayAll()
@@ -240,8 +236,9 @@ class MetadataFetchTest(test_utils.BaseTest):
     # Simulate a successful fetch of a document that was previously fetched.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     headers = {'If-none-match': ETAG}
-    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(Struct(
-        status_code=200, headers=RESPONSE_HEADERS_2, content=SIMPLE_KML_2))
+    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(
+        utils.Struct(status_code=200, headers=RESPONSE_HEADERS_2,
+                     content=SIMPLE_KML_2))
 
     self.mox.ReplayAll()
     self.assertEquals({
@@ -268,8 +265,8 @@ class MetadataFetchTest(test_utils.BaseTest):
     # Verify that we send "If-modified-since", and simulate getting a 304.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     headers = {'If-modified-since': LAST_MODIFIED_STRING}
-    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(Struct(
-        status_code=304, headers={}, content='Not modified'))
+    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(
+        utils.Struct(status_code=304, headers={}, content='Not modified'))
 
     self.mox.ReplayAll()
     # Pretend there is existing metadata for 1234 bytes of content.
@@ -297,8 +294,8 @@ class MetadataFetchTest(test_utils.BaseTest):
     # Verify that we send "If-none-match", and simulate getting a 304.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     headers = {'If-none-match': ETAG}
-    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(Struct(
-        status_code=304, headers={}, content='Not modified'))
+    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(
+        utils.Struct(status_code=304, headers={}, content='Not modified'))
 
     self.mox.ReplayAll()
     # Pretend there is existing metadata for 1234 bytes of content.
@@ -347,8 +344,8 @@ class MetadataFetchTest(test_utils.BaseTest):
   def testFetchHttpError(self):
     # Simulate a 404 Not found error.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
-    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(Struct(
-        status_code=404, headers={}, content='Not found'))
+    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(
+        utils.Struct(status_code=404, headers={}, content='Not found'))
 
     self.mox.ReplayAll()
     self.assertEquals({
@@ -452,9 +449,9 @@ class MetadataFetchTest(test_utils.BaseTest):
 
     # Execute the queued metadata_fetch tasks.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
-    urlfetch.fetch(GEORSS_URL, headers={}, deadline=10).AndReturn(Struct(
+    urlfetch.fetch(GEORSS_URL, headers={}, deadline=10).AndReturn(utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=SIMPLE_GEORSS))
-    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(Struct(
+    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS_2, content=SIMPLE_KML))
 
     self.mox.ReplayAll()
