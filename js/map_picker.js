@@ -92,13 +92,10 @@ cm.MapPicker.positionMenu_ = function(menu, button) {
   var menuWidth = cm.ui.offscreenSize(menu, cm.ui.document.body).width;
   var buttonPos = goog.style.getPageOffset(button);
   var buttonSize = goog.style.getSize(button);
-  var bodySize = goog.style.getSize(cm.ui.document.body);
   // If the menu fits on the left (right edge aligned with button), put it
-  // there; otherwise put it on the right (left edge aligned with button).
-  // The latter case happens when, for example, the panel is on the left and
-  // there is a menu item with a long title.
+  // there; otherwise put it as far left as it will go.
   var menuOnLeftX = buttonPos.x + buttonSize.width - menuWidth;
-  menu.style.left = (menuOnLeftX > 0 ? menuOnLeftX : buttonPos.x) + 'px';
+  menu.style.left = (menuOnLeftX < 4 ? 4 : menuOnLeftX) + 'px';
   menu.style.top = (buttonPos.y + buttonSize.height) + 'px';
 };
 

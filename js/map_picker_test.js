@@ -60,7 +60,7 @@ MapPickerTest.prototype.positionMenu = function() {
   // Menu is too wide to fit with its right edge aligned to the button.
   menu.offsetWidth = 200;
   cm.MapPicker.positionMenu_(menu, button);
-  expectEq('150px', menu.style.left);
+  expectEq('4px', menu.style.left);
   expectEq('35px', menu.style.top);
 };
 

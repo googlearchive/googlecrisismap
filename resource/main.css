@@ -369,7 +369,7 @@ html, body {
   float:none;
   position:absolute;
   width:100%;
-  z-index:2;
+  z-index:1;
   max-width:500px;
   opacity:0.90;
   filter:alpha(opacity=90);
@@ -446,7 +446,7 @@ html, body {
   position:absolute;
   top:0;
   right:0;
-  padding:16px;
+  margin:12px;
   opacity:0.7;
   filter:alpha(opacity=70);
   cursor:pointer;
@@ -713,6 +713,7 @@ input[type=checkbox]:checked::after {
   margin:0;
   list-style:none;
   min-width:40px;  /* override min-width:240px on cm-popup */
+  z-index:1;
 }
 .cm-map-picker li a, .cm-map-picker li a:visited, .cm-map-picker li a:link {
   display:block;
@@ -743,7 +744,7 @@ input[type=checkbox]:checked::after {
   opacity:1;
 }
 .cm-embedded .cm-map-picker-button {
-  right:auto;
+  right:36px;
 }
 
 /* Login */
