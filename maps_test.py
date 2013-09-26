@@ -142,31 +142,28 @@ class MapTest(test_utils.BaseTest):
   def testMapRegion(self):
     """Verifies that the 'region' property affects the Maps API URL."""
     with test_utils.RootLogin():
-      domains.Domain.Create('foo.com')
-      m = model.Map.Create('{"title": "no region"}', 'foo.com')
+      domains.Domain.Create('x.com')
+      m1 = model.Map.Create('{"title": "no region"}', 'x.com')
+      m2 = model.Map.Create('{"title": "has region", "region": "in"}', 'x.com')
 
-      cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m.id), m)
-      self.assertTrue('&region=' not in cm_config['maps_api_url'])
+      cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m1.id), m1)
+      self.assertTrue('region=' not in cm_config['maps_api_url'])
+      cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m2.id), m2)
+      self.assertTrue('region=in' in cm_config['maps_api_url'])
 
-      domains.Domain.Create('foo.in')
-      m = model.Map.Create('{"title": "has region", "region": "in"}', 'foo.in')
-
-      cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m.id), m)
-      self.assertTrue('&region=in' in cm_config['maps_api_url'])
-
-  def testMakePrettyDesc(self):
-    self.assertEquals('', maps.MakePrettyDesc(''))
-    # Detects whitespace-only descriptions.
-    self.assertEquals('', maps.MakePrettyDesc(' \t\t\n\n  '))
-    # Converts p, br (and li, div, td) into ' / ', and trims spaces between
-    # the space-slash-space's.
-    self.assertEquals(' / paragraph with a / break', maps.MakePrettyDesc(
+  def testToPlainText(self):
+    self.assertEquals('', maps.ToPlainText(None))
+    self.assertEquals('', maps.ToPlainText(''))
+    # Converts block tags to ' / ' and collapses ' / / ' to ' / '.
+    self.assertEquals(' / paragraph with a / break', maps.ToPlainText(
         '<p>paragraph with a <br/> break</p>'))
+    self.assertEquals('multiple / paragraph breaks', maps.ToPlainText(
+        'multiple   <p>  <p> &nbsp;<p>   paragraph breaks'))
     # Strips out all other HTML tags.
-    self.assertEquals(' / p in a ul with a span', maps.MakePrettyDesc(
+    self.assertEquals(' / p in a ul with a span', maps.ToPlainText(
         '<ul><p>p in a ul with a <span>span</span></p><ul>'))
     # Preserves entity and charrefs.
-    self.assertEquals('&amp;&#123;&#xf8;', maps.MakePrettyDesc(
+    self.assertEquals('&amp;&#123;&#xf8;', maps.ToPlainText(
         '&amp;&#123;&#xf8;'))
 
 

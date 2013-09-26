@@ -310,11 +310,9 @@ class MapByLabel(base_handler.BaseHandler):
     cm_config = GetConfig(self.request, catalog_entry=entry)
     cm_config['label'] = label
 
-    # Set Facebook / Twitter sharing information. Note that this info does not
-    # go on draft maps.
+    # Get the map title and description (for <meta> tags).
     map_title = cm_config['map_root'].get('title') + ' | Google Crisis Map'
-    # Simply stripping HTML
-    map_description = MakePrettyDesc(cm_config['map_root'].get('description'))
+    map_description = ToPlainText(cm_config['map_root'].get('description'))
     # Make URL like we do in GetMapMenuItems.
     map_url = self.request.root_path + '/%s/%s/' % (entry.domain, entry.label)
     # Security note: cm_config_json is assumed to be safe JSON; all other
@@ -333,18 +331,13 @@ class MapByLabel(base_handler.BaseHandler):
     }))
 
 
-def MakePrettyDesc(desc):
-  """Utility for making map descriptions presentable for FB/Twitter."""
-
-  # If the description is only whitespace characters, return ''.
-  if not re.sub(r'(^\s+|\s+$)', '', desc):
-    return ''
-
+def ToPlainText(desc):
+  """Converts a map description to plain text for use in a <meta> tag."""
+  desc = desc or ''  # accommodate None
   block_tag = re.compile(r'<(p|div|br|li|td)[^>]*>', re.I)
-  tag = re.compile(r'<[^>]*>')
-  spaces = re.compile(r'(\s|&nbsp;)+(/(\s|&nbsp;)+)+')
-  # Replace certain HTML tags with '/' and compress spaces.
-  desc = re.sub(spaces, ' / ', re.sub(tag, '', re.sub(block_tag, ' / ', desc)))
+  slashes = re.compile(r'(\s|&nbsp;)+(/(\s|&nbsp;)+)+')
+  # Replace block tags with ' / ' and compress multiple occurrences of ' / '.
+  desc = re.sub(slashes, ' / ', re.sub(block_tag, ' / ', desc))
   # Strip all other HTML tags.
   return utils.StripHtmlTags(desc)
 
