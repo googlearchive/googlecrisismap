@@ -150,13 +150,13 @@ class MapListTest(test_utils.BaseTest):
     m2 = model.Map.Create('{"title": "Arf"}', 'dogs.org', viewers=['x@y.com'])
     test_utils.SetUser('x@y.com')
 
-    result = test_utils.DoGet('/.maps').body
+    result = self.DoGet('/.maps').body
     self.assertTrue('Moo' in result, result)
     self.assertTrue('.maps/' + m1.id in result, result)
     self.assertTrue('Arf' in result, result)
     self.assertTrue('.maps/' + m2.id in result, result)
 
-    result = test_utils.DoGet('/dogs.org/.maps').body
+    result = self.DoGet('/dogs.org/.maps').body
     self.assertTrue('Moo' not in result, result)
     self.assertTrue('.maps/' + m1.id not in result, result)
     self.assertTrue('Arf' in result, result)

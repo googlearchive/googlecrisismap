@@ -36,20 +36,17 @@ class ApiTest(test_utils.BaseTest):
     json_dict = {'json': True, 'stuff': [0, 1]}
     maproot_json = json.dumps(json_dict)
     self.map.PutNewVersion(maproot_json)
-    response = test_utils.DoGet('/.api/maps/%s' % self.map.id)
+    response = self.DoGet('/.api/maps/%s' % self.map.id)
     self.assertEquals({'json': json_dict}, json.loads(response.body))
 
   def testGetInvalidMap(self):
     """Attempts to fetch a map that doesn't exist."""
-    self.assertEquals(404, test_utils.DoGet('/.api/maps/xyz').status_int)
+    self.DoGet('/.api/maps/xyz', status=404)
 
   def testPostMap(self):
     """Posts a new version of a map."""
     maproot_json = '{"stuff": [0, 1]}'
-    response = test_utils.DoPost(
-        '/.api/maps/%s' % self.map.id, 'json=%s' % maproot_json)
-    # Status 201 indicates Location was set.
-    self.assertEquals(201, response.status_int)
+    self.DoPost('/.api/maps/' + self.map.id, 'json=' + maproot_json)
     # Now we refetch the map because the object changed underneath us.
     map_object = model.Map.Get(self.map.id)
     # verify that the pieces were saved properly
@@ -82,7 +79,7 @@ class ApiTest(test_utils.BaseTest):
     model.Map.Create(json.dumps(draft), 'xyz.com')
 
     test_utils.ClearUser()
-    response = test_utils.DoGet('/.api/maps')
+    response = self.DoGet('/.api/maps')
     self.assertEquals([{'url': '/root/google.com/Map2', 'maproot': map2},
                        {'url': '/root/google.com/Map1', 'maproot': map1}],
                       json.loads(response.body))

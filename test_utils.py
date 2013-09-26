@@ -40,35 +40,6 @@ ROOT_URL = 'http://app.com/root'
 ROOT_PATH = urlparse.urlsplit(ROOT_URL).path
 
 
-def DoGet(path):
-  """Dispatches a GET request according to the routes in app.py.
-
-  Args:
-    path: The part of the URL path after (not including) the root URL.
-
-  Returns:
-    The HTTP response from the handler as a webapp2.Response object.
-  """
-  return DispatchRequest(SetupRequest(path))
-
-
-def DoPost(path, data):
-  """Dispatches a POST request according to the routes in app.py.
-
-  Args:
-    path: The part of the URL path after (not including) the root URL.
-    data: The POST data as a string.
-
-  Returns:
-    The HTTP response from the handler as a webapp2.Response object.
-  """
-  request = SetupRequest(path)
-  request.method = 'POST'
-  request.body = data
-  request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
-  return DispatchRequest(request)
-
-
 def DispatchRequest(request):
   response = webapp2.Response()
   # Can't import app at the top of this file because testbed isn't ready yet.
@@ -166,6 +137,48 @@ class BaseTest(unittest.TestCase):
     self.testbed.deactivate()
     ClearUser()
 
+  def DoGet(self, path, status=None):
+    """Dispatches a GET request according to the routes in app.py.
+
+    Args:
+      path: The part of the URL path after (not including) the root URL.
+      status: If given, expect that the GET will give this HTTP status code.
+          Otherwise, expect that the GET will give a non-error code (200-399).
+
+    Returns:
+      The HTTP response from the handler as a webapp2.Response object.
+    """
+    response = DispatchRequest(SetupRequest(path))
+    if status:
+      self.assertEquals(status, response.status_int)
+    else:
+      self.assertGreaterEqual(response.status_int, 200)
+      self.assertLess(response.status_int, 400)
+    return response
+
+  def DoPost(self, path, data, status=None):
+    """Dispatches a POST request according to the routes in app.py.
+
+    Args:
+      path: The part of the URL path after (not including) the root URL.
+      data: The POST data as a string.
+      status: If given, expect that the POST will return this HTTP status code.
+          Otherwise, expect that the POST will return a non-error code (< 400).
+
+    Returns:
+      The HTTP response from the handler as a webapp2.Response object.
+    """
+    request = SetupRequest(path)
+    request.method = 'POST'
+    request.body = data
+    request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    response = DispatchRequest(request)
+    if status:
+      self.assertEquals(status, response.status_int)
+    else:
+      self.assertLess(response.status_int, 400)
+    return response
+
   def PopTasks(self, queue_name):
     """Removes all the tasks from a given queue, returning a list of dicts."""
     stub = self.testbed.get_stub('taskqueue')
@@ -186,8 +199,8 @@ class BaseTest(unittest.TestCase):
     self.assertEquals(ROOT_PATH, task['url'][:len(ROOT_PATH)])
     path = task['url'][len(ROOT_PATH):]
     if task['method'] == 'POST':
-      return DoPost(path, self.GetTaskBody(task))
-    return DoGet(path)
+      return self.DoPost(path, self.GetTaskBody(task))
+    return self.DoGet(path)
 
   def SetForTest(self, parent, child_name, new_child):
     """Sets an attribute of an object, just for the duration of the test."""

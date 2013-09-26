@@ -76,9 +76,9 @@ class MetadataTest(test_utils.BaseTest):
     cache.Set(['metadata', 'KML:http://p.com/q'], {'length': 456})
 
     # Map cache key, an address with metadata, and an address without metadata.
-    response = test_utils.DoGet('/.metadata?key=' + key +
-                                '&source=KML:http://p.com/q' +
-                                '&source=KML:http://z.com/z')
+    response = self.DoGet('/.metadata?key=' + key +
+                          '&source=KML:http://p.com/q' +
+                          '&source=KML:http://z.com/z')
     self.assertEquals({
         'KML:http://x.com/a': {'length': 123},  # in map, has metadata
         'GEORSS:http://y.com/b': None,  # in map, no metadata
@@ -87,7 +87,7 @@ class MetadataTest(test_utils.BaseTest):
     }, json.loads(response.body))
 
   def testGetAndActivate(self):
-    test_utils.DoGet('/.metadata?source=KML:http://u.com/v')
+    self.DoGet('/.metadata?source=KML:http://u.com/v')
 
     # Requesting metadata should activate the source and queue a task.
     self.assertEquals(1, cache.Get(['metadata_active', 'KML:http://u.com/v']))
@@ -97,8 +97,8 @@ class MetadataTest(test_utils.BaseTest):
         '/root/.metadata_fetch?source=KML:http://u.com/v', urls[0])
 
     # Requesting multiple times should not add redundant tasks.
-    test_utils.DoGet('/.metadata?source=KML:http://u.com/v')
-    test_utils.DoGet('/.metadata?source=KML:http://u.com/v')
+    self.DoGet('/.metadata?source=KML:http://u.com/v')
+    self.DoGet('/.metadata?source=KML:http://u.com/v')
     self.assertEquals(0, len(self.PopTasks('metadata')))
 
 if __name__ == '__main__':

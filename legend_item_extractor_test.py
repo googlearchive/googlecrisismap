@@ -579,7 +579,7 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     legend_item_extractor.Extract(kml).AndReturn(items)
 
     self.mox.ReplayAll()
-    response = test_utils.DoGet('/.legend?url=' + urllib.quote(url))
+    response = self.DoGet('/.legend?url=' + urllib.quote(url))
     self.assertEquals({
         'icon_styles': items[0],
         'line_styles': items[1],
@@ -596,19 +596,16 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     GetLegendItems.GetKmlFromUrl(url).AndReturn(None)
 
     self.mox.ReplayAll()
-    response = test_utils.DoGet('/.legend?url=' + urllib.quote(url))
-    self.assertEquals(400, response.status_int)
+    self.DoGet('/.legend?url=' + urllib.quote(url), status=400)
     self.mox.VerifyAll()
 
   def testGetLegendItemsUnsafeUrl(self):
     """Tests the GetLegendItems handler for unsafe URLs."""
     url = '/etc/passwd'
-    response = test_utils.DoGet('/.legend?url=' + urllib.quote(url))
-    self.assertEquals(400, response.status_int)
+    self.DoGet('/.legend?url=' + urllib.quote(url), status=400)
 
     url = 'ftp://www.maps.com:123/?map=321'
-    response = test_utils.DoGet('/.legend?url=' + urllib.quote(url))
-    self.assertEquals(400, response.status_int)
+    self.DoGet('/.legend?url=' + urllib.quote(url), status=400)
 
 
 if __name__ == '__main__':

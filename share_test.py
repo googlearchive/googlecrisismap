@@ -52,10 +52,9 @@ class ShareTest(test_utils.BaseTest):
                                  '/root/.maps/' + self.map.id in body)))
 
       self.mox.ReplayAll()
-      response = test_utils.DoPost(
+      self.DoPost(
           '/.share/' + self.map.id,
           'role=%s&recipient=%s&message=%s' % (role, RECIPIENT, MESSAGE))
-      self.assertEquals(201, response.status_int)
 
       # Refetch map because the object changed underneath.
       model.Map.Get(self.map.id).AssertAccess(role, users.User(RECIPIENT))
@@ -66,43 +65,27 @@ class ShareTest(test_utils.BaseTest):
   def testSharePostFailureNotOwner(self):
     """Non-owners of a map should not be able to share it."""
     test_utils.SetUser('not_owner@gmail.com')
-    response = test_utils.DoPost(
-        '/.share/' + self.map.id,
-        'role=MAP_VIEWER&recipient=%s&message=%s' % (RECIPIENT, MESSAGE))
-    self.assertEquals(403, response.status_int)
+    self.DoPost('/.share/' + self.map.id,
+                'role=MAP_VIEWER&recipient=user@gmail.com', status=403)
 
   def testSharePostFailureInvalidId(self):
     """Sharing should fail if the map ID is invalid."""
     invalid_map_id = 'xxx' + self.map.id
-    response = test_utils.DoPost(
-        '/.share/%s' % invalid_map_id,
-        'role=MAP_VIEWER&recipient=user@gmail.com&message=hello')
-    self.assertEquals(404, response.status_int)
+    self.DoPost('/.share/%s' % invalid_map_id,
+                'role=MAP_VIEWER&recipient=user@gmail.com', status=404)
 
   def testSharePostFailureInvalidRole(self):
     """Sharing should fail if the specified role is invalid."""
-    response = test_utils.DoPost(
-        '/.share/%s' % self.map.id,
-        'role=other&recipient=user@gmail.com&message=hello')
-    self.assertEquals(400, response.status_int)
+    self.DoPost('/.share/%s' % self.map.id,
+                'role=other&recipient=user@gmail.com', status=400)
 
   def testSharePostFailureMissingParameter(self):
     """Sharing should fail if the role or recipient parameter is missing."""
-    role = 'MAP_VIEWER'
-    email = 'user@gmail.com'
-    message = 'hello'
-
     # Try with missing recipient email.
-    response = test_utils.DoPost(
-        '/.share/%s' % self.map.id,
-        'role=%s&message=%s' % (role, message))
-    self.assertEquals(400, response.status_int)
+    self.DoPost('/.share/%s' % self.map.id, 'role=MAP_VIEWER', status=400)
 
     # Try with missing role.
-    response = test_utils.DoPost(
-        '/.share/%s' % self.map.id,
-        'recipient=%s&message=%s' % (email, message))
-    self.assertEquals(400, response.status_int)
+    self.DoPost('/.share/%s' % self.map.id, 'recipient=foo@bar.com', status=400)
 
 if __name__ == '__main__':
   test_utils.main()

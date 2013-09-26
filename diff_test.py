@@ -56,7 +56,7 @@ class DiffTest(test_utils.BaseTest):
                         context=mox.IgnoreArg()).AndReturn(catalog_diff)
 
     self.mox.ReplayAll()
-    test_utils.DoPost('/.diff/%s' % map_object.id, 'new_json=' + new_json)
+    self.DoPost('/.diff/' + map_object.id, 'new_json=' + new_json)
 
 
 if __name__ == '__main__':

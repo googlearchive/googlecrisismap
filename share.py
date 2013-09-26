@@ -34,7 +34,7 @@ class Share(base_handler.BaseHandler):
 
     role = self.request.get('role')
     recipient_email = self.request.get('recipient')
-    message = self.request.get('message')
+    message = self.request.get('message', '')
 
     # If these are empty, we shouldn't try to do anything.
     if not role or not recipient_email:

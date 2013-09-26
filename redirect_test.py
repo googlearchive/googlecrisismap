@@ -24,15 +24,15 @@ class RedirectTest(test_utils.BaseTest):
   def testGet(self):
     """Tests a simple redirection."""
     redirect.Redirection(key_name='foo', url='http://elsewhere.com/').put()
-    response = test_utils.DoGet('/.redirect/foo')
-    self.assertEquals(302, response.status_int)
-    self.assertEquals('http://elsewhere.com/', response.headers['Location'])
+    self.assertEquals(
+        'http://elsewhere.com/',
+        self.DoGet('/.redirect/foo', status=302).headers['Location'])
 
   def testGetNonexistentRedirection(self):
     """Tests a nonexistent redirection target."""
-    response = test_utils.DoGet('/.redirect/xyz')
-    self.assertEquals(302, response.status_int)
-    self.assertEquals('http://app.com/', response.headers['Location'])
+    self.assertEquals(
+        'http://app.com/',
+        self.DoGet('/.redirect/xyz', status=302).headers['Location'])
 
 if __name__ == '__main__':
   test_utils.main()

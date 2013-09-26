@@ -28,7 +28,7 @@ class CreateTest(test_utils.BaseTest):
     perms.Grant('google.com', perms.Role.MAP_CREATOR, 'xyz.com')
     # foo@google.com should be able to create a map.
     test_utils.SetUser('foo@google.com')
-    response = test_utils.DoPost('/xyz.com/.create', '')
+    response = self.DoPost('/xyz.com/.create', '', status=302)
     # Confirm that a map was created.
     location = response.headers['Location']
     map_object = model.Map.Get(location.split('/')[-1])
@@ -38,7 +38,7 @@ class CreateTest(test_utils.BaseTest):
   def testCreateWithoutPermission(self):
     # Without MAP_CREATOR, foo@google.com shouldn't be able to create a map.
     test_utils.SetUser('foo@google.com')
-    self.assertEquals(403, test_utils.DoPost('/xyz.com/.create', '').status_int)
+    self.DoPost('/xyz.com/.create', '', status=403)
 
   def testDomainRole(self):
     # Grant MAP_CREATOR permission to foo@xyz.com
@@ -46,7 +46,7 @@ class CreateTest(test_utils.BaseTest):
     perms.Grant(user, perms.Role.MAP_CREATOR, 'xyz.com')
     # foo@xyz.com should be able to create a map.
     test_utils.SetUser(user)
-    response = test_utils.DoPost('/xyz.com/.create', '')
+    response = self.DoPost('/xyz.com/.create', '', status=302)
     location = response.headers['Location']
     # Check the map; initial_domain_role is unset so domain_role should be None.
     map_object = model.Map.Get(location.split('/')[-1])
@@ -59,7 +59,7 @@ class CreateTest(test_utils.BaseTest):
     config.Set('initial_domain_role:xyz.com', perms.Role.MAP_EDITOR)
     # Create another map.
     test_utils.SetUser(user)
-    response = test_utils.DoPost('/.create?domain=xyz.com', '')
+    response = self.DoPost('/.create?domain=xyz.com', '', status=302)
     location = response.headers['Location']
     # Check the map; initial_domain_role is set so domain_role should be set.
     map_object = model.Map.Get(location.split('/')[-1])

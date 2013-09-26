@@ -21,24 +21,26 @@ import test_utils
 class IndexTest(test_utils.BaseTest):
   """Tests for the crisismap.Index request handler."""
 
-  def testGetDestinationWithCrisisParam(self):
+  def testRedirectWithCrisisParam(self):
     """Tests GetDestination with old-style id= and crisis= parameters."""
     self.assertEquals(
         'http://app.com/root/abc?layers=def',
-        test_utils.DoGet('/?id=abc&layers=def').headers['Location'])
+        self.DoGet('/?id=abc&layers=def', status=302).headers['Location'])
     self.assertEquals(
         'http://app.com/root/abc?layers=def',
-        test_utils.DoGet('/?crisis=abc&layers=def').headers['Location'])
+        self.DoGet('/?crisis=abc&layers=def', status=302).headers['Location'])
 
-  def testGetDestinationDefault(self):
+  def testRedirectDefault(self):
     """Tests GetDestination with no label parameter."""
-    self.assertEquals(
-        'http://app.com/root/empty?layers=abc',
-        test_utils.DoGet('/?layers=abc').headers['Location'])
+    self.assertEquals('http://app.com/root/empty',
+                      self.DoGet('', status=302).headers['Location'])
+
+    self.assertEquals('http://app.com/root/empty?layers=x',
+                      self.DoGet('/?layers=x', status=302).headers['Location'])
+
     config.Set('default_label', 'qwerty')
-    self.assertEquals(
-        'http://app.com/root/qwerty?layers=abc',
-        test_utils.DoGet('/?layers=abc').headers['Location'])
+    self.assertEquals('http://app.com/root/qwerty?layers=x',
+                      self.DoGet('/?layers=x', status=302).headers['Location'])
 
 
 if __name__ == '__main__':

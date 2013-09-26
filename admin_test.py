@@ -35,8 +35,7 @@ class AdminTest(test_utils.BaseTest):
 
   def testGet_WithPermissions(self):
     test_utils.SetUser('admin@xyz.com')
-    response = test_utils.DoGet('/xyz.com/.admin')
-    self.assertEquals(200, response.status_int)
+    response = self.DoGet('/xyz.com/.admin')
     # All users with any kind of permissions should be present
     self.assertTrue('admin@xyz.com' in response.body)
     self.assertTrue('catalog@xyz.com' in response.body, response.body)
@@ -46,7 +45,7 @@ class AdminTest(test_utils.BaseTest):
     # xyz.com does not grant administrative permissions to the entire
     # domain, so this should produce a permissions failure
     test_utils.SetUser('nobody@xyz.com')
-    self.assertEquals(403, test_utils.DoGet('/xyz.com/.admin').status_int)
+    self.DoGet('/xyz.com/.admin', status=403)
 
   def testPost(self):
     # Give catalog@ domain admin; revoke perms for outsider@; create
@@ -60,11 +59,9 @@ class AdminTest(test_utils.BaseTest):
         ('new_email.CATALOG_EDITOR', 'True')
     ])
     test_utils.BecomeAdmin()
-    response = test_utils.DoPost('/xyz.com/.admin', post_data)
     # Should redirect back to the admin page
-    self.assertTrue(300 <= response.status_int < 400)
+    response = self.DoPost('/xyz.com/.admin', post_data, status=302)
     self.assertTrue('/root/xyz.com/.admin' in response.headers['Location'])
-
     self.assertItemsEqual([perms.Role.DOMAIN_ADMIN, perms.Role.CATALOG_EDITOR],
                           perms.GetDomainRoles('catalog@xyz.com', 'xyz.com'))
     self.assertFalse(perms.GetDomainRoles('outsider@not-xyz.com', 'xyz.com'))

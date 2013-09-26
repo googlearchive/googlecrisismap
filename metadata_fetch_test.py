@@ -447,7 +447,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     }""" % (SOURCE_URL, GEORSS_URL), 'xyz.com')
 
     # Simulate the first map load.
-    response = test_utils.DoGet('/xyz.com/.maps/' + map_object.id)
+    response = self.DoGet('/xyz.com/.maps/' + map_object.id)
 
     # Get the metadata cache key mentioned in the map page.
     key = re.search(r'"metadata_url": "/root/.metadata\?key=(\w+)"',
@@ -460,7 +460,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     self.assertTrue(tasks[1]['url'].startswith('/root/.metadata_fetch'))
 
     # Loading the map again should not queue redundant tasks.
-    test_utils.DoGet('/xyz.com/.maps/' + map_object.id)
+    self.DoGet('/xyz.com/.maps/' + map_object.id)
     self.assertEqual(0, len(self.PopTasks('metadata')))
 
     # Execute the queued metadata_fetch tasks.
@@ -479,7 +479,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     self.mox.VerifyAll()
 
     # metadata.py should now return the cached metadata.
-    response = test_utils.DoGet('/.metadata?key=' + key)
+    response = self.DoGet('/.metadata?key=' + key)
     self.assertEquals({
         'GEORSS:' + GEORSS_URL: {
             'fetch_time': FETCH_TIME,

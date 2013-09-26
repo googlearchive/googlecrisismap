@@ -30,7 +30,7 @@ class CatalogTest(test_utils.BaseTest):
   def testGet(self):
     """Tests the Catalog GET handler."""
     model.CatalogEntry.Create('foo.com', 'label', self.map_object)
-    response = test_utils.DoGet('/foo.com/.catalog')
+    response = self.DoGet('/foo.com/.catalog')
     self.assertTrue('test map' in response.body, response.body)
     self.assertTrue('/root/foo.com/label' in response.body, response.body)
 
@@ -41,7 +41,7 @@ class CatalogTest(test_utils.BaseTest):
     # Catalog entries are not listed in the Map Picker by default.
     self.assertFalse(model.CatalogEntry.Get('foo.com', 'label1').is_listed)
     self.assertFalse(model.CatalogEntry.Get('foo.com', 'label2').is_listed)
-    test_utils.DoPost('/foo.com/.catalog', 'label1=True')
+    self.DoPost('/foo.com/.catalog', 'label1=True')
     self.assertTrue(model.CatalogEntry.Get('foo.com', 'label1').is_listed)
     self.assertFalse(model.CatalogEntry.Get('foo.com', 'label2').is_listed)
 
