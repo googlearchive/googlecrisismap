@@ -44,12 +44,13 @@ class ShareTest(test_utils.BaseTest):
     for role in ['MAP_VIEWER', 'MAP_EDITOR', 'MAP_OWNER']:
       self.mox.StubOutWithMock(mail, 'send_mail')
       # pylint: disable=g-long-lambda
+      expected_url = 'http://app.com/root/.maps/' + self.map.id
       mail.send_mail(
           OWNER, RECIPIENT,
-          mox.Func(lambda subject: (OWNER in subject and
-                                    self.map.title in subject)),
-          mox.Func(lambda body: (role in body and MESSAGE in body and
-                                 '/root/.maps/' + self.map.id in body)))
+          mox.Func(lambda subject:
+                   OWNER in subject and self.map.title in subject),
+          mox.Func(lambda body:
+                   role in body and MESSAGE in body and expected_url in body))
 
       self.mox.ReplayAll()
       self.DoPost(

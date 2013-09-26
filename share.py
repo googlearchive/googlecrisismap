@@ -57,7 +57,8 @@ class Share(base_handler.BaseHandler):
     """Sends recipient_email an email with info of map and permission level."""
     email = utils.GetCurrentUserEmail()
     subject = '%s has shared "%s" with you' % (email, map_object.title)
-    url = self.request.root_path + '/.maps/' + map_object.id
+    url = (self.request.host_url + self.request.root_path + '/.maps/' +
+           map_object.id)
     body = """
 Your permission level for %s has changed to %s.
 Access the map at: %s
