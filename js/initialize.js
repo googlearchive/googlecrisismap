@@ -262,7 +262,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
                                                opt_menuItems));
   }
   var footerView = new cm.FooterView(footerElem, mapWrapperElem, mapModel);
-  goog.style.showElement(footerElem, !config['hide_footer'] && !preview);
+  goog.style.setElementShown(footerElem, !config['hide_footer'] && !preview);
 
   new cm.BuildInfoView(mapElem);
 

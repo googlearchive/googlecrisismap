@@ -193,8 +193,8 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ = function(mapModel, opt_mapId) {
             format(mapModel.toMapRoot())).
         replace(/ /g, '&nbsp;').replace(/\n/g, '<br>');
 
-    showJsonLink && goog.style.showElement(showJsonLink, false);
-    showDiffLink && goog.style.showElement(showDiffLink, true);
+    showJsonLink && goog.style.setElementShown(showJsonLink, false);
+    showDiffLink && goog.style.setElementShown(showDiffLink, true);
     cm.ui.showPopup(popup);
   };
 
@@ -212,8 +212,8 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ = function(mapModel, opt_mapId) {
         var showDiff = function() {
           // TODO(joeysilva): Fix bug where line numbers are compacted.
           contentElem.innerHTML = htmlDiffs[diffSelectElem.selectedIndex];
-          goog.style.showElement(showJsonLink, true);
-          goog.style.showElement(showDiffLink, false);
+          goog.style.setElementShown(showJsonLink, true);
+          goog.style.setElementShown(showDiffLink, false);
           cm.ui.showPopup(popup);
         };
 
