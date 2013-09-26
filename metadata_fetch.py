@@ -139,7 +139,7 @@ MAX_MEGABYTES_PER_DAY_PER_SOURCE = 50
 #     https://developers.google.com/kml/documentation/mapsSupport
 KML_MAX_FEATURES = 1000
 KML_MAX_NETWORK_LINKS = 10
-KML_SUPPORTED_TAGS = set([
+KML_SUPPORTED_TAGS = {
     # Acceptable Atom tags:
     'author', 'link', 'name',
     # Acceptable KML tags:
@@ -154,7 +154,8 @@ KML_SUPPORTED_TAGS = set([
     'minFadeExtent', 'minLodPixels', 'name', 'north', 'open', 'outerBoundaryIs',
     'outline', 'range', 'refreshInterval', 'refreshMode', 'size', 'south',
     'styleUrl', 'targetHref', 'text', 'value', 'viewRefreshMode',
-    'viewRefreshTime', 'visibility', 'w', 'west', 'width', 'x', 'y'])
+    'viewRefreshTime', 'visibility', 'w', 'west', 'width', 'x', 'y'
+}
 
 
 class MetadataFetchLog(db.Model):
@@ -347,16 +348,18 @@ def GatherMetadata(layer_type, response):
 
     if layer_type == maproot.LayerType.KML:
       # TODO(cimamoglu): Look for placemarks within network links.
-      if not set(tags) & set(['Placemark', 'NetworkLink', 'GroundOverlay']):
+      if not set(tags) & {'Placemark', 'NetworkLink', 'GroundOverlay'}:
         metadata['has_no_features'] = True
-      if set(tags) & set(['NetworkLink', 'GroundOverlay']):
+      if set(tags) & {'NetworkLink', 'GroundOverlay'}:
         if 'update_time' in metadata:
           del metadata['update_time']  # we don't know the actual update time
       if HasUnsupportedKml(root_element):
         metadata['has_unsupported_kml'] = True
 
     if layer_type == maproot.LayerType.GEORSS:
-      if 'item' not in tags:
+      # GEORSS layers actually accept both Atom and GeoRSS feeds, so we need
+      # to check for <entry> elements (Atom) as well as <item> elements (RSS).
+      if not set(tags) & {'entry', 'item'}:
         metadata['has_no_features'] = True
 
     if layer_type == maproot.LayerType.WMS:

@@ -51,6 +51,7 @@ def CreateZip(name_content_pairs):
 SOURCE_ADDRESS = 'KML:http://example.org/example.kml'
 SOURCE_URL = 'http://example.org/example.kml'
 GEORSS_URL = 'http://georss.org/foo.xml'
+ATOM_URL = 'http://atom.org/foo.xml'
 
 LAST_MODIFIED_TIMESTAMP = 1341258096
 LAST_MODIFIED_STRING = 'Mon, 02 Jul 2012 19:41:36 GMT'
@@ -147,6 +148,7 @@ INVALID_XML_WMS_RESPONSE = """<?xml version="1.0"?>
   </WMT_MS_Capabilities>
 """
 
+SIMPLE_ATOM = '<feed><entry>foo</entry></feed>'
 SIMPLE_GEORSS = '<rss><channel><item>foo</item></channel></rss>'
 FETCH_TIME = 1341324364
 FETCH_TIME_2 = 1341324371
@@ -310,6 +312,34 @@ class MetadataFetchTest(test_utils.BaseTest):
         'length': len(content),
         'md5_hash': hashlib.md5(content).hexdigest()
     }, metadata_fetch.GatherMetadata('KML', utils.Struct(
+        status_code=200, headers=RESPONSE_HEADERS, content=content)))
+
+  def testGatherMetadataAtom(self):
+    # Valid Atom.
+    content = '<feed><entry></entry></feed>'
+    self.assertEquals({
+        'fetch_status': 200,
+        'fetch_length': len(content),
+        'fetch_last_modified': LAST_MODIFIED_STRING,
+        'fetch_etag': ETAG,
+        'update_time': LAST_MODIFIED_TIMESTAMP,
+        'length': len(content),
+        'md5_hash': hashlib.md5(content).hexdigest()
+    }, metadata_fetch.GatherMetadata('GEORSS', utils.Struct(
+        status_code=200, headers=RESPONSE_HEADERS, content=content)))
+
+    # Valid Atom with no features.
+    content = '<feed></feed>'
+    self.assertEquals({
+        'fetch_status': 200,
+        'fetch_length': len(content),
+        'fetch_last_modified': LAST_MODIFIED_STRING,
+        'fetch_etag': ETAG,
+        'update_time': LAST_MODIFIED_TIMESTAMP,
+        'length': len(content),
+        'md5_hash': hashlib.md5(content).hexdigest(),
+        'has_no_features': True
+    }, metadata_fetch.GatherMetadata('GEORSS', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=content)))
 
   def testGatherMetadataGeorss(self):
