@@ -57,7 +57,13 @@ var LAYER_FILTER_VISIBILITY_THRESHOLD = 8;
  * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     draft_mode: Indicate that the map is an unpublished draft?
  *     hide_panel_header: Hide the map title and description?
- *     enable_editing: Allow any editing at all?
+ *     publisher_name: A string used as the map's publisher
+ *     enable_editing: Allow any editing at all?  If true, the following fields
+ *       are also used:
+ *         save_url: The URL to post to upon save
+ *         dev_mode: Enable development mode?
+ *         map_list_url: The URL to go to the list of maps
+ *         diff_url: The URL to go to see the diff in the map model.
  * @constructor
  */
 cm.PanelView = function(frameElem, parentElem, mapContainer, model,

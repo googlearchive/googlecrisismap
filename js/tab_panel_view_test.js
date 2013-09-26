@@ -10,6 +10,7 @@
 // specific language governing permissions and limitations under the License.
 
 goog.require('cm.css');
+goog.require('cm.ui');
 
 function TabPanelViewTest() {
   cm.TestBase.call(this);
@@ -17,6 +18,10 @@ function TabPanelViewTest() {
   // widespread this kind of initialization is, and extract.
   this.mapDiv_ = new FakeElement('div');
   this.mapModel_ = new google.maps.MVCObject();
+  this.mapModel_.set('title', 'TabPanelViewTest map');
+  this.mapModel_.set(
+      'description',
+      cm.Html.fromSanitizedHtml('TabPanelViewTest - description for MapModel'));
   this.metadataModel_ = new google.maps.MVCObject();
   this.appState_ = new cm.AppState();
   this.config_ = {};
@@ -24,15 +29,39 @@ function TabPanelViewTest() {
 TabPanelViewTest.prototype = new cm.TestBase();
 registerTestSuite(TabPanelViewTest);
 
-TabPanelViewTest.prototype.testCreation = function() {
-  var parent = new FakeElement('div');
-  var tabPanel = new cm.TabPanelView(
-      cm.ui.document.body, parent, this.mapDiv_, this.mapModel_,
+TabPanelViewTest.prototype.createTabPanelView_ = function() {
+  this.parent_ = new FakeElement('div');
+  this.tabPanel_ = new cm.TabPanelView(
+      cm.ui.document.body, this.parent_, this.mapDiv_, this.mapModel_,
       this.metadataModel_, this.appState_, this.config_);
+};
 
-  // For now we just test for the presence of the tab bar.
-  expectDescendantOf(parent, withClass('goog-tab-bar'));
+TabPanelViewTest.prototype.testCreation = function() {
+  this.createTabPanelView_();
+
+  expectDescendantOf(this.parent_, withClass('goog-tab-bar'));
+
+  var allTabs = allDescendantsOf(this.parent_, withClass('goog-tab'));
+  expectThat(allTabs[0], withText(hasSubstr('About')));
+  // Test that the about tab is present and selected
+  expectDescendantOf(
+      this.parent_, withText(hasSubstr(this.mapModel_.get('title'))));
+  expectDescendantOf(
+      this.parent_,
+      withText(hasSubstr(this.mapModel_.get('description').toText())));
 
   // As the standard tab items are implemented, this test should grow to
   // expect them.
+};
+
+/** Tests that the About panel is absent. */
+TabPanelViewTest.prototype.testConstructorHiddenHeader = function() {
+  this.config_ = {
+    'enable_editing': false,
+    'hide_panel_header': true
+  };
+  this.createTabPanelView_();
+  expectNoDescendantOf(
+      this.parent_,
+      allOf([withClass('goog-tab'), withText(hasSubstr('About'))]));
 };

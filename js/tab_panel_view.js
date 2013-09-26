@@ -11,6 +11,7 @@
 
 goog.provide('cm.TabPanelView');
 
+goog.require('cm.AboutTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.TabView');
 
@@ -19,17 +20,42 @@ goog.require('cm.TabView');
  * @param {Element} frameElem The frame element surrounding the entire UI.
  * @param {Element} parentElem The DOM element in which to create the panel.
  * @param {Element} mapContainer The map container to put the expand button on.
- * @param {cm.MapModel} model The map model for which to create the panel view.
+ * @param {cm.MapModel} mapModel The map model for which to create the panel
+ *     view.
  * @param {cm.MetadataModel} metadataModel The metadata model.
  * @param {cm.AppState} appState The application state model.
  * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     draft_mode: Indicate that the map is an unpublished draft?
  *     hide_panel_header: Hide the map title and description?
- *     enable_editing: Allow any editing at all?
+ *     publisher_name: A string used as the map's publisher
+ *     enable_editing: Allow any editing at all?  If true, the following fields
+ *       are also used:
+ *         save_url: The URL to post to upon save
+ *         dev_mode: Enable development mode?
+ *         map_list_url: The URL to go to the list of maps
+ *         diff_url: The URL to go to see the diff in the map model.
  * @constructor
  */
-cm.TabPanelView = function(frameElem, parentElem, mapContainer, model,
+cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
                            metadataModel, appState, opt_config) {
+  /** The map model
+   * @type cm.MapModel
+   * @private
+   */
+  this.mapModel_ = mapModel;
+
+  /**
+   * @type cm.AppState
+   * @private
+   */
+  this.appState_ = appState;
+
+  /**
+   * @type !Object
+   * @private
+   */
+  this.config_ = opt_config || {};
+
   /** The view's parent element.
    * @type Element
    * @private
@@ -43,7 +69,7 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, model,
   this.tabView_ = new cm.TabView();
 
   this.createTabs_();
-  this.tabView_.render(parentElem);
+  this.tabView_.render(this.parentElem_);
 };
 
 /**
@@ -84,7 +110,12 @@ cm.TabPanelView.prototype.getBounds = function() {
  * @private
  */
 cm.TabPanelView.prototype.createTabs_ = function() {
+  if (!this.config_['hide_panel_header']) {
+    this.tabView_.appendTabItem(
+        new cm.AboutTabItem(this.mapModel_, this.appState_, this.config_));
+  }
   this.testTabCount_demo_ = 0;
+
   this.addSimpleTabItem_demo_();
   this.addTestTabs_demo_(2);
 };
