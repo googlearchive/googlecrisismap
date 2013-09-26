@@ -26,28 +26,6 @@ goog.require('goog.ui.ColorPalette');
 goog.require('goog.ui.ColorPicker');
 goog.require('goog.ui.Palette');
 
-/** @desc Link text displayed in legend editor to add a legend item / row. */
-var MSG_ADD_ITEM = goog.getMsg('Add item');
-
-/** @desc Link text displayed in legend editor to edit legend HTML directly. */
-var MSG_EDIT_HTML = goog.getMsg('Edit HTML');
-
-/** @desc Link text displayed in HTML editor to go back to legend editor. */
-var MSG_EDIT_GRAPHICALLY = goog.getMsg('Edit graphically');
-
-/** @desc Text displayed for empty legend items. */
-var MSG_EMPTY_LEGEND_TEXT = goog.getMsg('Click to add a description');
-
-/**
- * @desc Text displayed when the legend HTML becomes no longer able to be parsed
- *     and therefore cannot be edited in the graphical interface.
- */
-var MSG_INVALID_LEGEND =
-    goog.getMsg('The HTML is no longer editable graphically');
-
-/** @desc Link displayed to revert to valid legend editor HTML. */
-var MSG_REVERT = goog.getMsg('Revert');
-
 /**
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
@@ -237,9 +215,9 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
   cm.ui.append(parentElem, this.legendEditorElem_ = cm.ui.create('div', {},
       this.legendItemsElem_ = cm.ui.create('div',
           {'class': cm.css.LEGEND_ITEMS}),
-      addItemLink = cm.ui.createLink(MSG_ADD_ITEM),
+      addItemLink = cm.ui.createLink(cm.MSG_ADD_ITEM),
       cm.ui.SEPARATOR_DOT,
-      editHtmlLink = cm.ui.createLink(MSG_EDIT_HTML)));
+      editHtmlLink = cm.ui.createLink(cm.MSG_EDIT_HTML)));
 
   cm.events.listen(addItemLink, 'click', goog.bind(
       this.showPaletteDialog_, this, addItemLink, goog.bind(
@@ -261,12 +239,13 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
   goog.base(this, parentElem, id, options);
 
   cm.ui.append(this.htmlEditorElem,
-      this.editGraphicallyLink_ = cm.ui.createLink(MSG_EDIT_GRAPHICALLY),
+      this.editGraphicallyLink_ =
+          cm.ui.createLink(cm.MSG_EDIT_GRAPHICALLY),
       this.revertToLastValidLink_ = cm.ui.create('div', {},
           cm.ui.create('span', {'class': cm.css.VALIDATION_ERROR},
-              MSG_INVALID_LEGEND),
+              cm.MSG_INVALID_LEGEND),
           cm.ui.SEPARATOR_DOT,
-          revertLink = cm.ui.createLink(MSG_REVERT)));
+          revertLink = cm.ui.createLink(cm.MSG_REVERT)));
 
   cm.events.listen(this.editGraphicallyLink_, 'click',
                    goog.bind(this.showHtmlEditor_, this, false, undefined));
@@ -606,7 +585,7 @@ cm.LegendEditor.prototype.handleTextChange_ = function(legendItem, inputElem,
       (!!opt_trimInEditor || editorHtml.indexOf('\n') == -1);
   goog.dom.classes.enable(legendItem.editor.textElem, cm.css.EMPTY, empty);
   if (empty) {
-    editorHtml = MSG_EMPTY_LEGEND_TEXT;
+    editorHtml = cm.MSG_EMPTY_LEGEND_TEXT;
   }
 
   legendItem.editor.textElem.innerHTML = editorHtml;

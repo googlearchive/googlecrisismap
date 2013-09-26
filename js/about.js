@@ -70,7 +70,7 @@ cm.AboutPopup.populate_ = function(opt_aboutContainer) {
     var header = cm.ui.create('h2', {'id': 'cm-about-header'});
     var content = cm.AboutPopup.MSG_ABOUT_HTML_;
     header.appendChild(
-        goog.dom.htmlToDocumentFragment(cm.AboutPopup.MSG_ABOUT_HEADER_));
+        goog.dom.htmlToDocumentFragment(cm.MSG_ABOUT_HEADER));
     aboutBox.appendChild(header);
     var text = cm.ui.create('p', {
       'id': 'cm-about-text',
@@ -82,12 +82,6 @@ cm.AboutPopup.populate_ = function(opt_aboutContainer) {
   }
   return aboutBox;
 };
-
-/**
- * @desc Header for the about box.
- * @private
- */
-cm.AboutPopup.MSG_ABOUT_HEADER_ = goog.getMsg('Google Crisis Map');
 
 /**
  * TODO(kpy): Make this easier to customize.
@@ -114,3 +108,4 @@ cm.AboutPopup.MSG_ABOUT_HTML_ = goog.getMsg(
     '  <li>Share the link on Google+, Twitter or Facebook by clicking the ' +
     '  appropriate button in the Share window.</li>' +
     '</ul>');
+

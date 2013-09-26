@@ -19,52 +19,9 @@ goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.net.XhrIo');
 
-/** @desc Heading of the dialog for inviting another user to collaborate. */
-var MSG_INVITE_TITLE = goog.getMsg('Invite someone to collaborate');
-
-/**
- * @desc Error message to show for a server error when trying to invite
- *     another user to collaborate (this is pretty rare).
- */
-var MSG_EMAIL_ERROR = goog.getMsg(
-    'Sorry, there was a problem inviting someone to collaborate on this map.');
-
-/**
- * @desc Label for text box for a personal message to include when
- *     inviting another user to collaborate.
- */
-var MSG_INVITE_MESSAGE = goog.getMsg('Message text');
-
-/**
- * @desc Placeholder inside the text box for a personal message to include
- *     when inviting another user to collaborate.
- */
-var MSG_INVITE_MESSAGE_PLACEHOLDER =
-    goog.getMsg('Include a personal message...');
-
-/** @desc Label for input field for the e-mail address of a user to invite. */
-var MSG_EMAIL = goog.getMsg('E-mail address');
-
-/** @desc Radio button label for granting view-only access. */
-var MSG_VIEWER = goog.getMsg('Viewer');
-
-/** @desc Radio button label for granting edit access. */
-var MSG_EDITOR = goog.getMsg('Editor');
-
-/** @desc Radio button label for granting full ownership access. */
-var MSG_OWNER = goog.getMsg('Owner');
-
-/** @desc Label for radio buttons for choosing the level of access to grant. */
-var MSG_PERMISSION = goog.getMsg('Permission type');
-
-/** @desc Label for the Invite button on the "Invite a collaborator" dialog. */
-var MSG_INVITE_BUTTON = goog.getMsg('Invite');
-
-/** @desc Label for the Cancel button on the "Invite a collaborator" dialog. */
-var MSG_CANCEL_BUTTON = goog.getMsg('Cancel');
-
 /** Regex for verifying email addresses on a shallow level. */
 var EMAIL_PATTERN = '^(.+)@(.+)$';
+
 
 /**
  * Popup to invite a user to edit a map.
@@ -145,14 +102,14 @@ cm.ShareEmailView = function() {
 
   this.popup_ = cm.ui.create('div',
                              {'class': [cm.css.SHARE_EMAILER, cm.css.POPUP]},
-      this.titleElem_ = cm.ui.create('h2', {}, MSG_INVITE_TITLE),
+      this.titleElem_ = cm.ui.create('h2', {}, cm.MSG_INVITE_TITLE),
       this.tableElem_ = cm.ui.create('table', {'class': cm.css.EDITORS}),
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
       this.inviteBtn_ = cm.ui.create(
           'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
-          MSG_INVITE_BUTTON),
+          cm.MSG_INVITE_BUTTON),
       this.cancelBtn_ = cm.ui.create(
-          'button', {'class': cm.css.BUTTON}, MSG_CANCEL_BUTTON)));
+          'button', {'class': cm.css.BUTTON}, cm.MSG_CANCEL)));
 
   cm.events.listen(this.inviteBtn_, 'click', this.handleShare_, this);
   cm.events.listen(this.cancelBtn_, 'click', this.handleCancel_, this);
@@ -170,7 +127,7 @@ cm.ShareEmailView.prototype.share = function(share_url) {
       'input', {'type': 'text', 'id': 'cm-input-email'});
   this.messageBox_ = cm.ui.create(
       'textarea', {'id': 'cm-input-message',
-                   'placeholder': MSG_INVITE_MESSAGE_PLACEHOLDER});
+                   'placeholder': cm.MSG_INVITE_MESSAGE_PLACEHOLDER});
   this.viewer_ = cm.ui.create(
       'input', {'type': 'radio', 'name': 'role', 'id': 'cm-role-viewer',
                 'value': 'MAP_VIEWER', 'checked': 'true'});
@@ -181,7 +138,7 @@ cm.ShareEmailView.prototype.share = function(share_url) {
       'input', {'type': 'radio', 'name': 'role', 'id': 'cm-role-owner',
                 'value': 'MAP_OWNER'});
   this.emailLabel_ = cm.ui.create(
-      'label', {'for': 'cm-input-email'}, MSG_EMAIL);
+      'label', {'for': 'cm-input-email'}, cm.MSG_EMAIL);
 
   cm.ui.append(
       this.tableElem_,
@@ -192,17 +149,21 @@ cm.ShareEmailView.prototype.share = function(share_url) {
       cm.ui.create(
           'tr', {},
           cm.ui.create(
-              'th', {}, cm.ui.create('label', {}, MSG_PERMISSION)),
+              'th', {}, cm.ui.create('label', {}, cm.MSG_PERMISSION)),
           cm.ui.create(
               'td', {}, this.viewer_,
-              cm.ui.create('label', {'for': 'cm-role-viewer'}, MSG_VIEWER),
+              cm.ui.create('label', {'for': 'cm-role-viewer'},
+                  cm.MSG_VIEWER),
               ' ', this.editor_,
-              cm.ui.create('label', {'for': 'cm-role-editor'}, MSG_EDITOR),
+              cm.ui.create('label', {'for': 'cm-role-editor'},
+                  cm.MSG_EDITOR),
               ' ', this.owner_,
-              cm.ui.create('label', {'for': 'cm-role-owner'}, MSG_OWNER))),
+              cm.ui.create('label', {'for': 'cm-role-owner'},
+                  cm.MSG_OWNER))),
       cm.ui.create(
           'tr', {'class': cm.css.TEXTAREA_ROW},
-          cm.ui.create('th', {}, cm.ui.create('label', {}, MSG_INVITE_MESSAGE)),
+          cm.ui.create('th', {}, cm.ui.create('label', {},
+              cm.MSG_INVITE_MESSAGE)),
           cm.ui.create('td', {}, this.messageBox_)));
   cm.ui.showPopup(this.popup_);
   this.emailInput_.focus();
@@ -215,11 +176,11 @@ cm.ShareEmailView.prototype.emailError = function() {
   var okayBtn;
   var errorPopup = cm.ui.create('div',
                                 {'class': [cm.css.SHARE_EMAILER, cm.css.POPUP]},
-      cm.ui.create('p', {'class': cm.css.EMAIL_ERROR}, MSG_EMAIL_ERROR),
+      cm.ui.create('p', {'class': cm.css.EMAIL_ERROR}, cm.MSG_EMAIL_ERROR),
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
                    okayBtn = cm.ui.create(
-                       'button',
-                       {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_OK)));
+                       'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
+                       cm.MSG_OK)));
   cm.ui.showPopup(errorPopup);
   cm.events.listen(okayBtn, 'click', function() {
       cm.ui.remove(errorPopup);

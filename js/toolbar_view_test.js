@@ -155,5 +155,5 @@ ToolbarViewTest.prototype.testBeforeUnload = function() {
 ToolbarViewTest.prototype.testBeforeUnloadSave = function() {
   cm.events.emit(goog.global, cm.events.MODEL_CHANGED);
   var str = window.onbeforeunload();
-  expectEq(MSG_UNSAVED_CHANGES, str);
+  expectEq(cm.MSG_UNSAVED_CHANGES, str);
 };

@@ -31,17 +31,11 @@ cm.LoginView = function(parentElem, clientConfig) {
         cm.ui.create('span', {'class': cm.css.USER},
                      clientConfig['user_email']),
         cm.ui.SEPARATOR_DOT,
-        cm.ui.createLink(MSG_SIGN_OUT, clientConfig['logout_url']));
+        cm.ui.createLink(cm.MSG_SIGN_OUT, clientConfig['logout_url']));
   } else {
     this.element_ = cm.ui.create('div', {'class': cm.css.LOGIN},
-        cm.ui.createLink(MSG_SIGN_IN, clientConfig['login_url']));
+        cm.ui.createLink(cm.MSG_SIGN_IN, clientConfig['login_url']));
   }
   parentElem.appendChild(this.element_);
 };
 
-
-/** @desc Text for the link to sign in. */
-var MSG_SIGN_IN = goog.getMsg('Sign in');
-
-/** @desc Text for the link to sign out. */
-var MSG_SIGN_OUT = goog.getMsg('Sign out');

@@ -29,45 +29,6 @@ goog.require('goog.format');
 goog.require('goog.i18n.DateTimeFormat');
 goog.require('goog.ui.Slider');
 
-/** @desc Label for a link that zooms the map to fit the layer's area. */
-var MSG_ZOOM_TO_AREA_LINK = goog.getMsg('Zoom to area');
-
-/** @desc Label for a link that lets the user edit a layer. */
-var MSG_EDIT_LINK = goog.getMsg('Edit');
-
-/** @desc Alternate text for a button for deleting a layer. */
-var MSG_DELETE = goog.getMsg('Delete');
-
-/** @desc Label for a link to download a KML file. */
-var MSG_DOWNLOAD_KML_LINK = goog.getMsg('Download KML');
-
-/** @desc Label for a link to download a GeoRSS file. */
-var MSG_DOWNLOAD_GEORSS_LINK = goog.getMsg('Download GeoRSS');
-
-/** @desc Label for a link to view data from a Fusion table. */
-var MSG_VIEW_FUSION_TABLE_LABEL = goog.getMsg('View data');
-
-/** @desc Label for a link to download a GeoRSS file. */
-var MSG_OPACITY_TOOLTIP = goog.getMsg('Adjust layer transparency');
-
-/** @desc Warning message for data sources that have unsupported features. */
-var MSG_UNSUPPORTED_KML_WARNING = goog.getMsg(
-    'This layer may include some unsupported features.');
-
-/** @desc Warning message when the data file is empty or contains no
- * features.
- */
-var MSG_NO_DATA_WARNING = goog.getMsg(
-    'This layer currently contains nothing to show on the map.');
-
-/** @desc Label for faded out layer entry when layer is not visible at the
- * current zoom level. */
-var MSG_OUT_OF_ZOOM_RANGE_TOOLTIP =
-    goog.getMsg('Data not available at current zoom level.');
-
-/** @desc Section heading for the map legend. */
-var MSG_LEGEND = goog.getMsg('Legend');
-
 /**
  * A layer view.
  * @param {Element} parentElem The DOM element in which to add a panel entry.
@@ -274,11 +235,11 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
 
   // These links will be replaced by icons (e.g. pencil, rubbish bin). Mocks:
   // http://folder/nsavio/dotorg/crisis_response/crisis_maps/20120424&s
-  var zoomLink = cm.ui.createLink(MSG_ZOOM_TO_AREA_LINK);
+  var zoomLink = cm.ui.createLink(cm.MSG_ZOOM_TO_AREA_LINK);
   this.zoomElem_ = cm.ui.create('span', {},
       cm.ui.create('span', {}, cm.ui.SEPARATOR_DOT), zoomLink);
-  var editLink = enableEditing ? cm.ui.createLink(MSG_EDIT_LINK) : null;
-  var deleteLink = enableEditing ? cm.ui.createLink(MSG_DELETE) : null;
+  var editLink = enableEditing ? cm.ui.createLink(cm.MSG_EDIT) : null;
+  var deleteLink = enableEditing ? cm.ui.createLink(cm.MSG_DELETE) : null;
   this.downloadElem_ = cm.ui.create('span');
   var layerLinks = [editLink, enableEditing && cm.ui.SEPARATOR_DOT, deleteLink,
                     this.zoomElem_, this.downloadElem_];
@@ -299,14 +260,14 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
               {'class': cm.css.SUBLAYER_SELECT})
       ),
       this.contentElem_ = cm.ui.create('div', {'class': cm.css.CONTENT},
-          this.sliderDiv_ = cm.ui.create('div', {'title': MSG_OPACITY_TOOLTIP,
-                                                 'class': cm.css.SLIDER}),
+          this.sliderDiv_ = cm.ui.create('div',
+              {'title': cm.MSG_OPACITY_TOOLTIP, 'class': cm.css.SLIDER}),
           cm.ui.create('div', {}, layerLinks),
           this.warningElem_ = cm.ui.create('div', {'class': cm.css.WARNING}),
           this.legendBoxElem_ = cm.ui.create('div',
               {'class': cm.css.LAYER_LEGEND_BOX},
               cm.ui.create('fieldset', undefined,
-                  cm.ui.create('legend', undefined, MSG_LEGEND),
+                  cm.ui.create('legend', undefined, cm.MSG_LEGEND),
                   this.legendElem_ = cm.ui.create('div',
                       {'class': cm.css.LAYER_LEGEND}))),
           this.descriptionElem_ = cm.ui.create('div',
@@ -461,7 +422,7 @@ cm.LayerEntryView.prototype.updateLegend_ = function() {
 /** @private Updates the warning label based on the layer metadata. */
 cm.LayerEntryView.prototype.updateWarning_ = function() {
   var isEmpty = this.metadataModel_.isEmpty(this.model_);
-  cm.ui.setText(this.warningElem_, isEmpty ? MSG_NO_DATA_WARNING : '');
+  cm.ui.setText(this.warningElem_, isEmpty ? cm.MSG_NO_DATA_WARNING : '');
   goog.dom.classes.enable(this.warningElem_, cm.css.HIDDEN, !isEmpty);
 };
 
@@ -479,17 +440,17 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
       var linkText = null;
       switch (type) {
         case cm.LayerModel.Type.KML:
-          linkText = MSG_DOWNLOAD_KML_LINK;
+          linkText = cm.MSG_DOWNLOAD_KML_LINK;
           break;
         case cm.LayerModel.Type.GEORSS:
-          linkText = MSG_DOWNLOAD_GEORSS_LINK;
+          linkText = cm.MSG_DOWNLOAD_GEORSS_LINK;
           break;
         case cm.LayerModel.Type.FUSION:
           var value = this.model_.get('ft_from') + '';
           if (value) {
             url = 'http://www.google.com/fusiontables/DataSource?' +
                 (value.match(/^\d{1,8}$/) ? 'dsrcid' : 'docid') + '=' + value;
-            linkText = MSG_VIEW_FUSION_TABLE_LABEL;
+            linkText = cm.MSG_VIEW_FUSION_TABLE_LABEL;
           }
           break;
       }
@@ -515,9 +476,8 @@ cm.LayerEntryView.prototype.updateTime_ = function() {
     // getDateString "long" default which includes the day of the week as well.
     var dateMsg = this.dateFormatter_.format(d);
     /** @desc The last time this layer was updated. */
-    var MSG_LAST_UPDATED = goog.getMsg('Last updated: {$formattedTime}', {
-      formattedTime: goog.date.relative.getDateString(d, undefined, dateMsg)
-    });
+    var MSG_LAST_UPDATED = goog.getMsg('Last updated: {$formattedTime}',
+      {formattedTime: goog.date.relative.getDateString(d, undefined, dateMsg)});
     message = MSG_LAST_UPDATED;
   }
   cm.ui.setText(this.timeElem_, message);
@@ -557,14 +517,14 @@ cm.LayerEntryView.prototype.handleZoomChange_ = function(e) {
 /** @private Fades out the entry iff it is empty or out of zoom range. */
 cm.LayerEntryView.prototype.updateFade_ = function() {
   if (this.metadataModel_.isEmpty(this.model_)) {
-    this.setFade_(true, MSG_NO_DATA_WARNING);
+    this.setFade_(true, cm.MSG_NO_DATA_WARNING);
   } else if (this.zoomLevel_ !== null) {
     // If min_zoom or max_zoom are undefined, assume no lower or upper bound.
     var minZoom = this.model_.get('min_zoom');
     var maxZoom = this.model_.get('max_zoom');
     var outOfRange = goog.isNumber(minZoom) && this.zoomLevel_ < minZoom ||
                      goog.isNumber(maxZoom) && this.zoomLevel_ > maxZoom;
-    this.setFade_(outOfRange, MSG_OUT_OF_ZOOM_RANGE_TOOLTIP);
+    this.setFade_(outOfRange, cm.MSG_OUT_OF_ZOOM_RANGE_TOOLTIP);
   }
 };
 

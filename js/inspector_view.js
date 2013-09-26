@@ -25,15 +25,6 @@ goog.require('goog.ui.Tooltip');
 /* Time in ms to delay hiding an editor field tooltip. */
 var TOOLTIP_HIDE_DELAY_MS = 500;
 
-/** @desc Label for the OK button on a dialog with OK and Cancel buttons. */
-var MSG_OK = goog.getMsg('OK');
-
-/** @desc Label for the Cancel button on a dialog with OK and Cancel buttons. */
-var MSG_CANCEL = goog.getMsg('Cancel');
-
-/** @desc Text of link to proceed to the "Import layers" dialog. */
-var MSG_IMPORT_LAYERS = goog.getMsg('Import published layers \xbb');
-
 /**
  * A property inspector.  Call inspect() to inspect an object's properties.
  * @constructor
@@ -98,14 +89,15 @@ cm.InspectorView = function() {
   this.popup_ = cm.ui.create('div', {'class': [cm.css.INSPECTOR, cm.css.POPUP]},
       cm.ui.create('div', undefined,
           this.titleElem_ = cm.ui.create('h2'),
-          this.copyLayerLink_ = cm.ui.createLink(MSG_IMPORT_LAYERS)),
+          this.copyLayerLink_ = cm.ui.createLink(cm.MSG_IMPORT_LAYERS)),
       this.tableElem_ = cm.ui.create('table',
           {'class': cm.css.EDITORS, 'cellpadding': '0', 'cellspacing': '0'}),
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
           this.okBtn_ = cm.ui.create(
-              'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_OK),
+              'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
+              cm.MSG_OK),
           this.cancelBtn_ = cm.ui.create(
-              'button', {'class': cm.css.BUTTON}, MSG_CANCEL)));
+              'button', {'class': cm.css.BUTTON}, cm.MSG_CANCEL)));
 
   cm.events.listen(this.copyLayerLink_, 'click', this.handleCopyClick_, this);
   cm.events.listen(this.okBtn_, 'click', this.handleOk_, this);

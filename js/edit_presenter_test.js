@@ -50,23 +50,23 @@ EditPresenterTest.prototype.testInspectEvent = function() {
   var layer = new cm.LayerModel();
   var layerSpecExpect = allOf([
     contains({key: 'title', label: 'Title', type: cm.editors.Type.TEXT,
-              tooltip: MSG_LAYER_TITLE_TOOLTIP}),
+              tooltip: cm.MSG_LAYER_TITLE_TOOLTIP}),
     contains({key: 'description', label: 'Description',
               type: cm.editors.Type.HTML,
               preview_class: cm.css.LAYER_DESCRIPTION,
-              tooltip: MSG_LAYER_DESCRIPTION_TOOLTIP}),
+              tooltip: cm.MSG_LAYER_DESCRIPTION_TOOLTIP}),
     contains({key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
               preview_class: cm.css.LAYER_LEGEND, legend_url: '/root/.legend',
-              tooltip: MSG_LEGEND_TOOLTIP}),
+              tooltip: cm.MSG_LEGEND_TOOLTIP}),
     contains({key: 'viewport', label: '"Zoom to area" viewport',
               type: cm.editors.Type.LAT_LON_BOX, app_state: null,
-              tooltip: MSG_LAYER_VIEWPORT_TOOLTIP}),
+              tooltip: cm.MSG_LAYER_VIEWPORT_TOOLTIP}),
     contains({key: 'min_zoom', label: 'Minimum zoom level',
               type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
-              require_integer: true, tooltip: MSG_MIN_ZOOM}),
+              require_integer: true, tooltip: cm.MSG_MIN_ZOOM}),
     contains({key: 'max_zoom', label: 'Maximum zoom level',
               type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
-              require_integer: true, tooltip: MSG_MAX_ZOOM})
+              require_integer: true, tooltip: cm.MSG_MAX_ZOOM})
   ]);
   expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, null,
                                 layer);

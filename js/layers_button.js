@@ -29,7 +29,7 @@ goog.require('goog.dom.classes');
 cm.LayersButton = function(map, layersPanel) {
   var button = cm.ui.create(
       'div', {'class': [cm.css.PANEL_BUTTON, cm.css.MAPBUTTON]},
-      cm.LayersButton.MSG_LAYER_BUTTON_);
+      cm.MSG_LAYER_BUTTON);
   button.index = 2;
 
   cm.events.listen(button, 'click', function() {
@@ -51,8 +51,3 @@ cm.LayersButton = function(map, layersPanel) {
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(button);
 };
 
-/**
- * @desc Standard label for the 'Layers' button in embedded mode.
- * @private
- */
-cm.LayersButton.MSG_LAYER_BUTTON_ = goog.getMsg('Layers');

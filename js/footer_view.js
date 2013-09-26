@@ -22,15 +22,6 @@ goog.require('cm.MapModel');
 goog.require('cm.ui');
 goog.require('goog.Uri');
 
-/** @desc The link text for opening the map in a new browser window. */
-var MSG_FULL_MAP_LINK = goog.getMsg('Full map');
-
-/** @desc The link text in the footer for the pop-up with help instructions. */
-var MSG_HELP = goog.getMsg('Help');
-
-/** @desc The link text in the footer for reporting abuse. */
-var MSG_REPORT_ABUSE = goog.getMsg('Report abuse');
-
 // URL for the support form for reporting abuse.
 var REPORT_ABUSE_BASE_URL =
     'https://support.google.com/crisismaps/contact/abuse';
@@ -59,19 +50,23 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, publisherName) {
   this.footerSpan_ = cm.ui.create('span');
 
   if (publisherName) {
-    cm.ui.append(parentElem, cm.ui.create('span', {},
-        'Published by ' + publisherName, cm.ui.SEPARATOR_DOT));
+    /** @desc Indicates which person/company a map was published by. */
+    var MSG_PUBLISHED_BY = goog.getMsg('Published by {$publisherName}',
+        {'publisherName': publisherName});
+    cm.ui.append(parentElem, cm.ui.create('span', {}, MSG_PUBLISHED_BY,
+        cm.ui.SEPARATOR_DOT));
   }
   cm.ui.append(parentElem, this.footerSpan_);
 
   if (window != window.top) {
     var uri = new goog.Uri(goog.global.location);
     uri.removeParameter('embedded');
-    var fullMapLink = cm.ui.createLink(MSG_FULL_MAP_LINK, '' + uri, '_blank');
+    var fullMapLink = cm.ui.createLink(cm.MSG_FULL_MAP_LINK, '' +
+        uri, '_blank');
     cm.ui.append(parentElem, fullMapLink, cm.ui.SEPARATOR_DOT);
   }
 
-  var helpLink = cm.ui.createLink(MSG_HELP);
+  var helpLink = cm.ui.createLink(cm.MSG_HELP);
   var helpPopup = new cm.AboutPopup(popupContainer);
   helpLink.onclick = goog.bind(helpPopup.show, helpPopup);
   cm.ui.append(parentElem, helpLink);
@@ -79,7 +74,7 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, publisherName) {
   var reportAbuseUri = new goog.Uri(REPORT_ABUSE_BASE_URL);
   reportAbuseUri.setParameterValue('url', goog.global.location.href);
   cm.ui.append(parentElem, cm.ui.SEPARATOR_DOT, cm.ui.createLink(
-      MSG_REPORT_ABUSE, reportAbuseUri.toString(), '_blank'));
+      cm.MSG_REPORT_ABUSE, reportAbuseUri.toString(), '_blank'));
 
   cm.events.onChange(mapModel, 'footer', this.updateFooter_, this);
   this.updateFooter_();

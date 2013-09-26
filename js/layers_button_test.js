@@ -30,7 +30,7 @@ LayersButtonTest.prototype.constructorTest = function() {
   expectEq(2, this.button_.index);
   expectThat(this.button_, isElement(
       'div', withClass(cm.css.MAPBUTTON), withClass(cm.css.PANEL_BUTTON),
-      withText(cm.LayersButton.MSG_LAYER_BUTTON_)));
+      withText(cm.MSG_LAYER_BUTTON)));
 };
 
 /**

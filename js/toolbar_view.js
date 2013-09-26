@@ -25,39 +25,6 @@ goog.require('goog.json');
 goog.require('goog.net.XhrIo');
 goog.require('goog.string');
 
-/** @desc Label for a link that lets the user rearrange the layer
- *  order and hierarchy.
- */
-
-/** @desc Link text to arrange the layers in the panel. */
-var MSG_ARRANGE_LAYERS_LINK = goog.getMsg('Arrange');
-
-/** @desc Link text to invite a user to collaborate on editing a map. */
-var MSG_COLLABORATE_LINK = goog.getMsg('Collaborate');
-
-/** @desc Link text to add a new layer to the map. */
-var MSG_ADD_NEW_LAYERS = goog.getMsg('Add layer');
-
-/** @desc Default title for an empty layer. */
-var MSG_UNTITLED_LAYER = goog.getMsg('Untitled Layer');
-
-/** @desc Link text to add a new folder to the map. */
-var MSG_ADD_NEW_FOLDER = goog.getMsg('Add folder');
-
-/** @desc Link text to return to map list. */
-var MSG_BACK_TO_MAP_LIST = goog.getMsg('Back to map list');
-
-/** @desc Link text to documentation on how to use the map editor. */
-var MSG_HELP_LINK = goog.getMsg('Help');
-
-/** @desc Default title for an empty folder. */
-var MSG_UNTITLED_FOLDER = goog.getMsg('Untitled Folder');
-
-/** @desc Warning message when discarding unsaved changes. */
-var MSG_UNSAVED_CHANGES = goog.getMsg(
-    'You have unsaved changes that will be lost if you leave' +
-    ' the page without clicking the "Save" link.');
-
 /* TODO(rew): This link needs to be updated when the draft document is
    finalized and published in its permanent location. */
 /* URL to the help document for editing maps. */
@@ -79,22 +46,22 @@ var HELP_LINK_URL = 'https://docs.google.com/document/d/' +
  */
 cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
     touch, opt_diffUrl) {
-  var collaborateLink = cm.ui.createLink(MSG_COLLABORATE_LINK);
+  var collaborateLink = cm.ui.createLink(cm.MSG_COLLABORATE_LINK);
   cm.events.forward(collaborateLink, 'click',
                     goog.global, cm.events.SHARE_EMAIL);
 
   // TODO(romano): move the toolbars into the inner panel element, which
   // contains the collapse button, map title, description, and layers.
   var toolbarElem = cm.ui.create('div', {'class': cm.css.TOOLBAR},
-      cm.ui.createLink(MSG_BACK_TO_MAP_LIST, mapListUrl),
+      cm.ui.createLink(cm.MSG_BACK_TO_MAP_LIST, mapListUrl),
       cm.ui.SEPARATOR_DOT, collaborateLink);
 
-  var helpLink = cm.ui.createLink(MSG_HELP_LINK, HELP_LINK_URL, '_blank');
+  var helpLink = cm.ui.createLink(cm.MSG_HELP, HELP_LINK_URL, '_blank');
   cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, helpLink);
 
   // Initially, neither the undo nor the redo operation can be done.
-  var undoLink = cm.ui.createLink('Undo');
-  var redoLink = cm.ui.createLink('Redo');
+  var undoLink = cm.ui.createLink(cm.MSG_UNDO);
+  var redoLink = cm.ui.createLink(cm.MSG_REDO);
   goog.dom.classes.add(undoLink, cm.css.DISABLED);
   goog.dom.classes.add(redoLink, cm.css.DISABLED);
 
@@ -113,20 +80,20 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
       undoLink, cm.ui.SEPARATOR_DOT, redoLink);
 
   if (enableSave) {
-    var saveLink = cm.ui.createLink('Saved');
+    var saveLink = cm.ui.createLink(cm.MSG_SAVED);
     cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT, saveLink);
 
     // The "Save" link is initially disabled. Changing the model enables it.
     goog.dom.classes.add(saveLink, cm.css.DISABLED);
     cm.events.listen(goog.global, cm.events.MODEL_CHANGED, function() {
-      cm.ui.setText(saveLink, 'Save');
+      cm.ui.setText(saveLink, cm.MSG_SAVE);
       goog.dom.classes.remove(saveLink, cm.css.DISABLED, cm.css.ERROR);
     }, this);
 
     // Handle clicks on the "Save" link.
     cm.events.listen(saveLink, 'click', function() {
       if (!goog.dom.classes.has(saveLink, cm.css.DISABLED)) {
-        cm.ui.setText(saveLink, 'Saving...');
+        cm.ui.setText(saveLink, cm.MSG_SAVING);
         goog.dom.classes.remove(saveLink, cm.css.ERROR);
         goog.dom.classes.add(saveLink, cm.css.DISABLED);
         cm.events.emit(goog.global, cm.events.SAVE, {model: mapModel});
@@ -135,14 +102,14 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
 
     // Handle completion of the Save operation.
     cm.events.listen(goog.global, cm.events.SAVE_DONE, function() {
-      cm.ui.setText(saveLink, 'Saved');
+      cm.ui.setText(saveLink, cm.MSG_SAVED);
     }, this);
     cm.events.listen(goog.global, cm.events.SAVE_FAILED, function() {
       // If the save fails, leave the link enabled so the user can click it
       // to try again.  Not the most elegant solution, but good enough for now.
       goog.dom.classes.remove(saveLink, cm.css.DISABLED);
       goog.dom.classes.add(saveLink, cm.css.ERROR);
-      cm.ui.setText(saveLink, 'Save failed');
+      cm.ui.setText(saveLink, cm.MSG_SAVE_FAILED);
     }, this);
 
     // This way works for Chrome, Firefox.
@@ -151,27 +118,28 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
     // within this app via the navigation bar.
     window.onbeforeunload = function() {
       if (!goog.dom.classes.has(saveLink, cm.css.DISABLED)) {
-        return MSG_UNSAVED_CHANGES;
+        return cm.MSG_UNSAVED_CHANGES;
       }
     };
   }
 
-  var addNewLayerLink = cm.ui.createLink(MSG_ADD_NEW_LAYERS);
+  var addNewLayerLink = cm.ui.createLink(cm.MSG_ADD_NEW_LAYERS);
   cm.events.forward(addNewLayerLink, 'click', goog.global, cm.events.INSPECT);
   cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT,
                addNewLayerLink, cm.ui.SEPARATOR_DOT);
 
   // TODO(joeysilva): Use INSPECT event to create new folders by using a type
   // FOLDER argument.
-  var addNewFolderLink = cm.ui.createLink(MSG_ADD_NEW_FOLDER);
+  var addNewFolderLink = cm.ui.createLink(cm.MSG_ADD_NEW_FOLDER);
   cm.events.forward(
       addNewFolderLink, 'click', goog.global, cm.events.ADD_LAYERS, {
-        layers: [{title: MSG_UNTITLED_FOLDER, type: cm.LayerModel.Type.FOLDER}]
+        layers: [{title: cm.MSG_UNTITLED_FOLDER,
+                  type: cm.LayerModel.Type.FOLDER}]
       });
   cm.ui.append(editToolbarElem, addNewFolderLink, cm.ui.SEPARATOR_DOT);
 
   if (!touch) {
-    var arrangeLink = cm.ui.createLink(MSG_ARRANGE_LAYERS_LINK);
+    var arrangeLink = cm.ui.createLink(cm.MSG_ARRANGE_LAYERS_LINK);
     cm.events.forward(arrangeLink, 'click', goog.global, cm.events.ARRANGE);
     cm.ui.append(editToolbarElem, arrangeLink);
   }

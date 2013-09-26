@@ -34,20 +34,6 @@ goog.require('goog.module');
 /** @const @type string */
 var EMPTY_PNG = '//maps.gstatic.com/mapfiles/transparent.png';
 
-/** @desc Label for a link that resets the map to its default view. */
-var MSG_RESET_VIEW_LINK = goog.getMsg('Reset to default view');
-
-/** @desc Label for a link that resets the map to its default view. */
-var MSG_SET_DEFAULT_VIEW_LINK = goog.getMsg('Set current view as default');
-
-/** @desc Label to show for a draft (unpublished) map. */
-var MSG_DRAFT_LABEL = goog.getMsg('DRAFT');
-
-/** @desc Detail text for the label on a draft (unpublished) map. */
-var MSG_DRAFT_TOOLTIP = goog.getMsg(
-    'This is an unpublished version of this map.');
-
-
 /**
  * Panel view, containing the map information and layers list.
  * @param {Element} frameElem The frame element surrounding the entire UI.
@@ -182,8 +168,8 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
                   'div', {'class': cm.css.PANEL_HEADER},
                   this.config_['draft_mode'] ? cm.ui.create(
                       'span', {'class': cm.css.DRAFT_INDICATOR,
-                               'title': MSG_DRAFT_TOOLTIP},
-                      MSG_DRAFT_LABEL) : null,
+                               'title': cm.MSG_DRAFT_TOOLTIP},
+                      cm.MSG_DRAFT_LABEL) : null,
                   this.titleElem_ = cm.ui.create('h1',
                       {'class': cm.css.MAP_TITLE}),
                   publisherName ? cm.ui.create('div',
@@ -193,9 +179,9 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
                   'div', {'class': cm.css.MAP_DESCRIPTION})),
           this.panelLinks_ = cm.ui.create('div', {'class': cm.css.PANEL_LINKS},
               setDefaultViewLink = this.config_['enable_editing'] ?
-                  cm.ui.createLink(MSG_SET_DEFAULT_VIEW_LINK) : null,
+                  cm.ui.createLink(cm.MSG_SET_DEFAULT_VIEW_LINK) : null,
               setDefaultViewLink && cm.ui.create('br'),
-              resetLink = cm.ui.createLink(MSG_RESET_VIEW_LINK)),
+              resetLink = cm.ui.createLink(cm.MSG_RESET_VIEW_LINK)),
           this.panelLayersTop_ = cm.ui.create('div'),
           this.panelLayers_ = cm.ui.create('div',
               {'class': cm.css.PANEL_LAYERS})));

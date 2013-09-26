@@ -393,7 +393,7 @@ cm.MapView.prototype.updateMapCopyright = function() {
   cm.ui.clear(this.copyrightDiv_);
   if (this.map_.get('mapTypeId') ===
       cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]) {
-    this.copyrightDiv_.innerHTML = cm.MapView.MSG_OSM_COPYRIGHT_HTML;
+    this.copyrightDiv_.innerHTML = cm.MSG_OSM_COPYRIGHT_HTML;
     cm.ui.append(this.copyrightDiv_, ' - ');
   }
 };
@@ -736,9 +736,3 @@ cm.MapView.prototype.setMapType_ = function(id, mapType) {
   this.map_.mapTypes.set(id, /** @type google.maps.MapType */(mapType));
 };
 
-
-/** @desc Copyright notice for OpenStreetMap base map data. */
-cm.MapView.MSG_OSM_COPYRIGHT_HTML = goog.getMsg(
-    'Map data \u00a9 ' +
-    '<a href="http://www.openstreetmap.org/copyright" target="_blank">' +
-    '<b>OpenStreetMap</b></a> contributors');

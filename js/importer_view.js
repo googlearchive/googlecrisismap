@@ -23,43 +23,6 @@ goog.require('cm.ui');
 goog.require('goog.i18n.MessageFormat');
 goog.require('goog.net.XhrIo');
 
-// TODO(joeysilva): These messages will be moved (see b/7232521)
-/**
- * @desc Label for the submit button of the importer dialog, which will import
- *     the layers selected by the user.
- */
-var MSG_IMPORTER_SUBMIT = goog.getMsg('Import selected layers');
-
-/** @desc Label for the Cancel button on the importer dialog. */
-var MSG_IMPORTER_CANCEL = goog.getMsg('Cancel');
-
-/** @desc Link to go back to the "Create new layer" dialog. */
-var MSG_CREATE_NEW_LAYER = goog.getMsg('\xab Back');
-
-/** @desc Title text for import dialog. */
-var MSG_IMPORT_TITLE = goog.getMsg('Select layers to import');
-
-/**
- * @desc Message shown in the importer when there are no layers in any published
- *     maps to import.
- */
-var MSG_NO_LAYERS = goog.getMsg(
-    'There are no layers in any published maps to import.');
-
-/** @desc Initial text in the importer before the user has selected anything. */
-var MSG_NONE_SELECTED_INITIAL = goog.getMsg(
-    'No layers are selected.  Click layer names to select them.');
-
-/** @desc [ICU Syntax] Text displaying how many layers the user has selected. */
-var MSG_LAYERS_SELECTED = goog.getMsg('{SELECTED, plural, ' +
-    '=0 {No layers selected}' +
-    '=1 {1 layer selected}' +
-    'other {# layers selected}}');
-
-/** @desc Tooltip text for folder previews that have no visible layers. */
-var MSG_NO_PREVIEW =
-    goog.getMsg('This folder has no layers visible by default.');
-
 /**
  * A dialog to import a clone of an existing layer as a new layer.
  * @param {string} apiMapsUrl URL from which to GET maps with layers to import.
@@ -172,8 +135,8 @@ cm.ImporterView = function(apiMapsUrl) {
 
   this.popup_ = cm.ui.create('div', {'class': [cm.css.IMPORTER, cm.css.POPUP]},
       this.headerElem_ = cm.ui.create('div', {'class': cm.css.IMPORTER_HEADER},
-          cm.ui.create('h2', {}, MSG_IMPORT_TITLE),
-          newLayerLink = cm.ui.createLink(MSG_CREATE_NEW_LAYER)),
+          cm.ui.create('h2', {}, cm.MSG_IMPORT_TITLE),
+          newLayerLink = cm.ui.createLink(cm.MSG_CREATE_NEW_LAYER)),
       this.layerListElem_ = cm.ui.create('div',
           // 'tabIndex' makes element focusable
           {'class': cm.css.IMPORTER_LIST, 'tabIndex': 0}),
@@ -182,9 +145,9 @@ cm.ImporterView = function(apiMapsUrl) {
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
           this.submitBtn_ = cm.ui.create('button',
               {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
-              MSG_IMPORTER_SUBMIT),
+              cm.MSG_IMPORTER_SUBMIT),
           closeBtn = cm.ui.create('button', {'class': cm.css.BUTTON},
-              MSG_IMPORTER_CANCEL)));
+              cm.MSG_IMPORTER_CANCEL)));
 
   cm.events.listen(newLayerLink, 'click', this.handleNewLayer_, this);
   cm.events.listen(this.submitBtn_, 'click', this.handleOk_, this);
@@ -240,7 +203,7 @@ cm.ImporterView.TOTAL_EXTRA_HEIGHT_ =
 cm.ImporterView.prototype.openImporter = function() {
   this.layerModels_ = [];
   this.selectedLayersCount_ = 0;
-  this.selectedCountElem_.innerHTML = MSG_NONE_SELECTED_INITIAL;
+  this.selectedCountElem_.innerHTML = cm.MSG_NONE_SELECTED_INITIAL;
   this.submitBtn_.setAttribute('disabled', 'disabled');
 
   cm.ui.showPopup(this.popup_);
@@ -302,7 +265,8 @@ cm.ImporterView.prototype.renderLayerList_ = function(maps) {
   } else {
     cm.ui.clear(this.layerListElem_);
     cm.ui.append(this.layerListElem_,
-        cm.ui.create('div', {'class': cm.css.LAYER_TITLE}, MSG_NO_LAYERS));
+        cm.ui.create('div', {'class': cm.css.LAYER_TITLE},
+        cm.MSG_NO_LAYERS));
   }
 };
 
@@ -387,7 +351,8 @@ cm.ImporterView.prototype.handleLayerClick_ = function(layerElem) {
 
   this.selectedLayersCount_ += selected ? 1 : -1;
   this.selectedCountElem_.innerHTML = (new goog.i18n.MessageFormat(
-      MSG_LAYERS_SELECTED)).format({'SELECTED': this.selectedLayersCount_});
+      cm.MSG_LAYERS_SELECTED))
+      .format({'SELECTED': this.selectedLayersCount_});
   if (this.selectedLayersCount_) {
     this.submitBtn_.removeAttribute('disabled');
   } else {
@@ -462,7 +427,7 @@ cm.ImporterView.prototype.renderPreviewLink_ = function(
       cm.events.listen(previewLink, 'mousemove', function(e) {
         if (!tooltip) {
           tooltip = cm.ui.create('div', {'class': cm.css.TOOLTIP},
-              MSG_NO_PREVIEW);
+              cm.MSG_NO_PREVIEW);
           cm.ui.append(cm.ui.document.body, tooltip);
         }
         var pos = goog.style.getClientPosition(e);

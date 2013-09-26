@@ -107,9 +107,10 @@ cm.ArrangeView = function(arrangerElem, panelElem, appState, mapModel) {
   cm.ui.append(arrangerElem,
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
           this.okBtn_ = cm.ui.create(
-              'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, MSG_OK),
+              'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
+               cm.MSG_OK),
           this.cancelBtn_ = cm.ui.create(
-              'button', {'class': cm.css.BUTTON}, MSG_CANCEL)),
+              'button', {'class': cm.css.BUTTON}, cm.MSG_CANCEL)),
       this.layerListElem_ = cm.ui.create(
           'div', {'class': cm.css.ARRANGER_INNER}));
   cm.events.listen(this.okBtn_, 'click', this.handleOk_, this);

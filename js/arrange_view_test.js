@@ -59,8 +59,10 @@ ArrangeViewTest.prototype.testConstructor = function() {
   this.mapModel_.set('layers', layers);
 
   var parent = this.createView_();
-  expectDescendantOf(parent, withClass(cm.css.BUTTON), withText(MSG_OK));
-  expectDescendantOf(parent, withClass(cm.css.BUTTON), withText(MSG_CANCEL));
+  expectDescendantOf(parent, withClass(cm.css.BUTTON),
+      withText(cm.MSG_OK));
+  expectDescendantOf(parent, withClass(cm.css.BUTTON),
+      withText(cm.MSG_CANCEL));
   expectDescendantOf(parent, 'div', withClass(cm.css.ARRANGER_INNER));
 
   // The arranger element should be empty until the ARRANGE event is fired.
@@ -131,7 +133,7 @@ ArrangeViewTest.prototype.testOKHandler = function() {
   // When OK is clicked, the draggable layers are destroyed and the layers panel
   // replaces arranger.
   var button = expectDescendantOf(parent, withClass(cm.css.BUTTON),
-                                  withText(MSG_OK));
+                                  withText(cm.MSG_OK));
   cm.events.emit(button, 'click');
   expectThat(parent, isElement('div', withClass(cm.css.HIDDEN)));
   expectThat(this.panelElem_, isElement('div', not(withClass(cm.css.HIDDEN))));
@@ -180,7 +182,7 @@ ArrangeViewTest.prototype.testCancelHandler = function() {
   // When Cancel is clicked, the draggable layers are destroyed and the layers
   // panel replaces arranger, but the layers are not rearranged.
   var button = expectDescendantOf(parent, withClass(cm.css.BUTTON),
-                                  withText(MSG_CANCEL));
+                                  withText(cm.MSG_CANCEL));
   cm.events.emit(button, 'click');
   expectThat(parent, isElement('div', withClass(cm.css.HIDDEN)));
   expectThat(this.panelElem_, isElement('div', not(withClass(cm.css.HIDDEN))));
@@ -231,7 +233,7 @@ ArrangeViewTest.prototype.testOKHandlerNestedFolders = function() {
 
   // Click OK and verify the event fired properly.
   var button = expectDescendantOf(parent, withClass(cm.css.BUTTON),
-                                  withText(MSG_OK));
+                                  withText(cm.MSG_OK));
   cm.events.emit(button, 'click');
 
   expectEq([{id: 'layer1', sublayerIds: [{id: 'layer2', sublayerIds: []}]}],

@@ -47,7 +47,7 @@ cm.ShareButton = function(map, appState, showFacebookButton,
   goog.Disposable.call(this);
 
   var button = cm.ui.create('div', {'class': cm.css.MAPBUTTON, 'index': 1},
-      cm.ShareButton.MSG_SHARE_BUTTON_);
+      cm.MSG_SHARE_BUTTON);
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(button);
 
   /**
@@ -219,9 +219,9 @@ cm.ShareBox = function(parentElem, appState, showFacebookButton,
       cm.ShareBox.createFacebookButton_() : null;
 
   var urlLabelAndInput = cm.ShareBox.createLabelAndInput_(
-      cm.css.SHARE_URL, cm.ShareBox.MSG_SHARE_VIEW_LINK_, opt_domHelper);
+      cm.css.SHARE_URL, cm.MSG_SHARE_URL_LABEL, opt_domHelper);
   var htmlLabelAndInput = cm.ShareBox.createLabelAndInput_(
-      cm.css.SHARE_HTML, cm.ShareBox.MSG_SHARE_VIEW_IFRAME_, opt_domHelper);
+      cm.css.SHARE_HTML, cm.MSG_SHARE_HTML_LABEL, opt_domHelper);
 
   /**
    * @type {Element}
@@ -237,7 +237,7 @@ cm.ShareBox = function(parentElem, appState, showFacebookButton,
 
   parentElem.appendChild(cm.ui.create('div', {},
       cm.ui.create('h2', {'class': cm.css.SHARE_HEADER},
-          cm.ShareBox.MSG_SHARE_TITLE_),
+          cm.MSG_SHARE_TITLE),
       cm.ui.create('ul', {},
           cm.ui.create('div', {'class': cm.css.SHORTEN},
               // TODO(arb): bidi - reverse label and checkbox order
@@ -247,7 +247,7 @@ cm.ShareBox = function(parentElem, appState, showFacebookButton,
                 'id': 'cm-shorten-checkbox'
               }),
               cm.ui.create('label', {'for': 'cm-shorten-checkbox'},
-                  cm.ShareBox.MSG_SHORTEN_URL_LABEL_)
+                  cm.MSG_SHORTEN_URL_LABEL)
           ),
           cm.ui.create('li', {}, urlLabelAndInput),
           cm.ui.create('li', {}, htmlLabelAndInput),
@@ -332,12 +332,12 @@ cm.ShareBox.createGPlusButton_ = function(language) {
     'class': cm.css.GPLUS_SHARE_BUTTON,
     'href': '//plus.google.com/share?hl=' + language,
     'target': '_blank',
-    'title': cm.ShareBox.MSG_GPLUS_SHARE_LABEL_
+    'title': cm.MSG_GPLUS_SHARE_LABEL
   },
       cm.ui.create('img', {
         'class': cm.css.GPLUS_IMG,
         'src': '//ssl.gstatic.com/images/icons/gplus-32.png',
-        'alt': cm.ShareBox.MSG_GPLUS_SHARE_LABEL_
+        'alt': cm.MSG_GPLUS_SHARE_LABEL
       })
   );
 };
@@ -362,7 +362,7 @@ cm.ShareBox.createTwitterButton_ = function(language, touch) {
       'class': cm.css.TWITTER_SHARE_BUTTON,
       'href': '//twitter.com/share?lang=' + language,
       'target': '_blank',
-      'title': cm.ShareBox.MSG_TWITTER_SHARE_LABEL_
+      'title': cm.MSG_TWITTER_SHARE_LABEL
     },
         // TODO(arb): Find proper button? Maybe use the Twitter sprite with
         // offsets, but then we need to address i18n?
@@ -437,66 +437,6 @@ cm.ShareBox.prototype.setShareUrl_ = function(url, opt_shortUrl) {
       iframeUri + '" style="border: 1px solid #ccc"></iframe>';
 };
 
-/**
- * @desc Standard label for the 'Share' button on the map.
- * @private
- */
-cm.ShareButton.MSG_SHARE_BUTTON_ = goog.getMsg('Share');
-
 /** @const {string} URL for the goo.gl URL Shortener API. */
 cm.ShareBox.GOOGL_API_URL = 'https://www.googleapis.com/urlshortener/v1/url';
 
-/**
- * @desc Title for the share box.
- * @private
- */
-cm.ShareBox.MSG_SHARE_TITLE_ = goog.getMsg('Share this view');
-
-/**
- * @desc Label for the field containing the link URL to share the map view.
- * @private
- */
-cm.ShareBox.MSG_SHARE_URL_LABEL_ = goog.getMsg('Paste link in email or IM');
-
-/**
- * @desc Label for the field containing HTML code to share the map view.
- * @private
- */
-cm.ShareBox.MSG_SHARE_HTML_LABEL_ = goog.getMsg(
-    'Paste HTML to embed in website');
-
-/**
- * @desc Label for the "Shorten URLs" checkbox in the share popup.
- * @private
- */
-cm.ShareBox.MSG_SHORTEN_URL_LABEL_ = goog.getMsg('Shorten URLs');
-
-/**
- * @desc Accessible text for the "Share on G+" button in the share popup.
- * @private
- */
-cm.ShareBox.MSG_GPLUS_SHARE_LABEL_ = goog.getMsg('Share on Google+');
-
-/**
- * @desc Accessible text for the "Tweet" button in the share popup.
- * @private
- */
-cm.ShareBox.MSG_TWITTER_SHARE_LABEL_ = goog.getMsg('Tweet this map');
-
-// TODO(kpy): After the next round of translations, replace:
-// MSG_SHARE_VIEW_LINK_ with MSG_SHARE_URL_LABEL_
-// MSG_SHARE_VIEW_IFRAME_ with MSG_SHARE_HTML_LABEL_
-// throughout this file, and delete the messages below.
-
-/**
- * @desc Label for the "share this map view as a link" field.
- * @private
- */
-cm.ShareBox.MSG_SHARE_VIEW_LINK_ = goog.getMsg('Paste link in email or IM');
-
-/**
- * @desc Label for the "share this map view as an iframe" field.
- * @private
- */
-cm.ShareBox.MSG_SHARE_VIEW_IFRAME_ = goog.getMsg(
-    'Paste HTML to embed in website');
