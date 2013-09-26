@@ -40,20 +40,19 @@ class AdminDomainTest(test_utils.BaseTest):
     perms.Grant('outsider', perms.Role.MAP_CREATOR, 'xyz.com')
 
   def DoCreateDomainPost(self, domain, status=302):
-    post_data = urllib.urlencode([('form', 'create-domain')])
+    post_data = dict(form='create-domain', xsrf_token='XSRF')
     return self.DoPost(AdminUrl(domain), post_data, status=status)
 
   def DoUserPermissionsPost(self, domain, new_perms, new_user=None, status=302):
-    post_data = [('form', 'user-permissions')]
+    post_data = dict(form='user-permissions', xsrf_token='XSRF')
     for user, role, should_delete in new_perms:
-      post_data.append(('%s.permission' % user, role))
+      post_data['%s.permission' % user] = role
       if should_delete:
-        post_data.append(('%s.delete' % user, 'on'))
+        post_data['%s.delete' % user] = 'on'
     new_email, new_role = new_user or ('', perms.Role.MAP_CREATOR)
-    post_data.append(('new_user', new_email))
-    post_data.append(('new_user.permission', new_role))
-    return self.DoPost(
-        AdminUrl(domain), urllib.urlencode(post_data), status=status)
+    post_data['new_user'] = new_email
+    post_data['new_user.permission'] = new_role
+    return self.DoPost(AdminUrl(domain), post_data, status=status)
 
   def DoNewUserPost(self, domain, email, role, status=302):
     return self.DoUserPermissionsPost(
@@ -61,10 +60,10 @@ class AdminDomainTest(test_utils.BaseTest):
 
   def DoDomainSettingsPost(
       self, domain, default_label, sticky_entries, initial_role, status=302):
-    post_data = [('form', 'domain-settings'), ('default_label', default_label),
-                 ('initial_domain_role', initial_role)]
+    post_data = dict(form='domain-settings', default_label=default_label,
+                     initial_domain_role=initial_role, xsrf_token='XSRF')
     if sticky_entries:
-      post_data.append('has_sticky_catalog_entries', 'on')
+      post_data['has_sticky_catalog_entries'] = 'on'
     return self.DoPost(
         AdminUrl(domain), urllib.urlencode(post_data), status=status)
 
@@ -275,25 +274,25 @@ class AdminMapTest(test_utils.BaseTest):
     map_object = test_utils.CreateMap()
     map_id = map_object.id
     with test_utils.RootLogin():
-      self.DoPost('/.admin/' + map_id, 'block=1')
+      self.DoPost('/.admin/' + map_id, 'block=1&xsrf_token=XSRF')
       self.assertTrue(model.Map.Get(map_id).is_blocked)
-      self.DoPost('/.admin/' + map_id, 'unblock=1')
+      self.DoPost('/.admin/' + map_id, 'unblock=1&xsrf_token=XSRF')
       self.assertFalse(model.Map.Get(map_id).is_blocked)
 
   def testDelete(self):
     map_object = test_utils.CreateMap()
     map_id = map_object.id
     with test_utils.RootLogin():
-      self.DoPost('/.admin/' + map_id, 'delete=1')
+      self.DoPost('/.admin/' + map_id, 'delete=1&xsrf_token=XSRF')
       self.assertTrue(model.Map.GetDeleted(map_id).is_deleted)
-      self.DoPost('/.admin/' + map_id, 'undelete=1')
+      self.DoPost('/.admin/' + map_id, 'undelete=1&xsrf_token=XSRF')
       self.assertFalse(model.Map.Get(map_id).is_deleted)
 
   def testWipe(self):
     map_object = test_utils.CreateMap()
     map_id = map_object.id
     with test_utils.RootLogin():
-      self.DoPost('/.admin/' + map_id, 'wipe=1')
+      self.DoPost('/.admin/' + map_id, 'wipe=1&xsrf_token=XSRF')
       self.assertEquals(None, model.Map.Get(map_id))
       self.assertEquals(None, model.Map.GetDeleted(map_id))
 
@@ -301,7 +300,7 @@ class AdminMapTest(test_utils.BaseTest):
     map_object = test_utils.CreateMap()
     map_id = map_object.id
     with test_utils.Login('unprivileged'):
-      self.DoPost('/.admin/' + map_id, 'wipe=1', status=403)
+      self.DoPost('/.admin/' + map_id, 'wipe=1&xsrf_token=XSRF', status=403)
 
 
 if __name__ == '__main__':

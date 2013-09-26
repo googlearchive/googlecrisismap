@@ -192,18 +192,14 @@ TileOverlayTest.prototype.updateWmsTileUrlPattern = function() {
 
 /**
  * Sets up expectations for querying the WMS cache server.
- * @param {string} postArgs The POST arguments.
- * @param {string} tilesetId The unique tileset ID.
+ * @param {string} params The GET query parameters to expect.
+ * @param {string} tilesetId The tileset ID to return.
  * @private
  */
-TileOverlayTest.prototype.expectWmsQuery_ = function(postArgs, tilesetId) {
-  expectCall(goog.net.XhrIo.send)(_, _, 'POST', postArgs)
-      .willOnce(function(url, callback) {
-          callback({'target': {
-            'isSuccess': function() { return true; },
-            'getResponseJson': function() { return tilesetId; }
-          }});
-      });
+TileOverlayTest.prototype.expectWmsQuery_ = function(params, tilesetId) {
+  var jsonp = this.expectNew_('goog.net.Jsonp', '/root/.wms/configure');
+  expectCall(jsonp.send)(params, _).willOnce(
+      function(_, callback) { callback(tilesetId); });
 };
 
 /** Tests WMS tileset ID updates. */
@@ -213,21 +209,23 @@ TileOverlayTest.prototype.updateWmsTilesetId = function() {
   this.layer_.set('wms_layers', ['wms_layer_1', 'wms_layer_2']);
   this.layer_.set('type', cm.LayerModel.Type.WMS);
 
-  // When the TileOverlay is constructed, the server is queried to
-  // ensure it is configured with the tilesetId.
-  this.expectWmsQuery_('server_url=http%3A%2F%2Fwms.service.url' +
-      '&projection=EPSG%3A3857&layers=wms_layer_1%2Cwms_layer_2',
-      'c6df7a8fab3e8e170f92dec4b306780c');
+  // When the TileOverlay is constructed, the server should be queried to
+  // ensure it is configured with the tileset ID.
+  this.expectWmsQuery_({
+      'server_url': 'http://wms.service.url',
+      'projection': 'EPSG:3857',
+      'layers': 'wms_layer_1,wms_layer_2'
+  }, 'deadbeef');
   var tileOverlay = this.createTileOverlay_();
-  expectEq('c6df7a8fab3e8e170f92dec4b306780c',
-           tileOverlay.get('wms_tileset_id'));
+  expectEq('deadbeef', tileOverlay.get('wms_tileset_id'));
 
-  // When the WMS layers change, the server is configured with the new
+  // When the WMS layers change, the server should be configured with the new
   // tileset ID.
-  this.expectWmsQuery_('server_url=http%3A%2F%2Fwms.service.url' +
-      '&projection=EPSG%3A3857&layers=wms_layer_3%2Cwms_layer_4',
-      '6bfc119f4a743a349dca77d684d34349');
+  this.expectWmsQuery_({
+      'server_url': 'http://wms.service.url',
+      'projection': 'EPSG:3857',
+      'layers': 'wms_layer_3,wms_layer_4'
+  }, 'abad1dea');
   this.layer_.set('wms_layers', ['wms_layer_3', 'wms_layer_4']);
-  expectEq('6bfc119f4a743a349dca77d684d34349',
-           tileOverlay.get('wms_tileset_id'));
+  expectEq('abad1dea', tileOverlay.get('wms_tileset_id'));
 };

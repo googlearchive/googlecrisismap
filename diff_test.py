@@ -57,7 +57,8 @@ class DiffTest(test_utils.BaseTest):
 
     self.mox.ReplayAll()
     with test_utils.Login('owner'):
-      self.DoPost('/.diff/' + map_object.id, 'new_json=' + new_json)
+      self.DoPost('/.diff/' + map_object.id,
+                  'new_json=' + new_json + '&xsrf_token=XSRF')
 
 
 if __name__ == '__main__':

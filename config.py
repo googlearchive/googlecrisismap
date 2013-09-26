@@ -14,7 +14,9 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
+import binascii
 import json
+import os
 
 import cache
 
@@ -74,3 +76,34 @@ def Delete(key):
   """Deletes a configuration value."""
   Config(key_name=key).delete()
   cache.Delete([Config, key])
+
+
+def GetGeneratedKey(key):
+  """Gets a string of 32 hex digits that is randomly generated on first use.
+
+  The first time this is called, it generates a random string and stores it in
+  a configuration item with the given key; thereafter, the stored string is
+  returned.  The result is suitable for use as a cryptographic key (e.g.
+  HMAC key or encryption key): it is generated at runtime, doesn't exist in
+  the source code, and is unique to the application instance.
+
+  Args:
+    key: A string, the name of the configuration item to use.
+
+  Returns:
+    A string of 32 hex digits.
+  """
+
+  @db.transactional
+  def PutGeneratedKey():
+    if not Get(key):
+      Set(key, binascii.b2a_hex(os.urandom(16)))
+
+  value = Get(key)
+  while not value:
+    PutGeneratedKey()
+    value = Get(key)
+    # The retry here handles the rare case in which memcache.get returns None
+    # even after memcache.add.  Strange, but we've seen it happen occasionally.
+    # TODO(kpy): Consider factoring out this retry loop if we need it elsewhere.
+  return str(value)  # avoid Unicode; it's just hex digits

@@ -19,11 +19,13 @@ import datetime
 import os
 import time
 import unittest
+import urllib
 import urlparse
 
 import webapp2
 import webob
 
+import base_handler
 import config
 import domains
 import model
@@ -145,6 +147,10 @@ class BaseTest(unittest.TestCase):
     config.Set('root_path', ROOT_PATH)
     config.Set('default_domain', DEFAULT_DOMAIN)
     domains.Domain.Create(DEFAULT_DOMAIN)
+    self.mox.stubs.Set(
+        base_handler, 'GenerateXsrfToken', lambda uid, timestamp=None: 'XSRF')
+    self.mox.stubs.Set(
+        base_handler, 'ValidateXsrfToken', lambda uid, token: token == 'XSRF')
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -174,7 +180,7 @@ class BaseTest(unittest.TestCase):
 
     Args:
       path: The part of the URL path after (not including) the root URL.
-      data: The POST data as a string.
+      data: The POST data as a string, dictionary, or list of pairs.
       status: If given, expect that the POST will return this HTTP status code.
           Otherwise, expect that the POST will return a non-error code (< 400).
 
@@ -183,7 +189,10 @@ class BaseTest(unittest.TestCase):
     """
     request = SetupRequest(path)
     request.method = 'POST'
-    request.body = str(data)
+    if isinstance(data, dict):
+      request.body = urllib.urlencode(data)
+    else:
+      request.body = str(data)
     request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
     response = DispatchRequest(request)
     if status:

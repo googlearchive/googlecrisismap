@@ -155,11 +155,12 @@ class Admin(base_handler.BaseHandler):
     """
     new_perms = {}
     for key in inputs:
-      uid, input_name = key.rsplit('.', 1)
-      if input_name == 'permission' and uid + '.delete' not in inputs:
-        new_perms[uid] = {inputs[key]}
-      elif input_name == 'delete':
-        new_perms[uid] = set()
+      if '.' in key:
+        uid, input_name = key.rsplit('.', 1)
+        if input_name == 'permission' and uid + '.delete' not in inputs:
+          new_perms[uid] = {inputs[key]}
+        elif input_name == 'delete':
+          new_perms[uid] = set()
     return new_perms
 
   def CreateDomain(self, domain_name, user):

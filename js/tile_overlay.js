@@ -594,18 +594,13 @@ cm.TileOverlay.prototype.updateWmsTilesetId_ = function() {
     // config response, consider precomputing the tilesetId so that tile
     // requests can begin immediately.
     if (wmsUrl && wmsLayers && wmsLayers.length && wmsProjection) {
-      // Query the server for this tileset ID and configure an entry
-      // if it doesn't already exist.
-      var postArgs = 'server_url=' + encodeURIComponent(wmsUrl) +
-                     '&projection=' + encodeURIComponent(wmsProjection) +
-                     '&layers=' + encodeURIComponent(wmsLayers.join(','));
-      goog.net.XhrIo.send(this.config_['wms_configure_url'],
-                          goog.bind(function(e) {
-        if (e.target.isSuccess()) {
-          var tilesetId = e.target.getResponseJson();
-          this.set('wms_tileset_id', tilesetId);
-        }
-      }, this), 'POST', postArgs);
+      // Ask the server to get or set up a tileset ID for this tileset.
+      var me = this;
+      new goog.net.Jsonp(this.config_['wms_configure_url']).send({
+          'server_url': wmsUrl,
+          'projection': wmsProjection,
+          'layers': wmsLayers.join(',')
+      }, function(tilesetId) { me.set('wms_tileset_id', tilesetId); });
     }
   }
 };

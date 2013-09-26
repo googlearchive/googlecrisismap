@@ -31,7 +31,8 @@ class PublishTest(test_utils.BaseTest):
   def testPost(self):
     """Tests the Publish handler."""
     with test_utils.Login('owner'):
-      self.DoPost('/xyz.com/.publish', 'label=abc&map=%s' % self.map_id)
+      self.DoPost('/xyz.com/.publish',
+                  'label=abc&map=%s&xsrf_token=XSRF' % self.map_id)
     entry = model.CatalogEntry.Get('xyz.com', 'abc')
     self.assertEquals(self.map_id, entry.map_id)
     self.assertFalse(entry.is_listed)
@@ -45,7 +46,8 @@ class PublishTest(test_utils.BaseTest):
 
       # Republish with a new map version.
       self.map_object.PutNewVersion('{"title": "new version"}')
-      self.DoPost('/xyz.com/.publish', 'label=abc&map=%s' % self.map_id)
+      self.DoPost('/xyz.com/.publish',
+                  'label=abc&map=%s&xsrf_token=XSRF' % self.map_id)
 
     # Confirm that the entry is still listed and points at the new version.
     entry = model.CatalogEntry.Get('xyz.com', 'abc')
@@ -57,14 +59,15 @@ class PublishTest(test_utils.BaseTest):
     with test_utils.Login('owner'):
       for label in ['', '!', 'f#oo', '?a', 'qwerty!', '9 3']:
         self.DoPost('/xyz.com/.publish',
-                    'label=%s&map=%s' % (label, self.map_id), status=400)
+                    'label=%s&map=%s&xsrf_token=XSRF' % (label, self.map_id),
+                    status=400)
 
   def testValidLabels(self):
     """Tests to makes sure valid labels do get published."""
     with test_utils.Login('owner'):
       for label in ['a', 'B', '2', 'a2', 'q-w_e-r_t-y', '93']:
         self.DoPost('/xyz.com/.publish',
-                    'label=%s&map=%s' % (label, self.map_id))
+                    'label=%s&map=%s&xsrf_token=XSRF' % (label, self.map_id))
         entry = model.CatalogEntry.Get('xyz.com', label)
         self.assertEquals(self.map_id, entry.map_id)
         self.assertFalse(entry.is_listed)
@@ -75,7 +78,7 @@ class PublishTest(test_utils.BaseTest):
       model.CatalogEntry.Create('xyz.com', 'abc', self.map_object)
     self.assertNotEqual(None, model.CatalogEntry.Get('xyz.com', 'abc'))
     with test_utils.Login('owner'):
-      self.DoPost('/xyz.com/.publish', 'label=abc&remove=1')
+      self.DoPost('/xyz.com/.publish', 'label=abc&remove=1&xsrf_token=XSRF')
     self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'abc'))
 
 if __name__ == '__main__':

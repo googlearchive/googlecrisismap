@@ -18,13 +18,12 @@ of relevant layers. Such updates are performed separately by retriever module.
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
-import binascii
 import hmac
 import logging
-import os
 
 import base_handler
 import cache
+import config
 import maproot
 import metadata_fetch
 
@@ -57,13 +56,7 @@ def CacheSourceAddresses(map_version_key, maproot_object):
   Returns:
     The cache key and the list of sources stored at that cache key.
   """
-  # This retry loop handles the rare case in which memcache.get returns None
-  # even after memcache.add.  Strange, but we've seen it happen occasionally.
-  hmac_key = None
-  while not hmac_key:
-    cache.Add(['source_addresses_key'], binascii.b2a_hex(os.urandom(16)),
-              ttl_seconds=30 * 24 * 3600)
-    hmac_key = cache.Get(['source_addresses_key'])
+  hmac_key = config.GetGeneratedKey('source_addresses_key')
   cache_key = hmac.new(hmac_key, str(map_version_key)).hexdigest()
   sources = sorted(set(GetSourceAddresses(maproot_object)))
   cache.Set(['source_addresses', cache_key], sources, ADDRESS_TTL_SECONDS)

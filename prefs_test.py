@@ -32,22 +32,23 @@ class PrefsTest(test_utils.BaseTest):
     with test_utils.Login('test'):
       # The first request of any kind should store the UserModel entity, but
       # requests should not affect the preference flags unless save_keys is set.
-      self.DoPost('/.prefs', 'marketing_consent=on')
+      self.DoPost('/.prefs', 'marketing_consent=on&xsrf_token=XSRF')
       self.assertFalse(users.Get('test').marketing_consent_answered)
 
       # save_keys indicates which keys to save, even if the POST data doesn't
       # contain a particular key's name because its checkbox is off.
-      self.DoPost('/.prefs', 'save_keys=marketing_consent')
+      self.DoPost('/.prefs', 'save_keys=marketing_consent&xsrf_token=XSRF')
       self.assertFalse(users.Get('test').marketing_consent)
       self.assertTrue(users.Get('test').marketing_consent_answered)
 
       # With no save_keys, there should be no effect.
-      self.DoPost('/.prefs', 'marketing_consent=on')
+      self.DoPost('/.prefs', 'marketing_consent=on&xsrf_token=XSRF')
       self.assertFalse(users.Get('test').marketing_consent)
       self.assertTrue(users.Get('test').marketing_consent_answered)
 
       # With save_keys, this should turn marketing_consent on.
-      self.DoPost('/.prefs', 'save_keys=marketing_consent&marketing_consent=on')
+      self.DoPost('/.prefs', 'save_keys=marketing_consent'
+                  '&marketing_consent=on&xsrf_token=XSRF')
       self.assertTrue(users.Get('test').marketing_consent)
       self.assertTrue(users.Get('test').marketing_consent_answered)
 

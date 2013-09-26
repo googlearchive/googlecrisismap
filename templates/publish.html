@@ -15,6 +15,7 @@ specific language governing permissions and limitations under the License.
 <div class="cm-popup" id="publish-popup" style="display:none">
   <h2>Publisher name</h2>
   <form method="post" action="{{root}}/.publish">
+    {{xsrf_tag|safe}}
     <input name="domain" id="publish-popup-domain" type=hidden>
     <input name="label" id="publish-popup-label" type=hidden>
     <input name="map" id="publish-popup-map" type=hidden>

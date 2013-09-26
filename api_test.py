@@ -46,7 +46,8 @@ class ApiTest(test_utils.BaseTest):
     """Posts a new version of a map."""
     maproot_json = '{"stuff": [0, 1]}'
     with test_utils.Login('editor'):
-      self.DoPost('/.api/maps/' + self.map.id, 'json=' + maproot_json)
+      self.DoPost('/.api/maps/' + self.map.id,
+                  'json=' + maproot_json + '&xsrf_token=XSRF')
     # Now we refetch the map because the object changed underneath us.
     with test_utils.Login('viewer'):
       # Verify that the edited content was saved properly.

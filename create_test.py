@@ -26,7 +26,7 @@ class CreateTest(test_utils.BaseTest):
   def testCreate(self):
     perms.Grant('creator', perms.Role.MAP_CREATOR, 'xyz.com')
     with test_utils.Login('creator'):
-      response = self.DoPost('/xyz.com/.create', '', status=302)
+      response = self.DoPost('/xyz.com/.create', 'xsrf_token=XSRF', status=302)
       # Confirm that a map was created.
       location = response.headers['Location']
       map_object = model.Map.Get(location.split('/')[-1])
@@ -35,7 +35,7 @@ class CreateTest(test_utils.BaseTest):
   def testCreateWithoutPermission(self):
     # Without MAP_CREATOR, the user shouldn't be able to create a map.
     with test_utils.Login('noncreator'):
-      self.DoPost('/xyz.com/.create', '', status=403)
+      self.DoPost('/xyz.com/.create', 'xsrf_token=XSRF', status=403)
 
   def testDomainRole(self):
     # Start with initial_domain_role == None for our domain
@@ -46,7 +46,7 @@ class CreateTest(test_utils.BaseTest):
       perms.Grant('creator', perms.Role.MAP_CREATOR, 'xyz.com')
 
     with test_utils.Login('creator'):
-      response = self.DoPost('/xyz.com/.create', '', status=302)
+      response = self.DoPost('/xyz.com/.create', 'xsrf_token=XSRF', status=302)
       location = response.headers['Location']
       # initial_domain_role is unset so domain_role should be None.
       map_object = model.Map.Get(location.split('/')[-1])
@@ -62,7 +62,8 @@ class CreateTest(test_utils.BaseTest):
 
     # Create another map.
     with test_utils.Login('creator'):
-      response = self.DoPost('/.create?domain=xyz.com', '', status=302)
+      response = self.DoPost('/.create?domain=xyz.com', 'xsrf_token=XSRF',
+                             status=302)
       location = response.headers['Location']
       # Check the map; initial_domain_role is set so domain_role should be set.
       map_object = model.Map.Get(location.split('/')[-1])

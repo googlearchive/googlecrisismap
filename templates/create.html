@@ -15,6 +15,7 @@ specific language governing permissions and limitations under the License.
 <div class="cm-popup" id="create-popup" style="display:none">
   <h2>Acceptable use</h2>
   <form method="post" action="{{root}}/.create" id="create-popup-form">
+    {{xsrf_tag|safe}}
     <input type="hidden" name="domain" id="create-popup-domain">
     <div class="cm-section">
       <div class="cm-p">

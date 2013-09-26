@@ -14,9 +14,12 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
+import hmac
 import inspect
 import json
+import logging
 import os
+import time
 
 import webapp2
 
@@ -95,6 +98,20 @@ def ToHtmlSafeJson(data, **kwargs):
       '&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
 
 
+def GenerateXsrfToken(uid, timestamp=None):
+  """Generates a timestamped XSRF-prevention token scoped to the given uid."""
+  timestamp = str(timestamp or int(time.time()))
+  hmac_key = config.GetGeneratedKey('xsrf_key')
+  return timestamp + ':' + hmac.new(hmac_key, timestamp + ':' + uid).hexdigest()
+
+
+def ValidateXsrfToken(uid, token):
+  """Returns True if an XSRF token is valid for uid and at most 4 hours old."""
+  timestamp = token.split(':')[0]
+  return (timestamp and time.time() < int(timestamp) + 4*3600 and
+          token == GenerateXsrfToken(uid, timestamp))
+
+
 class Error(Exception):
   """An error that carries an HTTP status and a message to show the user."""
 
@@ -118,30 +135,50 @@ class BaseHandler(webapp2.RequestHandler):
       corresponding route's path pattern (see the routing table in main.py).
   """
 
+  # These are used in RenderTemplate, so ensure they always exist.
+  xsrf_token = ''
+  xsrf_tag = ''
+
   def HandleRequest(self, **kwargs):
     """A wrapper around the Get or Post method defined in the handler class."""
     try:
       method = getattr(self, self.request.method.capitalize(), None)
       if not method:
         raise Error(405, '%s method not allowed.' % self.request.method)
+      root_path = config.Get('root_path') or ''
+      user = users.GetCurrent()
 
       # Require/allow domain name and user sign-in based on whether the method
       # takes arguments named 'domain' and 'user'.
       args, _, _, defaults = inspect.getargspec(method)
       required_args = args[:len(args) - len(defaults or [])]
-      if 'domain' in required_args and 'domain' not in kwargs:
-        raise Error(400, 'Domain not specified.')
       if 'domain' in kwargs and 'domain' not in args:
         raise Error(404, 'Not found.')
+      if 'domain' in required_args and 'domain' not in kwargs:
+        raise Error(400, 'Domain not specified.')
       if 'user' in args:
-        kwargs['user'] = users.GetCurrent()
-      if 'user' in required_args and not kwargs['user']:
+        kwargs['user'] = user
+      if 'user' in required_args and not user:
         return self.redirect(users.GetLoginUrl(self.request.url))
+
+      # Prepare an XSRF token if the user is signed in.
+      if user:
+        self.xsrf_token = GenerateXsrfToken(user.id)
+        self.xsrf_tag = ('<input type="hidden" name="xsrf_token" value="%s">' %
+                         self.xsrf_token)
+
+      # Require a valid XSRF token for all authenticated POST requests.
+      if user and method.__name__ == 'Post':
+        xsrf_token = self.request.get('xsrf_token', '')
+        if not ValidateXsrfToken(user.id, xsrf_token):
+          logging.warn('Bad xsrf_token %r for uid %r', xsrf_token, user.id)
+          # The window might have been idle for a day; go somewhere reasonable.
+          return self.redirect(root_path + '/.maps')
 
       # Fill in some useful request variables.
       self.request.lang = ActivateLanguage(
           self.request.get('hl'), self.request.headers.get('accept-language'))
-      self.request.root_path = config.Get('root_path') or ''
+      self.request.root_path = root_path
 
       # Call the handler, making nice pages for errors derived from Error.
       method(**kwargs)
@@ -191,9 +228,9 @@ class BaseHandler(webapp2.RequestHandler):
       A string, the rendered template.
     """
     path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
-    user = users.GetCurrent()
     root = config.Get('root_path') or ''
-    context = dict(context, root=root, user=user,
+    user = users.GetCurrent()
+    context = dict(context, root=root, user=user, xsrf_tag=self.xsrf_tag,
                    login_url=users.GetLoginUrl(self.request.url),
                    logout_url=users.GetLogoutUrl(root + '/.maps'),
                    navbar=self._GetNavbarContext(user))

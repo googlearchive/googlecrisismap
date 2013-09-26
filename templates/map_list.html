@@ -34,6 +34,7 @@ specific language governing permissions and limitations under the License.
         <td>{{m.updated|timesince}} ago by {{m.updater.email}}</td>
         <td>
           <form action=".delete" method="post">
+            {{xsrf_tag|safe}}
             <input name="map" type=hidden value="{{m.id}}">
             <input type="button" value="Delete Map"
                 onclick="confirm('Really delete this map?') && this.parentNode.submit()">
@@ -56,6 +57,7 @@ specific language governing permissions and limitations under the License.
               {% if e.domain in catalog_domains %}
                 {% ifnotequal e.map_version_key m.current_version_key %}
                   <form action=".publish" method="post">
+                    {{xsrf_tag|safe}}
                     <input name="label" type=hidden value="{{e.label}}">
                     <input name="map" type=hidden value="{{m.id}}">
                     <input name="domain" type=hidden value="{{e.domain}}">
@@ -63,6 +65,7 @@ specific language governing permissions and limitations under the License.
                   </form>
                 {% endifnotequal %}
                 <form action=".publish" method="post">
+                  {{xsrf_tag|safe}}
                   <input name="remove" type=hidden value="1">
                   <input name="domain" type=hidden value="{{e.domain}}">
                   <input name="label" type=hidden value="{{e.label}}">

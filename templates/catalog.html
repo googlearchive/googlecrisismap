@@ -15,6 +15,7 @@ specific language governing permissions and limitations under the License.
 
 {% block content %}
   <form method="post">
+    {{xsrf_tag|safe}}
     <table class="cm-map-list" summary="The list of catalog entries visible to you.">
       <tr>
         <th colspan=5 class="cm-map-list-header">

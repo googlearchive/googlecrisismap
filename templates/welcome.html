@@ -13,8 +13,9 @@ specific language governing permissions and limitations under the License.
 
 <script type="text/javascript" src="{{root}}/.static/popups.js"></script>
 <div class="cm-popup" id="welcome-popup" style="display:none">
+  <h2>Welcome to Google Crisis Map <sup>BETA</sup></h2>
   <form method="post" action="{{root}}/.prefs">
-    <h2>Welcome to Google Crisis Map <sup>BETA</sup></h2>
+    {{xsrf_tag|safe}}
     <div class="cm-section">
       <div class="cm-p">
         Google Crisis Map is an open source tool from

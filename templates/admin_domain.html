@@ -18,6 +18,7 @@ specific language governing permissions and limitations under the License.
 <h3 class="cm-perms-subheading">Settings</h3>
 <div class="cm-perms-domain-settings">
   <form method="post">
+    {{xsrf_tag|safe}}
     <input type="hidden" name="form" value="domain-settings">
     <ul>
       <li>
@@ -68,6 +69,7 @@ specific language governing permissions and limitations under the License.
 <h3 class="cm-perms-subheading">User Permissions</h3>
 <div class="cm-perms-user-settings">
   <form method="post">
+    {{xsrf_tag|safe}}
     <input type="hidden" name="form" value="user-permissions">
     <table title="Users" border=1>
       <tr>
@@ -92,7 +94,7 @@ specific language governing permissions and limitations under the License.
             <input type="checkbox" name="{{user_role.0.id}}.delete">
           </td>
         </tr>
-    {% endfor %}
+      {% endfor %}
       <tr>
         <td class="cm-perms-subject">
           <input name="new_user" type="text" placeholder="New user" >
@@ -116,25 +118,26 @@ specific language governing permissions and limitations under the License.
 {# template and include it here instead. #}
 <div class="cm-popup" id="domain-welcome-popup" style="display:none">
   <form method="post" action="javascript:void(0);">
-  <h2>Domain administration</h2>
-  <div class="cm-section">
-    <div class="cm-p">
-      Google Crisis Map organizes maps under domains that identify the
-      organization publishing them.  Your domain is <b>{{domain.name}}</b>.
-      From here, you can set various defaults for your domain,
-      add new users, and manage the permissions those users have.
+    {{xsrf_tag|safe}}
+    <h2>Domain administration</h2>
+    <div class="cm-section">
+      <div class="cm-p">
+        Google Crisis Map organizes maps under domains that identify the
+        organization publishing them.  Your domain is <b>{{domain.name}}</b>.
+        From here, you can set various defaults for your domain,
+        add new users, and manage the permissions those users have.
+      </div>
+      <div class="cm-p">
+        <b>You are now the administrator for {{domain.name}}</b>,
+        which gives you access to this page.  You can add other
+        administrators, but a domain should always have at least one
+        administrator.
+      </div>
     </div>
-    <div class="cm-p">
-      <b>You are now the administrator for {{domain.name}}</b>,
-      which gives you access to this page.  You can add other
-      administrators, but a domain should always have at least one
-      administrator.
+    <div class="cm-button-area">
+      <input type="submit" class="cm-submit cm-button" value="OK"
+             onclick="hide($('domain-welcome-popup'))">
     </div>
-  </div>
-  <div class="cm-button-area">
-    <input type="submit" class="cm-submit cm-button" value="OK"
-           onclick="hide($('domain-welcome-popup'))">
-  </div>
   </form>
 </div>
 <script type="text/javascript" src="{{root}}/.static/popups.js"></script>

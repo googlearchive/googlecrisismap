@@ -14,6 +14,7 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 {% block content %}
   <form method="post">
+    {{xsrf_tag|safe}}
     <table class="cm-map-list" summary="User preferences">
     <tr>
       <th colspan=5 class="cm-map-list-header">Preferences</th>

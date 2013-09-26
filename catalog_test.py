@@ -46,7 +46,7 @@ class CatalogTest(test_utils.BaseTest):
     self.assertFalse(model.CatalogEntry.Get('xyz.com', 'label1').is_listed)
     self.assertFalse(model.CatalogEntry.Get('xyz.com', 'label2').is_listed)
     with test_utils.Login('publisher'):
-      self.DoPost('/xyz.com/.catalog', 'label1=True')
+      self.DoPost('/xyz.com/.catalog', 'label1=True&xsrf_token=XSRF')
       self.assertTrue(model.CatalogEntry.Get('xyz.com', 'label1').is_listed)
       self.assertFalse(model.CatalogEntry.Get('xyz.com', 'label2').is_listed)
 

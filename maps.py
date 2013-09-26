@@ -197,7 +197,7 @@ def GetMapsApiClientId(host_port):
   return ''
 
 
-def GetConfig(request, map_object=None, catalog_entry=None):
+def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   dev_mode = request.get('dev') and users.IsDeveloper()
   map_catalog = GetMapMenuItems(
       catalog_entry and catalog_entry.domain or
@@ -216,6 +216,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
   maps_api_url = MAPS_API_BASE_URL + '?' + urllib.urlencode(api_url_params)
 
   # Fill the cm_config dictionary.
+  root = request.root_path
   result = {
       'ui_lang': request.lang,
       'dev_mode': dev_mode,
@@ -225,9 +226,9 @@ def GetConfig(request, map_object=None, catalog_entry=None):
       'map_catalog': map_catalog,
       'maps_api_url': maps_api_url,
       # Each endpoint that the JS client code uses gets an entry in config.
-      'json_proxy_url': request.root_path + '/.jsonp',
-      'wms_configure_url': request.root_path + '/.wms/configure',
-      'wms_tiles_url': request.root_path + '/.wms/tiles'
+      'json_proxy_url': root + '/.jsonp',
+      'wms_configure_url': root + '/.wms/configure',
+      'wms_tiles_url': root + '/.wms/tiles'
   }
 
   # Add settings from the selected client result, if any.
@@ -242,22 +243,23 @@ def GetConfig(request, map_object=None, catalog_entry=None):
     result['publisher_name'] = catalog_entry.publisher_name
     key = catalog_entry.map_version_key
   elif map_object:  # draft map
+    xsrf_qs = '?xsrf_token=' + xsrf_token  # needed for all POST URLs
     result['map_root'] = json.loads(map_object.GetCurrentJson())
     result['map_id'] = map_object.id
-    result['map_list_url'] = request.root_path + '/.maps'
-    result['diff_url'] = request.root_path + '/.diff/' + map_object.id
-    result['save_url'] = request.root_path + '/.api/maps/' + map_object.id
-    result['share_url'] = request.root_path + '/.share/' + map_object.id
-    result['api_maps_url'] = request.root_path + '/.api/maps'
-    result['legend_url'] = request.root_path + '/.legend'
-    result['wms_query_url'] = request.root_path + '/.wms/query'
+    result['map_list_url'] = root + '/.maps'
+    result['diff_url'] = root + '/.diff/' + map_object.id + xsrf_qs
+    result['save_url'] = root + '/.api/maps/' + map_object.id + xsrf_qs
+    result['share_url'] = root + '/.share/' + map_object.id + xsrf_qs
+    result['api_maps_url'] = root + '/.api/maps'
+    result['legend_url'] = root + '/.legend'
+    result['wms_query_url'] = root + '/.wms/query'
     result['enable_editing'] = map_object.CheckAccess(perms.Role.MAP_EDITOR)
     result['draft_mode'] = True
     key = map_object.current_version_key
   if map_object or catalog_entry:
     cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
     result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
-    result['metadata_url'] = request.root_path + '/.metadata?key=' + cache_key
+    result['metadata_url'] = root + '/.metadata?key=' + cache_key
     metadata.ActivateSources(sources)
 
   if dev_mode:
@@ -266,7 +268,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
 
     # To use a local copy of the Maps API, use dev=1&local_maps_api=1.
     if request.get('local_maps_api'):
-      result['maps_api_url'] = request.root_path + '/.static/maps_api.js'
+      result['maps_api_url'] = root + '/.static/maps_api.js'
 
     # In developer mode only, allow query params to override the result.
     # Developers can also specify map_root directly as a query param.
@@ -326,7 +328,8 @@ class MapById(base_handler.BaseHandler):
         url += '?' + urllib.urlencode(self.request.GET.items())
       return self.redirect(url)
 
-    cm_config = GetConfig(self.request, map_object=map_object)
+    cm_config = GetConfig(self.request, map_object=map_object,
+                          xsrf_token=self.xsrf_token)
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
