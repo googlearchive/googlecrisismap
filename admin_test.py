@@ -22,6 +22,10 @@ import test_utils
 import utils
 
 
+def AdminUrl(domain):
+  return '/%s/.admin' % domain
+
+
 class AdminTest(test_utils.BaseTest):
   """Tests for the admin.py request handler."""
 
@@ -35,6 +39,41 @@ class AdminTest(test_utils.BaseTest):
         'catalog@xyz.com', 'xyz.com', [perms.Role.CATALOG_EDITOR])
     perms.SetDomainRoles(
         'outsider@not-xyz.com', 'xyz.com', [perms.Role.MAP_CREATOR])
+
+  def DoCreateDomainPost(self, domain, status=302):
+    post_data = urllib.urlencode([('form', 'create-domain')])
+    return self.DoPost(AdminUrl(domain), post_data, status=status)
+
+  def DoUserPermissionsPost(self, domain, new_perms, status=302):
+    post_data = [('form', 'user-permissions')]
+    for user, roles in new_perms.iteritems():
+      for role in roles:
+        post_data.append(('%s.%s' % (user, role), 'on'))
+    return self.DoPost(
+        AdminUrl(domain), urllib.urlencode(post_data), status=status)
+
+  def DoNewUserPost(self, domain, user, role_list, status=302):
+    post_data = [('form', 'add-user'), ('new_email', user)]
+    for role in role_list:
+      post_data.append(('new_email.%s' % role, 'on'))
+    return self.DoPost(
+        AdminUrl(domain), urllib.urlencode(post_data), status=status)
+
+  def DoDomainSettingsPost(
+      self, domain, default_label, sticky_entries, initial_role, status=302):
+    post_data = [('form', 'domain-settings'), ('default_label', default_label),
+                 ('initial_domain_role', initial_role)]
+    if sticky_entries:
+      post_data.append('has_sticky_catalog_entries', 'on')
+    return self.DoPost(
+        AdminUrl(domain), urllib.urlencode(post_data), status=status)
+
+  def testGeneralAdminGet(self):
+    # Set a user so we don't end up at the login page
+    test_utils.SetUser('joerandom@anywhere.com')
+    self.DoGet('/.admin', status=403)
+    test_utils.BecomeAdmin()
+    self.DoGet('/.admin')
 
   def testGet_WithPermissions(self):
     test_utils.SetUser('admin@xyz.com')
@@ -53,38 +92,70 @@ class AdminTest(test_utils.BaseTest):
     test_utils.SetUser('nobody@xyz.com')
     self.DoGet('/xyz.com/.admin', status=403)
 
-  def testPost(self):
-    # Give catalog@ domain admin; revoke perms for outsider@; create
-    # a new administrative user admin2@
-    post_data = urllib.urlencode([
-        ('catalog@xyz.com.DOMAIN_ADMIN', 'on'),
-        ('catalog@xyz.com.CATALOG_EDITOR', 'on'),
-        ('new_email', 'admin2@xyz.com'),
-        ('new_email.DOMAIN_ADMIN', 'True'),
-        ('new_email.MAP_CREATOR', 'True'),
-        ('new_email.CATALOG_EDITOR', 'True')
-    ])
+  def testGet_NoSuchDomain(self):
+    self.assertIsNone(domains.Domain.Get('nosuchdomain.com'))
     test_utils.BecomeAdmin()
+    response = self.DoGet(AdminUrl('nosuchdomain.com'), status=404)
+    self.assertIn('nosuchdomain.com', response.status)
+
+  def testUserPermissionsPost_NoSuchDomain(self):
+    self.assertIsNone(domains.Domain.Get('nosuchdomain.com'))
+    test_utils.BecomeAdmin()
+    # all posts except for the create domain post should end in a 404
+    response = self.DoUserPermissionsPost(
+        'nosuchdomain.com', {'me@somewhere.com': perms.Role.DOMAIN_ADMIN},
+        status=404)
+    self.assertIn('nosuchdomain.com', response.status)
+    response = self.DoNewUserPost('nosuchdomain.com', 'blah@nosuchdomain.com',
+                                  [perms.Role.DOMAIN_ADMIN], status=404)
+    self.assertIn('nosuchdomain.com', response.status)
+    response = self.DoDomainSettingsPost('nosuchdomain.com', 'empty', False,
+                                         perms.Role.MAP_VIEWER, status=404)
+    self.assertIn('nosuchdomain.com', response.status)
+
+  def testGet_StaleDefaultLabel(self):
+    domains.Domain.Create('blah.com', default_label='no-such-label')
+    test_utils.BecomeAdmin()
+    response = self.DoGet(AdminUrl('blah.com'))
+    self.assertIn('no-such-label', response.body)
+
+  def testPost_NewPermissions(self):
+    # Give catalog@ domain admin; revoke perms for outsider@
+    data = {'catalog@xyz.com': ('DOMAIN_ADMIN', 'CATALOG_EDITOR')}
+    test_utils.BecomeAdmin()
+
+    response = self.DoUserPermissionsPost('xyz.com', data)
     # Should redirect back to the admin page
-    response = self.DoPost('/xyz.com/.admin', post_data, status=302)
     self.assertTrue('/root/xyz.com/.admin' in response.headers['Location'])
     self.assertItemsEqual([perms.Role.DOMAIN_ADMIN, perms.Role.CATALOG_EDITOR],
                           perms.GetDomainRoles('catalog@xyz.com', 'xyz.com'))
     self.assertFalse(perms.GetDomainRoles('outsider@not-xyz.com', 'xyz.com'))
+
+  def testPost_NewUser(self):
+    test_utils.BecomeAdmin()
+    self.DoNewUserPost('xyz.com', 'admin2@xyz.com', (
+        perms.Role.DOMAIN_ADMIN, perms.Role.MAP_CREATOR,
+        perms.Role.CATALOG_EDITOR))
     self.assertItemsEqual([perms.Role.DOMAIN_ADMIN, perms.Role.MAP_CREATOR,
                            perms.Role.CATALOG_EDITOR],
                           perms.GetDomainRoles('admin2@xyz.com', 'xyz.com'))
 
+  def testPost_NewUser_Malformed(self):
+    test_utils.BecomeAdmin()
+    response = self.DoNewUserPost(
+        'xyz.com', 'bad@email@address', [perms.Role.DOMAIN_ADMIN], status=400)
+    self.assertIn('bad@email@address', response.body)
+
+  def testPost_NoDomainsFails(self):
+    self.assertIsNone(domains.Domain.Get('bar.com'))
+    test_utils.SetUser('foo@bar.com')
+    self.DoNewUserPost(
+        'bar.com', 'foo@bar.com', (perms.Role.DOMAIN_ADMIN,), status=403)
+
   def testPost_CreateDomain(self):
     self.assertIsNone(domains.Domain.Get('bar.com'))
-    post_data = urllib.urlencode([('catalog@bar.com.CATALOG_EDITOR', 'on')])
     test_utils.SetUser('foo@bar.com')
-
-    # This should fail with an authorization failure
-    self.DoPost('/bar.com/.admin', post_data, status=403)
-
-    # Adding the create flag should allow it to succeed
-    self.DoPost('/bar.com/.admin?create=1', post_data, status=302)
+    self.DoCreateDomainPost('bar.com')
     self.assertTrue(domains.Domain.Get('bar.com'))
     # The current user should have been granted administrative rights
     self.assertTrue(perms.CheckAccess(
@@ -112,9 +183,29 @@ class AdminTest(test_utils.BaseTest):
     self.mox.stubs.Set(perms, 'CheckAccess', MockCheckAccess)
     self.mox.stubs.Set(time, 'sleep', NoOpSleep)
     test_utils.SetUser('somebody@slow.com')
-    self.DoPost('/slow.com/.admin?create=1', '', status=302)
+    self.DoCreateDomainPost('slow.com')
     self.assertTrue(self.sent_true)
     self.assertTrue(domains.Domain.Get('slow.com'))
+
+  def testCreateDomain_DomainAlreadyExists(self):
+    test_utils.BecomeAdmin()
+    domains.Domain.Create('foo.com')
+    response = self.DoCreateDomainPost('foo.com', status=404)
+    self.assertIn('foo.com', response.status)
+
+  def testDomainSettingsPost(self):
+    test_utils.BecomeAdmin()
+    domains.Domain.Create(
+        'foo.com', has_sticky_catalog_entries=True, default_label='label-a',
+        initial_domain_role=perms.Role.MAP_VIEWER)
+    perms.Grant('testuser@bar.com', perms.Role.DOMAIN_ADMIN, 'foo.com')
+    test_utils.SetUser('testuser@bar.com')
+    self.DoDomainSettingsPost(
+        'foo.com', 'label-b', False, perms.Role.MAP_EDITOR)
+    domain = domains.Domain.Get('foo.com')
+    self.assertEqual('label-b', domain.default_label)
+    self.assertFalse(domain.has_sticky_catalog_entries)
+    self.assertEqual(perms.Role.MAP_EDITOR, domain.initial_domain_role)
 
   def testValidateEmail(self):
     self.assertTrue(admin.ValidateEmail('user@domain.subdomain.com'))

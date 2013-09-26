@@ -57,7 +57,8 @@ specific language governing permissions and limitations under the License.
 
         {% if navbar.add_domain_create_link %}
           <li>
-            <form method="post" action="{{root}}/{{navbar.user_domain}}/.admin?create=1">
+            <form method="post" action="{{root}}/{{navbar.user_domain}}/.admin">
+              <input type="hidden" name="form" value="create-domain">
               <a href="#" onclick="this.parentNode.submit()">
                 Create domain {{navbar.user_domain}}
               </a>

@@ -14,74 +14,104 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 
 {% block content %}
-<p>Hello {{admin}}!
-<p>This is the administrative page for domain {{domain}}.
+<h2 class="cm-perms-heading">{{domain.name}}</h2>
+<h3 class="cm-perms-subheading">Settings</h3>
+<div class="cm-perms-domain-settings">
+  <form method="post">
+    <input type="hidden" name="form" value="domain-settings">
+    <ul>
+      <li>
+        <span class="cm-perms-setting-label">Default label:</span>
+        <span class="cm-perms-setting-value">
+          <select name='default_label'>
+            {% if domain.default_label not in labels and domain.default_label != 'empty' %}
+              <option value="{{domain.default_label}}" selected>
+                {{domain.default_label}} (does not exist)
+               </option>
+            {% endif %}
+            {% for label in labels %}
+              <option value="{{label}}"
+                      {% if label == domain.default_label %}selected{% endif %}>
+                {{label}}
+              </option>
+            {% endfor %}
+            {% if 'empty' not in labels %}
+              <option disabled>
+              <option value="empty"
+                      {% if domain.default_label == 'empty' %}selected {% endif %}>
+                &lt;None&gt;
+              </option>
+            {% endif %}
+          </select>
+        </span>
+      </li>
+      <li>
+        <span class="cm-perms-setting-label">Publisher owns their labels:</span>
+        <span class="cm-perms-setting-value">
+          <input type="checkbox" name="has_sticky_catalog_entries"
+                 {{ domain.has_sticky_catalog_entries|yesno:"checked" }}>
+        </span>
+      </li>
+      <li>
+        <span class="cm-perms-setting-label">
+          When a new map is created, people in this domain should:
+        </span>
+        <span class="cm-perms-setting-value">
+          <select name="initial_domain_role">
+            {% for choice in initial_domain_role_choices %}
+              <option value={{choice.0}}
+                      {% if domain.initial_domain_role == choice.0 %}selected {% endif %}>
+                {{choice.1}}
+              </option>
+            {% endfor %}
+          </select>
+        </span>
+      </li>
+    </ul>
+    <input type="submit" value="Save Settings" class="cm-button cm-submit">
+  </form>
+</div>
 
-<form method="post">
-
-  <h1>Users</h1>
-  <table title="Users" border=1>
-    <tr>
-      <th scope="col">User</th>
-      <th scope="col">Can create maps</th>
-      <th scope="col">Can edit the catalog</th>
-      <th scope="col">Has admin permissions</th>
-    </tr>
-    {% for user in users %}
-    <tr>
-      <td>{{user.0}}</td>
-      <td>
-        <input type="checkbox" name="{{user.0}}.MAP_CREATOR"
-               {% if 'MAP_CREATOR' in user.1 %} checked{% endif %}>
-      </td>
-      <td>
-        <input type="checkbox" name="{{user.0}}.CATALOG_EDITOR"
-               {% if 'CATALOG_EDITOR' in user.1 %}checked{% endif %}>
-      </td>
-      <td>
-        <input type="checkbox" name="{{user.0}}.DOMAIN_ADMIN"
-               {% if 'DOMAIN_ADMIN' in user.1 %}checked{% endif %}>
-      </td>
-    </tr>
+<h3 class="cm-perms-subheading">User Permissions</h3>
+<div class="cm-perms-user-settings">
+  <form method="post">
+    <input type="hidden" name="form" value="user-permissions">
+    <table title="Users" border=1>
+      <tr>
+        <th scope="col">User</th>
+        {% for choice in user_permission_choices %}
+          <th scope="col">{{choice.1}}</th>
+        {% endfor %}
+      </tr>
+      {% for user in users %}
+        <tr>
+          <td class="cm-perms-subject">{{user.0}}</td>
+          {% for choice in user_permission_choices %}
+            <td>
+              <input type="checkbox" name="{{user.0}}.{{choice.0}}"
+                     {% if choice.0 in user.1 %}checked{% endif %}>
+            </td>
+          {% endfor %}
+        </tr>
     {% endfor %}
-  </table>
+    </table>
+    <input type="submit" value="Save Permissions" class="cm-button cm-submit">
+  </form>
+</div>
 
-  <h1>Domains</h1>
-  <table title="Domains" border=1>
-    <tr>
-      <th>Domain</th>
-      <th>Can create maps</th>
-      <th>Can edit the catalog</th>
-      <th>Has admin permissions</th>
-    </tr>
-    {% for domain in domains %}
-    <tr>
-      <td>{{domain.0}}</td>
-      <td>
-        <input type="checkbox" name="{{domain.0}}.MAP_CREATOR"
-               {%if 'MAP_CREATOR' in domain.1 %}checked{%endif%}>
-      </td>
-      <td>
-        <input type="checkbox" name="{{domain.0}}.CATALOG_EDITOR"
-               {% if 'CATALOG_EDITOR' in domain.1 %}checked{%endif%}>
-      </td>
-      <td>
-        <input type="checkbox" name="{{domain.0}}.DOMAIN_ADMIN"
-               {% if 'DOMAIN_ADMIN' in domain.1 %}checked{%endif%}>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-
-  <h1>Add user or domain</h1>
-  <p>User's email or domain name:
-    <input type="text" name="new_email" label="Email">
-  <p>Can create maps:
-    <input type="checkbox" name="new_email.MAP_CREATOR" label="Map Creator">
-  <p>Can edit the catalog:
-    <input type="checkbox" name="new_email.CATALOG_EDITOR" label="Catalog Editor">
-  <p>Can administer the domain:
-    <input type="checkbox" name="new_email.DOMAIN_ADMIN" label="Domain Admin"><br>
-  <p><input type="submit" title="Update">
-</form>
+<h3 class="cm-perms-subheading">Add new user</h3>
+<div class="cm-perms-new-user-form">
+  <form method="post">
+    <input type="hidden" name="form" value="add-user">
+    <p>User's email or domain name:
+      <input type="text" name="new_email" label="Email">
+    <p>Can create maps:
+      <input type="checkbox" name="new_email.MAP_CREATOR" label="Map Creator">
+    <p>Can edit the catalog:
+      <input type="checkbox" name="new_email.CATALOG_EDITOR" label="Catalog Editor">
+    <p>Can administer the domain:
+      <input type="checkbox" name="new_email.DOMAIN_ADMIN" label="Domain Admin"><br>
+    <p><input type="submit" value="Add User" class="cm-button cm-submit">
+  </form>
+</div>
 {% endblock %}

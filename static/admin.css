@@ -132,6 +132,7 @@ h2 + h3 {
   font-family:arial,sans-serif;
   color:#222;
 }
+
 .cm-popup .cm-section {
   margin:24px 0;
 }
@@ -141,4 +142,27 @@ h2 + h3 {
 }
 .cm-popup #organization-name {
   margin-top:6px;
+}
+
+/* Domain administration page */
+
+.cm-perms-user-settings table {
+    border-collapse:collapse;
+    margin:12px;
+}
+
+.cm-perms-user-settings table td {
+    text-align:center;
+    padding-left:6px;
+}
+
+.cm-perms-user-settings table th {
+    padding-left:12px;
+    padding-right:12px;
+    padding-bottom:6px;
+    text-align:left;
+}
+
+.cm-perms-user-settings table .cm-perms-subject {
+    text-align:left;
 }
