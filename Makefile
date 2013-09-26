@@ -25,6 +25,10 @@ DEP_SUM := $(shell egrep -d skip 'goog.(provide|require)' js/* | $(MD5) | cut -f
 # The external/ directory contains external dependencies (all fetched by make).
 EXTERNALS=external/google_maps_api_v3.js external/html4-defs.js external/html-sanitizer.js external/maps_api.js
 
+# Files that are used only by JS tests.
+TEST_FAKES=js/test_bootstrap.js,external/maps_api.js
+TEST_DEPS=static/json_files.js,js/test_utils.js,$(CLOSURE_DIR)/closure/goog/testing/events/events.js
+
 # Output files.
 OUT=$(OUT_DIR)/crisismap_main__en.js
 OUT_OPT=$(OUT).opt
@@ -58,15 +62,15 @@ list: $(LIST)
 
 # Run all the JS and Python tests (we need languages.py for Python tests).
 test: languages.py $(LIST) static/json_files.js
-	@gjstest --js_files=js/test_bootstrap.js,external/maps_api.js,$$(tr '\n' ',' < $(LIST)),static/json_files.js,js/test_utils.js,$$(echo js/*_test.js | tr ' ' ',') | python tools/format_gjstest_output.py && echo "All JS tests passed.\n" && tools/pytests && echo "\nAll JS and Python tests passed."
+	@gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),$$(echo js/*_test.js | tr ' ' ',') | python tools/format_gjstest_output.py && echo "All JS tests passed.\n" && tools/pytests && echo "\nAll JS and Python tests passed."
 
 # Run a single JS test using gjstest.
 %_test: $(LIST) static/json_files.js
-	@gjstest --js_files=js/test_bootstrap.js,external/maps_api.js,$$(tr '\n' ',' < $(LIST)),static/json_files.js,js/test_utils.js,js/$@.js | python tools/format_gjstest_output.py
+	@gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),js/$@.js | python tools/format_gjstest_output.py
 
 # Build the HTML file for a test using gjstest.
 %_test.html: $(LIST) static/json_files.js
-	gjstest --js_files=js/test_bootstrap.js,external/maps_api.js,$$(tr '\n' ',' < $(LIST)),static/json_files.js,js/test_utils.js,js/$$(echo $@ | sed -e 's/\.html/.js/') --html_output_file=$@
+	gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),js/$$(echo $@ | sed -e 's/\.html/.js/') --html_output_file=$@
 	@ls -l $@
 
 # Delete all the output.
@@ -122,7 +126,7 @@ $(LIST): $(EXTERNALS)
 	@rm -f $(OUT_DIR)/*.js
 	@echo external/html4-defs.js > $@
 	@echo external/html-sanitizer.js >> $@
-	$(CLOSURE_DIR)/closure/bin/calcdeps.py \
+	python $(CLOSURE_DIR)/closure/bin/calcdeps.py \
 	    $(SOURCE_DIR_OPTIONS) \
 	    $(TARGET_OPTIONS) \
 	    -o list \
@@ -137,7 +141,7 @@ $(OUT_OPT): $(EXTERNALS) js/*.js
 	@# *.js files in OUT_DIR unless we remove them first.
 	@rm -f $(OUT_DIR)/*.js
 	@tools/generate_build_info > $(OUT_DIR)/build_info.js
-	$(CLOSURE_DIR)/closure/bin/calcdeps.py \
+	python $(CLOSURE_DIR)/closure/bin/calcdeps.py \
 	    $(SOURCE_DIR_OPTIONS) \
 	    -i external/html4-defs.js \
 	    -i external/html-sanitizer.js \
