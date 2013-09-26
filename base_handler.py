@@ -19,13 +19,16 @@ import os
 
 import webapp2
 
-import model
+# TODO(kpy): Remove this line when circular model/perms import is resolved.
+import model  # pylint: disable=unused-import
+
 import perms
 # pylint: disable=g-import-not-at-top
 try:
   import languages
 except ImportError:
-  languages = model.Struct(ALL_LANGUAGES=['en'])
+  import utils
+  languages = utils.Struct(ALL_LANGUAGES=['en'])
 
 from google.appengine.api import users
 from google.appengine.ext.webapp import template
