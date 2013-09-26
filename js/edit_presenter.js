@@ -255,7 +255,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
          label: cm.MSG_FOLDER_TYPE_SINGLE_SELECT}
       ],
      conditions: {'type': isType(cm.LayerModel.Type.FOLDER)},
-     tooltip: cm.MSG_FOLDER_TYPE_TOOLTIP},
+     tooltip: cm.MSG_FOLDER_TYPE_TOOLTIP}
  ];
 
   // The user has asked us to bring up an inspector.
