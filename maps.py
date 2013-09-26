@@ -226,6 +226,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
       'map_catalog': map_catalog,
       'maps_api_url': maps_api_url,
       # Each endpoint that the JS client code uses gets an entry in config.
+      'js_root': root,  # TODO(kpy): Change this to root + '/.js'
       'json_proxy_url': root + '/.jsonp',
       'wms_configure_url': root + '/.wms/configure',
       'wms_tiles_url': root + '/.wms/tiles'

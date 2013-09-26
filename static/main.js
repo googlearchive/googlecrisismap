@@ -19,7 +19,7 @@
  * @param {Object} maproot A map description in Maproot format.
  */
 function initMap(maproot) {
-  cm_initialize(maproot, 'cm-frame', '/crisismap',
+  cm_initialize(maproot, 'cm-frame', cm_config.js_root,
                 cm_config.map_catalog, cm_config,
                 cm_config.label, cm_config.ui_lang);
 }
