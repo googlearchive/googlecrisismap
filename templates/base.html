@@ -19,6 +19,7 @@ specific language governing permissions and limitations under the License.
   <title>Google Crisis Map</title>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta itemprop="image" content="{{root}}/.static/favicon.ico">
+  <meta name="viewport" content="maximum-scale=1.0,initial-scale=0.7">
   {# Links to stylesheets #}
   {% block stylesheets %}
     <link rel="stylesheet" href="{{root}}/.static/mapviewer.css">
@@ -45,7 +46,7 @@ specific language governing permissions and limitations under the License.
   <div class="cm-header">
     {# Header above page content #}
     {% block header %}
-      <a href="{{root}}/.maps"><h1>Google Crisis Map <sup>BETA</sup></h1></a>
+      <h1><a href="{{root}}/.maps">Google Crisis Map <sup>BETA</sup></a></h1>
     {% endblock header %}
   </div>
 
@@ -56,11 +57,13 @@ specific language governing permissions and limitations under the License.
     <div class="cm-button-area">
       {% if navbar.creator_domains %}
         {% if navbar.creator_domains|length > 1 %}
-          <select id="domain" style="margin-bottom:6px;">
-            {% for domain in navbar.creator_domains %}
-              <option value="{{domain}}">{{domain}}</option>
-            {% endfor %}
-          </select>
+          <div class="cm-domain-select">
+            <select id="domain">
+              {% for domain in navbar.creator_domains %}
+                <option value="{{domain}}">{{domain}}</option>
+              {% endfor %}
+            </select>
+          </div>
         {% else %}
           <input type="hidden" id="domain"
               value="{{navbar.creator_domains.0}}">

@@ -15,81 +15,121 @@ specific language governing permissions and limitations under the License.
 
 {% block content %}
 {% include "publish.html" %}
+  <script src="{{root}}/.static/dates.js"></script>
   <table class="cm-map-list">
-    <tr>
-      <th colspan=5 class="cm-map-list-header">{{title}}</th>
-    </tr>
-    <tr>
-      <th>Draft version</th>
-      <th>Created</th>
-      <th>Last updated</th>
-      <th>Delete</th>
-      <th>Published version</th>
-    </tr>
-    {% for m in maps %}
+    <thead>
       <tr>
-        <td><a href=".maps/{{m.id}}" title="{{m.description}}"
-            >{{m.title}}</a></td>
-        <td>{{m.created|timesince}} ago by {{m.creator.email}}</td>
-        <td>{{m.updated|timesince}} ago by {{m.updater.email}}</td>
-        <td>
-          <form action=".delete" method="post">
-            {{xsrf_tag|safe}}
-            <input name="map" type=hidden value="{{m.id}}">
-            <input type="button" value="Delete Map"
-                onclick="confirm('Really delete this map?') && this.parentNode.submit()">
-          </form>
-        </td>
-        <td class="cm-publish-status">
-          {% for e in m.catalog_entries %}
-            <div>
-              <a href="{{root}}/{{e.domain}}/{{e.label}}">
-                {{e.domain}}/{{e.label}}
-              </a>
-              <span class="cm-publish-age">
-                {{e.updated|timesince}} ago
-                {% ifequal e.map_version_key m.current_version_key %}
-                  (up to date)
-                {% else %}
-                  (out of date)
-                {% endifequal %}
-              </span>
-              {% if e.domain in catalog_domains %}
-                {% ifnotequal e.map_version_key m.current_version_key %}
-                  <form action=".publish" method="post">
-                    {{xsrf_tag|safe}}
-                    <input name="label" type=hidden value="{{e.label}}">
-                    <input name="map" type=hidden value="{{m.id}}">
-                    <input name="domain" type=hidden value="{{e.domain}}">
-                    <input type=submit value="Republish">
-                  </form>
-                {% endifnotequal %}
-                <form action=".publish" method="post">
-                  {{xsrf_tag|safe}}
-                  <input name="remove" type=hidden value="1">
-                  <input name="domain" type=hidden value="{{e.domain}}">
-                  <input name="label" type=hidden value="{{e.label}}">
-                  <input type=submit value="Unpublish">
-                </form>
-              {% endif %}
-            </div>
-          {% endfor %}
-          {% if catalog_domains %}
-            <form>
-              <select id="domain-{{m.id}}" name="domain">
-                {% for domain in catalog_domains %}
-                  <option value="{{domain}}">{{domain}}</option>
-                {% endfor %}
-              </select>
-              <input id="label-{{m.id}}" name="label" size=20>
-              <input id="map-{{m.id}}" name="map" type=hidden value="{{m.id}}">
-              <input type="button" onclick="showPublishPopup('{{m.id}}')"
-                     title="Publish map" value="Publish">
-            </form>
-          {% endif %}
+        <th colspan=5 class="cm-map-list-header">{{title}}</th>
       </tr>
-    {% endfor %}
+      <tr>
+        <th class="cm-title-column">Draft map</th>
+        <th class="cm-updated-column">Updated</th>
+        <th class="cm-publish-column">Published map</th>
+      </tr>
+      </thead>
+    <tbody>
+      {% for m in maps %}
+        <tr>
+          <td class="cm-title-column">
+            <div>
+              <a href=".maps/{{m.id}}" title="{{m.description}}"
+                >{{m.title}}</a>
+              <form action=".delete" method="post"
+                  class="cm-delete-button" title="Delete this map"
+                  onclick="confirm('Really delete the map \x22{{m.title|escapejs}}\x22?') && this.submit()">
+                {{xsrf_tag|safe}}
+                <input name="map" type=hidden value="{{m.id}}">
+              </form>
+            </div>
+          </td>
+          <td class="cm-updated-column">
+            <span class="cm-date cm-date-template" title="Created&#160;[[long_date {{m.created|date:"U"}}]]&#160;by&#160;{{m.creator.email}}&#10;Updated&#160;[[long_date {{m.updated|date:"U"}}]]&#160;by&#160;{{m.updater.email}}">[[short_date {{m.updated|date:"U"}}]]</span>
+            <span class="cm-email">
+              {% if m.updater.email_domain == user.email_domain %}
+                {{m.updater.email_username}}
+              {% else %}
+                {{m.updater.email}}
+              {% endif %}
+            </span>
+          </td>
+          <td class="cm-publish-column">
+            {% for e in m.catalog_entries %}
+              <div>
+                <a href="{{root}}/{{e.domain}}/{{e.label}}">
+                  {{e.domain}}/{{e.label}}</a>
+                <span class="cm-date cm-date-template" title="First&#160;published&#160;[[long_date {{e.created|date:"U"}}]]&#160;by&#160;{{e.creator.email}}&#10;Last&#160;published&#160;[[long_date {{e.updated|date:"U"}}]]&#160;by&#160;{{e.updater.email}}">[[short_date {{e.updated|date:"U"}}]]</span>
+                {% if e.domain in catalog_domains %}
+                  {% ifnotequal e.map_version_key m.current_version_key %}
+                    <form action=".publish" method="post">
+                      {{xsrf_tag|safe}}
+                      <input name="label" type=hidden value="{{e.label}}">
+                      <input name="map" type=hidden value="{{m.id}}">
+                      <input name="domain" type=hidden value="{{e.domain}}">
+                      <input class="cm-publish-button" type="submit"
+                          value="Republish">
+                    </form>
+                  {% endifnotequal %}
+                  <form action=".publish" method="post"
+                      class="cm-delete-button" title="Unpublish"
+                      onclick="confirm('Really unpublish {{e.domain}}/{{e.label}}?') && this.submit()">
+                    {{xsrf_tag|safe}}
+                    <input name="remove" type=hidden value="1">
+                    <input name="domain" type=hidden value="{{e.domain}}">
+                    <input name="label" type=hidden value="{{e.label}}">
+                  </form>
+                {% endif %}
+              </div>
+            {% endfor %}
+            {% if catalog_domains %}
+              <form onsubmit="isLabelValid($('label-{{m.id}}')) && showPublishPopup('{{m.id}}'); return false;">
+                {% if catalog_domains|length == 1 %}
+                <input type="hidden" id="domain-{{m.id}}"
+                      value="{{catalog_domains.0}}">
+                  <span class="cm-publish-domain">{{catalog_domains.0}}/</span
+                  ><input type="text" id="label-{{m.id}}"
+                      class="cm-label-input">
+                {% else %}
+                  <select id="domain-{{m.id}}">
+                    {% for domain in catalog_domains %}
+                      <option value="{{domain}}">{{domain}}/</option>
+                    {% endfor %}
+                  </select
+                  ><input type="text" id="label-{{m.id}}"
+                      class="cm-label-input">
+                {% endif %}
+                <input id="publish-{{m.id}}" class="cm-publish-button"
+                    type="submit" value="Publish" disabled>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
   </table>
+  <script>
+    /** Returns true if the given input field contains an acceptable label. */
+    function isLabelValid(label) {
+      return label.value.replace(/^\s*|\s*$/g, '').match(/^[\w-]+$/);
+    }
+
+    /**
+     * Makes the Publish button hidden/disabled/enabled based on the label.
+     * Should be called with 'this' bound to one of the cm-label-input elements.
+     */
+    function updatePublishButton() {
+      var form = this.parentNode;
+      var button = form.getElementsByClassName('cm-publish-button')[0];
+      form.className = this.value.match(/\S/) ? 'cm-active' : 'cm-inactive';
+      button.disabled = isLabelValid(this) ? '' : 'disabled';
+    }
+
+    var inputs = document.getElementsByClassName('cm-label-input');
+    for (var i = 0; i < inputs.length; i++) {
+      var map_id = inputs[i].id.replace(/^label-/, '');
+      inputs[i].addEventListener('change', updatePublishButton);
+      inputs[i].addEventListener('keyup', updatePublishButton);
+    }
+  </script>
   {% if not user.welcome_message_dismissed %}
     {% include "welcome.html" %}
   {% endif %}

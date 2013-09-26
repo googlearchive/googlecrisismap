@@ -78,23 +78,25 @@ function submitCreatePopup() {
 
 /** Updates the UI of the publish popup. */
 function updatePublishPopup() {
-  $('publish-popup-submit').removeAttribute('disabled');
-  if ($('publisher-name').value.replace(/^\s*/g, '') === '') {
-    $('publish-popup-submit').setAttribute('disabled', 'disabled');
-  }
+  $('publish-popup-submit').disabled = isPublisherNameValid() ? '' : 'disabled';
+}
+
+/** @return {bool} True if the publisher name is acceptable to submit. */
+function isPublisherNameValid() {
+  return $('publisher-name').value.match(/\S/);
 }
 
 /**
  * Displays the popup required before publishing a map.
- * @param {string} mapid The map ID.
+ * @param {string} mapId The map ID.
  */
-function showPublishPopup(mapid) {
+function showPublishPopup(mapId) {
   showPopup($('publish-popup'));
-  $('publish-popup-map').value = mapid;
+  $('publish-popup-map').value = mapId;
   $('publisher-name').addEventListener('change', updatePublishPopup);
   $('publisher-name').addEventListener('keyup', updatePublishPopup);
-  $('publish-popup-domain').value = $('domain-' + mapid).value;
-  $('publish-popup-label').value = $('label-' + mapid).value;
+  $('publish-popup-domain').value = $('domain-' + mapId).value;
+  $('publish-popup-label').value = $('label-' + mapId).value;
   updatePublishPopup();
   $('publisher-name').focus();
 }

@@ -14,6 +14,7 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 
 {% block content %}
+  <script src="{{root}}/.static/dates.js"></script>
   <form method="post">
     {{xsrf_tag|safe}}
     <table class="cm-map-list" summary="The list of catalog entries visible to you.">
@@ -40,10 +41,19 @@ specific language governing permissions and limitations under the License.
           </a>
         </td>
         <td>{{e.title}}</td>
-        <td>{{e.updated|timesince}} ago by {{e.updater.email}}</td>
+        <td>
+          <span class="cm-date cm-date-template" title="First&#160;published&#160;[[long_date {{e.created|date:"U"}}]]&#160;by&#160;{{e.creator.email}}&#10;Last&#160;published&#160;[[long_date {{e.updated|date:"U"}}]]&#160;by&#160;{{e.updater.email}}">[[short_date {{e.updated|date:"U"}}]]</span>
+          <span class="cm-email">
+            {% if e.updater.email_domain == user.email_domain %}
+              {{e.updater.email_username}}
+            {% else %}
+              {{e.updater.email}}
+            {% endif %}
+          </span>
+        </td>
       </tr>
       {% endfor %}
     </table>
-    <input type="submit" value="Save changes">
+    <p><input class="cm-button cm-submit" type="submit" value="Save changes">
   </form>
 {% endblock content %}

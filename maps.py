@@ -357,11 +357,12 @@ class MapList(base_handler.BaseHandler):
     for entry in model.CatalogEntry.GetAll():
       published.setdefault(entry.map_id, []).append(entry)
     for m in maps:
-      m.catalog_entries = published.get(m.id, [])
+      m.catalog_entries = sorted(
+          published.get(m.id, []), key=lambda e: (e.domain, e.label))
 
     self.response.out.write(self.RenderTemplate('map_list.html', {
         'title': title,
         'maps': maps,
-        'catalog_domains': perms.GetAccessibleDomains(
-            user, perms.Role.CATALOG_EDITOR)
+        'catalog_domains': sorted(perms.GetAccessibleDomains(
+            user, perms.Role.CATALOG_EDITOR))
     }))

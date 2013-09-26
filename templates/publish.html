@@ -14,7 +14,8 @@ specific language governing permissions and limitations under the License.
 <script type="text/javascript" src="{{root}}/.static/popups.js"></script>
 <div class="cm-popup" id="publish-popup" style="display:none">
   <h2>Publisher name</h2>
-  <form method="post" action="{{root}}/.publish">
+  <form method="post" action="{{root}}/.publish"
+      onsubmit="return !!isPublisherNameValid();">
     {{xsrf_tag|safe}}
     <input name="domain" id="publish-popup-domain" type=hidden>
     <input name="label" id="publish-popup-label" type=hidden>
@@ -30,7 +31,7 @@ specific language governing permissions and limitations under the License.
       </div>
       <div class="cm-p">
         If you need to change the attribution later,
-        click <b>Unpublish</b> and then <b>Publish</b> again.
+        unpublish the map and then publish it again.
       </div>
     </div>
     <div class="cm-button-area">
