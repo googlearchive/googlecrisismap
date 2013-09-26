@@ -317,14 +317,11 @@ def GatherMetadata(layer_type, response):
   Returns:
     The metadata (the 'fetch_time' key is not set; that is left to the caller).
   """
-  content = response.content
-  if layer_type == maproot.LayerType.KML:
-    content = GetKml(content) or ''
   metadata = {
       'fetch_status': response.status_code,
-      'fetch_length': len(content),
-      'length': len(content),
-      'md5_hash': hashlib.md5(content).hexdigest()
+      'fetch_length': len(response.content),
+      'length': len(response.content),
+      'md5_hash': hashlib.md5(response.content).hexdigest()
   }
   # response.headers treats dictionary keys as case-insensitive.
   last_modified_header = response.headers.get('Last-modified')
@@ -337,6 +334,7 @@ def GatherMetadata(layer_type, response):
     metadata['fetch_etag'] = response.headers['Etag']
 
   if HasXmlResponse(layer_type):
+    content = GetKml(response.content) or ''  # unpack KMZ if necessary
     try:
       root_element = ParseXml(content)
     except ValueError:
@@ -423,7 +421,7 @@ def DetermineFetchDelay(metadata):
 
 def UpdateMetadata(address):
   """Updates the cached metadata dictionary for a single source."""
-  fetch_time = int(time.time())
+  fetch_time = time.time()
   metadata = cache.Get(['metadata', address])
   metadata = FetchAndUpdateMetadata(metadata, address)
   metadata['fetch_time'] = fetch_time

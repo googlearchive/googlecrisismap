@@ -314,6 +314,35 @@ class MetadataFetchTest(test_utils.BaseTest):
     }, metadata_fetch.GatherMetadata('KML', utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=content)))
 
+  def testGatherMetadataKmz(self):
+    # KMZ containing valid KML.
+    kmz = CreateZip([('doc.kml', SIMPLE_KML)])
+    self.assertEquals({
+        'fetch_status': 200,
+        'fetch_length': len(kmz),
+        'fetch_last_modified': LAST_MODIFIED_STRING,
+        'fetch_etag': ETAG,
+        'update_time': LAST_MODIFIED_TIMESTAMP,
+        'length': len(kmz),
+        'md5_hash': hashlib.md5(kmz).hexdigest()
+    }, metadata_fetch.GatherMetadata('KML', utils.Struct(
+        status_code=200, headers=RESPONSE_HEADERS, content=kmz)))
+
+    # KMZ containing valid KML with unsupported features.
+    content = '<kml><Document><Placemark><Camera/></Placemark></Document></kml>'
+    kmz = CreateZip([('doc.kml', content)])
+    self.assertEquals({
+        'fetch_status': 200,
+        'fetch_length': len(kmz),
+        'fetch_last_modified': LAST_MODIFIED_STRING,
+        'fetch_etag': ETAG,
+        'update_time': LAST_MODIFIED_TIMESTAMP,
+        'length': len(kmz),
+        'md5_hash': hashlib.md5(kmz).hexdigest(),
+        'has_unsupported_kml': True
+    }, metadata_fetch.GatherMetadata('KML', utils.Struct(
+        status_code=200, headers=RESPONSE_HEADERS, content=kmz)))
+
   def testGatherMetadataAtom(self):
     # Valid Atom.
     content = '<feed><entry></entry></feed>'
