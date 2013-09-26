@@ -154,6 +154,21 @@ class MapTest(test_utils.BaseTest):
       cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m.id), m)
       self.assertTrue('&region=in' in cm_config['maps_api_url'])
 
+  def testMakePrettyDesc(self):
+    self.assertEquals('', maps.MakePrettyDesc(''))
+    # Detects whitespace-only descriptions.
+    self.assertEquals('', maps.MakePrettyDesc(' \t\t\n\n  '))
+    # Converts p, br (and li, div, td) into ' / ', and trims spaces between
+    # the space-slash-space's.
+    self.assertEquals(' / paragraph with a / break', maps.MakePrettyDesc(
+        '<p>paragraph with a <br/> break</p>'))
+    # Strips out all other HTML tags.
+    self.assertEquals(' / p in a ul with a span', maps.MakePrettyDesc(
+        '<ul><p>p in a ul with a <span>span</span></p><ul>'))
+    # Preserves entity and charrefs.
+    self.assertEquals('&amp;&#123;&#xf8;', maps.MakePrettyDesc(
+        '&amp;&#123;&#xf8;'))
+
 
 class MapListTest(test_utils.BaseTest):
   """Tests for the map listing pages served by maps.py."""
@@ -179,5 +194,7 @@ class MapListTest(test_utils.BaseTest):
       self.assertTrue('Arf' in result, result)
       self.assertTrue('.maps/' + m2.id in result, result)
 
+
 if __name__ == '__main__':
   test_utils.main()
+

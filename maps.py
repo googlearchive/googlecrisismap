@@ -336,6 +336,10 @@ class MapByLabel(base_handler.BaseHandler):
 def MakePrettyDesc(desc):
   """Utility for making map descriptions presentable for FB/Twitter."""
 
+  # If the description is only whitespace characters, return ''.
+  if not re.sub(r'(^\s+|\s+$)', '', desc):
+    return ''
+
   block_tag = re.compile(r'<(p|div|br|li|td)[^>]*>', re.I)
   tag = re.compile(r'<[^>]*>')
   spaces = re.compile(r'(\s|&nbsp;)+(/(\s|&nbsp;)+)+')
