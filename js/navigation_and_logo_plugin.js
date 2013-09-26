@@ -178,3 +178,6 @@ cm.NavigationAndLogoPlugin.prototype.sizeComponentsWithExtraViews = function(
   enableNavClass(cm.css.NAV_COMPACT, useCompactNavLayout);
   enableNavClass(cm.css.ABOVE_ATTRIBUTION, isAboveAttribution);
 };
+
+goog.exportSymbol('google.cm.NavigationAndLogoPlugin',
+                  cm.NavigationAndLogoPlugin);
