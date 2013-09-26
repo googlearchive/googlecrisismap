@@ -840,20 +840,20 @@ input[type=checkbox]:checked::after {
   position:absolute;
   width:14px;
   height:14px;
-  background:url(triangle_right.png) no-repeat -4px -2px;
+  background:url('triangle_right.png') no-repeat -4px -2px;
   background-size:21px;
   cursor:pointer;
   margin-top:8px;
 }
 .cm-importer .cm-triangle.cm-expanded {
-  background-image:url(triangle_down.png) !important;
+  background-image:url('triangle_down.png') !important;
 }
 .cm-my-location-button {
   opacity:0.8;
   width:27px;
   height:27px;
   padding: 3px !important;
-  background-image:url(my_location_160dpi.png) !important;
+  background-image:url('my_location_160dpi.png') !important;
   background-size:32px 32px !important;
   background-repeat:no-repeat !important;
 }
@@ -864,13 +864,13 @@ input[type=checkbox]:checked::after {
 /* Support for high density screens. */
 @media screen and (-webkit-min-device-pixel-ratio:2) {
   .cm-importer .cm-triangle {
-    background-image:url(triangle_right_2x.png) !important;
+    background-image:url('triangle_right_2x.png') !important;
   }
   .cm-importer .cm-triangle.cm-expanded {
-    background-image:url(triangle_down_2x.png) !important;
+    background-image:url('triangle_down_2x.png') !important;
   }
   .cm-my-location-button {
-    background-image:url(my_location_240dpi.png) !important;
+    background-image:url('my_location_240dpi.png') !important;
   }
 }
 div.cm-layer-selected + div div.cm-layer-item,
@@ -886,7 +886,7 @@ div.cm-layer-selected + div div.cm-layer-item:hover {
 a.cm-preview-link {
   width:10px;
   height:10px;
-  background:url(external_link.png) no-repeat top left;
+  background:url('external_link.png') no-repeat top left;
   background-size:10px;
   bottom:10px;
   right:12px;
@@ -894,7 +894,7 @@ a.cm-preview-link {
 div.cm-preview-link {
   width:16px;
   height:16px;
-  background:url(preview.png) no-repeat top left;
+  background:url('preview.png') no-repeat top left;
   background-size:13px;
   margin-bottom:-1px;
   top:10px;
@@ -920,10 +920,10 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 /* Support for high density screens. */
 @media screen and (-webkit-min-device-pixel-ratio:2) {
   a.cm-preview-link {
-    background-image:url(external_link_2x.png) !important;
+    background-image:url('external_link_2x.png') !important;
   }
   div.cm-preview-link {
-    background-image:url(preview_2x.png) !important;
+    background-image:url('preview_2x.png') !important;
   }
 }
 .cm-popup.cm-layer-preview {
