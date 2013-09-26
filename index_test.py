@@ -14,12 +14,15 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
+import webapp2
+import webob
+
 import config
 import test_utils
 
 
 class IndexTest(test_utils.BaseTest):
-  """Tests for the crisismap.Index request handler."""
+  """Tests for the Index request handler."""
 
   def testRedirectWithCrisisParam(self):
     """Tests GetDestination with old-style id= and crisis= parameters."""
