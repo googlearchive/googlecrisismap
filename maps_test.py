@@ -91,8 +91,8 @@ class MapTest(test_utils.BaseTest):
     maps.ClientConfig.Create('default', enable_editing=True).put()
     self.assertTrue(maps.GetClientConfig(None, None)['enable_editing'])
 
-  def testGetMapMenuItems(self):
-    """Tests GetMapMenuItems()."""
+  def testGetMapPickerItems(self):
+    """Tests GetMapPickerItems()."""
     with test_utils.RootLogin():
       model.CatalogEntryModel(key_name='foo.com:m1', domain='foo.com',
                               label='m1', title='Map 1', is_listed=True).put()
@@ -100,9 +100,9 @@ class MapTest(test_utils.BaseTest):
                               label='m2', title='Map 2', is_listed=True).put()
 
     self.assertEquals([{'title': 'Map 1', 'url': '/root/foo.com/m1'}],
-                      maps.GetMapMenuItems('foo.com', '/root'))
+                      maps.GetMapPickerItems('foo.com', '/root'))
     self.assertEquals([{'title': 'Map 2', 'url': '/root/m2'}],
-                      maps.GetMapMenuItems('primary.com', '/root'))
+                      maps.GetMapPickerItems('primary.com', '/root'))
 
   def testClientConfigOverride(self):
     """Verifies that query parameters can override client config settings."""

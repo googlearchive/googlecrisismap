@@ -10,17 +10,21 @@ uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
 OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 specific language governing permissions and limitations under the License.
 {% endcomment %}
+{% comment %}
 
-{% load i18n %}
+SECURITY NOTE: cm_config_json is assumed to be safe JSON and head_html
+is assumed to be safe HTML.  The "|safe" filter should not be used with
+any other template variables.
+
+{% endcomment %}
 <!DOCTYPE html> {# activates Strict mode in most browsers including IE8 #}
 <head>
-  {# Meta tag block #}
   <title>{{map_title}}</title>
   <meta name="description" content="{{map_description}}">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta itemprop="image" content="{{root}}/.static/favicon.ico">
   <meta name="viewport" content="maximum-scale=1.0,initial-scale=1.0,user-scalable=no">
-  <!-- Facebook tags -->
+  {# Facebook metadata #}
   <meta content="{{map_title}}" property="og:title">
   <meta content="{{map_description}}" property="og:description">
   <meta content="website" property="og:type">
@@ -28,7 +32,7 @@ specific language governing permissions and limitations under the License.
   <meta content="{{map_url}}" property="og:url">
   <meta content="{{map_image}}" property="og:image">
   <meta content="http://mw1.google.com/crisisresponse/images/crisismap-thumbnail.png" property="og:image">
-  <!-- Twitter tags -->
+  {# Twitter metadata #}
   <meta name="twitter:card" content="summary">
   <meta name="twitter:site" content="Google Crisis Map">
   <meta name="twitter:title" content="{{map_title}}">
@@ -39,13 +43,27 @@ specific language governing permissions and limitations under the License.
   {# Custom head HTML #}
   {{ head_html|safe }}
   <link rel="stylesheet" href="{{root}}/.static/mapviewer.css">
-  <script type="text/javascript" src="{{maps_api_url}}"></script>
-  <script type="text/javascript" src="{{root}}/.js/crisismap_main__{{ui_lang|urlencode}}.js"></script>
-  <script type="text/javascript">
-    var cm_config = {{cm_config_json|safe}};
+  <script src="{{maps_api_url}}"></script>
+  <script src="{{root}}/.js/crisismap_main__{{lang_lower}}.js"></script>
+  <script>
+    cm_config = {{cm_config_json|safe}};
+    cm_config.get_module_url = function(module, lang) {
+      return cm_config.js_root + '/crisismap_' + module + '__' +
+          lang.toLowerCase().replace(/-/g, '_') + '.js';
+    };
   </script>
-  <script type="text/javascript" src="{{root}}/.static/main.js"></script>
 </head>
-<body class="cm-body" onload="main()">
+<body class="cm-body">
   <div id="cm-frame"></div>
+  {% if maproot_url %}
+    <script>
+      function handleMapRoot(map_root) {
+        cm_config.map_root = map_root;
+        new google.cm.Map('cm-frame', cm_config);
+      }
+    </script>
+    <script src="{{json_proxy_url}}?url={{maproot_url|urlencode}}&hl={{lang}}&callback=handleMapRoot"></script>
+  {% else %}
+    <script>new google.cm.Map('cm-frame', cm_config);</script>
+  {% endif %}
 </body>

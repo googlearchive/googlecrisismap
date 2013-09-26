@@ -228,7 +228,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
                     opt_unused, opt_language) {
   var config = opt_config || {};
   config['map_root'] = mapRoot;
-  config['menu_items'] = opt_menuItems;
+  config['map_picker_items'] = opt_menuItems;
   config['lang'] = opt_language || 'en';
 
   // The new API uses a getModuleUrl signature that takes (module, lang) but
@@ -444,12 +444,13 @@ cm.Map = function(frame, opt_config) {
     installHtmlSanitizer(html);
     // We need to defer buildUi until after sanitizer_module.js is loaded,
     // so we call buildUi inside this callback.
-    buildUi(config['map_root'], frame, config['menu_items'], config,
-      config['lang']);
+    buildUi(config['map_root'], frame, config['map_picker_items'], config,
+            config['lang']);
   });
 };
 
 // window doesn't exist in gjstests
 if (typeof window !== 'undefined') {
   window['cm_initialize'] = initialize;
+  (window['google'] = window['google'] || {})['cm'] = {'Map': cm.Map};
 }

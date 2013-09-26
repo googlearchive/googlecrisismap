@@ -28,7 +28,6 @@ import perms
 import users
 import utils
 
-
 from google.appengine.ext import db
 
 MAPS_API_BASE_URL = '//maps.google.com/maps/api/js'
@@ -156,7 +155,7 @@ def GetClientConfig(client_id, referer, dev_mode=False):
   return {}
 
 
-def GetMapMenuItems(domain, root_path):
+def GetMapPickerItems(domain, root_path):
   """Fetches the list of maps to show in the map picker menu for a given domain.
 
   Args:
@@ -167,22 +166,22 @@ def GetMapMenuItems(domain, root_path):
     A list of {'title': ..., 'url': ...} dictionaries describing menu items
     corresponding to the CatalogEntry entities for the specified domain.
   """
-  menu_items = []
+  map_picker_items = []
 
   # Add menu items for the CatalogEntry entities that are marked 'listed'.
   if domain:
     if domain == config.Get('primary_domain'):
-      menu_items = [
+      map_picker_items = [
           {'title': entry.title, 'url': root_path + '/' + entry.label}
           for entry in list(model.CatalogEntry.GetListed(domain))]
     else:
-      menu_items = [
+      map_picker_items = [
           {'title': entry.title,
            'url': root_path + '/%s/%s' % (entry.domain, entry.label)}
           for entry in list(model.CatalogEntry.GetListed(domain))]
 
   # Return all the menu items sorted by title.
-  return sorted(menu_items, key=lambda m: m['title'])
+  return sorted(map_picker_items, key=lambda m: m['title'])
 
 
 def GetMapsApiClientId(host_port):
@@ -199,7 +198,7 @@ def GetMapsApiClientId(host_port):
 
 def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   dev_mode = request.get('dev') and users.IsDeveloper()
-  map_catalog = GetMapMenuItems(
+  map_picker_items = GetMapPickerItems(
       catalog_entry and catalog_entry.domain or
       config.Get('primary_domain'), request.root_path)
 
@@ -209,17 +208,17 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
       'dev_mode': dev_mode,
       'langs': base_handler.ALL_LANGUAGES,
       # Each endpoint that the JS client code uses gets an entry in config.
-      'js_root': root,  # TODO(kpy): Change this to root + '/.js'
+      'js_root': root + '/.js',
       'json_proxy_url': root + '/.jsonp',
       'login_url': users.GetLoginUrl(request.url),
       'logout_url': users.GetLogoutUrl(request.url),
-      'map_catalog': map_catalog,
+      'map_picker_items': map_picker_items,
       'user_email': users.GetCurrent() and users.GetCurrent().email,
       'wms_configure_url': root + '/.wms/configure',
       'wms_tiles_url': root + '/.wms/tiles'
   }
 
-  # Add settings from the selected client result, if any.
+  # Add settings from the selected client config, if any.
   result.update(GetClientConfig(request.get('client'),
                                 request.headers.get('referer'), dev_mode))
 
@@ -250,11 +249,10 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   # Parameters that depend on the MapRoot, for both published and draft maps.
   ui_region = request.get('gl')
   if map_object or catalog_entry:
-    result['ui_lang'] = base_handler.SelectLanguage(
+    result['lang'] = base_handler.SelectLanguage(
         request.get('hl'),
         request.headers.get('accept-language'),
         maproot_json.get('default_language'))
-    result['thumbnail_url'] = maproot_json.get('thumbnail_url', '')
     ui_region = maproot_json.get('region', ui_region)
     cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
     result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
@@ -276,10 +274,6 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   if dev_mode:
     # In developer mode only, allow an arbitrary URL for MapRoot JSON.
     result['maproot_url'] = request.get('maproot_url', '')
-
-    # To use a local copy of the Maps API, use dev=1&local_maps_api=1.
-    if request.get('local_maps_api'):
-      result['maps_api_url'] = root + '/.static/maps_api.js'
 
     # In developer mode only, allow query params to override the result.
     # Developers can also specify map_root directly as a query param.
@@ -305,27 +299,25 @@ class MapByLabel(base_handler.BaseHandler):
       if label == 'maps':
         return self.redirect('.maps')
       raise base_handler.Error(404, 'Label %s/%s not found.' % (domain, label))
-    cm_config = GetConfig(self.request, catalog_entry=entry)
-    cm_config['label'] = label
 
-    # Get the map title and description (for <meta> tags).
-    map_title = cm_config['map_root'].get('title') + ' | Google Crisis Map'
-    map_description = ToPlainText(cm_config['map_root'].get('description'))
-    # Make URL like we do in GetMapMenuItems.
-    map_url = self.request.root_path + '/%s/%s/' % (entry.domain, entry.label)
-    # Security note: cm_config_json is assumed to be safe JSON; all other
-    # template variables must be escaped in the template.
+    cm_config = GetConfig(self.request, catalog_entry=entry)
+    map_root = cm_config.get('map_root', {})
+    # SECURITY NOTE: cm_config_json is assumed to be safe JSON, and head_html
+    # is assumed to be safe HTML; all other template variables are autoescaped.
+    # Below, we use cm_config.pop() for template variables that aren't part of
+    # the API understood by google.cm.Map() and don't need to stay in cm_config.
     self.response.out.write(self.RenderTemplate('map.html', {
-        'head_html': cm_config.get('custom_head_html', ''),
-        'map_title': map_title,
-        'map_description': map_description,
-        'map_url': 'http://google.org/crisismap' + map_url,
-        'map_image': cm_config['thumbnail_url'],
-        'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
-        'ui_lang': cm_config['ui_lang'],
-        'maps_api_url': cm_config['maps_api_url'],
-        'hide_footer': cm_config.get('hide_footer', False),
-        'embedded': self.request.get('embedded', False)
+        'maps_api_url': cm_config.pop('maps_api_url', ''),
+        'head_html': cm_config.pop('custom_head_html', ''),
+        'lang': cm_config['lang'],
+        'lang_lower': cm_config['lang'].lower().replace('-', '_'),
+        'json_proxy_url': cm_config['json_proxy_url'],
+        'maproot_url': cm_config.pop('maproot_url', ''),
+        'map_title': map_root.get('title', '') + ' | Google Crisis Map',
+        'map_description': ToPlainText(map_root.get('description')),
+        'map_url': self.request.path_url,
+        'map_image': map_root.get('thumbnail_url', ''),
+        'cm_config_json': base_handler.ToHtmlSafeJson(cm_config)
     }))
 
 
@@ -364,17 +356,15 @@ class MapById(base_handler.BaseHandler):
 
     cm_config = GetConfig(self.request, map_object=map_object,
                           xsrf_token=self.xsrf_token)
-
-    # Security note: cm_config_json is assumed to be safe JSON, and head_html
-    # and meta_tags are assumed to be safe HTML; all other template variables
-    # must be escaped in the template.
+    # SECURITY NOTE: cm_config_json is assumed to be safe JSON, and head_html
+    # is assumed to be safe HTML; all other template variables are autoescaped.
+    # TODO(kpy): Factor out the bits common to MapByLabel.Get and MapById.Get.
     self.response.out.write(self.RenderTemplate('map.html', {
-        'head_html': cm_config.get('custom_head_html', ''),
-        'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
-        'ui_lang': cm_config['ui_lang'],
-        'maps_api_url': cm_config['maps_api_url'],
-        'hide_footer': cm_config.get('hide_footer', False),
-        'embedded': self.request.get('embedded', False)
+        'maps_api_url': cm_config.pop('maps_api_url', ''),
+        'head_html': cm_config.pop('custom_head_html', ''),
+        'lang': cm_config['lang'],
+        'lang_lower': cm_config['lang'].lower().replace('-', '_'),
+        'cm_config_json': base_handler.ToHtmlSafeJson(cm_config)
     }))
 
 

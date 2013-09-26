@@ -39,12 +39,14 @@ except ImportError:
 from google.appengine.ext.webapp import template
 
 # A mapping from deprecated ISO language codes to valid ones.
-LANGUAGE_SYNONYMS = {'he': 'iw', 'in': 'id', 'mo': 'ro', 'jw': 'jv', 'ji': 'yi'}
+CANONICAL_LANGS = {'he': 'iw', 'in': 'id', 'mo': 'ro', 'jw': 'jv', 'ji': 'yi'}
 
 
 def NormalizeLang(lang):
-  lang = lang.lower()
-  return LANGUAGE_SYNONYMS.get(lang, lang).replace('-', '_')
+  """Normalizes a language code to conventional BCP 47 form, e.g. "en-CA"."""
+  language, region = (lang.strip().replace('_', '-').split('-') + [''])[:2]
+  language, region = language.lower(), region.upper()
+  return CANONICAL_LANGS.get(language, language) + (region and '-' + region)
 
 DEFAULT_LANGUAGE = 'en'
 ALL_LANGUAGES = map(NormalizeLang, languages.ALL_LANGUAGES)
@@ -65,7 +67,7 @@ def SelectSupportedLanguage(language_codes):
   for lang in map(NormalizeLang, language_codes.split(',')):
     if lang in ALL_LANGUAGES:
       return lang
-    first = lang.split('_')[0]
+    first = lang.split('-')[0]
     if first in ALL_LANGUAGES:
       return first
   return None
