@@ -74,8 +74,23 @@ cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
 /** @enum {string} */
 cm.LayerModel.TileCoordinateType = {
   GOOGLE: 'GOOGLE',
-  BING: 'BING'
+  BING: 'BING',
+  TMS: 'TMS'
 };
+
+/** @type Object.<cm.LayerModel.Type> */
+cm.LayerModel.MAPROOT_TO_MODEL_TILE_COORDINATE_TYPES = {
+  'GOOGLE': cm.LayerModel.TileCoordinateType.GOOGLE,
+  'BING': cm.LayerModel.TileCoordinateType.BING,
+  'TMS': cm.LayerModel.TileCoordinateType.TMS
+};
+
+/** @type Object.<string> */
+cm.LayerModel.MODEL_TO_MAPROOT_TILE_COORDINATE_TYPES = goog.object.create(
+  cm.LayerModel.TileCoordinateType.GOOGLE, 'GOOGLE',
+  cm.LayerModel.TileCoordinateType.BING, 'BING',
+  cm.LayerModel.TileCoordinateType.TMS, 'TMS'
+);
 
 /** @enum {string} */
 cm.LayerModel.LabelColor = {
@@ -195,8 +210,10 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       var tile = source['google_map_tiles'] || {};
       model.set('url', tile['url']);
       model.set('url_is_tile_index', tile['url_is_tile_index']);
-      model.set('tile_coordinate_type', tile['tile_coordinate_type'] ||
-          cm.LayerModel.TileCoordinateType.GOOGLE);
+      model.set('tile_coordinate_type',
+          cm.LayerModel.MODEL_TO_MAPROOT_TILE_COORDINATE_TYPES[
+            tile['tile_coordinate_type']] ||
+            cm.LayerModel.TileCoordinateType.GOOGLE);
       break;
     case cm.LayerModel.Type.FUSION:
       var fusion = source['google_fusion_tables'] || {};
@@ -273,9 +290,10 @@ cm.LayerModel.prototype.toMapRoot = function() {
       source['google_map_tiles'] = {
         'url': this.get('url'),
         'url_is_tile_index': this.get('url_is_tile_index'),
-        'tile_coordinate_type' : this.get('tile_coordinate_type') ===
-            cm.LayerModel.TileCoordinateType.BING ?
-                cm.LayerModel.TileCoordinateType.BING : null};
+        'tile_coordinate_type':
+          cm.LayerModel.MODEL_TO_MAPROOT_TILE_COORDINATE_TYPES[
+            this.get('tile_coordinate_type')]
+      };
       break;
     case cm.LayerModel.Type.FUSION:
       source['google_fusion_tables'] = {

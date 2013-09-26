@@ -178,6 +178,28 @@ TileOverlayTest.prototype.testBingTileAddressing = function() {
   expectEq('http://bing.tileset.url/0231', url);
 };
 
+/**
+ * Tests addressing for TMS tile coordinates.
+ */
+TileOverlayTest.prototype.testTMSTileAddressing = function() {
+  this.layer_.set('url', 'http://tms.tileset.url/{Z}/{X}/{Y}');
+  this.layer_.set('tile_coordinate_type',
+                  cm.LayerModel.TileCoordinateType.TMS);
+  var tileOverlay = this.createTileOverlay_();
+
+  var boundingBox = [new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0),
+                     new google.maps.LatLng(0, 0)];
+  expectCall(this.projection_.fromLatLngToPoint)(_)
+      .willRepeatedly(returnWith({}));
+
+  var url = tileOverlay.getTileUrl_(boundingBox, false,
+                                    new google.maps.Point(3, 6), 4);
+  expectEq('http://tms.tileset.url/4/3/9', url);
+};
+
 /** Tests WMS tile url pattern updates. */
 TileOverlayTest.prototype.updateWmsTileUrlPattern = function() {
   this.layer_.set('url', 'http://wms.service.url');

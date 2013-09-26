@@ -135,8 +135,10 @@ var MSG_TILE_INDEX = goog.getMsg(
 var MSG_TILE_COORDINATE_TYPE = goog.getMsg(
     'The type of tile coordinates for the source data (<a target="_blank" ' +
     'href="https://developers.google.com/maps/documentation/javascript/' +
-    'maptypes#CustomMapTypes">Google</a> or <a target="_blank" href=' +
-    '"http://msdn.microsoft.com/en-us/library/bb259689.aspx">Bing</a>).');
+    'maptypes#CustomMapTypes">Google</a>, <a target="_blank" href=' +
+    '"http://msdn.microsoft.com/en-us/library/bb259689.aspx">Bing</a>, or ' +
+    '<a target="_blank" href=' +
+    '"http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification">TMS</a>).');
 
 /** @desc Tooltip for selecting the folder type. */
 var MSG_FOLDER_TYPE = goog.getMsg(

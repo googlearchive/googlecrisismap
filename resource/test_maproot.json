@@ -53,6 +53,7 @@
     "type": "GOOGLE_MAP_TILES",
     "source": {
       "google_map_tiles": {
+        "tile_coordinate_type": "GOOGLE",
         "url": "http://mw1.google.com/crisisresponse/2011/philippines_flooding/geoeye/Philippines_PO_765484_2011_08_23_2011_12_28_maptiles/{X}_{Y}_{Z}.png"
       }
     }
@@ -173,6 +174,7 @@
               "type": "GOOGLE_MAP_TILES",
               "source": {
                 "google_map_tiles": {
+                  "tile_coordinate_type": "GOOGLE",
                   "url": "http://mw1.google.com/crisisresponse/2011/bangkok_floods/geoeye/Bangkok_Floods_po_735655_2011-11-12_2011_11_17_maptiles/{X}_{Y}_{Z}.png"
                 }
               }

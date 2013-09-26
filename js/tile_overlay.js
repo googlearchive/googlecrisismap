@@ -442,9 +442,13 @@ cm.TileOverlay.prototype.getTileUrl_ = function(boundingBox, isHybrid,
     }
     return tileUrl + '/' + quadKey;
   } else {
-    // Google-style tile coordinates
+    // Google or TMS style tile coordinates. Google is default if undefined.
     var url = tileUrl;
-    // Replace parameters in Google tile URL, e.g. http://foo/{X}_{Y}_{Z}.jpg
+    if (this.tileCoordinateType_ === cm.LayerModel.TileCoordinateType.TMS) {
+      // Invert tile y origin from top to bottom of map
+      y = maxTilesHorizontal - y - 1;
+    }
+    // Replace parameters in Tile URL, e.g. http://foo/{X}_{Y}_{Z}.jpg
     url = url.replace(/{X}/, x.toString()).
               replace(/{Y}/, y.toString()).
               replace(/{Z}/, zoom.toString());
