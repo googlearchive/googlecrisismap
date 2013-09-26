@@ -407,6 +407,7 @@ html, body {
   border: none;
 }
 .cm-panel-button,
+.gm-style .cm-panel-button,
 .cm-panel .cm-close-button,
 .cm-embedded .cm-panel {
   display: none;
