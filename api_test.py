@@ -46,8 +46,8 @@ class ApiTest(test_utils.BaseTest):
   def testBadMapsGet(self):
     """Attempts to fetch a map that doesn't exist."""
     nonexistent_id = 'xxx' + self.map.id
-    handler = test_utils.SetupHandler('/api/maps/%s' % nonexistent_id,
-                                      api.Maps())
+    handler = test_utils.SetupHandler(
+        '/crisismap/.api/maps/%s' % nonexistent_id, api.Maps())
     handler.get(nonexistent_id)
     self.assertEquals(404, handler.response.status_int)
 
@@ -55,8 +55,9 @@ class ApiTest(test_utils.BaseTest):
     """Posts a new version of a map."""
     json_dict = {'json': True, 'stuff': [0, 1]}
     maproot_json = json.dumps(json_dict)
-    handler = test_utils.SetupHandler('/api/maps/%s' % self.map.id, api.Maps(),
-                                      'json=%s' % maproot_json)
+    handler = test_utils.SetupHandler(
+        '/crisismap/.api/maps/%s' % self.map.id, api.Maps(),
+        'json=%s' % maproot_json)
     handler.post(self.map.id)
     # response 201 indicates Location was set.
     self.assertEquals(201, handler.response.status_int)
@@ -92,7 +93,8 @@ class ApiTest(test_utils.BaseTest):
     model.Map.Create(json.dumps(draft), 'xyz.com')
 
     test_utils.ClearUser()
-    handler = test_utils.SetupHandler('/api/maps', api.PublishedMaps())
+    handler = test_utils.SetupHandler(
+        '/crisismap/.api/maps', api.PublishedMaps())
     handler.get()
     maps = json.loads(handler.response.body)
     self.assertEquals([{'label': 'Map2', 'maproot': map2},

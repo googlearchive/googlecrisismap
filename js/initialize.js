@@ -300,7 +300,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
 
   // Initialize the dynamic module loader and tell it how to find module URLs.
   var getModuleUrl = config['get_module_url'] || function(baseUrl, module) {
-    return baseUrl + '/crisismap_' + module + '__' + opt_language + '.js';
+    return baseUrl + '/.js/crisismap_' + module + '__' + opt_language + '.js';
   };
   goog.module.initLoader(jsBaseUrl, getModuleUrl);
 

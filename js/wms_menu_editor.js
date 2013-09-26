@@ -22,7 +22,7 @@ goog.require('goog.Uri');
 goog.require('goog.dom.classes');
 goog.require('goog.net.Jsonp');
 
-var TILESTACHE_QUERY_URL = '/crisismap/wms/query_layers';
+var TILESTACHE_QUERY_URL = '/crisismap/.wms/query';
 
 // Only support layers published with web/spherical mercator projections.
 // https://developers.google.com/maps/documentation/javascript/maptypes#WorldCoordinates

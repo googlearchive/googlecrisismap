@@ -32,9 +32,9 @@ class PublishTest(test_utils.BaseTest):
   def testPost(self):
     """Tests the Publish handler."""
     handler = test_utils.SetupHandler(
-        '/crisismap/publish', publish.Publish(),
-        'domain=foo.com&label=abc&map_id=%s' % self.map_id)
-    handler.post()
+        '/crisismap/foo.com/.publish', publish.Publish(),
+        'label=abc&map=%s' % self.map_id)
+    handler.post('foo.com')
     entry = model.CatalogEntry.Get('foo.com', 'abc')
     self.assertEquals(self.map_id, entry.map_id)
     self.assertFalse(entry.is_listed)
@@ -43,9 +43,9 @@ class PublishTest(test_utils.BaseTest):
     """Verifies that the is_listed status of an existing entry is preserved."""
     # Publish a listed entry.
     handler = test_utils.SetupHandler(
-        '/crisismap/publish', publish.Publish(),
-        'domain=foo.com&label=abc&map_id=%s' % self.map_id)
-    handler.post()
+        '/crisismap/foo.com/.publish', publish.Publish(),
+        'label=abc&map=%s' % self.map_id)
+    handler.post('foo.com')
     entry = model.CatalogEntry.Get('foo.com', 'abc')
     entry.is_listed = True
     entry.Put()
@@ -55,9 +55,9 @@ class PublishTest(test_utils.BaseTest):
 
     # Republish.
     handler = test_utils.SetupHandler(
-        '/crisismap/publish', publish.Publish(),
-        'domain=foo.com&label=abc&map_id=%s' % self.map_id)
-    handler.post()
+        '/crisismap/foo.com/.publish', publish.Publish(),
+        'label=abc&map=%s' % self.map_id)
+    handler.post('foo.com')
     entry = model.CatalogEntry.Get('foo.com', 'abc')
     self.assertTrue(entry.is_listed)
 
@@ -70,22 +70,31 @@ class PublishTest(test_utils.BaseTest):
     invalid_labels = ['', '!', 'f#oo', '?a', 'qwerty!', '9 3']
     for label in invalid_labels:
       handler = test_utils.SetupHandler(
-          '/crisismap/publish', publish.Publish(),
-          'domain=foo.com&label=%s&map_id=%s' % (label, self.map_id))
-      self.assertRaises(base_handler.Error, handler.post)
+          '/crisismap/foo.com/.publish', publish.Publish(),
+          'label=%s&map=%s' % (label, self.map_id))
+      self.assertRaises(base_handler.Error, handler.post, 'foo.com')
 
   def testValidLabels(self):
     """Tests to makes sure valid labels do get published."""
     valid_labels = ['a', 'B', '2', 'a2', 'q-w_e-r_t-y', '93']
     for label in valid_labels:
       handler = test_utils.SetupHandler(
-          '/crisismap/publish', publish.Publish(),
-          'domain=foo.com&label=%s&map_id=%s' % (label, self.map_id))
-      handler.post()
+          '/crisismap/foo.com/.publish', publish.Publish(),
+          'label=%s&map=%s' % (label, self.map_id))
+      handler.post('foo.com')
       entry = model.CatalogEntry.Get('foo.com', label)
       self.assertNotEqual(entry, None)
       self.assertEquals(self.map_id, entry.map_id)
       self.assertFalse(entry.is_listed)
+
+  def testRemove(self):
+    """Tests removal of a catalog entry."""
+    model.CatalogEntry.Create('foo.com', 'abc', self.map_object)
+    self.assertNotEqual(None, model.CatalogEntry.Get('foo.com', 'abc'))
+    handler = test_utils.SetupHandler(
+        '/crisismap/foo.com/.publish', publish.Publish(), 'label=abc&remove=1')
+    handler.post('foo.com')
+    self.assertEquals(None, model.CatalogEntry.Get('foo.com', 'abc'))
 
 if __name__ == '__main__':
   test_utils.main()

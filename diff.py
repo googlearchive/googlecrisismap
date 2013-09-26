@@ -60,4 +60,4 @@ class Diff(base_handler.BaseHandler):
       self.WriteJson({'saved_diff': saved_diff, 'catalog_diffs': catalog_diffs})
 
 
-app = webapp2.WSGIApplication([(r'/crisismap/diff/([\w]+)', Diff)])
+app = webapp2.WSGIApplication([(r'.*/.diff/([\w.-]+)', Diff)])

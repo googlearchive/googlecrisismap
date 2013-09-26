@@ -21,7 +21,7 @@ import StringIO
 import zipfile
 
 import cache
-import map  # pylint: disable=redefined-builtin
+import maps
 import metadata
 import metadata_fetch
 import model
@@ -396,7 +396,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     # Expect a task to be queued...
     self.mox.StubOutWithMock(taskqueue, 'add')
     taskqueue.add(queue_name='metadata', method='GET',
-                  url='/crisismap/metadata_fetch',
+                  url='/crisismap/.metadata_fetch',
                   params={'source': SOURCE_ADDRESS},
                   countdown=metadata_fetch.DetermineFetchDelay(METADATA))
 
@@ -431,23 +431,23 @@ class MetadataFetchTest(test_utils.BaseTest):
 
     # Simulate the first map load.
     handler = test_utils.SetupHandler(
-        '/crisismap/map/' + map_object.id, map.MapById())
-    handler.get(map_object.id)
+        '/crisismap/xyz.com/.map/' + map_object.id, maps.MapById())
+    handler.get('xyz.com', map_object.id)
 
     # Get the metadata cache key mentioned in the map page.
-    key = re.search(r'"metadata_url": "/crisismap/metadata\?key=(\w+)"',
+    key = re.search(r'"metadata_url": "/crisismap/.metadata\?key=(\w+)"',
                     handler.response.body).group(1)
 
     # The map load should have queued two metadata_fetch tasks.
     tasks = sorted(self.PopTasks('metadata'))
     self.assertEqual(2, len(tasks))
-    self.assertTrue(tasks[0]['url'].startswith('/crisismap/metadata_fetch'))
-    self.assertTrue(tasks[1]['url'].startswith('/crisismap/metadata_fetch'))
+    self.assertTrue(tasks[0]['url'].startswith('/crisismap/.metadata_fetch'))
+    self.assertTrue(tasks[1]['url'].startswith('/crisismap/.metadata_fetch'))
 
     # Loading the map again should not queue redundant tasks.
     handler = test_utils.SetupHandler(
-        '/crisismap/map/' + map_object.id, map.MapById())
-    handler.get(map_object.id)
+        '/crisismap/xyz.com/.map/' + map_object.id, maps.MapById())
+    handler.get('xyz.com', map_object.id)
     self.assertEqual(0, len(self.PopTasks('metadata')))
 
     # Execute the queued metadata_fetch tasks.
@@ -467,7 +467,7 @@ class MetadataFetchTest(test_utils.BaseTest):
 
     # metadata.py should now return the cached metadata.
     handler = test_utils.SetupHandler(
-        '/crisismap/metadata?key=' + key, metadata.Metadata())
+        '/crisismap/.metadata?key=' + key, metadata.Metadata())
     handler.get()
     self.assertEquals({
         'GEORSS:' + GEORSS_URL: {

@@ -36,7 +36,7 @@ class RedirectTest(test_utils.BaseTest):
     """Tests a simple redirection."""
     redirect.Redirection(key_name='foo', url='http://example.com/').put()
     handler = test_utils.SetupHandler(
-        'http://google.org/crisismap/redirect/foo', redirect.Redirect())
+        'http://google.org/crisismap/.redirect/foo', redirect.Redirect())
     handler.get('foo')
     self.assertEquals(302, handler.response.status_int)
     self.assertEquals('http://example.com/',
@@ -46,7 +46,7 @@ class RedirectTest(test_utils.BaseTest):
     """Tests a nonexistent redirection target."""
     handler = redirect.Redirect()
     handler = test_utils.SetupHandler(
-        'http://google.org/crisismap/redirect/xyz', redirect.Redirect())
+        'http://google.org/crisismap/.redirect/xyz', redirect.Redirect())
     handler.get('xyz')
     self.assertEquals(302, handler.response.status_int)
     self.assertEquals('http://google.org/',

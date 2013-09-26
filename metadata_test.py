@@ -61,9 +61,9 @@ class MetadataTest(test_utils.BaseTest):
     urls = sorted(task['url'] for task in self.PopTasks('metadata'))
     self.assertEquals(2, len(urls))
     self.assertEqualsUrlWithUnorderedParams(
-        '/crisismap/metadata_fetch?source=GEORSS:http://y.com/b', urls[0])
+        '/crisismap/.metadata_fetch?source=GEORSS:http://y.com/b', urls[0])
     self.assertEqualsUrlWithUnorderedParams(
-        '/crisismap/metadata_fetch?source=KML:http://x.com/a', urls[1])
+        '/crisismap/.metadata_fetch?source=KML:http://x.com/a', urls[1])
 
     # Activating multiple times should not add redundant tasks.
     metadata.ActivateSources(sources)
@@ -77,7 +77,7 @@ class MetadataTest(test_utils.BaseTest):
 
     # Map cache key, an address with metadata, and an address without metadata.
     handler = test_utils.SetupHandler(
-        '/metadata?key=' + key +
+        '/crisismap/.metadata?key=' + key +
         '&source=KML:http://p.com/q' +
         '&source=KML:http://z.com/z',
         metadata.Metadata())
@@ -91,7 +91,7 @@ class MetadataTest(test_utils.BaseTest):
 
   def testGetAndActivate(self):
     handler = test_utils.SetupHandler(
-        '/metadata?source=KML:http://u.com/v', metadata.Metadata())
+        '/crisismap/.metadata?source=KML:http://u.com/v', metadata.Metadata())
     handler.get()
 
     # Requesting metadata should activate the source and queue a task.
@@ -99,13 +99,13 @@ class MetadataTest(test_utils.BaseTest):
     urls = sorted(task['url'] for task in self.PopTasks('metadata'))
     self.assertEquals(1, len(urls))
     self.assertEqualsUrlWithUnorderedParams(
-        '/crisismap/metadata_fetch?source=KML:http://u.com/v', urls[0])
+        '/crisismap/.metadata_fetch?source=KML:http://u.com/v', urls[0])
 
     # Requesting multiple times should not add redundant tasks.
-    test_utils.SetupHandler(
-        '/metadata?source=KML:http://u.com/v', metadata.Metadata()).get()
-    test_utils.SetupHandler(
-        '/metadata?source=KML:http://u.com/v', metadata.Metadata()).get()
+    test_utils.SetupHandler('/crisismap/.metadata?source=KML:http://u.com/v',
+                            metadata.Metadata()).get()
+    test_utils.SetupHandler('/crisismap/.metadata?source=KML:http://u.com/v',
+                            metadata.Metadata()).get()
     self.assertEquals(0, len(self.PopTasks('metadata')))
 
 if __name__ == '__main__':

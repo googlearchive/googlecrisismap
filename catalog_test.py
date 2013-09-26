@@ -31,11 +31,13 @@ class CatalogTest(test_utils.BaseTest):
   def testGet(self):
     """Tests the Catalog GET handler."""
     model.CatalogEntry.Create('foo.com', 'label', self.map_object)
-    handler = test_utils.SetupHandler('/crisismap/a/foo.com', catalog.Catalog())
+    handler = test_utils.SetupHandler(
+        '/crisismap/foo.com/.catalog', catalog.Catalog())
     handler.get('foo.com')
     result = handler.response.body
     self.assertTrue('test map' in result, 'result: %s' % result)
-    self.assertTrue('/crisismap/a/foo.com/label' in result, result)
+    self.assertTrue(
+        '/crisismap/foo.com/label' in result, result)
 
   def testPost(self):
     """Tests the Catalog POST handler."""
@@ -44,8 +46,8 @@ class CatalogTest(test_utils.BaseTest):
     # Catalog entries are not listed in the Map Picker by default.
     self.assertFalse(model.CatalogEntry.Get('foo.com', 'label1').is_listed)
     self.assertFalse(model.CatalogEntry.Get('foo.com', 'label2').is_listed)
-    handler = test_utils.SetupHandler('/crisismap/a/foo.com', catalog.Catalog(),
-                                      'label1=True')
+    handler = test_utils.SetupHandler(
+        '/crisismap/foo.com/.catalog', catalog.Catalog(), 'label1=True')
     handler.post('foo.com')
     self.assertTrue(model.CatalogEntry.Get('foo.com', 'label1').is_listed)
     self.assertFalse(model.CatalogEntry.Get('foo.com', 'label2').is_listed)

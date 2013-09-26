@@ -16,6 +16,7 @@ __author__ = 'muzny@google.com (Grace Muzny)'
 
 import webapp2
 
+import base_handler
 import model
 import perms
 
@@ -30,9 +31,7 @@ class Share(webapp2.RequestHandler):
     """Adds the recipient to the appropriate permission areas."""
     map_object = model.Map.Get(map_id)
     if map_object is None:
-      self.error(404)
-      self.response.out.write('Map %s not found.' % map_id)
-      return
+      raise base_handler.Error(404, 'Map %r not found.' % map_id)
 
     role = self.request.get('role')
     recipient_email = self.request.get('recipient')
@@ -40,36 +39,26 @@ class Share(webapp2.RequestHandler):
 
     # If these are empty, we shouldn't try to do anything.
     if not role or not recipient_email:
-      self.response.set_status(404)
-      self.error(404)
-      self.response.out.write('role, recipient'
-                              ' parameters are required.')
-      return
+      raise base_handler.Error(400, 'role and recipient params are required')
 
     recipient_user = users.User(recipient_email)
     # Give the user the proper permission.
     if role not in [perms.Role.MAP_VIEWER, perms.Role.MAP_EDITOR,
                     perms.Role.MAP_OWNER]:
-      # Invalid permission type.
-      self.response.set_status(404)
-      self.error(404)
-      self.response.out.write('Role type invalid.')
-      return
+      raise base_handler.Error(400, '%r is not a valid role.' % role)
 
     # Change the recipient's permission level as specified.
     map_object.ChangePermissionLevel(role, recipient_user)
     # Send the recipient an email.
-    self.SendPermissionChangeEmail(recipient_email, map_object,
-                                   role, message)
+    self.SendPermissionChangeEmail(recipient_email, map_object, role, message)
     self.response.set_status(201)
 
   def SendPermissionChangeEmail(self, recipient_email, map_object,
                                 role, message):
     """Sends recipient_email an email with info of map and permission level."""
     user = users.get_current_user()
-    subject = ('%s has shared "%s" with you' %
-               (user.email(), map_object.title))
-    url = self.request.host_url + '/crisismap/maps/' + map_object.id
+    subject = '%s has shared "%s" with you' % (user.email(), map_object.title)
+    url = self.request.host_url + '/crisismap/.maps/' + map_object.id
     body = """
 Your permission level for %s has changed to %s.
 Access the map at: %s
@@ -77,4 +66,4 @@ Access the map at: %s
 %s""" % (map_object.title, role, url, message)
     mail.send_mail(user.email(), recipient_email, subject, body)
 
-app = webapp2.WSGIApplication([(r'/crisismap/share/([\w-]+)', Share)])
+app = webapp2.WSGIApplication([(r'/crisismap/.share/([\w-]+)', Share)])

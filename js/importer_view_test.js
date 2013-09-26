@@ -64,7 +64,7 @@ ImporterViewTest.prototype.openImporter_ = function() {
   });
 
   this.setForTest_('goog.net.XhrIo.send', createMockFunction());
-  expectCall(goog.net.XhrIo.send)('/crisismap/api/maps', _)
+  expectCall(goog.net.XhrIo.send)('/crisismap/.api/maps', _)
       .willOnce(function(url, callback, method, data) {
         callback({target: {
           isSuccess: function() {

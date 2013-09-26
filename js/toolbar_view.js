@@ -203,7 +203,7 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ = function(mapModel, opt_mapId) {
     // Request diffs and show them if there is a map ID.
     var loading = cm.ui.create('span', {}, 'Loading diff...');
     cm.ui.append(popup, loading);
-    goog.net.XhrIo.send('/crisismap/diff/' + opt_mapId, function(e) {
+    goog.net.XhrIo.send('/crisismap/.diff/' + opt_mapId, function(e) {
       cm.ui.remove(loading);
       if (e.target.isSuccess()) {
         // Stored diffs, along with method to show one based on the select

@@ -686,7 +686,7 @@ class EmptyMap(Map):
 
   def __init__(self):
     Map.__init__(self, MapModel(
-        key_name='0', owners=[], editors=[], viewers=[], domains=[],
+        key_name='0', owners=[], editors=[], viewers=[], domains=['gmail.com'],
         world_readable=True, title=self.TITLE, description=self.DESCRIPTION))
 
   def GetCurrent(self):

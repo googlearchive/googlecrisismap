@@ -10,23 +10,27 @@
 # OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 # specific language governing permissions and limitations under the License.
 
-"""Tests for map.py."""
+"""Tests for maps.py."""
 
 __author__ = 'shakusa@google.com (Steve Hakusa)'
 
-import map  # pylint: disable=redefined-builtin
+import maps
 import model
 import test_utils
 
 
 class MapTest(test_utils.BaseTest):
-  """Tests for the map.py request handlers."""
+  """Tests for single-map pages served by maps.py."""
+
+  def setUp(self):
+    test_utils.BaseTest.setUp(self)
+    model.Config.Set('primary_domain', 'primary.com')
 
   def testGetClientConfig(self):
     """Confirms that GetClientConfig sets up the correct JS parameters."""
 
     analytics_id = 'US-foo'
-    config = map.ClientConfig.Create(
+    config = maps.ClientConfig.Create(
         'goog-test',
         allowed_referer_domains=['google.org', 'cr.appspot.com'],
         hide_footer=True,
@@ -61,76 +65,106 @@ class MapTest(test_utils.BaseTest):
     config_dict = config.AsDict()
 
     # Try invalid referers.
-    self.assertEquals({}, map.GetClientConfig(None, None))
-    self.assertEquals({}, map.GetClientConfig('', ''))
-    self.assertEquals({}, map.GetClientConfig('goog-test', None))
+    self.assertEquals({}, maps.GetClientConfig(None, None))
+    self.assertEquals({}, maps.GetClientConfig('', ''))
+    self.assertEquals({}, maps.GetClientConfig('goog-test', None))
 
     # Try referers that aren't allowed to use this config.
-    self.assertEquals({}, map.GetClientConfig(
+    self.assertEquals({}, maps.GetClientConfig(
         'goog-test', 'http://foo.appspot.com'))
-    self.assertEquals({}, map.GetClientConfig(
+    self.assertEquals({}, maps.GetClientConfig(
         'goog-test', 'http://fakegoogle.org'))
     # Try a nonexistent config.
-    self.assertEquals({}, map.GetClientConfig(
+    self.assertEquals({}, maps.GetClientConfig(
         'goog-test2', 'http://cr.appspot.com'))
 
     # Try referers that should be allowed to use this config.
-    self.assertEquals(config_dict, map.GetClientConfig(
+    self.assertEquals(config_dict, maps.GetClientConfig(
         'goog-test', None, dev_mode=True))
-    self.assertEquals(config_dict, map.GetClientConfig(
+    self.assertEquals(config_dict, maps.GetClientConfig(
         'goog-test', 'http://cr.appspot.com'))
-    self.assertEquals(config_dict, map.GetClientConfig(
+    self.assertEquals(config_dict, maps.GetClientConfig(
         'goog-test', 'https://www.google.org'))
 
     # test that setting default overrides even without a referer domain.
-    map.ClientConfig.Create('default', enable_editing=True).put()
-    self.assertTrue(map.GetClientConfig(None, None)['enable_editing'])
+    maps.ClientConfig.Create('default', enable_editing=True).put()
+    self.assertTrue(maps.GetClientConfig(None, None)['enable_editing'])
 
   def testGetMapMenuItems(self):
     """Tests GetMapMenuItems()."""
     test_utils.BecomeAdmin()
-    m1 = model.CatalogEntryModel(key_name='foo.com:m1', domain='foo.com',
-                                 label='m1', title='Map 1', is_listed=True)
-    m1.put()
+    model.CatalogEntryModel(key_name='foo.com:m1', domain='foo.com',
+                            label='m1', title='Map 1', is_listed=True).put()
+    model.CatalogEntryModel(key_name='primary.com:m1', domain='primary.com',
+                            label='m2', title='Map 2', is_listed=True).put()
 
-    map_catalog = map.GetMapMenuItems('foo.com')
-    self.assertEquals('Map 1', map_catalog[0]['title'])
-    self.assertEquals('/crisismap/a/foo.com/m1', map_catalog[0]['url'])
+    self.assertEquals([{'title': 'Map 1', 'url': '../foo.com/m1'}],
+                      maps.GetMapMenuItems('foo.com', '../'))
+    self.assertEquals([{'title': 'Map 2', 'url': '../m2'}],
+                      maps.GetMapMenuItems('primary.com', '../'))
 
   def testClientConfigOverride(self):
     """Verifies that query parameters can override client config settings."""
     test_utils.BecomeAdmin()
-    config = map.GetConfig(test_utils.SetupRequest('/?dev=1&show_login=true'))
+    config = maps.GetConfig(test_utils.SetupRequest('/?dev=1&show_login=1'), '')
     self.assertEquals(True, config['show_login'])
 
   def testGetMapsApiClientId(self):
     """Tests the GetMapsApiClientId method."""
     self.assertEquals('google-crisis-response',
-                      map.GetMapsApiClientId('google.com'))
+                      maps.GetMapsApiClientId('google.com'))
     self.assertEquals('google-crisis-response',
-                      map.GetMapsApiClientId('google.org'))
+                      maps.GetMapsApiClientId('google.org'))
     self.assertEquals('google-crisis-response',
-                      map.GetMapsApiClientId('foo.google.com'))
+                      maps.GetMapsApiClientId('foo.google.com'))
     self.assertEquals('google-crisis-response',
-                      map.GetMapsApiClientId('foo.google.com:8000'))
-    self.assertEquals('', map.GetMapsApiClientId('localhost'))
-    self.assertEquals('', map.GetMapsApiClientId('localhost:8000'))
-    self.assertEquals('', map.GetMapsApiClientId('foo.appspot.com'))
-    self.assertEquals('', map.GetMapsApiClientId('foo.googleplex.com'))
+                      maps.GetMapsApiClientId('foo.google.com:8000'))
+    self.assertEquals('', maps.GetMapsApiClientId('localhost'))
+    self.assertEquals('', maps.GetMapsApiClientId('localhost:8000'))
+    self.assertEquals('', maps.GetMapsApiClientId('foo.appspot.com'))
+    self.assertEquals('', maps.GetMapsApiClientId('foo.googleplex.com'))
 
   def testMapsApiUrlI18n(self):
     """Verifies that language and region are set correctly for the Maps API."""
-    config = map.GetConfig(test_utils.SetupRequest('/'))
+    config = maps.GetConfig(test_utils.SetupRequest('/'), '')
     self.assertTrue('language=en' in config['maps_api_url'])
     self.assertFalse('region=' in config['maps_api_url'])
 
-    config = map.GetConfig(test_utils.SetupRequest('/?hl=ja'))
+    config = maps.GetConfig(test_utils.SetupRequest('/?hl=ja'), '')
     self.assertTrue('language=ja' in config['maps_api_url'])
     self.assertFalse('region=' in config['maps_api_url'])
 
-    config = map.GetConfig(test_utils.SetupRequest('/?hl=th&gl=IN'))
+    config = maps.GetConfig(test_utils.SetupRequest('/?hl=th&gl=IN'), '')
     self.assertTrue('language=th' in config['maps_api_url'])
     self.assertTrue('region=IN' in config['maps_api_url'])
+
+
+class MapListTest(test_utils.BaseTest):
+  """Tests for the map listing pages served by maps.py."""
+
+  def testGet(self):
+    """Tests the map listing page."""
+    test_utils.BecomeAdmin()
+    m1 = model.Map.Create('{"title": "Moo"}', 'cows.net', viewers=['x@y.com'])
+    m2 = model.Map.Create('{"title": "Arf"}', 'dogs.org', viewers=['x@y.com'])
+    test_utils.SetUser('x@y.com')
+
+    handler = test_utils.SetupHandler('/crisismap/.maps', maps.MapList())
+    handler.get('')
+    result = handler.response.body
+    self.assertTrue('Moo' in result, result)
+    self.assertTrue('.maps/' + m1.id in result, result)
+    self.assertTrue('Arf' in result, result)
+    self.assertTrue('.maps/' + m2.id in result, result)
+
+    handler = test_utils.SetupHandler(
+        '/crisismap/dogs.org/.maps', maps.MapList())
+    handler.get('dogs.org')
+    result = handler.response.body
+    self.assertTrue('Moo' not in result, result)
+    self.assertTrue('.maps/' + m1.id not in result, result)
+    self.assertTrue('Arf' in result, result)
+    self.assertTrue('.maps/' + m2.id in result, result)
 
 if __name__ == '__main__':
   test_utils.main()

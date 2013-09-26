@@ -19,7 +19,6 @@ import copy
 import logging
 import re
 import StringIO
-import urllib
 import xml.etree.ElementTree
 import zipfile
 
@@ -401,18 +400,12 @@ class GetLegendItems(base_handler.BaseHandler):
   KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
   KMZ_CONTENT_TYPE = 'application/vnd.google-earth.kmz'
 
-  def get(self, kml_url=None):  # pylint: disable=g-bad-name
-    """Returns legend items extracted from kml at given URL.
-
-    Args:
-      kml_url: URL-encoded URL of the KML or KMZ resource.
-    """
-    kml = self.GetKmlFromUrl(jsonp.SanitizeUrl(urllib.unquote(kml_url)))
+  def get(self):  # pylint: disable=g-bad-name
+    """Returns legend items extracted from kml at given URL."""
+    url = jsonp.SanitizeUrl(self.request.get('url'))
+    kml = self.GetKmlFromUrl(url)
     if kml is None:
-      self.error(400)
-      self.response.out.write('Failed to get KML from ' +
-                              urllib.unquote(kml_url))
-      return
+      raise base_handler.Error(400, 'Failed to get KML from ' + url)
 
     (icon_styles, line_styles, polygon_styles,
      static_icon_urls, colors) = Extract(kml)
@@ -463,4 +456,4 @@ class GetLegendItems(base_handler.BaseHandler):
       return None
 
 
-app = webapp2.WSGIApplication([(r'/crisismap/legend/([^\s]+)', GetLegendItems)])
+app = webapp2.WSGIApplication([(r'.*/.legend', GetLegendItems)])

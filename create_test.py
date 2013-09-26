@@ -30,8 +30,8 @@ class CreateTest(test_utils.BaseTest):
     # foo@google.com should be able to create a map.
     test_utils.SetUser('foo@google.com')
     handler = test_utils.SetupHandler(
-        '/create?domain=xyz.com', create.Create(), '')
-    handler.post()
+        '/crisismap/xyz.com/.create', create.Create(), '')
+    handler.post('xyz.com')
     # Confirm that a map was created.
     location = handler.response.headers['Location']
     map_object = model.Map.Get(location.split('/')[-1])
@@ -41,8 +41,9 @@ class CreateTest(test_utils.BaseTest):
   def testCreateWithoutPermission(self):
     # Without MAP_CREATOR, foo@google.com shouldn't be able to create a map.
     test_utils.SetUser('foo@google.com')
-    handler = test_utils.SetupHandler('/create', create.Create())
-    self.assertRaises(perms.AuthorizationError, handler.post)
+    handler = test_utils.SetupHandler(
+        '/crisismap/xyz.com/.create', create.Create())
+    self.assertRaises(perms.AuthorizationError, handler.post, 'xyz.com')
 
   def testDomainRole(self):
     # Grant MAP_CREATOR permission to foo@xyz.com
@@ -51,8 +52,8 @@ class CreateTest(test_utils.BaseTest):
     # foo@xyz.com should be able to create a map.
     test_utils.SetUser(user)
     handler = test_utils.SetupHandler(
-        '/create?domain=xyz.com', create.Create(), '')
-    handler.post()
+        '/crisismap/xyz.com/.create', create.Create(), '')
+    handler.post('xyz.com')
     location = handler.response.headers['Location']
     # Check the map; initial_domain_role is unset so domain_role should be None.
     map_object = model.Map.Get(location.split('/')[-1])
@@ -66,8 +67,8 @@ class CreateTest(test_utils.BaseTest):
     # Create another map.
     test_utils.SetUser(user)
     handler = test_utils.SetupHandler(
-        '/create?domain=xyz.com', create.Create(), '')
-    handler.post()
+        '/crisismap/.create?domain=xyz.com', create.Create(), '')
+    handler.post('')
     location = handler.response.headers['Location']
     # Check the map; initial_domain_role is set so domain_role should be set.
     map_object = model.Map.Get(location.split('/')[-1])

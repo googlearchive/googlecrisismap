@@ -15,7 +15,7 @@ specific language governing permissions and limitations under the License.
 
 {% block navbar %}
   <div class="cm-button-area">
-    <form method="post" action="/crisismap/create">
+    <form method="post" action="/crisismap/.create">
       <input type="hidden" name="domain" value="{{domain}}">
       <input type="submit" class="cm-create cm-button"
           title="Create a new map" value="Create map">
@@ -25,7 +25,7 @@ specific language governing permissions and limitations under the License.
 {% endblock navbar %}
 
 {% block content %}
-  <form action="/crisismap/a/{{domain}}" method="post">
+  <form method="post">
     <table class="cm-map-list" summary="The list of catalog entries visible to you.">
       <tr>
         <th colspan=5 class="cm-map-list-header">
@@ -45,8 +45,8 @@ specific language governing permissions and limitations under the License.
                    {{e.is_listed|yesno:"checked,"}}></td>
         <td>{{e.label}}</td>
         <td>
-          <a href="/crisismap/a/{{e.domain}}/{{e.label}}">
-            /crisismap/a/{{e.domain}}/{{e.label}}
+          <a href="/crisismap/{{e.domain}}/{{e.label}}">
+            /crisismap/{{e.domain}}/{{e.label}}
           </a>
         </td>
         <td>{{e.title}}</td>

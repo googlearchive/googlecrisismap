@@ -44,7 +44,7 @@ class Catalog(base_handler.BaseHandler):
       if bool(entry.is_listed) != value:
         entry.is_listed = value
         entry.Put()
-    self.redirect('/crisismap/a/' + domain)
+    self.redirect('.catalog')
 
 
-app = webapp2.WSGIApplication([(r'.*/([\w.-]+)', Catalog)])
+app = webapp2.WSGIApplication([(r'.*/([\w.-]+\.\w+)/.catalog', Catalog)])

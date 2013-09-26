@@ -20,6 +20,7 @@ import os
 import webapp2
 
 import model
+import perms
 # pylint: disable=g-import-not-at-top
 try:
   import languages
@@ -125,7 +126,7 @@ class BaseHandler(webapp2.RequestHandler):
 
   def handle_exception(self, exception, debug):  # pylint: disable=g-bad-name
     """Renders a basic template on error."""
-    if isinstance(exception, model.AuthorizationError):
+    if isinstance(exception, perms.AuthorizationError):
       self.response.set_status(403, message=exception.message)
       self.response.out.write(self.RenderTemplate('unauthorized.html', {
           'exception': exception,

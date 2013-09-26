@@ -18,11 +18,11 @@ specific language governing permissions and limitations under the License.
 <head>
   <title>Google Crisis Map</title>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta itemprop="image" content="/static/favicon.ico">
+  <meta itemprop="image" content="/crisismap/.static/favicon.ico">
   {# Links to stylesheets #}
   {% block stylesheets %}
-    <link rel="stylesheet" href="/crisismap/static/mapviewer.css">
-    <link rel="stylesheet" href="/crisismap/static/admin.css">
+    <link rel="stylesheet" href="/crisismap/.static/mapviewer.css">
+    <link rel="stylesheet" href="/crisismap/.static/admin.css">
   {% endblock stylesheets %}
 </head>
 
@@ -40,9 +40,9 @@ specific language governing permissions and limitations under the License.
     <ul>
       {# Navigation links #}
       {% block navlinks %}
-        <li><a href="/crisismap/maps">Your list of maps</a></li>
+        <li><a href="/crisismap/.maps">Your list of maps</a></li>
         {% if user_domain %}
-          <li><a href="/crisismap/a/{{user_domain}}">Published maps</a></li>
+          <li><a href="/crisismap/{{user_domain}}/.catalog">Published maps</a></li>
         {% endif %}
       {% endblock navlinks %}
     </ul>

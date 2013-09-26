@@ -15,7 +15,7 @@ specific language governing permissions and limitations under the License.
 
 {% block navbar %}
   <div class="cm-button-area">
-    <form method="post" action="/crisismap/create">
+    <form method="post" action="/crisismap/.create">
       {% if creator_domains|length > 1 %}
         <select name="domain">
           {% for domain in creator_domains %}
@@ -37,31 +37,31 @@ specific language governing permissions and limitations under the License.
 {% block content %}
   <table class="cm-map-list">
     <tr>
-      <th colspan=4 class="cm-map-list-header">Maps you can view</th>
+      <th colspan=5 class="cm-map-list-header">{{title}}</th>
     </tr>
     <tr>
-      <th>Draft Version</th>
+      <th>Draft version</th>
       <th>Created</th>
       <th>Last updated</th>
-      <th>Map Operations</th>
-      <th>Published Version</th>
+      <th>Delete</th>
+      <th>Published version</th>
     </tr>
     {% for m in maps %}
       <tr>
-        <td><a href="maps/{{m.id}}" title="{{m.description}}"
+        <td><a href=".maps/{{m.id}}" title="{{m.description}}"
             >{{m.title}}</a></td>
         <td>{{m.created|timesince}} ago by {{m.creator}}</td>
         <td>{{m.last_updated|timesince}} ago by {{m.last_updater}}</td>
         <td>
-          <form action="/crisismap/delete" method="post">
-            <input name="map_id" type=hidden value="{{m.id}}">
+          <form action="/crisismap/.delete" method="post">
+            <input name="map" type=hidden value="{{m.id}}">
             <input type=submit value="Delete Map">
           </form>
         </td>
         <td class="cm-publish-status">
           {% for e in m.catalog_entries %}
             <div>
-              <a href="/crisismap/a/{{e.domain}}/{{e.label}}">
+              <a href="/crisismap/{{e.domain}}/{{e.label}}">
                 {{e.domain}}/{{e.label}}
               </a>
               <span class="cm-publish-age">
@@ -74,14 +74,15 @@ specific language governing permissions and limitations under the License.
               </span>
               {% if e.domain in catalog_domains %}
                 {% ifnotequal e.map_version_key m.current_version_key %}
-                  <form action="/crisismap/publish" method="post">
+                  <form action="/crisismap/.publish" method="post">
                     <input name="label" type=hidden value="{{e.label}}">
-                    <input name="map_id" type=hidden value="{{m.id}}">
+                    <input name="map" type=hidden value="{{m.id}}">
                     <input name="domain" type=hidden value="{{e.domain}}">
                     <input type=submit value="Republish">
                   </form>
                 {% endifnotequal %}
-                <form action="/crisismap/unpublish" method="post">
+                <form action="/crisismap/.publish" method="post">
+                  <input name="remove" type=hidden value="1">
                   <input name="domain" type=hidden value="{{e.domain}}">
                   <input name="label" type=hidden value="{{e.label}}">
                   <input type=submit value="Unpublish">
@@ -90,14 +91,14 @@ specific language governing permissions and limitations under the License.
             </div>
           {% endfor %}
           {% if catalog_domains %}
-            <form action="/crisismap/publish" method="post">
+            <form action="/crisismap/.publish" method="post">
               <select name="domain">
                 {% for domain in catalog_domains %}
                   <option value="{{domain}}">{{domain}}</option>
                 {% endfor %}
               </select>
               <input name="label" size=20>
-              <input name="map_id" type=hidden value="{{m.id}}">
+              <input name="map" type=hidden value="{{m.id}}">
               <input type=submit value="Publish">
             </form>
           {% endif %}

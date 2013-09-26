@@ -26,7 +26,7 @@ goog.require('goog.Uri');
 goog.require('goog.net.Jsonp');
 goog.require('goog.net.XhrIo');
 
-var JSON_PROXY_URL = '/crisismap/jsonp';
+var JSON_PROXY_URL = '/crisismap/.jsonp';
 
 // Period to refresh the dynamic tile index json.
 var INDEX_REFRESH_PERIOD_MS = 180000; // 3 min
@@ -34,9 +34,9 @@ var INDEX_REFRESH_PERIOD_MS = 180000; // 3 min
 // Period to wait for tiles to load before swapping in a new tile url.
 var MAX_TILE_LOAD_MS = 2000; // 2s
 
-var TILESET_CONFIGURE_URL = '/crisismap/wms/configure_tileset';
+var TILESET_CONFIGURE_URL = '/crisismap/.wms/configure';
 
-var TILECACHE_URL = '/crisismap/tilecache';
+var TILECACHE_URL = '/crisismap/.wms/tiles';
 
 /**
  * A map overlay which displays tiles and a bounding box.  It wraps an

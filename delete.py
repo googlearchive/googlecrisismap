@@ -24,9 +24,9 @@ class Delete(base_handler.BaseHandler):
   """Handler for deleting a map and its related entities."""
 
   def post(self):  # pylint: disable=g-bad-name
-    map_id = self.request.get('map_id')
+    map_id = self.request.get('map')
     self.DeleteMap(map_id)
-    self.redirect('/crisismap/maps')
+    self.redirect('.maps')
 
   def DeleteMap(self, map_id):
     # This method is not transactional because cross-entity group transactions

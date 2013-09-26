@@ -656,43 +656,43 @@ cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
       goog.style.setElementShown(this.featurePaletteContainer_, true);
 
       this.extractRequestSent_ = true;
-      goog.net.XhrIo.send('/crisismap/legend/' +
-          encodeURIComponent(url), goog.bind(function(event) {
-            if (this.disposed_) {
-              return;
-            }
+      goog.net.XhrIo.send('/crisismap/.legend?url=' + encodeURIComponent(url),
+                          goog.bind(function(event) {
+        if (this.disposed_) {
+          return;
+        }
 
-            goog.style.setElementShown(this.loadingElem_, false);
-            var features = [];
-            var colors = new goog.structs.Set();
-            if (event.target.isSuccess()) {
-              var graphics = event.target.getResponseJson();
-              if (graphics) {
-                features = this.constructFeatureElements_(graphics);
-                colors.addAll(graphics['colors']);
-              }
-            }
-            // Add extracted features, or a single div if there are none because
-            // the palette requires at least one element.
-            this.featurePalette_.setContent(features.length ?
-                features : [cm.ui.create('div')]);
-            goog.style.setElementShown(this.featurePaletteContainer_,
+        goog.style.setElementShown(this.loadingElem_, false);
+        var features = [];
+        var colors = new goog.structs.Set();
+        if (event.target.isSuccess()) {
+          var graphics = event.target.getResponseJson();
+          if (graphics) {
+            features = this.constructFeatureElements_(graphics);
+            colors.addAll(graphics['colors']);
+          }
+        }
+        // Add extracted features, or a single div if there are none because
+        // the palette requires at least one element.
+        this.featurePalette_.setContent(features.length ?
+            features : [cm.ui.create('div')]);
+        goog.style.setElementShown(this.featurePaletteContainer_,
                                    features.length);
 
-            // Add all the default colors to the set, and then pick a fixed
-            // number of colors from the beginning of the set, to display.
-            colors.addAll(cm.LegendEditor.DEFAULT_COLORS_);
-            this.colorPalette_.setColors(goog.array.slice(
-                colors.getValues(), 0, cm.LegendEditor.DEFAULT_COLORS_.length));
+        // Add all the default colors to the set, and then pick a fixed
+        // number of colors from the beginning of the set, to display.
+        colors.addAll(cm.LegendEditor.DEFAULT_COLORS_);
+        this.colorPalette_.setColors(goog.array.slice(
+            colors.getValues(), 0, cm.LegendEditor.DEFAULT_COLORS_.length));
 
-            goog.style.setElementShown(this.featurePaletteElem_, true);
+        goog.style.setElementShown(this.featurePaletteElem_, true);
 
-            this.extractRequestSent_ = false;
-            if (this.extractRequestPending_) {
-              this.extractRequestPending_ = false;
-              this.handleUrlChanged_(draft);
-            }
-          }, this));
+        this.extractRequestSent_ = false;
+        if (this.extractRequestPending_) {
+          this.extractRequestPending_ = false;
+          this.handleUrlChanged_(draft);
+        }
+      }, this));
     } else {
       this.extractRequestPending_ = true;
     }

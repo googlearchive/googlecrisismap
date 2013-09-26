@@ -92,4 +92,4 @@ class Admin(base_handler.BaseHandler):
     self.redirect(self.request.path_qs)
 
 
-app = webapp2.WSGIApplication([(r'.*/([\w.-]+)', Admin)])
+app = webapp2.WSGIApplication([(r'.*/([\w.-]+\.\w+)/.admin', Admin)])

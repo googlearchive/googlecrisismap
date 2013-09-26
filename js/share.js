@@ -439,7 +439,7 @@ cm.ShareButton.MSG_SHARE_BUTTON_ = goog.getMsg('Share');
 cm.ShareBox.GOOGL_API_URL = 'https://www.googleapis.com/urlshortener/v1/url';
 
 /** URL for the JSON proxy. TODO(kpy): make this configurable for CW &c. */
-cm.ShareBox.JSON_PROXY_URL = '/crisismap/jsonp';
+cm.ShareBox.JSON_PROXY_URL = '/crisismap/.jsonp';
 
 /**
  * @desc Title for the share box.

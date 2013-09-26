@@ -16,6 +16,7 @@ __author__ = 'muzny@google.com (Grace Muzny)'
 
 import os
 
+import base_handler
 import model
 import perms
 import share
@@ -46,11 +47,11 @@ class ShareTest(test_utils.BaseTest):
 
     for role in ['MAP_VIEWER', 'MAP_EDITOR', 'MAP_OWNER']:
       handler = test_utils.SetupHandler(
-          '/share/%s' % self.map.id, share.Share(),
+          '/crisismap/.share/%s' % self.map.id, share.Share(),
           'role=%s&recipient=%s&message=%s' % (role, user.email(), message))
       subject = ('%s has shared "%s" with you' %
                  (users.get_current_user().email(), self.map.title))
-      url = handler.request.host_url + '/crisismap/maps/' + self.map.id
+      url = handler.request.host_url + '/crisismap/.maps/' + self.map.id
       body = """
 Your permission level for %s has changed to %s.
 Access the map at: %s
@@ -72,12 +73,12 @@ Access the map at: %s
     message = 'hello'
     for role in ['MAP_VIEWER', 'MAP_EDITOR', 'MAP_OWNER']:
       handler = test_utils.SetupHandler(
-          '/share/%s' % self.map.id, share.Share(),
+          '/crisismap/.share/%s' % self.map.id, share.Share(),
           'role=%s&recipient=%s&message=%s' % (role, user.email(), message))
 
       subject = ('%s has shared "%s" with you' %
                  (users.get_current_user().email(), self.map.title))
-      url = handler.request.host_url + '/crisismap/maps/' + self.map.id
+      url = handler.request.host_url + '/crisismap/.maps/' + self.map.id
       body = """
 Your permission level for %s has changed to %s.
 Access the map at: %s
@@ -100,22 +101,17 @@ Access the map at: %s
   def testSharePostFailureInvalidId(self):
     """Shares the map with another person-fails from invalid map id."""
     invalid_map_id = 'xxx' + self.map.id
-    handler = test_utils.SetupHandler('/share/%s' % invalid_map_id,
-                                      share.Share(),
-                                      'role=%s&recipient=%s&message=%s'
-                                      % ('MAP_VIEWER', 'user@gmail.com',
-                                         'hello'))
-    handler.post(invalid_map_id)
-    self.assertEquals(404, handler.response.status_int)
+    handler = test_utils.SetupHandler(
+        '/crisismap/.share/%s' % invalid_map_id, share.Share(),
+        'role=MAP_VIEWER&recipient=user@gmail.com&message=hello')
+    self.assertRaises(base_handler.Error, handler.post, invalid_map_id)
 
   def testSharePostFailureInvalidRole(self):
     """Shares the map with another person-fails from invalid role type."""
-    handler = test_utils.SetupHandler('/share/%s' % self.map.id,
-                                      share.Share(),
-                                      'role=%s&recipient=%s&message=%s'
-                                      % ('other', 'user@gmail.com', 'hello'))
-    handler.post(self.map.id)
-    self.assertEquals(404, handler.response.status_int)
+    handler = test_utils.SetupHandler(
+        '/crisismap/.share/%s' % self.map.id, share.Share(),
+        'role=other&recipient=user@gmail.com&message=hello')
+    self.assertRaises(base_handler.Error, handler.post, self.map.id)
 
   def testSharePostFailureMissingParameter(self):
     """Shares the map with another person-fails from missing parameter."""
@@ -125,17 +121,15 @@ Access the map at: %s
 
     # Try with missing recipient email.
     handler = test_utils.SetupHandler(
-        '/share/%s' % self.map.id, share.Share(),
+        '/crisismap/.share/%s' % self.map.id, share.Share(),
         'role=%s&message=%s' % (role, message))
-    handler.post(self.map.id)
-    self.assertEquals(404, handler.response.status_int)
+    self.assertRaises(base_handler.Error, handler.post, self.map.id)
 
     # Try with missing role.
     handler = test_utils.SetupHandler(
-        '/share/%s' % self.map.id, share.Share(),
+        '/crisismap/.share/%s' % self.map.id, share.Share(),
         'recipient=%s&message=%s' % (email, message))
-    handler.post(self.map.id)
-    self.assertEquals(404, handler.response.status_int)
+    self.assertRaises(base_handler.Error, handler.post, self.map.id)
 
 
 if __name__ == '__main__':

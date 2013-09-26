@@ -36,7 +36,7 @@ class AdminTest(test_utils.BaseTest):
   def testGet_WithPermissions(self):
     test_utils.SetUser('admin@xyz.com')
     handler = test_utils.SetupHandler(
-        '/crisismap/a/.admin/xyz.com', admin.Admin())
+        '/crisismap/xyz.com/.admin', admin.Admin())
     handler.get('xyz.com')
     self.assertEqual(200, handler.response.status_int)
     result = handler.response.body
@@ -50,7 +50,7 @@ class AdminTest(test_utils.BaseTest):
     # domain, so this should produce a permissions failure
     test_utils.SetUser('nobody@xyz.com')
     handler = test_utils.SetupHandler(
-        '/crisismap/a/.admin/xyz.com', admin.Admin())
+        '/crisismap/xyz.com/.admin', admin.Admin())
     self.assertRaises(perms.AuthorizationError, handler.get, 'xyz.com')
 
   def testPost(self):
@@ -65,14 +65,14 @@ class AdminTest(test_utils.BaseTest):
         ('new_email.CATALOG_EDITOR', 'True')
         ])
     test_utils.BecomeAdmin()
-    handler = test_utils.SetupHandler('/crisismap/a/.admin/xyz.com',
+    handler = test_utils.SetupHandler('/crisismap/xyz.com/.admin',
                                       admin.Admin(), post_data)
     handler.post('xyz.com')
     response = handler.response
     # Should redirect back to the admin page
     self.assertTrue(300 <= response.status_int < 400)
     self.assertTrue(
-        '/crisismap/a/.admin/xyz.com' in response.headers['Location'])
+        '/crisismap/xyz.com/.admin' in response.headers['Location'])
 
     self.assertItemsEqual([perms.Role.DOMAIN_ADMIN, perms.Role.CATALOG_EDITOR],
                           perms.GetDomainRoles('catalog@xyz.com', 'xyz.com'))

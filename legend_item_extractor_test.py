@@ -584,8 +584,8 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     self.mox.ReplayAll()
 
     handler = test_utils.SetupHandler(
-        '/crisismap/legend/' + urllib.quote(url), GetLegendItems())
-    handler.get(urllib.quote(url))
+        '/crisismap/.legend?url=' + urllib.quote(url), GetLegendItems())
+    handler.get()
     self.assertEquals(
         json.dumps({'icon_styles': items[0], 'line_styles': items[1],
                     'polygon_styles': items[2],
@@ -602,21 +602,20 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     self.mox.ReplayAll()
 
     handler = test_utils.SetupHandler(
-        '/crisismap/legend/' + urllib.quote(url), GetLegendItems())
-    handler.get(urllib.quote(url))
-    self.assertEquals(400, handler.response.status_int)
+        '/crisismap/.legend?url=' + urllib.quote(url), GetLegendItems())
+    self.assertRaises(base_handler.Error, handler.get)
 
   def testGetLegendItemsUnsafeUrl(self):
     """Tests the GetLegendItems handler for unsafe URLs."""
     url = '/etc/passwd'
     handler = test_utils.SetupHandler(
-        '/crisismap/legend/' + urllib.quote(url), GetLegendItems())
-    self.assertRaises(base_handler.Error, handler.get, urllib.quote(url))
+        '/crisismap/.legend?url=' + urllib.quote(url), GetLegendItems())
+    self.assertRaises(base_handler.Error, handler.get)
 
     url = 'ftp://www.maps.com:123/?map=321'
     handler = test_utils.SetupHandler(
-        '/crisismap/legend/' + urllib.quote(url), GetLegendItems())
-    self.assertRaises(base_handler.Error, handler.get, urllib.quote(url))
+        '/crisismap/.legend?url=' + urllib.quote(url), GetLegendItems())
+    self.assertRaises(base_handler.Error, handler.get)
 
 
 if __name__ == '__main__':

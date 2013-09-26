@@ -11,6 +11,8 @@
 # specific language governing permissions and limitations under the License.
 
 """Configurable redirection service."""
+# TODO(kpy): Fold this into the CatalogEntry system so users can easily
+# set up redirections for map URLs.
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
@@ -30,4 +32,4 @@ class Redirect(webapp2.RequestHandler):
     redirection = Redirection.get_by_key_name(key_name)
     self.redirect(redirection and str(redirection.url) or '/')
 
-app = webapp2.WSGIApplication([(r'/crisismap/redirect/([\w.-]+)', Redirect)])
+app = webapp2.WSGIApplication([(r'/crisismap/.redirect/([\w.-]+)', Redirect)])

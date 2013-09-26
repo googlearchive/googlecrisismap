@@ -10,7 +10,7 @@
 # OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 # specific language governing permissions and limitations under the License.
 
-"""Endpoint for creating or updating a CatalogEntry."""
+"""Endpoint for creating, updating, or deleting a CatalogEntry."""
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
@@ -25,21 +25,31 @@ import model
 class Publish(base_handler.BaseHandler):
   """Handler for creating or updating a CatalogEntry."""
 
-  def post(self):  # pylint: disable=g-bad-name
-    """Adds or updates a catalog entry."""
-    domain = self.request.get('domain')
+  def post(self, domain):  # pylint: disable=g-bad-name
+    """Creates, updates, or removes a catalog entry."""
+    domain = self.request.get('domain', domain)
+    if not domain:
+      raise base_handler.Error(400, 'No domain specified.')
     label = self.request.get('label').strip()
-    map_id = self.request.get('map_id')
-    map_object = model.Map.Get(map_id)
-    if re.match(r'^[\w\-]+$', label):  # Valid if alphanumeric, -, _
+    if self.request.get('remove'):
+      model.CatalogEntry.Delete(domain, label)
+      self.redirect('.maps')
+    else:
+      if not re.match(r'^[\w-]+$', label):  # Valid if alphanumeric, -, _
+        raise base_handler.Error(
+            400, 'Valid labels may contain letters, digits, "-", and "_".')
+      map_object = model.Map.Get(self.request.get('map'))
+      if not map_object:
+        raise base_handler.Error(400, 'No such map.')
+
       # Preserve the "is_listed" flag if the CatalogEntry already exists.
       entry = (model.CatalogEntry.Get(domain, label) or
                model.CatalogEntry.Create(domain, label, map_object))
       entry.SetMapVersion(map_object)
       entry.Put()
-      self.redirect('/crisismap/maps')
-    else:
-      raise base_handler.Error(
-          400, 'Only letters, digits, "-", and "_" are allowed in the label.')
+      self.redirect('.maps')
 
-app = webapp2.WSGIApplication([(r'.*', Publish)])
+
+# The domain can come from the URL path or the 'domain' query parameter.
+app = webapp2.WSGIApplication([(r'.*/([\w.-]+\.\w+)\/.publish', Publish),
+                               (r'.*/().publish', Publish)])

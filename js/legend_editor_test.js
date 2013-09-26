@@ -31,8 +31,6 @@ function LegendEditorTest() {
   this.draft_ = new google.maps.MVCObject();
   this.draft_.set('type', cm.LayerModel.Type.KML);
 
-  this.setForTest_('encodeURIComponent',
-                   createMockFunction('encodeURIComponent'));
   this.setForTest_('goog.net.XhrIo.send',
                    createMockFunction('goog.net.XhrIo.send'));
 }
@@ -244,8 +242,8 @@ LegendEditorTest.prototype.generateExtractResponse_ = function() {
  * @private
  */
 LegendEditorTest.prototype.expectExtractRequest_ = function(url) {
-  expectCall(encodeURIComponent)(url).willOnce(returnWith('encoded::' + url));
-  expectCall(goog.net.XhrIo.send)('/crisismap/legend/encoded::' + url, _).
+  expectCall(goog.net.XhrIo.send)(
+      '/crisismap/.legend?url=' + encodeURIComponent(url), _).
       willOnce(goog.bind(function(url, callback) {
         this.requestCallback_ = callback;
       }, this));

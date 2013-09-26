@@ -256,7 +256,7 @@ cm.ImporterView.prototype.openImporter = function() {
     cm.ui.clear(this.layerListElem_);
     cm.ui.append(this.layerListElem_,
         cm.ui.create('span', {}, 'Loading...'));
-    goog.net.XhrIo.send('/crisismap/api/maps', goog.bind(function(event) {
+    goog.net.XhrIo.send('/crisismap/.api/maps', goog.bind(function(event) {
       if (!this.popup_.parentNode) {
         return;
       }

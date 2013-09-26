@@ -356,7 +356,7 @@ def ScheduleFetch(address, countdown=None):
       countdown = DetermineFetchDelay(metadata)
     logging.info('Scheduling fetch in %d s: %s', countdown, address)
     taskqueue.add(
-        queue_name='metadata', method='GET', url='/crisismap/metadata_fetch',
+        queue_name='metadata', method='GET', url='/crisismap/.metadata_fetch',
         params={'source': address}, countdown=countdown)
 
 
@@ -371,6 +371,5 @@ class MetadataFetch(webapp2.RequestHandler):
       ScheduleFetch(source)
     else:
       logging.info('Source is no longer active: %s', source)
-
 
 app = webapp2.WSGIApplication([('.*', MetadataFetch)])

@@ -57,8 +57,9 @@ class DiffTest(test_utils.BaseTest):
                         context=mox.IgnoreArg()).AndReturn(catalog_diff)
 
     self.mox.ReplayAll()
-    handler = test_utils.SetupHandler('/diff/%s' % map_object.id, diff.Diff(),
-                                      post_data='new_json=' + new_json)
+    handler = test_utils.SetupHandler(
+        '/crisismap/.diff/%s' % map_object.id, diff.Diff(),
+        post_data='new_json=' + new_json)
     handler.post(map_object.id)
 
 
