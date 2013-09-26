@@ -159,6 +159,7 @@ cm.ArrangeView.prototype.handleOk_ = function() {
   cm.events.emit(goog.global, cm.events.LAYERS_ARRANGED,
                  {oldValue: oldOrdering, newValue: newOrdering});
   this.layerDragHandler_.dispose();
+  cm.events.emit(goog.global, 'resize');
 };
 
 /**
@@ -171,6 +172,7 @@ cm.ArrangeView.prototype.handleCancel_ = function() {
   cm.ui.clear(this.layerListElem_);
   goog.array.clear(this.draggableElements_);
   this.layerDragHandler_.dispose();
+  cm.events.emit(goog.global, 'resize');
 };
 
 /**

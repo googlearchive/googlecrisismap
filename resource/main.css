@@ -1210,9 +1210,6 @@ textarea.cm-legend-text {
   font-size:11px;
   color:#a00;
 }
-.cm-arranger {
-  cursor:move;
-}
 
 /* Collaborate dialog */
 .cm-share-emailer {
@@ -1352,12 +1349,22 @@ textarea.cm-legend-text {
 /* Arranger panel with draggable elements */
 .cm-arranger {
   opacity:1.0 !important;
+  cursor:move;
 }
 .cm-arranger .cm-button-area {
   margin:21px 0 5px 20px;
 }
+.cm-panel-float > .cm-arranger {
+  height:inherit !important;
+}
 .cm-arranger-inner {
-  padding:20px 20px 10px 20px;
+  padding:10px 20px 10px 20px;
+  position:absolute;
+  overflow-y:auto;
+  left:0;
+  right:0;
+  bottom:0;
+  top:54px;
 }
 .cm-draggable-layer {
   cursor:move;
