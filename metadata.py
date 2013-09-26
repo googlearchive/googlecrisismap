@@ -67,11 +67,15 @@ def ActivateSources(sources):
   # To avoid hitting memcache N times for each pageview of an N-layer map, we
   # skip activation if the same set of layers has been activated recently.
   if cache.Add(['metadata_activate', hash(tuple(sources))], 1):
+    num_fetches = {}  # number of fetches, keyed by hostname
     for address in sources:
       if cache.Add(['metadata_active', address], 1, ttl_seconds=ACTIVE_SECONDS):
         logging.info('Activating layer: ' + address)
-        metadata_fetch.ScheduleFetch(address, 0)  # start fetching immediately
-      else:  # extend the lifetime of the existing metadata_active flag
+        hostname = maproot.GetHostnameForSource(address)
+        num_fetches[hostname] = num_fetches.get(hostname, 0) + 1
+        # Spread out the fetches to each origin server.  It's more polite.
+        metadata_fetch.ScheduleFetch(address, num_fetches[hostname] * 0.25)
+      else:  # Extend the lifetime of the existing metadata_active flag.
         cache.Set(['metadata_active', address], 1, ttl_seconds=ACTIVE_SECONDS)
 
 

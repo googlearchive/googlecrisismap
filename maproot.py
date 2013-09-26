@@ -14,6 +14,8 @@
 
 __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
+import urlparse
+
 
 class LayerType(object):
   """Allowed values for the 'type' property of a MapRoot layer."""
@@ -63,3 +65,18 @@ def GetSourceAddress(layer):
   source = layer.get('source', {}).get(layer_type.lower())
   if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS]:
     return layer_type + ':' + source.get('url', '')
+
+
+def GetHostnameForSource(source):
+  """Gets the hostname of the server for a given source address.
+
+  Args:
+    source: A source address produced by GetSourceAddress.
+
+  Returns:
+    A hostname, or None if no hostname can be determined.
+  """
+  layer_type, url = source.split(':', 1)
+  if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS]:
+    netloc = urlparse.urlsplit(url).netloc
+    return netloc.split(':')[0]
