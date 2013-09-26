@@ -862,3 +862,12 @@ LayerEntryViewTest.prototype.dispose = function() {
   this.view_.dispose();
   expectNoDescendantOf(parent, withClass(cm.css.LAYER_ENTRY));
 };
+
+/* Would be good to have a test here to verify that tne analytics event
+ * cm.Analytics.LayersPanelAction.EMBEDDED_LINK_CLICKED was triggered when
+ * links within the description were clicked.  We can't do that, because when
+ * there's no sanitizer, it's very hard to get an arbitrary tree of elements
+ * inside FakeElement, and even if we did, we'd need events to propagate
+ * correctly from the link up to the surrounding div.  Those two would
+ * require massive expansion to FakeElement; we need a real DOM available
+ * programmatically for testing purposes. */

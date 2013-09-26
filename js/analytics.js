@@ -95,7 +95,11 @@ cm.Analytics.prependUiElement_ = function(uiElement, uiEvents) {
 cm.Analytics.LayersPanelAction = cm.Analytics.prependUiElement_(
     'Layers panel', {
       DOWNLOAD_DATA_LINK_CLICKED: 'Layer download data link clicked',
+      EMBEDDED_LINK_CLICKED: 'Link embedded in layer description clicked',
+      MAP_PICKER_ITEM_SELECTED: 'Map picker menu item selected',
       OPACITY_SLIDER_MOVED: 'Layer opacity slider moved',
+      PANEL_TOGGLED_CLOSED: 'Panel toggled closed',
+      PANEL_TOGGLED_OPEN: 'Panel toggled open',
       SUBLAYER_SELECTED: 'Sublayer menu item selected',
       TOGGLED_OFF: 'Layer checkbox toggled off',
       TOGGLED_ON: 'Layer checkbox toggled on',

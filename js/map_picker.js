@@ -68,17 +68,16 @@ cm.MapPicker.createMenu_ = function(menuItems) {
   currentUrl.setFragment('');
   return cm.ui.create('ul', {'class': [cm.css.POPUP, cm.css.MAP_PICKER]},
                       goog.array.map(menuItems, function(item) {
-    // TODO(kpy): Log Analytics events to track clicks on these menu items.
-    // Requires further investigation.  Since setting window.location will
-    // abort in-flight requests, we can't just call cm.Analytics.logEvent and
-    // immediately set window.location.  Many possible solutions are debated in
-    // forums; insanely, Google's official advice is to add an arbitrary delay:
-    // http://support.google.com/googleanalytics/bin/answer.py?answer=1136920
     var destinationUrl = currentUrl.resolve(new goog.Uri(item.url));
     var selected = (destinationUrl.toString() === currentUrl.toString());
-    return cm.ui.create(
+    var link = cm.ui.create(
         'li', selected ? {'class': cm.css.SELECTED} : {},
         cm.ui.createLink(item.title, selected ? null : item.url));
+    cm.events.listen(link, 'click', function() {
+      cm.Analytics.logAction(
+          cm.Analytics.LayersPanelAction.MAP_PICKER_ITEM_SELECTED, null);
+    });
+    return link;
   }));
 };
 

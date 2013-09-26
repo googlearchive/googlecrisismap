@@ -11,6 +11,7 @@
 
 // @author kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.Analytics');
 goog.require('cm.css');
 
 function MapPickerTest() {
@@ -100,4 +101,23 @@ MapPickerTest.prototype.menuButton = function() {
   // Resizing the window should make it disappear.
   cm.events.emit(goog.global, 'resize');
   expectNoDescendantOf(body, withClass(cm.css.MAP_PICKER));
+};
+
+/** Tests selecting a menu item from the picker */
+MapPickerTest.prototype.testMenuSelection = function() {
+  var body = cm.ui.document.body;
+  var parent = cm.ui.create('div');
+  var picker = new cm.MapPicker(parent, [
+    {title: 'Item One', url: '/root/map1'},
+    {title: 'Item Two', url: '/root/map2'}
+  ]);
+  var button = expectDescendantOf(
+      parent, withClass(cm.css.MAP_PICKER_BUTTON));
+  cm.events.emit(body, 'click', {target: button});
+  var pickerElem = expectDescendantOf(body, withClass(cm.css.MAP_PICKER));
+  var links = allDescendantsOf(pickerElem, withNodeName('a'));
+  expectEq(2, links.length);
+  this.expectLogAction(
+      cm.Analytics.LayersPanelAction.MAP_PICKER_ITEM_SELECTED, null);
+  cm.events.emit(links[1], 'click');
 };

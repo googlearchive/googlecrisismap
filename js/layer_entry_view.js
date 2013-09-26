@@ -284,6 +284,12 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
       this.matchingSublayersMessage_ = cm.ui.create('span',
           {'class': cm.css.LAYER_FILTER_INFO})
   );
+  cm.events.listen(this.descriptionElem_, 'click', function(event) {
+    if (event.target.tagName.toLowerCase() !== 'a') return;
+    cm.Analytics.logAction(
+        cm.Analytics.LayersPanelAction.EMBEDDED_LINK_CLICKED,
+        /** @type string */(this.model_.get('id')));
+  }, this);
   if (opt_index !== undefined && opt_index < parentElem.childNodes.length) {
     parentElem.insertBefore(this.entryElem_, parentElem.childNodes[opt_index]);
   } else {

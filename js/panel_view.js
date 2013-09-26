@@ -177,6 +177,13 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
 
   var toggleCollapseOnClick = goog.bind(function() {
       goog.dom.classes.toggle(this.frameElem_, cm.css.PANEL_COLLAPSED);
+      if (goog.dom.classes.has(this.frameElem_, cm.css.PANEL_COLLAPSED)) {
+        cm.Analytics.logAction(
+            cm.Analytics.LayersPanelAction.PANEL_TOGGLED_CLOSED, null);
+      } else {
+        cm.Analytics.logAction(
+            cm.Analytics.LayersPanelAction.PANEL_TOGGLED_OPEN, null);
+      }
       cm.events.emit(goog.global, 'resize');  // readjust layout
     }, this);
   cm.events.listen(collapse, 'click', toggleCollapseOnClick);
@@ -486,4 +493,3 @@ cm.PanelView.prototype.removeLayer_ = function(layer) {
 cm.PanelView.prototype.getBounds = function() {
   return goog.style.getBounds(this.parentElem_);
 };
-

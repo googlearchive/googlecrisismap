@@ -229,10 +229,14 @@ PanelViewTest.prototype.testCollapseAndExpand = function() {
   var parent = this.createView_();
 
   var button = expectDescendantOf(parent, withClass(cm.css.COLLAPSE));
+  this.expectLogAction(
+      cm.Analytics.LayersPanelAction.PANEL_TOGGLED_CLOSED, null);
   cm.events.emit(button, 'click');
   expectEq(cm.css.PANEL_COLLAPSED, cm.ui.document.body.className);
 
   button = expectDescendantOf(this.mapDiv_, withClass(cm.css.EXPAND));
+  this.expectLogAction(
+      cm.Analytics.LayersPanelAction.PANEL_TOGGLED_OPEN, null);
   cm.events.emit(button, 'click');
   expectEq('', cm.ui.document.body.className);
 };
