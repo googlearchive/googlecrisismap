@@ -120,7 +120,7 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     if (!tileData) return;
     // Only log a succesful fetch if the loaded image is not a transparent tile.
     if (!TRANSPARENT_TILE_REGEXP.test(tileImg.src)) {
-      cm.Analytics.logTime('wms_tile_fetch', tileData.retries,
+      cm.Analytics.logTime('wms_tile_fetch', tileData.retries + '',
                            new Date().getTime() - tileData.startTime,
                            tileData.tileSrc + ':' + tileData.tileCoords);
     }
@@ -134,8 +134,6 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     if (!tileData) return;
     var retries = tileData.retries;
     if (retries >= MAX_RETRIES) {
-      cm.Analytics.logEvent(
-          'wms_tile_fetch', 'failure', tileData.tileSrcUrl, 1);
       // Set back to an empty tile to avoid the nasty broken image icon.
       tileDiv.firstChild.setAttribute(
           'src', '//maps.gstatic.com/mapfiles/transparent.png');
