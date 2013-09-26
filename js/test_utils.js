@@ -437,6 +437,7 @@ cm.TestBase = function() {
   // Create a fresh goog.global object, ensuring that global variables and
   // event listeners don't linger from test to test.
   var fakeWindow = {
+    cm: cm,
     cm_config: {},
     document: fakeDocument,
     setTimeout: function(callback, delay) { callback(); },
