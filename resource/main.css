@@ -51,7 +51,7 @@ html, body {
 .cm-map-title {  /* map title */
   font-size:18px;
   font-weight:normal;
-  color:#d43;
+  color:#dd4b39;
   display:inline;
 }
 .cm-map-title-picker:hover, .cm-edit .cm-map-title:hover {
@@ -426,7 +426,7 @@ html, body {
   z-index:1;
   background-color:white;
   min-width:240px;
-  max-width:560px;
+  max-width:540px;
   -webkit-box-shadow:0 4px 16px rgba(0,0,0,0.2);
   -moz-box-shadow:0 4px 16px rgba(0,0,0,0.2);
   -ms-box-shadow:0 4px 16px rgba(0,0,0,0.2);
@@ -816,7 +816,7 @@ input[type=checkbox]:checked::after {
   cursor:default;
 }
 .cm-toolbar a.cm-error {
-  color:#d43;
+  color:#c00;
 }
 
 /* Importer dialog */
@@ -1006,6 +1006,7 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-editors > .cm-text-input-row input[type="text"],
 .cm-editors > .cm-text-editor input[type="text"] {
   width:100%;
+  max-width:394px;  /* total outside width 400px */
 }
 .cm-editors > .cm-textarea-row > th,
 .cm-editors > .cm-html-editor > th {
@@ -1015,10 +1016,11 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-editors > .cm-textarea-row textarea,
 .cm-editors > .cm-html-editor textarea {
   width:100%;
+  max-width:392px;  /* total outside width 400px */
   height:6em;
   font-family:arial;
   font-size:13px;
-  padding:3px 2px;
+  padding:3px;
   border:1px solid #c0c0c0;
 }
 .cm-help-icon {
@@ -1216,10 +1218,10 @@ textarea.cm-legend-text {
   white-space:nowrap;
 }
 .cm-lat-lon-box-editor table.cm-extents input {
-  width:5.5em;
+  width:6em;
 }
 .cm-lat-lon-box-editor .cm-west {
-  padding-right:1.5em;
+  padding-right:2em;
 }
 .cm-lat-lon-box-editor .cm-copy-viewport {
   padding:4px 0 6px;
@@ -1234,13 +1236,13 @@ textarea.cm-legend-text {
   font-size:11px;
   line-height:12px;
   display:inline-block;
-  color:#d43;
+  color:#dd4b39;
   margin-top:6px;
 }
 .cm-validation-error {
   display:block;
   font-size:11px;
-  color:#d43;
+  color:#a00;
 }
 
 /* Collaborate dialog */
@@ -1251,7 +1253,7 @@ textarea.cm-legend-text {
   margin-left:12px;
 }
 .cm-email-error {
-  color:#d43;
+  color:#a00;
 }
 
 /* Standard Google button styles */

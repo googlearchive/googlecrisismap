@@ -60,13 +60,13 @@ EditPresenterTest.prototype.testInspectEvent = function() {
               tooltip: cm.MSG_LEGEND_TOOLTIP}),
     contains({key: 'viewport', label: '"Zoom to area" viewport',
               type: cm.editors.Type.LAT_LON_BOX, app_state: null,
-              tooltip: cm.UNTRANSLATED_MSG_LAYER_VIEWPORT_TOOLTIP}),
+              tooltip: cm.MSG_LAYER_VIEWPORT_TOOLTIP}),
     contains({key: 'min_zoom', label: 'Minimum zoom level',
               type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
-              require_integer: true, tooltip: cm.MSG_MINIMUM_ZOOM_TOOLTIP}),
+              require_integer: true, tooltip: cm.MSG_MIN_ZOOM}),
     contains({key: 'max_zoom', label: 'Maximum zoom level',
               type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
-              require_integer: true, tooltip: cm.MSG_MAXIMUM_ZOOM_TOOLTIP})
+              require_integer: true, tooltip: cm.MSG_MAX_ZOOM})
   ]);
   expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, null,
                                 layer);

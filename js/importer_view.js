@@ -219,7 +219,7 @@ cm.ImporterView.prototype.openImporter = function() {
   } else {
     cm.ui.clear(this.layerListElem_);
     cm.ui.append(this.layerListElem_,
-        cm.ui.create('div', {'class': cm.css.LAYER_TITLE}, cm.MSG_LOADING));
+        cm.ui.create('div', {'class': cm.css.LAYER_TITLE}, 'Loading...'));
     goog.net.XhrIo.send(this.apiMapsUrl_, goog.bind(function(event) {
       if (!this.popup_.parentNode) {
         return;

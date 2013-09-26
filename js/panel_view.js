@@ -175,7 +175,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
                       {'class': cm.css.MAP_TITLE}),
                   publisherName ? cm.ui.create('div',
                       {'class': cm.css.MAP_PUBLISHER},
-                      cm.getMsgPublisherAttribution(publisherName)) : null),
+                      'Published by ' + publisherName) : null),
               this.descElem_ = cm.ui.create(
                   'div', {'class': cm.css.MAP_DESCRIPTION})),
           this.panelLinks_ = cm.ui.create('div', {'class': cm.css.PANEL_LINKS},
