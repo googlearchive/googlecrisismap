@@ -720,8 +720,8 @@ cm.MSG_SHOW_DOWNLOAD_LINK_TOOLTIP = goog.getMsg(
  *     [BACKUP_MESSAGE_ID: 1377315150680845923] <- remove by 2013-06-30.
  */
 cm.MSG_GFT_TABLE_ID_TOOLTIP = goog.getMsg(
-    'The alphanumeric ID of the table, which can be found in the ' +
-    '<b>File</b> &gt; <b>About</b> box in Fusion Tables.');
+    'The alphanumeric ID (NOT "Numeric ID") of the table, which can be found ' +
+    'in the <b>File</b> &gt; <b>About</b> box in Fusion Tables.');
 
 /**
  * @desc Tooltip for a text field for entering a column name.  The purpose of
@@ -731,7 +731,7 @@ cm.MSG_GFT_TABLE_ID_TOOLTIP = goog.getMsg(
  */
 cm.MSG_GFT_LOCATION_COLUMN_TOOLTIP = goog.getMsg(
     'The name of the <a target="_blank" href="http://support.google.com/' +
-    'fusiontables/answer/2590990?ref_topic=2573808">location column</a>' +
+    'fusiontables/answer/2590990?ref_topic=2573808">location column</a> ' +
     'in the Fusion Table to draw on the map.  For two-column locations ' +
     '(latitude and longitude), use the name of the latitude column.');
 
