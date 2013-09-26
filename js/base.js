@@ -81,7 +81,7 @@ cm.MSG_HELP = goog.getMsg('Help');
 /** @desc Header for the about box. */
 cm.MSG_ABOUT_HEADER = goog.getMsg('Google Crisis Map');
 
-/** @desc Text in a Help pop-up for people viewing the map. */
+/** @desc HTML content in a Help pop-up for people viewing the map. */
 cm.MSG_ABOUT_HTML = goog.getMsg(
     'Tips for using this site:' +
     '<ul>' +
@@ -266,7 +266,7 @@ cm.MSG_REVERT = goog.getMsg('Revert');
 
 // Map view
 
-/** @desc Copyright notice map data from OpenStreetMap. */
+/** @desc HTML for a copyright notice for map data from OpenStreetMap. */
 cm.MSG_OSM_COPYRIGHT_HTML = goog.getMsg(
     'Map data \u00a9 ' +
     '<a href="http://www.openstreetmap.org/copyright" target="_blank">' +
@@ -447,16 +447,13 @@ cm.MSG_CUSTOM_BASE_MAP_STYLE = goog.getMsg('Custom base map style (JSON)');
 cm.MSG_CUSTOM_STYLE_NAME = goog.getMsg('Custom style name');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Label for an area for editing the layer's viewport, which determines
+ * @desc Label for an area for editing the layer's viewport, which determines
  *     the rectangular area that the map zooms to when the user clicks
  *     "Zoom to area".  The "Zoom to area" part in quotation marks refers to a
  *     command in the UI, so it should be translated identically to the other
  *     "Zoom to area" message.
  */
-cm.UNTRANSLATED_MSG_LAYER_VIEWPORT = '"Zoom to area" viewport';
+cm.MSG_LAYER_VIEWPORT = goog.getMsg('"Zoom to area" viewport');
 
 /**
  * @desc Label for a checkbox to copy the current map's viewport to the layer's
@@ -465,17 +462,14 @@ cm.UNTRANSLATED_MSG_LAYER_VIEWPORT = '"Zoom to area" viewport';
 cm.MSG_USE_CURRENT_MAP_VIEWPORT = goog.getMsg('Use current map viewport');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc A warning message that asks the user to fill in the layer viewport
+ * @desc A warning message that asks the user to fill in the layer viewport
  *     for "Tile service" layers.  The words "Tile service" in quotation marks
  *     refer to the "Tile service" option in the UI, and they should be
  *     translated identically to the other message for "Tile service".
  */
-cm.UNTRANSLATED_MSG_TILE_LAYER_VIEWPORT_WARNING =
+cm.MSG_TILE_LAYER_VIEWPORT_WARNING = goog.getMsg(
     'For "Tile service" layers, please provide accurate viewport bounds ' +
-    'in order to ensure that only tiles within the bounds are requested.';
+    'in order to ensure that only tiles within the bounds are requested.');
 
 /** @desc Label for an area for entering the minimum zoom level of the map. */
 cm.MSG_MINIMUM_ZOOM = goog.getMsg('Minimum zoom level');
@@ -486,13 +480,8 @@ cm.MSG_MAXIMUM_ZOOM = goog.getMsg('Maximum zoom level');
 /** @desc Label for a menu for selecting the type of a map layer. */
 cm.MSG_LAYER_TYPE = goog.getMsg('Layer type');
 
-/**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Menu option for a service that delivers layer tiles.
- */
-cm.UNTRANSLATED_MSG_LAYER_TYPE_TILE_SERVICE = 'Tile service';
+/** @desc Menu option for a service that delivers layer tiles. */
+cm.MSG_LAYER_TYPE_TILE_SERVICE = goog.getMsg('Tile service');
 
 /** @desc Menu option for a layer from the Google Fusion Tables product. */
 cm.MSG_LAYER_TYPE_FUSION_TABLES = goog.getMsg('Google Fusion Tables');
@@ -522,13 +511,10 @@ cm.MSG_SOURCE_URL = goog.getMsg('Source URL');
 cm.MSG_SHOW_DOWNLOAD_LINK = goog.getMsg('Show download link?');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Label for a checkbox that controls whether the URL that the user
+ * @desc Label for a checkbox that controls whether the URL that the user
  *     entered should be treated as a tile index.
  */
-cm.UNTRANSLATED_MSG_TILE_INDEX = 'Tile index URL?';
+cm.MSG_TILE_INDEX = goog.getMsg('Tile index URL?');
 
 /**
  * @desc Label for a text field for entering the Table ID of a table in
@@ -545,14 +531,11 @@ cm.MSG_GFT_TABLE_ID = goog.getMsg('Table ID');
 cm.MSG_GFT_LOCATION_COLUMN = goog.getMsg('Location column');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Label for a text field for entering a condition that is used to filter
+ * @desc Label for a text field for entering a condition that is used to filter
  *     the data (from a table in Google Fusion Tables) to be shown on the map.
  *     An example of a condition would be "type = 'tornado'" or "speed > 60".
  */
-cm.UNTRANSLATED_MSG_GFT_FILTER_CONDITION = 'Filter condition';
+cm.MSG_GFT_FILTER_CONDITION = goog.getMsg('Filter condition');
 
 /**
  * @desc Label for a menu for selecting the color of the text labels
@@ -600,74 +583,46 @@ cm.MSG_GME_LAYER_KEY = goog.getMsg('Layer key');
 cm.MSG_WMS_LAYERS = goog.getMsg('Layers');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Label for a menu for selecting the type of coordinates to use
+ * @desc Label for a menu for selecting the type of coordinates to use
  *     for a tile service.
  */
-cm.UNTRANSLATED_MSG_TILE_COORDINATE_TYPE = 'Tile coordinate type';
+cm.MSG_TILE_COORDINATE_TYPE = goog.getMsg('Tile coordinate type');
+
+/** @desc An option in a menu for selecting a type of coordinates. */
+cm.MSG_GOOGLE_MAPS_COORDINATES = goog.getMsg('Google Maps tile coordinates');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc An option in a menu for selecting a type of coordinates.
- */
-cm.UNTRANSLATED_MSG_GOOGLE_MAPS_COORDINATES = 'Google Maps tile coordinates';
-
-/**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc An option in a menu for selecting a type of coordinates.  "Quadkey"
+ * @desc An option in a menu for selecting a type of coordinates.  "Quadkey"
  *     is a technical term invented by Bing Maps.
  */
-cm.UNTRANSLATED_MSG_BING_MAPS_QUADKEYS = 'Bing Maps quadkeys';
+cm.MSG_BING_MAPS_QUADKEYS = goog.getMsg('Bing Maps quadkeys');
+
+/** @desc An option in a menu for selecting a type of coordinates. */
+cm.MSG_TMS_COORDINATES = goog.getMsg('Tile Map Service (TMS) coordinates');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc An option in a menu for selecting a type of coordinates.
- */
-cm.UNTRANSLATED_MSG_TMS_COORDINATES = 'Tile Map Service (TMS) coordinates';
-
-/**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Label for a menu for selecting the type of a folder (in which
+ * @desc Label for a menu for selecting the type of a folder (in which
  *     layers are organized).
  */
-cm.UNTRANSLATED_MSG_FOLDER_TYPE = 'Folder type';
+cm.MSG_FOLDER_TYPE = goog.getMsg('Folder type');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc A menu option that sets a folder to be unlocked, meaning that the
+ * @desc A menu option that sets a folder to be unlocked, meaning that the
  *     contents within the folder are visible and can be manipulated.
  */
-cm.UNTRANSLATED_MSG_FOLDER_TYPE_UNLOCKED = 'Unlocked';
+cm.MSG_FOLDER_TYPE_UNLOCKED = goog.getMsg('Unlocked');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc A menu option that sets a folder to be locked, meaning that the
+ * @desc A menu option that sets a folder to be locked, meaning that the
  *     contents within the folder are hidden and cannot be manipulated.
  */
-cm.UNTRANSLATED_MSG_FOLDER_TYPE_LOCKED = 'Locked';
+cm.MSG_FOLDER_TYPE_LOCKED = goog.getMsg('Locked');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc A menu option that sets a folder to be restricted so that only one
+ * @desc A menu option that sets a folder to be restricted so that only one
  *     of the items inside it is shown at a time.
  */
-cm.UNTRANSLATED_MSG_FOLDER_TYPE_SINGLE_SELECT = 'Single-select';
+cm.MSG_FOLDER_TYPE_SINGLE_SELECT = goog.getMsg('Single-select');
 
 
 // Inspector tooltips
@@ -684,16 +639,13 @@ cm.MSG_LAYER_DESCRIPTION_TOOLTIP = goog.getMsg(
 cm.MSG_LEGEND_TOOLTIP = goog.getMsg('The legend to display for this layer.');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Tooltip for editing the layer's viewport.  The "Zoom to area" part
+ * @desc Tooltip for editing the layer's viewport.  The "Zoom to area" part
  *     in quotation marks refers to a command in the UI and should be
  *     translated identically to the other "Zoom to area" message.
  */
-cm.UNTRANSLATED_MSG_LAYER_VIEWPORT_TOOLTIP =
+cm.MSG_LAYER_VIEWPORT_TOOLTIP = goog.getMsg(
     'The bounding coordinates of the area to zoom to when the user clicks ' +
-    '"Zoom to area".';
+    '"Zoom to area".');
 
 /**
  * @desc Tooltip for a text field for a layer's minimum zoom level.
@@ -719,17 +671,15 @@ cm.MSG_LAYER_TYPE_TOOLTIP = goog.getMsg(
     'The data type or format of the layer\'s data.');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Tooltip for the text field for a layer's data source URL.  "Quadkey"
- *     is a technical term invented by Bing Maps.
+ * @desc Tooltip for the text field for a layer's data source URL.  "Quadkey"
+ *     is a technical term invented by Bing Maps.  Do not translate the example
+ *     URL, "http://example.com/{X}_{Y}_{Z}.png".
  */
-cm.UNTRANSLATED_MSG_SOURCE_URL_TOOLTIP =
+cm.MSG_SOURCE_URL_TOOLTIP = goog.getMsg(
     'The public URL of the layer data.  (For Google Maps tiles and TMS ' +
     'tiles, this is a URL template like http://example.com/{X}_{Y}_{Z}.png ' +
     'with placeholders for X, Y, and Z values.  For Bing Maps tiles, this is ' +
-    'the tile URL without the quadkey at the end.)';
+    'the tile URL without the quadkey at the end.)');
 
 /**
  * @desc Tooltip for a checkbox that sets whether to show a download link.
@@ -762,10 +712,7 @@ cm.MSG_GFT_LOCATION_COLUMN_TOOLTIP = goog.getMsg(
     '(latitude and longitude), use the name of the latitude column.');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Tooltip for a text field for entering a condition that will be used
+ * @desc Tooltip for a text field for entering a condition that will be used
  *     to filter the data to be shown on the map.  In the <code> example,
  *     the words "type", "tornado", and "speed" can be translated as long as
  *     the translated words are written in plain unaccented A-Z letters;
@@ -773,14 +720,14 @@ cm.MSG_GFT_LOCATION_COLUMN_TOOLTIP = goog.getMsg(
  *     fixed in the syntax of Fusion Tables and should not be translated.
  *     "Fusion Tables" refers to the Google Fusion Tables product.
  */
-cm.UNTRANSLATED_MSG_GFT_FILTER_CONDITION_TOOLTIP =
+cm.MSG_GFT_FILTER_CONDITION_TOOLTIP = goog.getMsg(
     'A condition used to filter the rows in the Fusion Table to draw on the ' +
     'map, such as <b><code>type = \'tornado\' AND speed &gt; 60</code></b>. ' +
     'Write the condition as it would be written in the <a target="_blank" ' +
     'href="https://developers.google.com/fusiontables/docs/v1/' +
     'sql-reference#Select">WHERE clause of a Fusion Tables SELECT query</a>. ' +
     'If this is left blank, all rows in the table that have valid location ' +
-    'values are drawn on the map.';
+    'values are drawn on the map.');
 
 /**
  * @desc Tooltip for a menu for selecting the color of the text labels
@@ -837,42 +784,33 @@ cm.MSG_WMS_LAYERS_TOOLTIP = goog.getMsg(
     'is not publishing layers with Spherical Mercator projections.');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Tooltip for toggling whether a tile layer's source URL is an
+ * @desc Tooltip for toggling whether a tile layer's source URL is an
  *     indexed tile URL.
  */
-cm.UNTRANSLATED_MSG_TILE_INDEX_TOOLTIP =
-    'Whether the tile layer\'s URL is an indexed tile set.';
+cm.MSG_TILE_INDEX_TOOLTIP = goog.getMsg(
+    'Whether the tile layer\'s URL is an indexed tile set.');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Tooltip for a menu for selecting the type of coordinates to use
+ * @desc Tooltip for a menu for selecting the type of coordinates to use
  *     for a tile service.
  */
-cm.UNTRANSLATED_MSG_TILE_COORDINATE_TYPE_TOOLTIP =
+cm.MSG_TILE_COORDINATE_TYPE_TOOLTIP = goog.getMsg(
     'The type of tile coordinates to use in tile URLs (<a target="_blank" ' +
     'href="https://developers.google.com/maps/documentation/javascript/' +
     'maptypes#CustomMapTypes">Google</a>, <a target="_blank" href=' +
     '"http://msdn.microsoft.com/en-us/library/bb259689.aspx">Bing</a>, or ' +
     '<a target="_blank" href=' +
-    '"http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification">TMS</a>).';
+    '"http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification">TMS</a>).');
 
 /**
- * TODO(kpy): Translation of this message should wait until the glossary is
- * ready; at that time, wrap this message in a call to goog.getMsg().
- *
- * desc Tooltip for a menu for selecting the type of a folder (in which
+ * @desc Tooltip for a menu for selecting the type of a folder (in which
  *     layers are organized).  The strings "Unlocked", "Locked", and
- *     "Single select" that are mentioned in this text refer to the options
+ *     "Single-select" that are mentioned in this text refer to the options
  *     in the menu, so they should be translated identically to the messages
  *     "Unlocked", "Locked", and "Single-select".
  */
-cm.UNTRANSLATED_MSG_FOLDER_TYPE_TOOLTIP =
+cm.MSG_FOLDER_TYPE_TOOLTIP = goog.getMsg(
     '<b>Unlocked</b> (default): folder contents are visible in the layer ' +
     'list; <b>Locked</b>: folder contents are hidden from the layer list; ' +
     '<b>Single-select</b>: only one sublayer at a time may be selected ' +
-    'in this folder.';
+    'in this folder.');

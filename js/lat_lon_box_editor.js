@@ -88,7 +88,7 @@ cm.LatLonBoxEditor = function(parentElem, id, options) {
    * @private
    */
   this.viewportInfo_ = cm.ui.create('div', {'class': cm.css.VIEWPORT_INFO},
-      cm.UNTRANSLATED_MSG_TILE_LAYER_VIEWPORT_WARNING);
+      cm.MSG_TILE_LAYER_VIEWPORT_WARNING);
 
   cm.ui.append(parentElem,
       cm.ui.create('table',
