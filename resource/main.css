@@ -168,8 +168,6 @@ html, body {
   border-left:1px solid #999;
   border-bottom:1px solid #999;
   visibility:hidden; /* show expand button only when panel is collapsed */
-  border-top:1px solid #999;
-  top:30px; /* move down to avoid the Map|Satellite button on the right */
 }
 .cm-panel-collapsed .cm-expand {
   visibility:visible;
@@ -181,7 +179,6 @@ html, body {
   opacity:0.7;
 }
 .cm-panel-left .cm-expand {
-  top:0;
   left:0;
   border-top:none;
   border-left:none;
@@ -804,6 +801,9 @@ input[type=checkbox]:checked::after {
 .cm-toolbar {
   font-size:11px;
 }
+.cm-toolbar a {
+  white-space:nowrap;
+}
 .cm-toolbar a.cm-disabled,
 .cm-toolbar a.cm-disabled:hover {
   color:#888;
@@ -812,9 +812,6 @@ input[type=checkbox]:checked::after {
 }
 .cm-toolbar a.cm-error {
   color:#c00;
-}
-.cm-toolbar .cm-edit-toolbar {
-  margin-right:24px;
 }
 
 /* Importer dialog */
@@ -1028,7 +1025,6 @@ tr.cm-legend-editor {
 div.cm-legend-items {
   max-height:95px;
   overflow:auto;
-  padding-top:3px;
 }
 .cm-legend-item {
   width:100%;
@@ -1201,6 +1197,7 @@ textarea.cm-legend-text {
 }
 .cm-lat-lon-box-editor .cm-viewport-info {
   font-size:11px;
+  line-height:12px;
   display:inline-block;
   color:#dd4b39;
   margin-top:6px;

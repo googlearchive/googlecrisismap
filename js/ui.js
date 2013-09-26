@@ -22,11 +22,8 @@ goog.require('cm.events');
 goog.require('goog.dom');
 goog.require('goog.style');
 
-/** A centered dot with a non-breaking space before and after. */
-cm.ui.SEPARATOR_DOT = '\xa0\xb7\xa0';
-
-/** A centered dash with a non-breaking space before and after. */
-cm.ui.SEPARATOR_DASH = '\xa0\x2d\xa0';
+/** A centered dot with a non-breaking space before and breaking space after. */
+cm.ui.SEPARATOR_DOT = '\xa0\xb7\x20';
 
 /** The document.  In tests, cm.ui.document will be a fake. */
 cm.ui.document = (typeof document !== 'undefined') ? document : null;

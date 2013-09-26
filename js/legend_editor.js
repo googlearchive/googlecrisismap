@@ -238,7 +238,7 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
       this.legendItemsElem_ = cm.ui.create('div',
           {'class': cm.css.LEGEND_ITEMS}),
       addItemLink = cm.ui.createLink(MSG_ADD_ITEM),
-      cm.ui.SEPARATOR_DASH,
+      cm.ui.SEPARATOR_DOT,
       editHtmlLink = cm.ui.createLink(MSG_EDIT_HTML)));
 
   cm.events.listen(addItemLink, 'click', goog.bind(
@@ -265,7 +265,7 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
       this.revertToLastValidLink_ = cm.ui.create('div', {},
           cm.ui.create('span', {'class': cm.css.VALIDATION_ERROR},
               MSG_INVALID_LEGEND),
-          cm.ui.SEPARATOR_DASH,
+          cm.ui.SEPARATOR_DOT,
           revertLink = cm.ui.createLink(MSG_REVERT)));
 
   cm.events.listen(this.editGraphicallyLink_, 'click',

@@ -36,7 +36,7 @@ var MSG_ARRANGE_LAYERS_LINK = goog.getMsg('Arrange');
 var MSG_COLLABORATE_LINK = goog.getMsg('Collaborate');
 
 /** @desc Link text to add a new layer to the map. */
-var MSG_ADD_NEW_LAYERS = goog.getMsg('Add layers');
+var MSG_ADD_NEW_LAYERS = goog.getMsg('Add layer');
 
 /** @desc Default title for an empty layer. */
 var MSG_UNTITLED_LAYER = goog.getMsg('Untitled Layer');
@@ -157,8 +157,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
   }
 
   var addNewLayerLink = cm.ui.createLink(MSG_ADD_NEW_LAYERS);
-  cm.events.forward(addNewLayerLink, 'click', goog.global,
-      cm.events.IMPORT);
+  cm.events.forward(addNewLayerLink, 'click', goog.global, cm.events.INSPECT);
   cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT,
                addNewLayerLink, cm.ui.SEPARATOR_DOT);
 
@@ -244,7 +243,7 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
         cm.ui.append(popup,
             'Diff against: ', diffSelectElem = cm.ui.create('select', {},
                 cm.ui.create('option', {}, 'Saved')),
-            cm.ui.SEPARATOR_DASH,
+            cm.ui.SEPARATOR_DOT,
             showJsonLink = cm.ui.createLink('Show JSON'),
             showDiffLink = cm.ui.createLink('Show diff'),
             cm.ui.create('br'), cm.ui.create('br'),
@@ -263,7 +262,7 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
         showDiff();
       } else {
         cm.ui.append(popup, 'Failed to load diff',
-            cm.ui.SEPARATOR_DASH,
+            cm.ui.SEPARATOR_DOT,
             showJsonLink = cm.ui.createLink('Show JSON'),
             cm.ui.create('br'), cm.ui.create('br'),
             contentElem);
