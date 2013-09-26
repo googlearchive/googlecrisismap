@@ -27,7 +27,11 @@ Event = utils.Struct(
     MAP_CREATED='MAP_CREATED',
     MAP_DELETED='MAP_DELETED',
     MAP_PUBLISHED='MAP_PUBLISHED',
-    MAP_UNPUBLISHED='MAP_UNPUBLISHED'
+    MAP_UNPUBLISHED='MAP_UNPUBLISHED',
+    MAP_UNDELETED='MAP_UNDELETED',
+    MAP_BLOCKED='MAP_BLOCKED',
+    MAP_UNBLOCKED='MAP_UNBLOCKED',
+    MAP_WIPED='MAP_WIPED'
 )
 
 
@@ -49,9 +53,12 @@ def RecordEvent(event, domain_name=None, map_id=None, map_version_key=None,
                 catalog_entry_key=None, acceptable_purpose=None,
                 acceptable_org=None, org_name=None, uid=None):
   """Stores an event log entry."""
+  if not uid:
+    user = users.GetCurrent()
+    uid = user and user.id or None
   try:
     EventLog(time=datetime.datetime.utcnow(),
-             uid=uid or users.GetCurrent().id,
+             uid=uid,
              event=event,
              domain_name=domain_name,
              map_id=map_id,

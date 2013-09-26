@@ -17,6 +17,7 @@ __author__ = 'rew@google.com (Becky Willrich)'
 import cache
 import config
 import domains
+import logs
 import perms
 import test_utils
 
@@ -43,7 +44,9 @@ class DomainTest(test_utils.BaseTest):
 
   def testDomainCreation(self):
     self.assertIsNone(domains.Domain.Get('MyDomain.com'))
+    self.CaptureLog()
     domain = domains.Domain.Create('MyDomain.com')
+    self.assertLog(logs.Event.DOMAIN_CREATED, domain_name='mydomain.com')
 
     # domain name should have been normalized
     self.assertEqual('mydomain.com', domain.name)

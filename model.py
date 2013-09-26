@@ -22,6 +22,7 @@ import random
 
 import cache
 import domains
+import logs
 import perms
 import users
 import utils
@@ -204,7 +205,7 @@ class CatalogEntryModel(db.Model):
     if ':' in domain:
       raise ValueError('Invalid domain %r' % domain)
     now = datetime.datetime.utcnow()
-    entity = CatalogEntryModel.get_by_key_name(domain + ':' + label)
+    entity = CatalogEntryModel.Get(domain, label)
     if not entity:
       entity = CatalogEntryModel(key_name=domain + ':' + label,
                                  domain=domain, label=label,
@@ -302,6 +303,11 @@ class CatalogEntry(object):
         perms.AssertCatalogEntryOwner(entry)
     entry = CatalogEntryModel.Put(
         users.GetCurrent().id, domain_name, label, map_object, is_listed)
+    logs.RecordEvent(logs.Event.MAP_PUBLISHED, domain_name=domain_name,
+                     map_id=map_object.id,
+                     map_version_key=entry.map_version.key().name(),
+                     catalog_entry_key=domain_name + ':' + label,
+                     uid=users.GetCurrent().id)
 
     # We use '*' in the cache key for the list that includes all domains.
     cache.Delete([CatalogEntry, '*', 'all'])
@@ -311,16 +317,20 @@ class CatalogEntry(object):
     return CatalogEntry(entry)
 
   @staticmethod
-  def Delete(domain_name, label):
+  def Delete(domain_name, label, user=None):
     """Deletes an existing CatalogEntry.
 
     Args:
       domain_name: The domain to which the CatalogEntry belongs.
       label: The publication label.
+      user: (optional) the user initiating the delete, or None for
+        the current user.
 
     Raises:
       ValueError: if there's no CatalogEntry with the given domain and label.
     """
+    if not user:
+      user = users.GetCurrent()
     domain_name = str(domain_name)  # accommodate Unicode strings
     domain = domains.Domain.Get(domain_name)
     if not domain:
@@ -334,7 +344,13 @@ class CatalogEntry(object):
         not perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name)):
       perms.AssertCatalogEntryOwner(entry)
 
+    # Grab all the log information before we delete the entry
+    map_id, version_key = entry.map_id, entry.map_version.key().name()
+    entry_key = entry.key().name()
     entry.delete()
+    logs.RecordEvent(logs.Event.MAP_UNPUBLISHED, domain_name=domain_name,
+                     map_id=map_id, map_version_key=version_key,
+                     catalog_entry_key=entry_key, uid=user.id)
     # We use '*' in the cache key for the list that includes all domains.
     cache.Delete([CatalogEntry, '*', 'all'])
     cache.Delete([CatalogEntry, '*', 'listed'])
@@ -359,6 +375,8 @@ class CatalogEntry(object):
   is_listed = property(
       lambda self: self.model.is_listed,
       lambda self, value: setattr(self.model, 'is_listed', value))
+
+  id = property(lambda self: self.model.key().name())
 
   # The datastore key of this catalog entry's MapVersionModel.
   def GetMapVersionKey(self):
@@ -406,6 +424,12 @@ class CatalogEntry(object):
     self.model.updater_uid = users.GetCurrent().id
     self.model.updated = datetime.datetime.utcnow()
     self.model.put()
+    logs.RecordEvent(logs.Event.MAP_PUBLISHED, domain_name=domain_name,
+                     map_id=self.map_id,
+                     map_version_key=self.GetMapVersionKey().name(),
+                     catalog_entry_key=self.id,
+                     uid=users.GetCurrent().id)
+
     # We use '*' in the cache key for the list that includes all domains.
     cache.Delete([CatalogEntry, '*', 'all'])
     cache.Delete([CatalogEntry, '*', 'listed'])
@@ -601,6 +625,8 @@ class Map(object):
     self.model.deleter_uid = users.GetCurrent().id
     CatalogEntry.DeleteByMapId(self.id)
     self.model.put()
+    logs.RecordEvent(logs.Event.MAP_DELETED, map_id=self.id,
+                     uid=self.model.deleter_uid)
     cache.Delete([Map, self.id, 'json'])
 
   def Undelete(self):
@@ -609,6 +635,8 @@ class Map(object):
     self.model.deleted = NEVER
     self.model.deleter_uid = None
     self.model.put()
+    logs.RecordEvent(logs.Event.MAP_UNDELETED, map_id=self.id,
+                     uid=users.GetCurrent().id)
     cache.Delete([Map, self.id, 'json'])
 
   def SetBlocked(self, block):
@@ -618,9 +646,13 @@ class Map(object):
       self.model.blocked = datetime.datetime.utcnow()
       self.model.blocker_uid = users.GetCurrent().id
       CatalogEntry.DeleteByMapId(self.id)
+      logs.RecordEvent(logs.Event.MAP_BLOCKED, map_id=self.id,
+                       uid=self.model.blocker_uid)
     else:
       self.model.blocked = NEVER
       self.model.blocker_uid = None
+      logs.RecordEvent(logs.Event.MAP_UNBLOCKED, map_id=self.id,
+                       uid=users.GetCurrent().id)
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
 
@@ -628,7 +660,10 @@ class Map(object):
     """Permanently destroys a map."""
     self.AssertAccess(perms.Role.ADMIN)
     CatalogEntry.DeleteByMapId(self.id)
+    map_id, domain_name = self.id, self.domains[0]
     db.delete([self.model] + list(MapVersionModel.all().ancestor(self.model)))
+    logs.RecordEvent(logs.Event.MAP_WIPED, domain_name=domain_name,
+                     map_id=map_id, uid=users.GetCurrent().id)
 
   def GetCurrentJson(self):
     """Gets the current JSON for public viewing only."""

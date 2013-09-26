@@ -17,6 +17,7 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 import copy
 
 import domains
+import logs
 import model
 import perms
 import test_utils
@@ -180,6 +181,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     """Tests creation of a CatalogEntry."""
     m = test_utils.CreateMap(
         '{"title": "Fancy fancy"}', editors=['publisher', 'outsider'])
+    self.CaptureLog()
 
     with test_utils.Login('outsider'):
       # User 'outsider' doesn't have CATALOG_EDITOR.
@@ -201,6 +203,8 @@ class CatalogEntryTests(test_utils.BaseTest):
       self.assertEquals('Fancy fancy', mc.title)
       self.assertTrue(mc.is_listed)
       self.assertEquals(m.id, mc.map_id)
+      self.assertLog(logs.Event.MAP_PUBLISHED, map_id=m.id,
+                     domain_name='xyz.com', catalog_entry_key=mc.id)
 
       # Creating another entry with the same path_name should succeed.
       model.CatalogEntry.Create('xyz.com', 'label', m)
@@ -208,7 +212,7 @@ class CatalogEntryTests(test_utils.BaseTest):
   def testDelete(self):
     m = test_utils.CreateMap('{"title": "Bleg"}', viewers=['viewer'])
     with test_utils.RootLogin():
-      model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
+      entry = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
       domains.Domain.Create('xyz.com')
 
     # Validate that CatalogEntry is created successfully.
@@ -221,10 +225,14 @@ class CatalogEntryTests(test_utils.BaseTest):
                         'xyz.com', 'label')
       # After we grant the CATALOG_EDITOR role, CatalogEntry.Delete should work.
       perms.Grant('outsider', perms.Role.CATALOG_EDITOR, 'xyz.com')
+      self.CaptureLog()
       model.CatalogEntry.Delete('xyz.com', 'label')
 
     # Assert that the entry is successfully deleted.
     self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))
+    self.assertLog(
+        logs.Event.MAP_UNPUBLISHED, uid='outsider', domain_name='xyz.com',
+        map_id=m.id, catalog_entry_key=entry.model.key().name())
     # A CatalogEntry cannot be deleted twice.
     self.assertRaises(ValueError, model.CatalogEntry.Delete, 'xyz.com', 'label')
 
@@ -339,11 +347,13 @@ class CatalogEntryTests(test_utils.BaseTest):
       self.assertRaises(perms.AuthorizationError, model.Map.Get(map_id).Delete)
 
     # Owners should be able to delete the map.
+    self.CaptureLog()
     with test_utils.Login('owner'):
       m = model.Map.Get(map_id)
       m.Delete()
       self.assertTrue(m.is_deleted)
       self.assertEquals('owner', m.deleter_uid)
+      self.assertLog(logs.Event.MAP_DELETED, map_id=m.id, uid='owner')
 
     # The catalog entry should be gone.
     self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))
@@ -354,6 +364,7 @@ class CatalogEntryTests(test_utils.BaseTest):
 
     # Non-admins (even the owner) should not be able to retrieve deleted maps.
     self.assertRaises(perms.AuthorizationError, model.Map.GetDeleted, map_id)
+    self.CaptureLog()
 
     # Admins should be able to undelete, which makes the map viewable again.
     with test_utils.RootLogin():
@@ -361,6 +372,7 @@ class CatalogEntryTests(test_utils.BaseTest):
       m.Undelete()
     with test_utils.Login('viewer'):
       self.assertTrue(model.Map.Get(map_id))
+    self.assertLog(logs.Event.MAP_UNDELETED, map_id=map_id, uid=perms.ROOT.id)
 
   def testMapBlock(self):
     with test_utils.RootLogin():
@@ -375,10 +387,12 @@ class CatalogEntryTests(test_utils.BaseTest):
       self.assertRaises(perms.AuthorizationError, m.SetBlocked, True)
 
     # Admins should be able to block the map.
+    self.CaptureLog()
     with test_utils.RootLogin():
       m.SetBlocked(True)
       self.assertTrue(m.is_blocked)
       self.assertEquals('root', m.blocker_uid)
+      self.assertLog(logs.Event.MAP_BLOCKED, map_id=m.id, uid='root')
 
     # The catalog entry should be gone.
     self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))
@@ -396,6 +410,20 @@ class CatalogEntryTests(test_utils.BaseTest):
       self.assertRaises(perms.NotPublishableError,
                         model.CatalogEntry.Create, 'xyz.com', 'foo', m)
 
+  def testMapUnblock(self):
+    with test_utils.RootLogin():
+      m = test_utils.CreateMap(
+          owners=['owner'], editors=['editor'], viewers=['viewer'])
+      m.SetBlocked(True)
+      self.assertTrue(model.Map.Get(m.id).is_blocked)
+      self.CaptureLog()
+      m.SetBlocked(False)
+
+    self.assertLog(logs.Event.MAP_UNBLOCKED, uid='root', map_id=m.id)
+    with test_utils.Login('viewer'):
+      n = model.Map.Get(m.id)
+      self.assertFalse(n.is_blocked)
+
   def testMapWipe(self):
     with test_utils.RootLogin():
       m = test_utils.CreateMap(
@@ -407,9 +435,11 @@ class CatalogEntryTests(test_utils.BaseTest):
     with test_utils.Login('owner'):
       self.assertRaises(perms.AuthorizationError, m.Wipe)
 
+    self.CaptureLog()
     # Admins should be able to wipe the map.
     with test_utils.RootLogin():
       m.Wipe()
+    self.assertLog(logs.Event.MAP_WIPED, uid=perms.ROOT.id, map_id=map_id)
 
     # The catalog entry should be gone.
     self.assertEquals(None, model.CatalogEntry.Get('xyz.com', 'label'))

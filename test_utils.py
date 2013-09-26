@@ -28,6 +28,7 @@ import webob
 import base_handler
 import config
 import domains
+import logs
 import model
 import mox
 import perms
@@ -256,6 +257,21 @@ class BaseTest(unittest.TestCase):
     self.assertEquals(
         (e_scheme, e_host, e_path, sorted(urlparse.parse_qsl(e_query)), e_frag),
         (a_scheme, a_host, a_path, sorted(urlparse.parse_qsl(a_query)), a_frag))
+
+  def MockRecordEvent(self, event, **kwargs):
+    self.logs.append(dict(event=event, **kwargs))
+
+  def CaptureLog(self):
+    self.mox.stubs.Set(logs, 'RecordEvent', self.MockRecordEvent)
+    self.logs = []
+
+  def assertLog(self, event, **kwargs):
+    expected_items = dict(event=event, **kwargs).items()
+    matches = [log_dict for log_dict in self.logs
+               if set(log_dict.items()).issuperset(expected_items)]
+    self.assertTrue(matches, 'No matching logs found.')
+    self.assertEqual(1, len(matches), 'Multiple matching logs found.')
+    return matches[0]
 
 
 def main():

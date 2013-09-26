@@ -14,6 +14,7 @@
 
 import cache
 import config
+import logs
 import perms
 
 from google.appengine.ext import db
@@ -69,7 +70,8 @@ class Domain(object):
 
   @staticmethod
   def Create(domain_name, has_sticky_catalog_entries=False,
-             default_label='empty', initial_domain_role=perms.Role.MAP_VIEWER):
+             default_label='empty', initial_domain_role=perms.Role.MAP_VIEWER,
+             user=None):
     """Creates and stores a Domain object, overwriting any existing one."""
     domain_name = Domain.NormalizeDomainName(domain_name)
     if not initial_domain_role:
@@ -81,6 +83,8 @@ class Domain(object):
     domain_model.put()
     domain = Domain(domain_model)
     domain._Cache()  # pylint: disable=protected-access
+    logs.RecordEvent(logs.Event.DOMAIN_CREATED, domain_name=domain.name,
+                     uid=user.id if user else None)
     return domain
 
   @staticmethod

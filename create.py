@@ -33,6 +33,7 @@ class Create(base_handler.BaseHandler):
         map_id=map_object.id,
         acceptable_purpose=bool(self.request.get('acceptable_purpose')),
         acceptable_org=acceptable_org,
-        org_name=acceptable_org and self.request.get('organization') or '')
+        org_name=acceptable_org and self.request.get('organization') or '',
+        uid=user.id)
     users.SetMarketingConsent(user.id, self.request.get('marketing_consent'))
     self.redirect('.maps/%s' % map_object.id)

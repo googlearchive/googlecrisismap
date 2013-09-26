@@ -15,6 +15,7 @@
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import domains
+import logs
 import model
 import perms
 import test_utils
@@ -25,12 +26,15 @@ class CreateTest(test_utils.BaseTest):
 
   def testCreate(self):
     perms.Grant('creator', perms.Role.MAP_CREATOR, 'xyz.com')
+    self.CaptureLog()
     with test_utils.Login('creator'):
       response = self.DoPost('/xyz.com/.create', 'xsrf_token=XSRF', status=302)
       # Confirm that a map was created.
       location = response.headers['Location']
       map_object = model.Map.Get(location.split('/')[-1])
       self.assertTrue('Untitled' in map_object.GetCurrentJson())
+      self.assertLog(logs.Event.MAP_CREATED, uid='creator',
+                     map_id=map_object.id, domain_name='xyz.com')
 
   def testCreateWithoutPermission(self):
     # Without MAP_CREATOR, the user shouldn't be able to create a map.
