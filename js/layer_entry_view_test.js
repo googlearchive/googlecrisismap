@@ -193,7 +193,6 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   expectDescendantOf(circle, withClass('cm-slider-dot'));
 
   // Change the layer to non-TILE to verify that the slider is destroyed.
-  expectCall(slider.dispose)();
   this.layerModel_.set('type', cm.LayerModel.Type.KML);
 };
 

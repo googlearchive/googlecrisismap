@@ -562,10 +562,7 @@ cm.TestBase.expectFalse = function(actual) {
     // objects.
     if ('getParentEventTarget' in instance &&
         'dispatchEvent' in instance) {
-      instance.getParentEventTarget = function() { return null; };
-      instance.dispatchEvent = function(event) {
-        goog.events.dispatchEvent(instance, event);
-      };
+      goog.testing.events.mixinListenable(instance);
     }
     return instance;
   };
