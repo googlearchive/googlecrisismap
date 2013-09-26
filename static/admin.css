@@ -120,7 +120,7 @@ h2 + h3 {
   border:1px solid #f44;
 }
 
-/* Acceptable Use Policy */
+/* Acceptable use popup */
 .cm-popup {
   line-height:18px;
 }
@@ -144,26 +144,40 @@ h2 + h3 {
   margin-top:6px;
 }
 
-/* Domain administration page */
+/* Publisher name popup */
+.cm-popup .cm-preview.cm-map-publisher {
+  color:#666;
+  font-size:12px;
+  margin:18px 0;
+  padding:6px 12px;
+  -webkit-box-shadow:0 2px 4px rgba(0,0,0,0.4);
+  -moz-box-shadow:0 2px 4px rgba(0,0,0,0.4);
+  -ms-box-shadow:0 2px 4px rgba(0,0,0,0.4);
+  box-shadow:0 2px 4px rgba(0,0,0,0.4);
+}
+.cm-popup .cm-preview.cm-map-publisher input {
+  font-size:12px;
+}
 
+/* Domain administration page */
 .cm-perms-user-settings table {
-    border-collapse:collapse;
-    margin:12px;
+  border-collapse:collapse;
+  margin:12px;
 }
 
 .cm-perms-user-settings table td {
-    text-align:center;
-    padding-left:6px;
-    padding-right:6px;
+  text-align:center;
+  padding-left:6px;
+  padding-right:6px;
 }
 
 .cm-perms-user-settings table th {
-    padding-left:12px;
-    padding-right:12px;
-    padding-bottom:6px;
-    text-align:left;
+  padding-left:12px;
+  padding-right:12px;
+  padding-bottom:6px;
+  text-align:left;
 }
 
 .cm-perms-user-settings table .cm-perms-subject {
-    text-align:left;
+  text-align:left;
 }

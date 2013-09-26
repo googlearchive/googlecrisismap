@@ -96,6 +96,7 @@ function showPublishPopup(mapid) {
   $('publish-popup-domain').value = $('domain-' + mapid).value;
   $('publish-popup-label').value = $('label-' + mapid).value;
   updatePublishPopup();
+  $('publisher-name').focus();
 }
 
 /**
