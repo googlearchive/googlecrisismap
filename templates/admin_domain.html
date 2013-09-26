@@ -14,76 +14,77 @@ specific language governing permissions and limitations under the License.
 {% endcomment %}
 
 {% block content %}
-<h2 class="cm-perms-heading">{{domain.name}}</h2>
-<h3 class="cm-perms-subheading">Settings</h3>
+<h3 class="cm-perms-subheading">Domain settings for {{domain.name}}</h3>
 <div class="cm-perms-domain-settings">
   <form method="post">
     {{xsrf_tag|safe}}
     <input type="hidden" name="form" value="domain-settings">
-    <ul>
-      <li>
-        <span class="cm-perms-setting-label">Default published map:</span>
-        <span class="cm-perms-setting-value">
-          <select name='default_label'>
-            {% if domain.default_label not in labels and domain.default_label != 'empty' %}
-              <option value="{{domain.default_label}}" selected>
-                {{domain.default_label}} (does not exist)
-               </option>
-            {% endif %}
-            {% for label in labels %}
-              <option value="{{label}}"
-                  {% if label == domain.default_label %}selected{% endif %}>
-                {{label}}
-              </option>
-            {% endfor %}
-            {% if 'empty' not in labels %}
-              <option disabled>
-              <option value="empty"
-                  {% if domain.default_label == 'empty' %}selected{% endif %}>
-                &lt;None&gt;
-              </option>
-            {% endif %}
-          </select>
-        </span>
-      </li>
-      <li>
-        <span class="cm-perms-setting-label">
-          When a new map is created, users in this domain should:
-        </span>
-        <span class="cm-perms-setting-value">
-          <select name="initial_domain_role">
-            {% for choice in initial_domain_role_choices %}
-              <option value={{choice.0}}
-                  {% if domain.initial_domain_role == choice.0 %}selected{% endif %}>
-                {{choice.1}}
-              </option>
-            {% endfor %}
-          </select>
-        </span>
-      </li>
-    </ul>
-    <input type="submit" value="Save Settings" class="cm-button cm-submit">
+    <div class="cm-perms-setting">
+      <span class="cm-perms-setting-label">Default published map:</span>
+      <span class="cm-perms-setting-value">
+        <select name='default_label'>
+          {% if domain.default_label not in labels and domain.default_label != 'empty' %}
+            <option value="{{domain.default_label}}" selected>
+              {{domain.default_label}} (does not exist)
+             </option>
+          {% endif %}
+          {% for label in labels %}
+            <option value="{{label}}"
+                {% if label == domain.default_label %}selected{% endif %}>
+              {{label}}
+            </option>
+          {% endfor %}
+          {% if 'empty' not in labels %}
+            <option disabled>
+            <option value="empty"
+                {% if domain.default_label == 'empty' %}selected{% endif %}>
+              &lt;None&gt;
+            </option>
+          {% endif %}
+        </select>
+      </span>
+    </div>
+    <div class="cm-perms-setting">
+      <span class="cm-perms-setting-label">
+        When a new map is created, all members below:
+      </span>
+      <span class="cm-perms-setting-value">
+        <select name="initial_domain_role">
+          {% for choice in initial_domain_role_choices %}
+            <option value={{choice.0}}
+                {% if domain.initial_domain_role == choice.0 %}selected{% endif %}>
+              {{choice.1}}
+            </option>
+          {% endfor %}
+        </select>
+      </span>
+    </div>
+    <div class="cm-button-area">
+      <input type="submit" value="Save settings" class="cm-button cm-submit">
+    </div>
   </form>
 </div>
 
-<h3 class="cm-perms-subheading">User Permissions</h3>
+<h3 class="cm-perms-subheading">Members of {{domain.name}}</h3>
 <div class="cm-perms-user-settings">
   <form method="post">
     {{xsrf_tag|safe}}
     <input type="hidden" name="form" value="user-permissions">
-    <table title="Users" border=1>
+    <table title="Users">
       <tr>
-        <th scope="col">User</th>
-        <th scope="col">Permissions</th>
-        <th scope="col">Delete</th>
+        <th class="cm-perms-subject" scope="col">E-mail address</th>
+        <th class="cm-perms-role" scope="col">Permission</th>
+        <th class="cm-perms-delete" scope="col">Delete</th>
       </tr>
-      <tr>
-        <td class="cm-perms-subject">Anyone at {{domain.name}}</td>
-        <td>
+      <tr class="cm-perms-domain-wide">
+        <td class="cm-perms-subject">
+          <span class="cm-wildcard">(everyone)</span>@{{domain.name}}
+        </td>
+        <td class="cm-perms-role">
           <select name="domain_role">
             <option value="NO_PERMISSIONS"
                 {% if not domain_role %}selected{% endif %}>
-              Has no permissions
+              No default permissions
             </option>
             {% for choice in user_permission_choices %}
               <option value="{{choice.0}}"
@@ -98,7 +99,7 @@ specific language governing permissions and limitations under the License.
       {% for user_role in user_roles %}
         <tr>
           <td class="cm-perms-subject">{{user_role.0.email}}</td>
-          <td>
+          <td class="cm-perms-role">
             <select name="{{user_role.0.id}}.permission">
               {% for choice in user_permission_choices %}
                 <option value="{{choice.0}}"
@@ -108,16 +109,16 @@ specific language governing permissions and limitations under the License.
               {% endfor %}
             </select>
           </td>
-          <td>
+          <td class="cm-perms-delete">
             <input type="checkbox" name="{{user_role.0.id}}.delete">
           </td>
         </tr>
       {% endfor %}
-      <tr>
+      <tr class="cm-perms-new-user">
         <td class="cm-perms-subject">
-          <input name="new_user" type="text" placeholder="New user" >
+          <input name="new_user" type="text" placeholder="Add a new member">
         </td>
-        <td>
+        <td class="cm-perms-role">
           <select name="new_user.permission">
             {% for choice in user_permission_choices %}
               <option value="{{choice.0}}">{{choice.1}}</option>
@@ -127,7 +128,9 @@ specific language governing permissions and limitations under the License.
         <td>&nbsp;</td>
       </tr>
     </table>
-    <input type="submit" value="Save Permissions" class="cm-button cm-submit">
+    <div class="cm-button-area">
+      <input type="submit" value="Save changes" class="cm-button cm-submit">
+    </div>
   </form>
 </div>
 

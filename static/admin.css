@@ -264,24 +264,72 @@ h2 + h3 {
 }
 
 /* Domain administration page */
+.cm-perms-subheading {
+  margin-top:35px;
+  margin-bottom:17px;
+}
+.cm-perms-subheading:first-child {
+  margin-top:15px;
+}
+.cm-perms-domain-settings {
+  line-height:24px;
+}
+.cm-perms-domain-settings .cm-perms-setting {
+  padding-left:12px;
+}
+.cm-perms-domain-settings .cm-button-area {
+  margin:22px 0;
+}
+.cm-perms-user-settings {
+  margin-top:19px;
+}
 .cm-perms-user-settings table {
   border-collapse:collapse;
-  margin:12px;
 }
-
-.cm-perms-user-settings table td {
+.cm-perms-user-settings th,
+.cm-perms-user-settings td {
+  padding:2px 4px 0;
   text-align:left;
-  padding-left:6px;
-  padding-right:6px;
 }
-
-.cm-perms-user-settings table th {
+.cm-perms-user-settings th {
+  text-transform:uppercase;
+  border-bottom:1px solid #eee;
+  font-size:11px;
+  color:#666;
+  white-space:nowrap;
+  padding:4px 4px 0; /* baseline on 24px grid */
+  height:16px; /* total height 24px */
+}
+.cm-perms-user-settings .cm-perms-subject {
   padding-left:12px;
-  padding-right:12px;
-  padding-bottom:6px;
-  text-align:left;
 }
-
-.cm-perms-user-settings table .cm-perms-subject {
-  text-align:left;
+.cm-perms-user-settings .cm-wildcard {
+  color:#999;
+}
+.cm-perms-user-settings .cm-perms-subject input[type="text"] {
+  width:14em;
+  padding-bottom:0;
+}
+.cm-perms-user-settings .cm-perms-role select {
+  margin-left:0;
+}
+.cm-perms-user-settings .cm-perms-delete {
+  text-align:center;
+}
+.cm-perms-user-settings .cm-perms-delete input {
+  vertical-align:bottom;
+  margin-bottom:1px;
+}
+.cm-perms-user-settings .cm-perms-domain-wide td {
+  padding-bottom:12px;
+}
+.cm-perms-user-settings .cm-perms-new-user td {
+  padding-top:12px;
+}
+.cm-perms-user-settings .cm-perms-new-user td.cm-perms-subject {
+  padding-left:9px;
+  padding-right:12px;
+}
+.cm-perms-user-settings .cm-button-area {
+  margin:23px 0;
 }
