@@ -75,8 +75,8 @@ cm.ui.showPopup = function(popup, opt_container) {
  * @param {Object=} opt_attributes Attributes to set on the new element. 'style'
  *     attributes may be strings or objects; the former will be applied as a DOM
  *     attribute, while the latter will be applied as JavaScript properties.
- * @param {string|cm.Html|Element|Array.<Element>} var_args Text strings, Html
- *     objects, elements, or arrays of elements as children of the new element.
+ * @param {...(cm.Html|string|Node|Array.<string|Node>)} var_args Text strings,
+ *     Html objects, or DOM nodes to add as children of the new element.
  * @return {!Element} The newly created element.
  */
 cm.ui.create = function(tag, opt_attributes, var_args) {

@@ -148,11 +148,14 @@ MapViewTest.newMVCObject_ = function(properties) {
  */
 MapViewTest.prototype.expectInfoWindowOpen_ = function(
     content, position, pixelOffset) {
+  // Simulate the conversion of a string of HTML into a DOM node.
+  var node = {innerHtml: content, childNodes: ['x']};
+
   expectCall(this.infoWindow_.close)();
   expectCall(goog.dom.htmlToDocumentFragment)(content)
-      .willOnce(returnWith({childNodes: ['stuff']}));
+      .willOnce(returnWith(node));
   expectCall(this.infoWindow_.setOptions)({
-    position: position, pixelOffset: pixelOffset, content: content
+    position: position, pixelOffset: pixelOffset, content: node
   });
   expectCall(this.infoWindow_.open)(this.map_);
 };
@@ -768,14 +771,13 @@ MapViewTest.prototype.updateVisibility = function() {
  */
 MapViewTest.prototype.infoWindowClosesWhenLayerTurnedOff = function() {
   // Given two visible layers...
-  this.addLayer_({'id': 'chocolate-fondante',
-                  'type': cm.LayerModel.Type.TRANSIT});
+  this.addLayer_({'id': 'chocolate-fondante', 'type': cm.LayerModel.Type.KML,
+                  'url': 'http://example.com/foo.kml'});
   this.addLayer_({'id': 'cookies-and-cream', 'type': cm.LayerModel.Type.TILE});
-  this.stubReturnVisibleLayerIds_(['chocolate-fondante',
-                                   'cookies-and-cream']);
+  this.stubReturnVisibleLayerIds_(['chocolate-fondante', 'cookies-and-cream']);
 
   // ...expect two layers to be created and added to the map...
-  var overlay1 = this.expectNew_('google.maps.TransitLayer');
+  var overlay1 = this.expectNew_('google.maps.KmlLayer', _);
   var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
   expectCall(overlay1.getMap)().willOnce(returnWith(null));
   expectCall(overlay1.setMap)(this.map_);
@@ -790,7 +792,7 @@ MapViewTest.prototype.infoWindowClosesWhenLayerTurnedOff = function() {
   this.expectInfoWindowOpen_(_, _, _);
 
   // ...when there is a click on the chocolate-fondante layer.
-  cm.events.emit(overlay1, 'click', {});
+  cm.events.emit(overlay1, 'click', {'featureData': {'infoWindowHtml': 'foo'}});
 
   // Expect cookies-and-cream to disappear from the map, but do not expect
   // the InfoWindow to be closed...

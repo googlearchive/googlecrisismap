@@ -545,24 +545,11 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
     cm.events.listen(overlay, 'click', function(event) {
       this.infoWindow_.close();
       this.infoWindowLayerId_ = null;
-      // The API currently passes back an empty DIV when a KML Layer has no
-      // content.  Check for this content and don't open an InfoWindow if
-      // there is no actual content.
       // FusionTablesLayer makes the info window content available in the event
-      // itself, but KmlLayer hides it behind 'featureData';
-      var content = (event['featureData'] || event)['infoWindowHtml'];
-      // Strip whitespace from content before checking if it has child nodes;
-      // otherwise, whitespace (unless you're on IE) counts as a node in the
-      // document fragment, which defeats the purpose of the
-      // "suppress empty info windows" check
+      // itself, but KmlLayer hides it behind 'featureData'.
+      var content = cm.MapView.htmlToDivOrNull(
+          (event['featureData'] || event)['infoWindowHtml']);
       if (content) {
-        content = goog.string.trim(content);
-      }
-      // TODO(shakusa) htmlToDocumentFragment is somewhat convoluted.
-      // Try to do this check without using that method.
-      var contentDiv = goog.dom.htmlToDocumentFragment(content);
-      if (contentDiv && contentDiv.childNodes &&
-          contentDiv.childNodes.length > 0) {
         this.infoWindow_.setOptions(/** @type google.maps.InfoWindowOptions */({
           position: event['latLng'],
           pixelOffset: event['pixelOffset'],
@@ -573,6 +560,31 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       }
     }, this);
   }
+};
+
+/**
+ * The Maps API currently passes back an empty DIV when there is no content
+ * for the infowindow; this function returns null in that case.
+ * @param {string} htmlString A string of HTML.
+ * @return {Element} The HTML content as a <div> element, or null if the given
+ *     string only contained whitespace or an empty div.
+ */
+cm.MapView.htmlToDivOrNull = function(htmlString) {
+  if (htmlString) {
+    // Strip whitespace from content before checking if it has child nodes;
+    // otherwise, whitespace (except in IE) becomes a node in the document
+    // fragment, which defeats our attempt to suppress empty infowindows.
+    // TODO(shakusa): htmlToDocumentFragment is somewhat convoluted.  Look for
+    // another way to do this without using that function.
+    var node = goog.dom.htmlToDocumentFragment(goog.string.trim(htmlString));
+    if (node && node.childNodes && node.childNodes.length > 0) {
+      return /** @type Element */(node);
+    }
+    if (node.nodeType === goog.dom.NodeType.DOCUMENT_FRAGMENT) {
+      return cm.ui.create('div', {}, node);
+    }
+  }
+  return null;
 };
 
 /**
