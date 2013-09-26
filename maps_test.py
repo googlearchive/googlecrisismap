@@ -14,6 +14,7 @@
 
 __author__ = 'shakusa@google.com (Steve Hakusa)'
 
+import config
 import maps
 import model
 import test_utils
@@ -24,13 +25,13 @@ class MapTest(test_utils.BaseTest):
 
   def setUp(self):
     test_utils.BaseTest.setUp(self)
-    model.Config.Set('primary_domain', 'primary.com')
+    config.Set('primary_domain', 'primary.com')
 
   def testGetClientConfig(self):
     """Confirms that GetClientConfig sets up the correct JS parameters."""
 
     analytics_id = 'US-foo'
-    config = maps.ClientConfig.Create(
+    client_config = maps.ClientConfig.Create(
         'goog-test',
         allowed_referer_domains=['google.org', 'cr.appspot.com'],
         hide_footer=True,
@@ -40,7 +41,7 @@ class MapTest(test_utils.BaseTest):
         show_login=True,
         analytics_id=analytics_id,
         enable_editing=True)
-    config.put()
+    client_config.put()
 
     self.assertEquals({'hide_share_button': True,
                        'hide_my_location_button': True,
@@ -60,9 +61,9 @@ class MapTest(test_utils.BaseTest):
                        'enable_wms_layer_editing': False,
                        'minimal_map_controls': False,
                        'hide_panel_header': False},
-                      config.AsDict())
+                      client_config.AsDict())
 
-    config_dict = config.AsDict()
+    config_dict = client_config.AsDict()
 
     # Try invalid referers.
     self.assertEquals({}, maps.GetClientConfig(None, None))
@@ -106,8 +107,8 @@ class MapTest(test_utils.BaseTest):
   def testClientConfigOverride(self):
     """Verifies that query parameters can override client config settings."""
     test_utils.BecomeAdmin()
-    config = maps.GetConfig(test_utils.SetupRequest('/?dev=1&show_login=1'))
-    self.assertEquals(True, config['show_login'])
+    cm_config = maps.GetConfig(test_utils.SetupRequest('/?dev=1&show_login=1'))
+    self.assertEquals(True, cm_config['show_login'])
 
   def testGetMapsApiClientId(self):
     """Tests the GetMapsApiClientId method."""
@@ -126,17 +127,17 @@ class MapTest(test_utils.BaseTest):
 
   def testMapsApiUrlI18n(self):
     """Verifies that language and region are set correctly for the Maps API."""
-    config = maps.GetConfig(test_utils.SetupRequest('/'))
-    self.assertTrue('language=en' in config['maps_api_url'])
-    self.assertFalse('region=' in config['maps_api_url'])
+    cm_config = maps.GetConfig(test_utils.SetupRequest('/'))
+    self.assertTrue('language=en' in cm_config['maps_api_url'])
+    self.assertFalse('region=' in cm_config['maps_api_url'])
 
-    config = maps.GetConfig(test_utils.SetupRequest('/?hl=ja', 'ja'))
-    self.assertTrue('language=ja' in config['maps_api_url'])
-    self.assertFalse('region=' in config['maps_api_url'])
+    cm_config = maps.GetConfig(test_utils.SetupRequest('/?hl=ja', 'ja'))
+    self.assertTrue('language=ja' in cm_config['maps_api_url'])
+    self.assertFalse('region=' in cm_config['maps_api_url'])
 
-    config = maps.GetConfig(test_utils.SetupRequest('/?hl=th&gl=IN', 'th'))
-    self.assertTrue('language=th' in config['maps_api_url'])
-    self.assertTrue('region=IN' in config['maps_api_url'])
+    cm_config = maps.GetConfig(test_utils.SetupRequest('/?hl=th&gl=IN', 'th'))
+    self.assertTrue('language=th' in cm_config['maps_api_url'])
+    self.assertTrue('region=IN' in cm_config['maps_api_url'])
 
 
 class MapListTest(test_utils.BaseTest):

@@ -15,7 +15,6 @@
 import collections
 
 import cache
-import model
 import utils
 
 from google.appengine.api import users
@@ -294,11 +293,12 @@ def CheckAccess(role, target=None, user=None, policy=None):
 
   Raises:
     ValueError: The specified role is not a valid member of Role.
+    TypeError: The target has the wrong type for the given role.
   """
 
   def RequireTargetClass(required_cls, cls_desc):
     if not isinstance(target, required_cls):
-      raise ValueError('For role %r, target must be a %s' % (role, cls_desc))
+      raise TypeError('For role %r, target must be a %s' % (role, cls_desc))
 
   if role not in Role:
     raise ValueError('Invalid role %r' % role)
@@ -321,7 +321,8 @@ def CheckAccess(role, target=None, user=None, policy=None):
     return policy.HasRoleDomainAdmin(user, target)
 
   # Roles with a Map as the target
-  RequireTargetClass(model.Map, 'Map')
+  if target.__class__.__name__ not in ['Map', 'EmptyMap']:
+    raise TypeError('For role %r, target must be a Map' % role)
   if role == Role.MAP_OWNER:
     return policy.HasRoleMapOwner(user, target)
   if role == Role.MAP_EDITOR:

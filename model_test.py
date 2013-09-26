@@ -29,6 +29,12 @@ class MapTests(test_utils.BaseTest):
   def setUp(self):
     super(MapTests, self).setUp()
 
+  def testInitialDomainRole(self):
+    self.assertEquals(None, model.GetInitialDomainRole('xyz.com'))
+    model.SetInitialDomainRole('xyz.com', perms.Role.MAP_VIEWER)
+    self.assertEquals(perms.Role.MAP_VIEWER,
+                      model.GetInitialDomainRole('xyz.com'))
+
   def testVersions(self):
     """Verifies that creating and setting versions works properly."""
     test_utils.BecomeAdmin()
@@ -208,19 +214,6 @@ class MapTests(test_utils.BaseTest):
     m.PutNewVersion(json3)
     self.assertEquals(None, memcache.get('Map,%s,json' % m.id))
     self.assertEquals(json3, m.GetCurrentJson())
-
-  def testConfig(self):
-    """Tests storage of simple and structured values in Config entities."""
-    key = 'item'
-    self.assertEquals(None, model.Config.Get(key))
-    model.Config.Set(key, 'value')
-    self.assertEquals('value', model.Config.Get(key))
-    model.Config.Set(key, [3, 4, {'a': 'b'}, None])
-    self.assertEquals([3, 4, {'a': 'b'}, None], model.Config.Get(key))
-    self.assertEquals(None, model.GetInitialDomainRole('xyz.com'))
-    model.SetInitialDomainRole('xyz.com', perms.Role.MAP_VIEWER)
-    self.assertEquals(perms.Role.MAP_VIEWER,
-                      model.GetInitialDomainRole('xyz.com'))
 
   def testGetAll(self):
     """Tests Maps.GetAll and Maps.GetViewable."""

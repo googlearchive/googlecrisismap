@@ -17,7 +17,7 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 import urllib
 
 import base_handler
-import model
+import config
 
 
 def GetDestination(request):
@@ -25,7 +25,7 @@ def GetDestination(request):
 
   # For backward compatibility, support the id= and crisis= parameters.
   label = (request.get('id') or request.get('crisis') or
-           model.Config.Get('default_label') or 'empty')
+           config.Get('default_label') or 'empty')
   url = request.root_path + '/' + label
 
   # Preserve all the query parameters except those that set the label.

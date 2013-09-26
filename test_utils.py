@@ -24,6 +24,7 @@ import urlparse
 import webapp2
 import webob
 
+import config
 import model
 import mox
 
@@ -156,7 +157,7 @@ class BaseTest(unittest.TestCase):
     self.testbed.init_urlfetch_stub()
     self.testbed.init_user_stub()
     self.testbed.init_taskqueue_stub(root_path=root)
-    model.Config.Set('root_path', ROOT_PATH)
+    config.Set('root_path', ROOT_PATH)
 
     self.mox.stubs.Set(webapp2.RequestHandler, 'redirect', TestRedirect)
 

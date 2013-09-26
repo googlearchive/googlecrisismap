@@ -20,7 +20,7 @@ import os
 
 import webapp2
 
-import model  # TODO(kpy): Move model.Config into its own file.
+import config
 import perms
 # pylint: disable=g-import-not-at-top
 try:
@@ -140,7 +140,7 @@ class BaseHandler(webapp2.RequestHandler):
       # Fill in some useful request variables.
       self.request.lang = ActivateLanguage(
           self.request.get('hl'), self.request.headers.get('accept-language'))
-      self.request.root_path = model.Config.Get('root_path', '')
+      self.request.root_path = config.Get('root_path') or ''
 
       # Call the handler, making nice pages for errors derived from Error.
       method(**kwargs)
@@ -171,7 +171,7 @@ class BaseHandler(webapp2.RequestHandler):
       A string, the rendered template.
     """
     path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
-    context = dict(context, root=model.Config.Get('root_path', ''))
+    context = dict(context, root=config.Get('root_path') or '')
     return template.render(path, context)
 
   def WriteJson(self, data):

@@ -14,6 +14,7 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
+import config
 import model
 import perms
 import test_utils
@@ -55,7 +56,7 @@ class CreateTest(test_utils.BaseTest):
     self.assertEquals(None, map_object.domain_role)
 
     # Now set the initial_domain_role for xyz.com.
-    model.Config.Set('initial_domain_role:xyz.com', perms.Role.MAP_EDITOR)
+    config.Set('initial_domain_role:xyz.com', perms.Role.MAP_EDITOR)
     # Create another map.
     test_utils.SetUser(user)
     response = test_utils.DoPost('/.create?domain=xyz.com', '')

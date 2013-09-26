@@ -21,6 +21,7 @@ import urlparse
 
 import base_handler
 import cache
+import config
 import metadata
 import model
 import perms
@@ -179,7 +180,7 @@ def GetMapMenuItems(domain, root_path):
 
   # Add menu items for the CatalogEntry entities that are marked 'listed'.
   if domain:
-    if domain == model.Config.Get('primary_domain', ''):
+    if domain == config.Get('primary_domain'):
       menu_items = [
           {'title': entry.title, 'url': root_path + '/' + entry.label}
           for entry in list(model.CatalogEntry.GetListed(domain))]
@@ -209,7 +210,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
   dev_mode = request.get('dev') and AllowDeveloperMode()
   map_catalog = GetMapMenuItems(
       catalog_entry and catalog_entry.domain or
-      model.Config.Get('primary_domain'), request.root_path)
+      config.Get('primary_domain'), request.root_path)
 
   # Construct the URL for the Maps JavaScript API.
   api_url_params = {
@@ -223,8 +224,8 @@ def GetConfig(request, map_object=None, catalog_entry=None):
     api_url_params['region'] = ui_region
   maps_api_url = MAPS_API_BASE_URL + '?' + urllib.urlencode(api_url_params)
 
-  # Fill the config dictionary.
-  config = {
+  # Fill the cm_config dictionary.
+  result = {
       'ui_lang': request.lang,
       'dev_mode': dev_mode,
       'user_email': utils.GetCurrentUserEmail(),
@@ -238,50 +239,50 @@ def GetConfig(request, map_object=None, catalog_entry=None):
       'wms_tiles_url': request.root_path + '/.wms/tiles'
   }
 
-  # Add settings from the selected client config, if any.
-  config.update(GetClientConfig(request.get('client'),
+  # Add settings from the selected client result, if any.
+  result.update(GetClientConfig(request.get('client'),
                                 request.headers.get('referer'), dev_mode))
 
   # Add the MapRoot data and other map-specific information.
   if catalog_entry:  # published map
-    config['map_root'] = json.loads(catalog_entry.maproot_json)
-    config['map_id'] = catalog_entry.map_id
-    config['label'] = catalog_entry.label
+    result['map_root'] = json.loads(catalog_entry.maproot_json)
+    result['map_id'] = catalog_entry.map_id
+    result['label'] = catalog_entry.label
     key = catalog_entry.map_version_key
   elif map_object:  # draft map
-    config['map_root'] = json.loads(map_object.GetCurrentJson())
-    config['map_id'] = map_object.id
-    config['diff_url'] = request.root_path + '/.diff/' + map_object.id
-    config['save_url'] = request.root_path + '/.api/maps/' + map_object.id
-    config['share_url'] = request.root_path + '/.share/' + map_object.id
-    config['api_maps_url'] = request.root_path + '/.api/maps'
-    config['legend_url'] = request.root_path + '/.legend'
-    config['wms_query_url'] = request.root_path + '/.wms/query'
-    config['enable_editing'] = map_object.CheckAccess(perms.Role.MAP_EDITOR)
-    config['draft_mode'] = True
+    result['map_root'] = json.loads(map_object.GetCurrentJson())
+    result['map_id'] = map_object.id
+    result['diff_url'] = request.root_path + '/.diff/' + map_object.id
+    result['save_url'] = request.root_path + '/.api/maps/' + map_object.id
+    result['share_url'] = request.root_path + '/.share/' + map_object.id
+    result['api_maps_url'] = request.root_path + '/.api/maps'
+    result['legend_url'] = request.root_path + '/.legend'
+    result['wms_query_url'] = request.root_path + '/.wms/query'
+    result['enable_editing'] = map_object.CheckAccess(perms.Role.MAP_EDITOR)
+    result['draft_mode'] = True
     key = map_object.current_version_key
   if map_object or catalog_entry:
-    cache_key, sources = metadata.CacheSourceAddresses(key, config['map_root'])
-    config['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
-    config['metadata_url'] = request.root_path + '/.metadata?key=' + cache_key
+    cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
+    result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
+    result['metadata_url'] = request.root_path + '/.metadata?key=' + cache_key
     metadata.ActivateSources(sources)
 
   if dev_mode:
     # In developer mode only, allow an arbitrary URL for MapRoot JSON.
-    config['maproot_url'] = request.get('maproot_url', '')
+    result['maproot_url'] = request.get('maproot_url', '')
 
     # To use a local copy of the Maps API, use dev=1&local_maps_api=1.
     if request.get('local_maps_api'):
-      config['maps_api_url'] = request.root_path + '/.static/maps_api.js'
+      result['maps_api_url'] = request.root_path + '/.static/maps_api.js'
 
-    # In developer mode only, allow query params to override the config.
+    # In developer mode only, allow query params to override the result.
     # Developers can also specify map_root directly as a query param.
     for name in ClientConfig.properties().keys() + ['map_root']:
       value = request.get(name)
       if value:
-        config[name] = json.loads(value)
+        result[name] = json.loads(value)
 
-  return config
+  return result
 
 
 class MapByLabel(base_handler.BaseHandler):
@@ -289,7 +290,7 @@ class MapByLabel(base_handler.BaseHandler):
 
   def Get(self, label, domain=None):  # pylint: disable=g-bad-name
     """Displays a published map by its domain and publication label."""
-    domain = domain or model.Config.Get('primary_domain', '')
+    domain = domain or config.Get('primary_domain') or ''
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
       # Fall back to the map list for users that go to /crisismap/maps.
@@ -297,15 +298,15 @@ class MapByLabel(base_handler.BaseHandler):
       if label == 'maps':
         return self.redirect('.maps')
       raise base_handler.Error(404, 'Label %s/%s not found.' % (domain, label))
-    config = GetConfig(self.request, catalog_entry=entry)
-    config['label'] = label
+    cm_config = GetConfig(self.request, catalog_entry=entry)
+    cm_config['label'] = label
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
-        'cm_config_json': base_handler.ToHtmlSafeJson(config),
+        'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
         'ui_lang': self.request.lang,
-        'maps_api_url': config['maps_api_url'],
-        'hide_footer': config.get('hide_footer', False),
+        'maps_api_url': cm_config['maps_api_url'],
+        'hide_footer': cm_config.get('hide_footer', False),
         'embedded': self.request.get('embedded', False)
     }))
 
@@ -332,14 +333,14 @@ class MapById(base_handler.BaseHandler):
         url += '?' + urllib.urlencode(self.request.GET.items())
       return self.redirect(url)
 
-    config = GetConfig(self.request, map_object=map_object)
+    cm_config = GetConfig(self.request, map_object=map_object)
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
-        'cm_config_json': base_handler.ToHtmlSafeJson(config),
+        'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
         'ui_lang': self.request.lang,
-        'maps_api_url': config['maps_api_url'],
-        'hide_footer': config.get('hide_footer', False),
+        'maps_api_url': cm_config['maps_api_url'],
+        'hide_footer': cm_config.get('hide_footer', False),
         'embedded': self.request.get('embedded', False)
     }))
 

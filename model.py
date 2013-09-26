@@ -21,6 +21,7 @@ import os
 import random
 
 import cache
+import config
 import perms
 import utils
 
@@ -61,60 +62,6 @@ def ResultIterator(query):
     yield StructFromModel(result)
 
 
-class Config(db.Model):
-  """A configuration setting for the application.
-
-  Each configuration setting has a string key and a value that can be anything
-  representable in JSON (string, number, boolean, None, or arbitrarily nested
-  lists or dictionaries thereof).  The value is stored internally using JSON.
-  """
-
-  # The value of the configuration item, serialized to JSON.
-  value_json = db.TextProperty()
-
-  @staticmethod
-  def Get(key, default=None):
-    """Fetches the configuration value for a given key.
-
-    Args:
-      key: A string, the name of the configuration item to get.
-      default: The default value to return if no such configuration item exists.
-
-    Returns:
-      The configuration value, or the given default value if not found, or
-      None if no default value is supplied.
-    """
-
-    def Fetcher():
-      config = Config.get_by_key_name(key)
-      if config:
-        return json.loads(config.value_json)
-      return default
-    return cache.Get([Config, key], Fetcher)
-
-  @classmethod
-  def GetAll(cls):
-    all_configs = Config.all()
-    results = {}
-    for config in all_configs:
-      value = json.loads(config.value_json)
-      cache.Set([Config, config.key().name], value)
-      results[config.key().name()] = value
-    return results
-
-  @staticmethod
-  def Set(key, value):
-    """Sets a configuration value.
-
-    Args:
-      key: A string, the name of the configuration item to get.
-      value: Any Python data structure that can be serialized to JSON.
-    """
-    config = Config(key_name=key, value_json=json.dumps(value))
-    config.put()
-    cache.Delete([Config, key])
-
-
 def SetInitialDomainRole(domain, role):
   """Sets the domain_role to apply to newly created maps for a given domain.
 
@@ -122,7 +69,7 @@ def SetInitialDomainRole(domain, role):
     domain: A domain name.
     role: A Role constant, or None.
   """
-  Config.Set('initial_domain_role:' + domain, role)
+  config.Set('initial_domain_role:' + domain, role)
 
 
 def GetInitialDomainRole(domain):
@@ -134,7 +81,7 @@ def GetInitialDomainRole(domain):
   Returns:
     A Role constant, or None.
   """
-  return Config.Get('initial_domain_role:' + domain)
+  return config.Get('initial_domain_role:' + domain)
 
 
 def DoAsAdmin(function, *args, **kwargs):

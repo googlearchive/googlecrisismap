@@ -239,15 +239,15 @@ class PermsTests(test_utils.BaseTest):
     # Roles that require a domain as the target
     for role in (perms.Role.CATALOG_EDITOR, perms.Role.MAP_CREATOR):
       # Test both no target and a target of the wrong class
-      self.assertRaises(ValueError, perms.CheckAccess, role)
-      self.assertRaises(ValueError, perms.CheckAccess, role, target=my_map)
+      self.assertRaises(TypeError, perms.CheckAccess, role)
+      self.assertRaises(TypeError, perms.CheckAccess, role, target=my_map)
 
     # Roles that require a map as a target
     for role in (perms.Role.MAP_OWNER, perms.Role.MAP_EDITOR,
                  perms.Role.MAP_VIEWER):
       # Test both no target and a target of the wrong class
-      self.assertRaises(ValueError, perms.CheckAccess, role)
-      self.assertRaises(ValueError, perms.CheckAccess, role, target='xyz.com')
+      self.assertRaises(TypeError, perms.CheckAccess, role)
+      self.assertRaises(TypeError, perms.CheckAccess, role, target='xyz.com')
 
   def testCheckAssertRaisesOnUnknownRole(self):
     self.assertFalse('NotARole' in perms.Role)

@@ -14,7 +14,7 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
-import model
+import config
 import test_utils
 
 
@@ -35,7 +35,7 @@ class IndexTest(test_utils.BaseTest):
     self.assertEquals(
         'http://app.com/root/empty?layers=abc',
         test_utils.DoGet('/?layers=abc').headers['Location'])
-    model.Config.Set('default_label', 'qwerty')
+    config.Set('default_label', 'qwerty')
     self.assertEquals(
         'http://app.com/root/qwerty?layers=abc',
         test_utils.DoGet('/?layers=abc').headers['Location'])

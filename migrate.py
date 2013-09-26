@@ -19,7 +19,7 @@ for historical reasons; it can safely be deleted once the migration is complete.
 
 import re
 
-import model
+import config
 import perms
 import utils
 
@@ -32,13 +32,13 @@ ROLE_PREFIX = 'global_roles:'
 
 
 def Migrate(do_it=False):
-  old_configs = model.Config.GetAll()
+  old_configs = config.GetAll()
   for key, value in old_configs.iteritems():
     if not key.startswith(ROLE_PREFIX):
       if key == 'default_publisher_domain':
         print 'Deleting legacy entry %s' % key
         if do_it:
-          model.Config.get_by_key_name(key).delete()
+          config.Delete(key)
       else:
         print 'Ignoring config %s; not a permission.' % key
       continue
@@ -46,7 +46,7 @@ def Migrate(do_it=False):
     if not re.search(r'^[\w@.-]+$', user):
       print 'Found bogus entry %s; deleting' % key
       if do_it:
-        model.Config.get_by_key_name(key).delete()
+        config.Delete(key)
       continue
     print 'Translating perms for %s (%s)' % (user, value)
     if '@' in user:
@@ -66,4 +66,4 @@ def Migrate(do_it=False):
       else:
         print '...User %s has unexpected permission %s; ignoring' % (user, perm)
     if do_it:
-      model.Config.get_by_key_name(key).delete()
+      config.Delete(key)

@@ -29,7 +29,7 @@ import re
 
 import webapp2
 
-import model  # TODO(kpy): Move model.Config into its own file.
+import config
 import utils
 
 
@@ -41,7 +41,7 @@ class RootPathRoute(webapp2.BaseRoute):
     self.router = webapp2.Router(routes)
 
   def match(self, request):  # pylint: disable=g-bad-name
-    root_path = model.Config.Get('root_path', '')
+    root_path = config.Get('root_path') or ''
     if request.path.startswith(root_path):
       return self.router.match(utils.Struct(
           get=request.get, path=request.path[len(root_path):]))

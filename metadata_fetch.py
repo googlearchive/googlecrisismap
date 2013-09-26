@@ -111,8 +111,8 @@ import zipfile
 
 import base_handler
 import cache
+import config
 import maproot
-import model
 
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
@@ -358,7 +358,7 @@ def ScheduleFetch(address, countdown=None):
     logging.info('Scheduling fetch in %d s: %s', countdown, address)
     taskqueue.add(
         queue_name='metadata', countdown=countdown, method='GET',
-        url=model.Config.Get('root_path', '') + '/.metadata_fetch',
+        url=(config.Get('root_path') or '') + '/.metadata_fetch',
         params={'source': address})
 
 
