@@ -123,12 +123,20 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     mapTypeChoices.push({value: cm.MapModel.Type.OSM, label: 'OpenStreetMap'});
   }
 
+  // Create footer content postfix to mimic actual Crisis Map footer.
+  // TODO(user): Ideally, footerPostfix would be contained elsewhere
+  //     (intialize or footer_view), but since it's small, we'll hard code
+  //     it until we find the best place it.
+  var footerPreviewPostfix = cm.ui.create('span', {},
+      cm.ui.SEPARATOR_DOT, cm.ui.createLink('Help'),
+      cm.ui.SEPARATOR_DOT, cm.ui.createLink('Report abuse'));
+
   var mapFields = [
    {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
    {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
     preview_class: cm.css.MAP_DESCRIPTION},
    {key: 'footer', label: 'Footer', type: cm.editors.Type.HTML,
-    preview_class: cm.css.FOOTER},
+    preview_class: cm.css.FOOTER, preview_postfix: footerPreviewPostfix},
    {key: 'viewport', label: 'Default viewport',
     type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
    {key: 'map_type', label: 'Default base map',

@@ -27,7 +27,8 @@ registerTestSuite(HtmlEditorTest);
  */
 HtmlEditorTest.prototype.createEditor_ = function() {
   var parent = cm.ui.create('div');
-  this.editor_ = new cm.HtmlEditor(parent, 'editor1', {preview_class: 'foo'});
+  this.editor_ = new cm.HtmlEditor(parent, 'editor1',
+      {preview_class: 'foo', preview_prefix: 'pre', preview_postfix: 'post'});
   return parent;
 };
 
@@ -62,12 +63,19 @@ HtmlEditorTest.prototype.valuePropertyShouldUpdateTextarea = function() {
   expectEq('', textarea.value);
 };
 
-/** Tests that the 'value' property propagates, sanitized, to the preview. */
+/**
+ * Tests that the 'value' property propagates, sanitized, to the preview,
+ * and that preview prefix and postfix content appear as well.
+ */
 HtmlEditorTest.prototype.valueShouldAppearSanitizedInPreview = function() {
   var parent = this.createEditor_();
   var preview = expectDescendantOf(parent, 'div', withClass(cm.css.PREVIEW));
   this.editor_.set('value', new cm.Html('xyz'));
-  expectEq('*xyz*', preview.innerHTML);
+  var elems = preview.childNodes;
+  expectEq(3, elems.length);
+  expectEq('pre', elems[0].textContent);
+  expectEq('*xyz*', elems[1].innerHTML);
+  expectEq('post', elems[2].textContent);
 };
 
 /** Tests that clicking on the disclosure triangle toggles the preview. */

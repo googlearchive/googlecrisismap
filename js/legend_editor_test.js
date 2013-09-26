@@ -80,9 +80,11 @@ LegendEditorTest.prototype.createEditor_ = function() {
       this.legendEditorElem_, withText('Edit HTML'));
 
   // HTML editor elements
-  this.previewElem_ = expectDescendantOf(this.parent_,
-                                         withClass(cm.css.PREVIEW));
-  this.htmlEditorElem_ = this.previewElem_.parentNode;
+  var previewContainer = expectDescendantOf(this.parent_,
+      withClass(cm.css.PREVIEW));
+  // Container has three children: prefix, content, postfix.
+  this.previewElem_ = previewContainer.childNodes[1];
+  this.htmlEditorElem_ = previewContainer.parentNode;
   this.htmlTextarea_ = expectDescendantOf(this.htmlEditorElem_, 'textarea');
   this.editGraphicallyLink_ =
       expectDescendantOf(this.htmlEditorElem_, withText('Edit graphically'));

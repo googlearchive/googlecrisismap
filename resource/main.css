@@ -588,10 +588,7 @@ span.cm-g-flag {
   padding:6px;
   min-height:0;
 }
-.cm-preview.cm-footer:after {
-  content:"Help"; /* imitate the content of the footer */
-  color:#1155cc;
-}
+
 
 /* Standard Google checkbox styles */
 input[type=checkbox] {

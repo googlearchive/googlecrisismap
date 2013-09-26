@@ -352,7 +352,8 @@ cm.LegendEditor.prototype.updateUi = function(value) {
   if (this.shown_) {
     if (this.previewValid_()) {
       cm.ui.clear(this.legendItemsElem_);
-      goog.array.forEach(this.preview.childNodes, this.createLegendItem_, this);
+      goog.array.forEach(this.previewContent.childNodes,
+          this.createLegendItem_, this);
     } else {
       this.showHtmlEditor_(true, /** @type {cm.Html} */(value));
     }
@@ -370,7 +371,7 @@ cm.LegendEditor.prototype.updateUi = function(value) {
  * @private
  */
 cm.LegendEditor.prototype.previewValid_ = function() {
-  for (var i = 0, itemElem; itemElem = this.preview.childNodes[i]; i++) {
+  for (var i = 0, itemElem; itemElem = this.previewContent.childNodes[i]; i++) {
     if (!goog.dom.classes.has(itemElem, cm.css.LEGEND_ITEM)) {
       return false;
     }
@@ -497,7 +498,7 @@ cm.LegendEditor.prototype.createLegendItem_ = function(opt_previewElem) {
               deleteBtn = cm.ui.create('div',
                                        {'class': cm.css.CLOSE_BUTTON}))));
   if (!opt_previewElem) {
-    cm.ui.append(this.preview, legendItem.preview.elem);
+    cm.ui.append(this.previewContent, legendItem.preview.elem);
   }
 
   cm.events.listen(legendItem.editor.graphicElem.parentNode, 'click',
@@ -610,7 +611,7 @@ cm.LegendEditor.prototype.handleTextChange_ = function(legendItem, inputElem,
 
   legendItem.editor.textElem.innerHTML = editorHtml;
   legendItem.preview.textElem.innerHTML = trimmedHtml;
-  this.setValid(cm.Html.fromElement(this.preview));
+  this.setValid(cm.Html.fromElement(this.previewContent));
 
   inputElem.style.height =
       legendItem.editor.textElem.offsetHeight + 'px';
@@ -625,7 +626,7 @@ cm.LegendEditor.prototype.handleTextChange_ = function(legendItem, inputElem,
 cm.LegendEditor.prototype.handleDeleteItem_ = function(legendItem) {
   cm.ui.remove(legendItem.editor.elem);
   cm.ui.remove(legendItem.preview.elem);
-  this.setValid(cm.Html.fromElement(this.preview));
+  this.setValid(cm.Html.fromElement(this.previewContent));
 };
 
 /**
@@ -836,7 +837,7 @@ cm.LegendEditor.prototype.setLegendItemGraphic_ = function(legendItem,
   cm.ui.clear(parent);
   cm.ui.append(parent,
       legendItem.preview.graphicElem = graphicElem.cloneNode(true));
-  this.setValid(cm.Html.fromElement(this.preview));
+  this.setValid(cm.Html.fromElement(this.previewContent));
 };
 
 /** @override */

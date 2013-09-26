@@ -89,4 +89,8 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, publisherName) {
 cm.FooterView.prototype.updateFooter_ = function() {
   var footer = /** @type cm.Html */(this.mapModel_.get('footer'));
   (footer || cm.Html.EMPTY).pasteInto(this.footerSpan_);
+  // Append a separator dot to footer content if it exists.
+  if (!footer.isEmpty()) {
+    cm.ui.append(this.footerSpan_, cm.ui.SEPARATOR_DOT);
+  }
 };

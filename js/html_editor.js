@@ -23,9 +23,13 @@ goog.require('cm.ui');
 /**
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
- * @param {Object.<{preview_class: string}>} options Editor options:
+ * @param {Object.<{preview_class: string,
+ *                  preview_prefix: Element,
+ *                  preview_postfix: Element}>} options Editor options:
  *     options.preview_class: a CSS class for the rendered HTML preview area
  *         (which will be applied in addition to the "cm-preview" class).
+ *     options.preview_prefix: Content to prepend to preview content.
+ *     options.preview_postfix: Content to append to preview content.
  * @extends cm.Editor
  * @constructor
  */
@@ -52,6 +56,12 @@ cm.HtmlEditor = function(parentElem, id, options) {
 
   /**
    * @type Element
+   * @protected
+   */
+  this.previewContent = null;
+
+  /**
+   * @type Element
    * @private
    */
   this.previewTriangle_ = null;
@@ -67,7 +77,13 @@ cm.HtmlEditor = function(parentElem, id, options) {
       this.previewTriangle_ = cm.ui.create('span', {'class': cm.css.TRIANGLE}),
       cm.ui.create('span', {'class': cm.css.LABEL}, 'Preview'));
   var previewClass = options && options.preview_class || '';
-  this.preview = cm.ui.create('div', {'class': [cm.css.PREVIEW, previewClass]});
+  this.previewContent = cm.ui.create('span');
+  var previewPrefix = (options && options.preview_prefix) ||
+      cm.ui.create('span');
+  var previewPostfix = (options && options.preview_postfix) ||
+      cm.ui.create('span');
+  this.preview = cm.ui.create('div', {'class': [cm.css.PREVIEW, previewClass]},
+      previewPrefix, this.previewContent, previewPostfix);
   cm.ui.append(parentElem, this.htmlEditorElem = cm.ui.create('div', {},
       this.textarea,
       previewLabel,
@@ -92,7 +108,7 @@ goog.inherits(cm.HtmlEditor, cm.Editor);
 cm.HtmlEditor.prototype.handleChange = function() {
   var value = new cm.Html(this.textarea.value);
   this.setValid(value);
-  value.pasteInto(this.preview);
+  value.pasteInto(this.previewContent);
 };
 
 /** @override */
@@ -101,7 +117,7 @@ cm.HtmlEditor.prototype.updateUi = function(value) {
     value = new cm.Html('');
   }
   this.textarea.value = value.getUnsanitizedHtml();
-  value.pasteInto(this.preview);
+  value.pasteInto(this.previewContent);
 };
 
 /**
