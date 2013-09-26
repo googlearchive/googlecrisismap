@@ -17,6 +17,7 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 import model
 import perms
 import test_utils
+import utils
 
 from google.appengine.api import memcache
 from google.appengine.api import users
@@ -233,12 +234,12 @@ class MapTests(test_utils.BaseTest):
     all_maps = ModelKeys([m1, m2])
     public_maps = ModelKeys([m1])
 
-    user = users.get_current_user()
+    user = utils.GetCurrentUser()
     self.assertEquals(all_maps, ModelKeys(list(model.Map.GetViewable(user))))
     self.assertEquals(all_maps, ModelKeys(list(model.Map.GetAll())))
 
     test_utils.SetUser('john.q.public@gmail.com')
-    user = users.get_current_user()
+    user = utils.GetCurrentUser()
     self.assertRaises(perms.AuthorizationError, model.Map.GetAll)
     self.assertEquals(public_maps, ModelKeys(model.Map.GetViewable(user)))
 

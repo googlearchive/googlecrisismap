@@ -18,9 +18,8 @@ import re
 import webapp2
 
 import base_handler
+import utils
 import perms
-
-from google.appengine.api import users
 
 
 def ValidateEmail(email):
@@ -39,7 +38,7 @@ class Admin(base_handler.BaseHandler):
 
   def get(self, domain):  # pylint: disable=g-bad-name
     """Displays the administration page for the given domain."""
-    admin = users.get_current_user()
+    admin = utils.GetCurrentUser()
     perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain)
 
     all_users = perms.GetSubjectsInDomain(domain)

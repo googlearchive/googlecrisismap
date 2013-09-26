@@ -113,8 +113,8 @@ def GetDomainsWithRole(role, user=None):
     actually have access for all domains, but the result will only include the
     domains that are specifically granted to the user or the user's domain.
   """
-  user = user or users.get_current_user()
-  email, domain = user.email(), utils.GetUserDomain(user)
+  email = user and user.email() or utils.GetCurrentUserEmail()
+  domain = user and utils.GetUserDomain(user) or utils.GetCurrentUserDomain()
   domains = set()
   for item in GetGlobalRoles(email) + GetGlobalRoles(domain):
     if isinstance(item, list) and item[0] == role:
@@ -246,7 +246,7 @@ def CheckAccess(role, target=None, user=None, policy=None):
       raise ValueError('For role %r, target must be a %s' % (role, cls_desc))
 
   policy = policy or AccessPolicy()
-  user = user or users.get_current_user()
+  user = user or utils.GetCurrentUser()
 
   # Roles that are unrelated to a target.
   if role == Role.ADMIN:
@@ -291,6 +291,6 @@ def AssertAccess(role, target=None, user=None, policy=None):
   Raises:
     AuthorizationError: If the user lacks the given access permission.
   """
-  user = user or users.get_current_user()  # ensure user is set in error message
+  user = user or utils.GetCurrentUser()  # ensure user is set in error message
   if not CheckAccess(role, target, user, policy):
     raise AuthorizationError(user, role, target)

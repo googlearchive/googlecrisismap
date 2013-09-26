@@ -21,6 +21,7 @@ import model
 import perms
 import share
 import test_utils
+import utils
 
 from google.appengine.api import mail
 from google.appengine.api import users
@@ -50,7 +51,7 @@ class ShareTest(test_utils.BaseTest):
           '/crisismap/.share/%s' % self.map.id, share.Share(),
           'role=%s&recipient=%s&message=%s' % (role, user.email(), message))
       subject = ('%s has shared "%s" with you' %
-                 (users.get_current_user().email(), self.map.title))
+                 (utils.GetCurrentUserEmail(), self.map.title))
       url = handler.request.host_url + '/crisismap/.maps/' + self.map.id
       body = """
 Your permission level for %s has changed to %s.
@@ -77,7 +78,7 @@ Access the map at: %s
           'role=%s&recipient=%s&message=%s' % (role, user.email(), message))
 
       subject = ('%s has shared "%s" with you' %
-                 (users.get_current_user().email(), self.map.title))
+                 (utils.GetCurrentUserEmail(), self.map.title))
       url = handler.request.host_url + '/crisismap/.maps/' + self.map.id
       body = """
 Your permission level for %s has changed to %s.
@@ -86,8 +87,7 @@ Access the map at: %s
 %s""" % (self.map.title, role, url, message)
 
       self.mox.StubOutWithMock(mail, 'send_mail')
-      mail.send_mail(users.get_current_user().email(),
-                     user.email(), subject, body)
+      mail.send_mail(utils.GetCurrentUserEmail(), user.email(), subject, body)
 
       # Put in replay mode.
       self.mox.ReplayAll()

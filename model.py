@@ -23,7 +23,6 @@ import cache
 import perms
 import utils
 
-from google.appengine.api import users
 from google.appengine.ext import db
 
 
@@ -527,7 +526,8 @@ class Map(object):
     # object is allowed; we don't check for MapRoot validity here.
     perms.AssertAccess(perms.Role.MAP_CREATOR, domain)
     if owners is None:
-      owners = [users.get_current_user().email()]
+      # TODO(kpy): Take user as an argument instead of calling GetCurrentUser.
+      owners = [utils.GetCurrentUserEmail()]
     if editors is None:
       editors = []
     if viewers is None:

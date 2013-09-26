@@ -19,6 +19,7 @@ import webapp2
 import base_handler
 import model
 import perms
+import utils
 
 from google.appengine.api import mail
 from google.appengine.api import users
@@ -56,14 +57,14 @@ class Share(webapp2.RequestHandler):
   def SendPermissionChangeEmail(self, recipient_email, map_object,
                                 role, message):
     """Sends recipient_email an email with info of map and permission level."""
-    user = users.get_current_user()
-    subject = '%s has shared "%s" with you' % (user.email(), map_object.title)
+    email = utils.GetCurrentUserEmail()
+    subject = '%s has shared "%s" with you' % (email, map_object.title)
     url = self.request.host_url + '/crisismap/.maps/' + map_object.id
     body = """
 Your permission level for %s has changed to %s.
 Access the map at: %s
 
 %s""" % (map_object.title, role, url, message)
-    mail.send_mail(user.email(), recipient_email, subject, body)
+    mail.send_mail(email, recipient_email, subject, body)
 
 app = webapp2.WSGIApplication([(r'/crisismap/.share/([\w-]+)', Share)])

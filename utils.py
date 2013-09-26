@@ -12,6 +12,8 @@
 
 """Utilities used throughout crisismap."""
 
+from google.appengine.api import users
+
 
 class Struct(object):
   """A simple bag of attributes."""
@@ -23,13 +25,40 @@ class Struct(object):
     return iter(self.__dict__)
 
 
-def GetUserDomain(user):
-  """Extracts the domain part of a User object's email address.
+def NormalizeEmail(email):
+  """Normalizes an e-mail address for storage or comparison."""
+  username, domain = email.split('@')
+  return username.lower().replace('.', '') + '@' + domain.lower()
 
-  Args:
-    user: A google.appengine.api.users.User object.
+
+def GetUserDomain(user):
+  """Gets the e-mail domain of the given user."""
+  return user and user.email().split('@')[-1]
+
+
+def GetCurrentUserEmail():
+  """Gets the user's normalized address, or '' if no user is signed in."""
+  user = users.get_current_user()
+  return user and NormalizeEmail(user.email()) or ''
+
+
+def GetCurrentUserDomain():
+  """Gets the domain part (after '@') of the current user's e-mail address.
 
   Returns:
-    A string, the part after the '@' in the user's e-mail address, or None.
+    The user's e-mail domain, or '' if no user is signed in.
   """
-  return user and '@' in user.email() and user.email().split('@')[-1]
+  return GetCurrentUserEmail().split('@')[-1]
+
+
+def GetCurrentUser():
+  """Gets the current user's User object.  Use this, not users.get_current_user.
+
+  Returns:
+    A google.appengine.api.users.User object with a normalized e-mail address,
+    or None if no user is signed in.  Always use this function instead of
+    users.get_current_user, which can return a User object whose e-mail address
+    contains capital letters or periods, and thus won't compare consistently.
+  """
+  email = GetCurrentUserEmail()
+  return email and users.User(email) or None

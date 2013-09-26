@@ -26,6 +26,7 @@ import cache
 import metadata
 import model
 import perms
+import utils
 
 from google.appengine.api import users
 from google.appengine.ext import db
@@ -208,7 +209,6 @@ def GetMapsApiClientId(host_port):
 
 def GetConfig(request, root_path, map_object=None, catalog_entry=None):
   dev_mode = request.get('dev') and AllowDeveloperMode()
-  user = users.get_current_user()
   map_catalog = GetMapMenuItems(catalog_entry and catalog_entry.domain or
                                 model.Config.Get('primary_domain'), root_path)
 
@@ -228,7 +228,7 @@ def GetConfig(request, root_path, map_object=None, catalog_entry=None):
   config = {
       'ui_lang': request.lang,
       'dev_mode': dev_mode,
-      'user_email': user and user.email(),
+      'user_email': utils.GetCurrentUserEmail(),
       'login_url': users.create_login_url(request.url),
       'logout_url': users.create_logout_url(request.url),
       'map_catalog': map_catalog,
@@ -343,7 +343,7 @@ class MapList(base_handler.BaseHandler):
 
   def get(self, domain):  # pylint: disable=g-bad-name
     """Produces the map listing page."""
-    maps = list(model.Map.GetViewable(users.get_current_user(), domain))
+    maps = list(model.Map.GetViewable(utils.GetCurrentUser(), domain))
     creator_domains = perms.GetDomainsWithRole(perms.Role.MAP_CREATOR)
     catalog_domains = perms.GetDomainsWithRole(perms.Role.CATALOG_EDITOR)
     title = 'Maps for all domains'
