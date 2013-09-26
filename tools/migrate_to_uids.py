@@ -41,13 +41,21 @@ def EmailToUid(email):
     return uids_by_email[email]
 
 
-def EmailsToUids(emails):
-  return map(EmailToUid, emails)
+def EmailsToUids(subjects):
+  result = set(subjects)
+  for subject in subjects:
+    if '@' in subject:
+      result.add(EmailToUid(subject))
+  return sorted(result)
 
 
 def GaeUserToUid(gae_user):
   if gae_user:
     return EmailToUid(gae_user.email())
+
+
+def RemoveEmails(subjects):
+  return [subject for subject in subjects if '@' not in subject]
 
 
 # In production, we don't care about caching _EmailToGaeUserId because it's
@@ -76,6 +84,15 @@ def EmailsToGaeUserIds(emails):
 users._EmailToGaeUserId = lambda email: EmailsToGaeUserIds([email])[0]
 
 
+def FetchAll(query):
+  batch = query.fetch(100)
+  while batch:
+    for entity in batch:
+      yield entity
+    query = query.with_cursor(query.cursor())
+    batch = query.fetch(100)
+
+
 def Migrate(write_data=False):  # dry run by default
   """Adds uids to the datastore for all e-mail addresses."""
   to_write = []
@@ -84,7 +101,7 @@ def Migrate(write_data=False):  # dry run by default
   sys.stdout.write('Collecting e-mail addresses: ')
   sys.stdout.flush()
   emails = set()
-  for m in model.MapModel.all():
+  for m in FetchAll(model.MapModel.all()):
     emails |= set([m.creator and m.creator.email(),
                    m.last_updater and m.last_updater.email(),
                    m.deleter and m.deleter.email(),
@@ -92,16 +109,16 @@ def Migrate(write_data=False):  # dry run by default
     emails |= set(m.owners + m.editors + m.viewers)
     sys.stdout.write('m')
     sys.stdout.flush()
-  for v in model.MapVersionModel.all():
+  for v in FetchAll(model.MapVersionModel.all()):
     emails |= set([v.creator and v.creator.email()])
     sys.stdout.write('v')
     sys.stdout.flush()
-  for c in model.CatalogEntryModel.all():
+  for c in FetchAll(model.CatalogEntryModel.all()):
     emails |= set([c.creator and c.creator.email(),
                    c.last_updater and c.last_updater.email()])
     sys.stdout.write('c')
     sys.stdout.flush()
-  for p in perms.PermissionModel.all():
+  for p in FetchAll(perms.PermissionModel.all()):
     if '@' in p.subject:
       emails.add(p.subject)
     sys.stdout.write('p')
@@ -112,7 +129,7 @@ def Migrate(write_data=False):  # dry run by default
 
   # Now scan the MapModels and associated MapVersionModels.
   print '\n\nMaps:'
-  for m in model.MapModel.all().order('created'):
+  for m in FetchAll(model.MapModel.all().order('created')):
     print '\n\x1b[33m%s (%r):\x1b[0m' % (m.key().name(), m.title)
 
     m.creator_uid = GaeUserToUid(m.creator)
@@ -126,16 +143,16 @@ def Migrate(write_data=False):  # dry run by default
         m.creator_uid, m.updater_uid, m.deleter_uid, m.blocker_uid)
 
     owners, editors, viewers = map(repr, [m.owners, m.editors, m.viewers])
-    m.owners += EmailsToUids(m.owners)
-    m.editors += EmailsToUids(m.editors)
-    m.viewers += EmailsToUids(m.viewers)
+    m.owners = EmailsToUids(m.owners)
+    m.editors = EmailsToUids(m.editors)
+    m.viewers = EmailsToUids(m.viewers)
     print '    owners: \x1b[37m%s\x1b[0m -> %r' % (owners, m.owners)
     print '    editors: \x1b[37m%s\x1b[0m -> %r' % (editors, m.editors)
     print '    viewers: \x1b[37m%s\x1b[0m -> %r' % (viewers, m.viewers)
 
     to_write.append(m)
 
-    for v in model.MapVersionModel.all().ancestor(m):
+    for v in FetchAll(model.MapVersionModel.all().ancestor(m)):
       v.creator_uid = GaeUserToUid(v.creator)
       print '  %d. \x1b[37mcr=%s\x1b[0m -> cr=%s' % (
           v.key().id(), v.creator, v.creator_uid)
@@ -144,7 +161,7 @@ def Migrate(write_data=False):  # dry run by default
 
   # Now scan the CatalogEntryModels.
   print '\n\nCatalog entries:'
-  for c in model.CatalogEntryModel.all():
+  for c in FetchAll(model.CatalogEntryModel.all()):
     print '\n\x1b[32m%s/%s:\x1b[0m' % (c.domain, c.label)
     c.creator_uid = GaeUserToUid(c.creator)
     c.updater_uid = GaeUserToUid(c.last_updater)
@@ -156,7 +173,7 @@ def Migrate(write_data=False):  # dry run by default
 
   # Now scan the PermissionModels.
   print '\n\nPermissions:'
-  for p in perms.PermissionModel.all():
+  for p in FetchAll(perms.PermissionModel.all()):
     if '@' in p.subject:
       nperm = perms._Permission(EmailToUid(p.subject), p.role, p.target)
       np = perms.PermissionModel(
@@ -174,10 +191,6 @@ def Migrate(write_data=False):  # dry run by default
     print '\nEntities that would be written: %d' % len(to_write)
 
 
-def RemoveEmails(subjects):
-  return [subject for subject in subjects if '@' not in subject]
-
-
 def CleanUp(write_data=False):
   """Removes all e-mail addresses from the datastore."""
   to_write = []
@@ -186,7 +199,7 @@ def CleanUp(write_data=False):
   # Scan the MapModels and associated MapVersionModels, removing all
   # e-mail addresses and clearing UserProperty fields.
   print '\n\nMaps:'
-  for m in model.MapModel.all():
+  for m in FetchAll(model.MapModel.all()):
     print '\n\x1b[33m%s (%r):\x1b[0m' % (m.key().name(), m.title)
 
     print '    \x1b[37mcr=%s / up=%s / de=%s / bl=%s\x1b[0m' % (
@@ -207,7 +220,7 @@ def CleanUp(write_data=False):
 
     to_write.append(m)
 
-    for v in model.MapVersionModel.all().ancestor(m):
+    for v in FetchAll(model.MapVersionModel.all().ancestor(m)):
       print '  %d. \x1b[37mcr=%s\x1b[0m -> cr=%s' % (
           v.key().id(), v.creator, None)
       v.creator = None
@@ -216,7 +229,7 @@ def CleanUp(write_data=False):
 
   # Clear the UserProperty fields in all the CatalogEntryModels.
   print '\n\nCatalog entries:'
-  for c in model.CatalogEntryModel.all():
+  for c in FetchAll(model.CatalogEntryModel.all()):
     print '\n\x1b[32m%s/%s:\x1b[0m' % (c.domain, c.label)
     print '    \x1b[37mcr=%s / up=%s\x1b[0m' % (c.creator, c.last_updater)
     print ' -> cr=%s / up=%s' % (None, None)
@@ -227,7 +240,7 @@ def CleanUp(write_data=False):
 
   # Now scan the PermissionModels.
   print '\n\nPermissions:'
-  for p in perms.PermissionModel.all():
+  for p in FetchAll(perms.PermissionModel.all()):
     if '@' in p.subject:
       print 'delete: su=%s / ro=%s / ta=%s' % (p.subject, p.role, p.target)
       to_delete.append(p)
@@ -242,7 +255,8 @@ def CleanUp(write_data=False):
     print '\nEntities that would be deleted: %d' % len(to_delete)
 
 
-if '-c' in sys.argv:
-  CleanUp('-w' in sys.argv)
-else:
-  Migrate('-w' in sys.argv)
+if __name__ == '__main__':
+  if '-c' in sys.argv:
+    CleanUp('-w' in sys.argv)
+  else:
+    Migrate('-w' in sys.argv)
