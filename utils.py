@@ -12,6 +12,8 @@
 
 """Utilities used throughout crisismap."""
 
+import time
+
 from google.appengine.api import users
 
 
@@ -99,3 +101,33 @@ def GetCurrentUser():
   """
   email = GetCurrentUserEmail()
   return email and users.User(email) or None
+
+
+def SetAndTest(set_func, test_func, sleep_delta=0.05, num_tries=20):
+  """Calls set_func, then waits until test_func passes before returning.
+
+  Sometimes we need to be able to see changes to the datastore immediately
+  and are willing to accept a small latency for that.  This function calls
+  set_func (which presumably makes a small change to the datastore), then
+  calls test_func in a while not test_func(): sleep() loop until either
+  test_func passes or the maximum number of tries has been reached.
+
+  Args:
+    set_func: a function that sets some state in an AppEngine Entity
+    test_func: a function that returns true when the change made by set_func
+      is now visible
+    sleep_delta: (defaults to 0.05) the number of seconds to sleep between
+      calls to test_func, or None to not sleep.
+    num_tries: (defaults to 20) the number of times to try test_func before
+      giving up
+
+  Returns:
+    True if test_func eventually returned true; False otherwise.
+  """
+  set_func()
+  for _ in range(num_tries):
+    if test_func():
+      return True
+    if sleep_delta:
+      time.sleep(sleep_delta)
+  return False

@@ -12,6 +12,8 @@
 
 """Unit tests for utils.py."""
 
+import time
+
 import test_utils
 import utils
 
@@ -30,3 +32,57 @@ class UtilsTests(test_utils.BaseTest):
     self.assertEquals('', utils.GetCurrentUserDomain())
     test_utils.SetUser('Dr.Horrible@eXAMple.com')
     self.assertEquals('example.com', utils.GetCurrentUserDomain())
+
+
+class UtilsSetAndTestTests(test_utils.BaseTest):
+
+  def setUp(self):
+    super(UtilsSetAndTestTests, self).setUp()
+    self.set_called = 0
+    self.test_called = 0
+    self.total_sleep_time = 0
+
+  def MockSleep(self, seconds):
+    self.total_sleep_time += seconds
+
+  def MockSet(self):
+    self.set_called += 1
+
+  def MockTestTrue(self):
+    self.test_called +=1
+    return True
+
+  def MockTestFalse(self):
+    self.test_called += 1
+    return False
+
+  def testSetAndTest_testPasses(self):
+    self.mox.stubs.Set(time, 'sleep', self.MockSleep)
+    self.assertTrue(utils.SetAndTest(self.MockSet, self.MockTestTrue))
+    self.assertEqual(1, self.set_called)
+    self.assertEqual(1, self.test_called)
+
+  def testSetAndTest_testFails(self):
+    self.mox.stubs.Set(time, 'sleep', self.MockSleep)
+    self.assertFalse(
+        utils.SetAndTest(self.MockSet, self.MockTestFalse, num_tries=5))
+    self.assertEqual(1, self.set_called)
+    self.assertEqual(5, self.test_called)
+
+  def testSetAndTest_DefaultSleepTime(self):
+    # by default, total sleep time should be around 1 second
+    self.mox.stubs.Set(time, 'sleep', self.MockSleep)
+    self.assertFalse(
+        utils.SetAndTest(self.MockSet, self.MockTestFalse))
+    self.assertTrue(0.9 < self.total_sleep_time < 1.1)
+
+  def testSetAndTest_noSleep(self):
+    def RaisingSleep(unused_seconds):
+      raise ValueError
+    self.mox.stubs.Set(time, 'sleep', RaisingSleep)
+    self.assertFalse(utils.SetAndTest(
+        self.MockSet, self.MockTestFalse, num_tries=5, sleep_delta=0))
+
+
+if __name__ == '__main__':
+  test_utils.main()

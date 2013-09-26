@@ -11,7 +11,7 @@
 
 __author__ = 'rew@google.com (Becky Willrich)'
 
-
+import time
 import urllib
 
 import admin
@@ -89,6 +89,32 @@ class AdminTest(test_utils.BaseTest):
     # The current user should have been granted administrative rights
     self.assertTrue(perms.CheckAccess(
         perms.Role.DOMAIN_ADMIN, 'bar.com', utils.GetCurrentUser()))
+
+  def testCreateDomain_HighLatencyDatastore(self):
+    self.assertIsNone(domains.Domain.Get('slow.com'))
+    self.sent_true = False
+    self.false_count = 0
+
+    # Function signature (especially named arguments) needs to match CheckAccess
+    # pylint: disable=unused-argument
+    def MockCheckAccess(role, target=None, user=None, policy=None):
+      if self.false_count < 4:
+        self.false_count += 1
+        return False
+      self.sent_true = True
+      return True
+    # pylint: enable=unused-argument
+
+    def NoOpSleep(unused_seconds):
+      pass
+
+    self.assertIsNone(domains.Domain.Get('slow.com'))
+    self.mox.stubs.Set(perms, 'CheckAccess', MockCheckAccess)
+    self.mox.stubs.Set(time, 'sleep', NoOpSleep)
+    test_utils.SetUser('somebody@slow.com')
+    self.DoPost('/slow.com/.admin?create=1', '', status=302)
+    self.assertTrue(self.sent_true)
+    self.assertTrue(domains.Domain.Get('slow.com'))
 
   def testValidateEmail(self):
     self.assertTrue(admin.ValidateEmail('user@domain.subdomain.com'))

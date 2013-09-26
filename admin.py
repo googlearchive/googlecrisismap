@@ -111,13 +111,20 @@ class Admin(base_handler.BaseHandler):
       self.redirect(self.request.path_qs)
 
   def CreateDomain(self, domain_name, user):
+    email = utils.NormalizeEmail(user.email())
+
+    def GrantPerms():
+      perms.Grant(email, perms.Role.DOMAIN_ADMIN, domain_name)
+      perms.Grant(email, perms.Role.CATALOG_EDITOR, domain_name)
+      perms.Grant(email, perms.Role.MAP_CREATOR, domain_name)
+
+    def TestPerms():
+      return perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name, user)
+
     domain = domains.Domain.Get(domain_name)
     if domain:
       raise base_handler.Error(404, 'Domain %s already exists' % domain_name)
-    email = utils.NormalizeEmail(user.email())
-    perms.Grant(email, perms.Role.DOMAIN_ADMIN, domain_name)
-    perms.Grant(email, perms.Role.CATALOG_EDITOR, domain_name)
-    perms.Grant(email, perms.Role.MAP_CREATOR, domain_name)
+    utils.SetAndTest(GrantPerms, TestPerms)
     domains.Domain.Create(domain_name)
 
 
