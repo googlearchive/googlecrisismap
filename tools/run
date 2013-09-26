@@ -22,4 +22,40 @@
 pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
 
 echo Serving from: $LOCAL_RUN_DIR
-$PYTHON $APPENGINE_DIR/dev_appserver.py --port $DEFAULT_PORT --address '' "$@" $LOCAL_RUN_DIR
+if [ -f $APPENGINE_DIR/devappserver2.py ]; then
+  SERVER_VERSION=2
+  SERVER_SCRIPT=devappserver2.py
+  STORAGE_PATH=/tmp/devappserver2.$(basename $(pwd))
+  DATASTORE_PATH=$STORAGE_PATH/datastore.db
+else
+  # In SDK 1.7.6, devappserver2.py got renamed to dev_appserver.py.
+  if [ -f $APPENGINE_DIR/old_dev_appserver.py ]; then
+    SERVER_VERSION=2
+    SERVER_SCRIPT=dev_appserver.py
+    STORAGE_PATH=/tmp/devappserver2.$(basename $(pwd))
+    DATASTORE_PATH=$STORAGE_PATH/datastore.db
+  else
+    SERVER_VERSION=1
+    SERVER_SCRIPT=dev_appserver.py
+    DATASTORE_PATH=/tmp/devappserver.$(basename $(pwd))
+  fi
+fi
+
+if [ -f $DATASTORE_PATH ]; then
+  echo "Datastore at: $DATASTORE_PATH (exists)"
+else
+  echo "Datastore at: $DATASTORE_PATH (new)"
+fi
+echo
+
+# Start the development appserver.
+if [ $SERVER_VERSION == 2 ]; then
+  $PYTHON $APPENGINE_DIR/$SERVER_SCRIPT \
+      --storage_path $STORAGE_PATH \
+      --admin_host $(hostname) --admin_port $(($DEFAULT_PORT + 10)) \
+      --port $DEFAULT_PORT --host 0.0.0.0 "$@" $LOCAL_RUN_DIR
+else
+  $PYTHON $APPENGINE_DIR/$SERVER_SCRIPT \
+      --datastore_path $DATASTORE_PATH \
+      --port $DEFAULT_PORT --address 0.0.0.0 "$@" $LOCAL_RUN_DIR
+fi
