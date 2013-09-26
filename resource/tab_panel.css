@@ -10,94 +10,119 @@ OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 specific language governing permissions and limitations under the License.
 */
 
-/* Copied from the closure tab demo, just to give us some default styling to
- * play with.  This file should be replaced with rules to our liking, then
- * merged in to main.css.
+/*
+ * TODO(romano): for now, the tab bar is placed under the map buttons
+ * (i.e., basemap picker and my-location button since the share button
+ * will disappear). Follow-up changes should change this for
+ * 1) desktop: move those buttons to left and make this top:5px
+ * 2) embedded/small-screen: move tab bar to bottom
  */
 
-/*
- * Copyright 2009 The Closure Library Authors. All Rights Reserved.
- *
- * Use of this source code is governed by the Apache License, Version 2.0.
- * See the COPYING file for details.
- */
+.cm-tab-panel {
+  background: #fff;
+  width: 306px;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  height: auto !important;
+  max-height: 98%;
+  overflow-y: hidden;
+  z-index: 1;
+  opacity: 0.90;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  -moz-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
 
-/*
- * Cross-browser implementation of the "display: inline-block" CSS property.
- * See http://www.w3.org/TR/CSS21/visuren.html#propdef-display for details.
- * Tested on IE 6 & 7, FF 1.5 & 2.0, Safari 2 & 3, Webkit, and Opera 9.
- *
- * @author attila@google.com (Attila Bodis)
- */
-
-/*
- * Default rule; only Safari, Webkit, and Opera handle it without hacks.
- */
-.goog-inline-block {
+.cm-tab-bar-container {
+  border-top: 1px solid #777;
+  border-bottom: 1px solid #ccc;
+  background: #f0f0f0;
   position: relative;
-  display: -moz-inline-box; /* Ignored by FF3 and later. */
+  z-index: 1;
+}
+
+.cm-tab-bar-buttons {
+  display: inline-block;
+  float: right;
+}
+
+.cm-tab-content {
+  overflow-x: visible;
+  overflow-y: auto;
+  padding: 5px 0 0 5px;
+}
+
+.cm-chevron-up {
+  background:url('chevron_up.png') center no-repeat;
+  width:12px;
+  height:11px;
+  padding: 7px 12px 6px 11px;
+  margin: 5px 0 0 6px;
+  cursor: pointer;
+  border-left: 1px solid #ccc;
   display: inline-block;
 }
 
-/*
- * Pre-IE7 IE hack.  On IE, "display: inline-block" only gives the element
- * layout, but doesn't give it inline behavior.  Subsequently setting display
- * to inline does the trick.
- */
-* html .goog-inline-block {
-  display: inline;
+.cm-chevron-down {
+  background:url('chevron_down.png') center no-repeat;
+  width:12px;
+  height:11px;
+  padding: 7px 12px 6px 11px;
+  margin: 5px 0 0 6px;
+  cursor: pointer;
+  border-left: 1px solid #ccc;
+  display: inline-block;
 }
 
-/*
- * IE7-only hack.  On IE, "display: inline-block" only gives the element
- * layout, but doesn't give it inline behavior.  Subsequently setting display
- * to inline does the trick.
- */
-*:first-child+html .goog-inline-block {
-  display: inline;
+.cm-tab-content-collapsed {
+  display: none;
 }
 
-/*
- * Copyright 2008 The Closure Library Authors. All Rights Reserved.
- *
- * Use of this source code is governed by the Apache License, Version 2.0.
- * See the COPYING file for details.
+.cm-tab-panel-bottom {
+  top: inherit!important;
+  width: inherit!important;
+  right: inherit!important;
+  left: inherit!important;
+  bottom: 30px;
+}
+
+.cm-tab-my-location-button {
+  margin-right: 317px!important; /* Assumes a fixed-width tabbed panel. */
+}
+
+/* 
+ * TODO(romano,rew): Basic rules copied from 
+ * https://code.google.com/p/closure-library/source/browse/closure/goog/css/tab.css
+ * to be replaced with our own rules and merged into main.css.
  */
 
-/* Author: attila@google.com (Attila Bodis) */
-/* Author: eae@google.com (Emil A. Eklund) */
-
-
-/*
- * Styles used by goog.ui.TabRenderer.
- */
 .goog-tab {
-  position: relative;
-  padding: 4px 8px;
-  color: #00c;
-  text-decoration: underline;
-  cursor: default;
+  padding: 9px 10px 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.goog-tab-bar {
+  display: inline-block;
+  outline: none;
 }
 
 .goog-tab-bar-top .goog-tab {
-  margin: 1px 4px 0 0;
-  border-bottom: 0;
+  display: inline-block;
   float: left;
+  outline: none;
 }
 
 .goog-tab-bar-top:after,
 .goog-tab-bar-bottom:after {
-  content: " ";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
 }
 
 .goog-tab-bar-bottom .goog-tab {
-  margin: 0 4px 1px 0;
+  margin: 0 16px 1px 0;
   border-top: 0;
   float: left;
+  outline: none;
 }
 
 .goog-tab-bar-start .goog-tab {
@@ -122,31 +147,23 @@ specific language governing permissions and limitations under the License.
 
 /* State: Selected */
 .goog-tab-selected {
-  color: #000;
-  background: #fff;
   text-decoration: none;
-  font-weight: bold;
-  border: 1px solid #6b90da;
+  color: #dd4b39;
 }
 
 .goog-tab-bar-top {
-  padding-top: 5px !important;
-  padding-left: 5px !important;
-  border-bottom: 1px solid #6b90da !important;
 }
+
 /*
  * Shift selected tabs 1px towards the contents (and compensate via margin and
  * padding) to visually merge the borders of the tab with the borders of the
  * content area.
  */
 .goog-tab-bar-top .goog-tab-selected {
-  top: 1px;
   margin-top: 0;
-  padding-bottom: 5px;
 }
 
 .goog-tab-bar-bottom .goog-tab-selected {
-  top: -1px;
   margin-bottom: 0;
   padding-top: 5px;
 }
@@ -162,56 +179,3 @@ specific language governing permissions and limitations under the License.
   margin-right: 0;
   padding-left: 9px;
 }
-
-/*
- * Copyright 2008 The Closure Library Authors. All Rights Reserved.
- *
- * Use of this source code is governed by the Apache License, Version 2.0.
- * See the COPYING file for details.
- */
-
-/* Author: attila@google.com (Attila Bodis) */
-/* Author: eae@google.com (Emil A. Eklund) */
-
-
-/*
- * Styles used by goog.ui.TabBarRenderer.
- */
-.goog-tab-bar {
-  margin: 0;
-  border: 0;
-  padding: 0;
-  list-style: none;
-  cursor: default;
-  outline: none;
-  background: #ebeff9;
-}
-
-.goog-tab-bar-clear {
-  clear: both;
-  height: 0;
-  overflow: hidden;
-}
-
-.goog-tab-bar-start {
-  float: left;
-}
-
-.goog-tab-bar-end {
-  float: right;
-}
-
-
-/*
- * IE6-only hacks to fix the gap between the floated tabs and the content.
- * IE7 and later will ignore these.
- */
-/* @if user.agent ie6 */
-* html .goog-tab-bar-start {
-  margin-right: -3px;
-}
-
-* html .goog-tab-bar-end {
-  margin-left: -3px;
-}
-/* @endif */

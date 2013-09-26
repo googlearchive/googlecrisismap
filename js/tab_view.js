@@ -52,7 +52,22 @@ cm.TabView = function() {
    * @type Element
    * @private
    */
-  this.contentElem_ = cm.ui.create('div');
+  this.contentElem_ = cm.ui.create('div', {'class': cm.css.TAB_CONTENT});
+
+  /**
+   * The up/down chevron button for expanding/collapsing the tab bar.
+   * @type Element
+   * @private
+   */
+  this.expandCollapseButton_ = cm.ui.create('div',
+                                            {'class': cm.css.CHEVRON_UP});
+
+  /**
+   * The share button (not yet implemented).
+   * @type Element
+   * @private
+   */
+  this.shareButton_ = cm.ui.create('div');
 };
 
 /** Value for indices to indicate no current selection. */
@@ -65,11 +80,48 @@ cm.TabView.NO_SELECTION = -1;
  */
 cm.TabView.prototype.render = function(parent) {
   this.parent_ = parent;
-  this.tabBar_.render(parent);
+  this.tabBar_.render(this.parent_);
+
+  // Add buttons to the tab bar in the order they should appear from
+  // left to right.
+  this.tabBar_.addButton(this.shareButton_);
+  this.tabBar_.addButton(this.expandCollapseButton_);
+
+  // Add the tab content.
+  cm.ui.append(this.parent_, this.contentElem_);
+
   cm.events.listen(this.tabBar_, cm.TabBar.NEW_TAB_SELECTED,
                    this.handleTabSelected_, this);
-  this.parent_.appendChild(this.contentElem_);
+  cm.events.listen(this.expandCollapseButton_, 'click',
+                   this.handleExpandCollapseClick_, this);
 };
+
+
+/**
+ * Handler for user clicking on the expand or collapse button.
+ * @private
+ */
+cm.TabView.prototype.handleExpandCollapseClick_ = function() {
+  var collapsed = goog.dom.classes.has(this.contentElem_,
+                                       cm.css.TAB_CONTENT_COLLAPSED);
+  goog.dom.classes.enable(this.contentElem_, cm.css.TAB_CONTENT_COLLAPSED,
+                          !collapsed);
+
+  // TODO(romano): the logic for whether the up or down chevron is displayed
+  // will be flipped when the tab bar is positioned below the map.
+  var currentClass;
+  var newClass;
+  if (collapsed) {
+    currentClass = cm.css.CHEVRON_DOWN;
+    newClass = cm.css.CHEVRON_UP;
+  } else {
+    currentClass = cm.css.CHEVRON_UP;
+    newClass = cm.css.CHEVRON_DOWN;
+  }
+  goog.dom.classes.remove(this.expandCollapseButton_, currentClass);
+  goog.dom.classes.add(this.expandCollapseButton_, newClass);
+};
+
 
 /**
  * Updates the content of the TabView based on the state of the TabBar. Used

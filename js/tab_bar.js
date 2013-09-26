@@ -27,10 +27,18 @@ cm.TabBar = function() {
    * @private
    */
   this.tabBar_ = new goog.ui.TabBar(goog.ui.TabBar.Location.TOP);
+
   /**
-   * The listeners to the tabs in the same order as in the tab bar.
-   * Selection events come from the individual tabs, not the tab bar, so
-   * we need one listener per tab.
+   * A container for buttons that appear adjacent to the tab bar.
+   * @type Element
+   * @private
+   */
+  this.buttons_ = cm.ui.create('div', {'class': cm.css.TAB_BAR_BUTTONS});
+
+  /**
+   * The listeners to the tabs in the same order as they are
+   * positioned in the tab bar. Selection events come from the individual tabs,
+   * not the tab bar, so we need one listener per tab.
    * @type Array.<cm.events.ListenerToken>
    * @private
    */
@@ -45,7 +53,19 @@ cm.TabBar.NEW_TAB_SELECTED = 'TabView.tabBar_.NEW_TAB_SELECTED';
  * @param {Element} parent The node in to which the tab bar should be rendered.
  */
 cm.TabBar.prototype.render = function(parent) {
-  this.tabBar_.render(parent);
+  var container = cm.ui.create('div', {'class': cm.css.TAB_BAR_CONTAINER});
+  this.tabBar_.render(container);
+  cm.ui.append(container, this.buttons_);
+  cm.ui.append(parent, container);
+};
+
+/**
+ * Insert a button into the button region that is layed out with the tab bar.
+ * The caller is responsible for managing events attached to the button.
+ * @param {Element} button The button to add to the tab bar.
+ */
+cm.TabBar.prototype.addButton = function(button) {
+  cm.ui.append(this.buttons_, button);
 };
 
 /**

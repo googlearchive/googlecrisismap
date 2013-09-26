@@ -65,10 +65,11 @@ goog.require('goog.ui.Component');
  *     cm.ExtraViewsPlugin instances to be set up by this method.
  * @param {!Object.<string, cm.ExtraView>} extraViews A map of ExtraView
  *     short names to ExtraView instances. This can be empty but not null.
+ * @param {boolean} useTabPanel Use tabbed UI.
  */
 function sizeComponents(map, container, searchbox, embedded, touch, preview,
                         mapWrapperElem, footerElem, panelView, panelElem,
-                        extraViewsPlugins, extraViews) {
+                        extraViewsPlugins, extraViews, useTabPanel) {
 
   /**
    * Returns the value of the given style property for an element.  Assumes the
@@ -120,29 +121,29 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
   if (!embedded) {
     cm.events.emit(panelElem, 'panelclose');
   }
-  goog.dom.classes.enable(container, cm.css.EMBEDDED, embedded);
   var floating = goog.dom.classes.has(container, cm.css.PANEL_FLOAT);
-  goog.dom.classes.enable(container, cm.css.PANEL_DOCK, !embedded && !floating);
-
-  var collapsed = goog.dom.classes.has(container, cm.css.PANEL_COLLAPSED);
-
-  mapWrapperElem.style.height = getMapHeight() + 'px';
+  if (!useTabPanel) {
+    goog.dom.classes.enable(container, cm.css.EMBEDDED, embedded);
+    goog.dom.classes.enable(container, cm.css.PANEL_DOCK,
+                            !embedded && !floating);
+  }
 
   // In floating or embedded mode, the panel has variable height based on its
   // content, but we need to limit its maximum height to fit over the map.
+  mapWrapperElem.style.height = getMapHeight() + 'px';
   var floatMaxHeight = getMapHeight() - 10;  // allow 5px top and bottom margin
   panelView.setMaxHeight(embedded || floating ? floatMaxHeight : null);
 
   if (extraViewsPlugins) {
     var panelViewPosition = {
-            isPanelCollapsed: collapsed,
-            isPanelFloating: floating,
-            isPanelPopup: embedded,
-            floatMaxHeight: floatMaxHeight
+      isPanelCollapsed: goog.dom.classes.has(container, cm.css.PANEL_COLLAPSED),
+      isPanelFloating: floating,
+      isPanelPopup: embedded,
+      floatMaxHeight: floatMaxHeight
     };
     goog.array.forEach(extraViewsPlugins, function(plugin) {
       plugin.sizeComponentsWithExtraViews(container, panelView,
-        panelViewPosition, extraViews);
+                                          panelViewPosition, extraViews);
     });
   }
 
@@ -325,7 +326,10 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
   var frameElem = (typeof frame == 'string') ? cm.ui.get(frame) : frame;
   goog.dom.classes.add(frameElem, cm.css.FRAME);
   var footerElem = cm.ui.create('div', {'class': cm.css.FOOTER});
-  var panelElem = cm.ui.create('div', {'class': cm.css.PANEL});
+  var useTabPanel = !!config['use_tab_panel'];
+  var panelElem = cm.ui.create('div', {'class':
+      useTabPanel ? cm.css.TAB_PANEL : cm.css.PANEL});
+
   var arrangerElem = cm.ui.create(
       'div', {'class': [cm.css.PANEL, cm.css.ARRANGER, cm.css.HIDDEN]});
   var mapElem = cm.ui.create('div', {'class': cm.css.MAP, 'id': 'map'});
@@ -357,7 +361,9 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
     searchbox = new cm.SearchBox(mapView.getMap());
   }
   if (!preview) {
-    new cm.LayersButton(mapView.getMap(), panelElem);
+    if (!useTabPanel) {
+      new cm.LayersButton(mapView.getMap(), panelElem);
+    }
     if (!config['hide_share_button'] && !config['enable_editing']) {
       new cm.ShareButton(mapView.getMap(), appState,
                          !config['hide_facebook_button'],
@@ -367,7 +373,7 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
     }
   }
   if (!(config['hide_my_location_button'] || preview)) {
-    new cm.MyLocationButton(mapView.getMap());
+    new cm.MyLocationButton(mapView.getMap(), useTabPanel);
   }
 
   if (config['panel_float']) {
@@ -382,7 +388,8 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
     new cm.LoginView(panelElem, config);
   }
   var panelView;
-  if (config['use_tab_panel']) {
+
+  if (useTabPanel) {
     panelView = new cm.TabPanelView(frameElem, panelElem, mapElem, mapModel,
                                     metadataModel, appState, config);
   } else {
@@ -413,14 +420,14 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
   // the size of the map's DOM element) before we set up the viewport.
   sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
                  preview, mapWrapperElem, footerElem, panelView, panelElem,
-                 extraViewsPlugins, extraViews);
+                 extraViewsPlugins, extraViews, useTabPanel);
   // We readjust the layout whenever the ViewportSizeMonitor detects that the
   // window resized, and also when anything emits 'resize' on goog.global.
   cm.events.forward(new goog.dom.ViewportSizeMonitor(), 'resize', goog.global);
   cm.events.listen(goog.global, 'resize', function() {
     sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
                    preview, mapWrapperElem, footerElem, panelView, panelElem,
-                   extraViewsPlugins, extraViews);
+                   extraViewsPlugins, extraViews, useTabPanel);
   });
 
   // If allowed, pass the google.maps.Map element to the parent frame.
