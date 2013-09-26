@@ -122,7 +122,9 @@ var MSG_GME_LAYER_KEY = goog.getMsg(
 
 /** @desc Tooltip for selecting layers from a WMS service. */
 var MSG_WMS_LAYERS = goog.getMsg(
-    'The list of layers to display from the WMS service.');
+    'The list of layers to display from the WMS service. If no options ' +
+    'are displayed, either the WMS server cannot be reached, or the ' +
+    'server is not publishing layers with Spherical Mercator projections.');
 
 /**
  * @desc Tooltip for toggling whether a tile layer's source URL is an

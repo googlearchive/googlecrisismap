@@ -1148,8 +1148,14 @@ textarea.cm-legend-text {
 
 /* WMS layer editor */
 /* TODO(romano): Improve UI of WMS layer editor. */
-.cm-wms-menu-editor {
+.cm-editors > .cm-wms-menu-editor select {
   width:100%;
+  font-size:13px;
+  font-family:arial;
+}
+.cm-editors > .cm-wms-menu-editor > th {
+  vertical-align:top;
+  padding-top:11px;  /* align label with first line of text in the multiselect menu */
 }
 
 /* Editors */
