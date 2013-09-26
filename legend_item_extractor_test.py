@@ -596,16 +596,16 @@ class LegendItemExtractorTest(test_utils.BaseTest):
     GetLegendItems.GetKmlFromUrl(url).AndReturn(None)
 
     self.mox.ReplayAll()
-    self.DoGet('/.legend?url=' + urllib.quote(url), status=400)
+    self.DoGet('/.legend?url=' + urllib.quote(url), 400)
     self.mox.VerifyAll()
 
   def testGetLegendItemsUnsafeUrl(self):
     """Tests the GetLegendItems handler for unsafe URLs."""
     url = '/etc/passwd'
-    self.DoGet('/.legend?url=' + urllib.quote(url), status=400)
+    self.DoGet('/.legend?url=' + urllib.quote(url), 400)
 
     url = 'ftp://www.maps.com:123/?map=321'
-    self.DoGet('/.legend?url=' + urllib.quote(url), status=400)
+    self.DoGet('/.legend?url=' + urllib.quote(url), 400)
 
 
 if __name__ == '__main__':

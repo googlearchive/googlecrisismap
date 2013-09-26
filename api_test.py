@@ -40,7 +40,7 @@ class ApiTest(test_utils.BaseTest):
 
   def testGetInvalidMap(self):
     """Attempts to fetch a map that doesn't exist."""
-    self.DoGet('/.api/maps/xyz', status=404)
+    self.DoGet('/.api/maps/xyz', 404)
 
   def testPostMap(self):
     """Posts a new version of a map."""

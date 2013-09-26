@@ -26,13 +26,13 @@ class RedirectTest(test_utils.BaseTest):
     redirect.Redirection(key_name='foo', url='http://elsewhere.com/').put()
     self.assertEquals(
         'http://elsewhere.com/',
-        self.DoGet('/.redirect/foo', status=302).headers['Location'])
+        self.DoGet('/.redirect/foo', 302).headers['Location'])
 
   def testGetNonexistentRedirection(self):
     """Tests a nonexistent redirection target."""
     self.assertEquals(
         'http://app.com/',
-        self.DoGet('/.redirect/xyz', status=302).headers['Location'])
+        self.DoGet('/.redirect/xyz', 302).headers['Location'])
 
 if __name__ == '__main__':
   test_utils.main()

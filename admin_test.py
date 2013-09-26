@@ -41,7 +41,7 @@ class AdminDomainTest(test_utils.BaseTest):
 
   def DoCreateDomainPost(self, domain, status=302):
     post_data = dict(form='create-domain', xsrf_token='XSRF')
-    return self.DoPost(AdminUrl(domain), post_data, status=status)
+    return self.DoPost(AdminUrl(domain), post_data, status)
 
   def DoUserPermissionsPost(self, domain, new_perms, new_user=None,
                             domain_role=None, status=302):
@@ -54,11 +54,11 @@ class AdminDomainTest(test_utils.BaseTest):
     post_data['new_user'] = new_email
     post_data['new_user.permission'] = new_role
     post_data['domain_role'] = domain_role or 'NO_ROLE'
-    return self.DoPost(AdminUrl(domain), post_data, status=status)
+    return self.DoPost(AdminUrl(domain), post_data, status)
 
   def DoNewUserPost(self, domain, email, role, status=302):
     return self.DoUserPermissionsPost(
-        domain, (), new_user=(email, role), status=status)
+        domain, [], new_user=(email, role), status=status)
 
   def DoDomainSettingsPost(
       self, domain, default_label, sticky_entries, initial_role, status=302):
@@ -66,12 +66,11 @@ class AdminDomainTest(test_utils.BaseTest):
                      initial_domain_role=initial_role, xsrf_token='XSRF')
     if sticky_entries:
       post_data['has_sticky_catalog_entries'] = 'on'
-    return self.DoPost(
-        AdminUrl(domain), urllib.urlencode(post_data), status=status)
+    return self.DoPost(AdminUrl(domain), urllib.urlencode(post_data), status)
 
   def testGeneralAdminGet(self):
     with test_utils.Login('manager'):
-      self.DoGet('/.admin', status=403)  # only allowed for ADMIN users
+      self.DoGet('/.admin', 403)  # only allowed for ADMIN users
     with test_utils.RootLogin():
       self.DoGet('/.admin')
 
@@ -88,12 +87,12 @@ class AdminDomainTest(test_utils.BaseTest):
   def testGet_NoPermissions(self):
     # xyz.com doesn't grant DOMAIN_ADMIN to the entire domain, so this fails.
     with test_utils.DomainLogin('another_insider', 'xyz.com'):
-      self.DoGet('/xyz.com/.admin', status=403)
+      self.DoGet('/xyz.com/.admin', 403)
 
   def testGet_NoSuchDomain(self):
     self.assertIsNone(domains.Domain.Get('nosuchdomain.com'))
     with test_utils.RootLogin():
-      response = self.DoGet(AdminUrl('nosuchdomain.com'), status=404)
+      response = self.DoGet(AdminUrl('nosuchdomain.com'), 404)
     self.assertIn('nosuchdomain.com', response.status)
 
   def testGet_WelcomeText(self):
@@ -107,14 +106,14 @@ class AdminDomainTest(test_utils.BaseTest):
     with test_utils.RootLogin():
       # All POSTs other than the "create domain" operation should give a 404.
       response = self.DoUserPermissionsPost(
-          'nosuchdomain.com',
-          (('foo@bar.com', perms.Role.DOMAIN_ADMIN, False),), status=404)
+          'nosuchdomain.com', [('foo@bar.com', perms.Role.DOMAIN_ADMIN, False)],
+          status=404)
       self.assertIn('nosuchdomain.com', response.body)
       response = self.DoNewUserPost('nosuchdomain.com', 'blah@nosuchdomain.com',
-                                    perms.Role.DOMAIN_ADMIN, status=404)
+                                    perms.Role.DOMAIN_ADMIN, 404)
       self.assertIn('nosuchdomain.com', response.body)
       response = self.DoDomainSettingsPost('nosuchdomain.com', 'empty', False,
-                                           perms.Role.MAP_VIEWER, status=404)
+                                           perms.Role.MAP_VIEWER, 404)
       self.assertIn('nosuchdomain.com', response.body)
 
   def testGet_StaleDefaultLabel(self):
@@ -126,7 +125,7 @@ class AdminDomainTest(test_utils.BaseTest):
   def testPost_NewPermissions(self):
     with test_utils.RootLogin():
       response = self.DoUserPermissionsPost(
-          'xyz.com', (('insider', 'DOMAIN_ADMIN', False),))
+          'xyz.com', [('insider', 'DOMAIN_ADMIN', False)])
       # Should redirect back to the admin page.
       self.assertTrue('/root/xyz.com/.admin' in response.headers['Location'])
       self.assertEqual({perms.Role.DOMAIN_ADMIN},
@@ -143,7 +142,7 @@ class AdminDomainTest(test_utils.BaseTest):
   def testPost_DeleteUser(self):
     with test_utils.RootLogin():
       self.DoUserPermissionsPost('xyz.com',
-                                 (('outsider', 'DOMAIN_ADMIN', True),))
+                                 [('outsider', 'DOMAIN_ADMIN', True)])
     self.assertNotIn('outsider', perms.GetSubjectsForTarget('xyz.com'))
 
   def testPost_SetDomainRole(self):
@@ -151,7 +150,7 @@ class AdminDomainTest(test_utils.BaseTest):
       perms.Grant('xyz.com', perms.Role.DOMAIN_ADMIN, 'xyz.com')
       perms.Grant('xyz.com', perms.Role.MAP_CREATOR, 'xyz.com')
       self.DoUserPermissionsPost(
-          'xyz.com', (), domain_role=perms.Role.CATALOG_EDITOR)
+          'xyz.com', [], domain_role=perms.Role.CATALOG_EDITOR)
     self.assertEqual({perms.Role.CATALOG_EDITOR},
                      perms.GetSubjectsForTarget('xyz.com')['xyz.com'])
 
@@ -159,7 +158,7 @@ class AdminDomainTest(test_utils.BaseTest):
     with test_utils.RootLogin():
       perms.Grant('xyz.com', perms.Role.CATALOG_EDITOR, 'xyz.com')
       self.DoUserPermissionsPost(
-          'xyz.com', (), domain_role=admin.NO_PERMISSIONS)
+          'xyz.com', [], domain_role=admin.NO_PERMISSIONS)
     self.assertNotIn('xyz.com', perms.GetSubjectsForTarget('xyz.com'))
 
   def testPost_MultipleChangesDontInterfere(self):
@@ -167,8 +166,8 @@ class AdminDomainTest(test_utils.BaseTest):
       # Demote insider to MAP_CREATOR; revoke all permissions for outsider;
       # add recipient as a catalog editor
       self.DoUserPermissionsPost(
-          'xyz.com', (('insider', perms.Role.MAP_CREATOR, False),
-                      ('outsider', perms.Role.DOMAIN_ADMIN, True)),
+          'xyz.com', [('insider', perms.Role.MAP_CREATOR, False),
+                      ('outsider', perms.Role.DOMAIN_ADMIN, True)],
           new_user=('recipient@gmail.test', perms.Role.CATALOG_EDITOR),
           domain_role=perms.Role.DOMAIN_ADMIN)
     new_perms = perms.GetSubjectsForTarget('xyz.com')
@@ -180,14 +179,13 @@ class AdminDomainTest(test_utils.BaseTest):
   def testPost_NewUserInvalidEmail(self):
     with test_utils.RootLogin():
       response = self.DoNewUserPost(
-          'xyz.com', 'bad@email@address', perms.Role.DOMAIN_ADMIN, status=400)
+          'xyz.com', 'bad@email@address', perms.Role.DOMAIN_ADMIN, 400)
       self.assertIn('bad@email@address', response.body)
 
   def testPost_NonexistentDomain(self):
     self.assertIsNone(domains.Domain.Get('bar.com'))
     with test_utils.RootLogin():
-      self.DoNewUserPost(
-          'bar.com', 'foo@bar.com', perms.Role.DOMAIN_ADMIN, status=404)
+      self.DoNewUserPost('bar.com', 'foo@bar.com', perms.Role.DOMAIN_ADMIN, 404)
 
   def testPost_CreateDomain(self):
     self.assertIsNone(domains.Domain.Get('bar.com'))
@@ -223,7 +221,7 @@ class AdminDomainTest(test_utils.BaseTest):
   def testCreateDomain_DomainAlreadyExists(self):
     with test_utils.RootLogin():
       domains.Domain.Create('foo.com')
-      response = self.DoCreateDomainPost('foo.com', status=403)
+      response = self.DoCreateDomainPost('foo.com', 403)
       self.assertIn('foo.com', response.status)
 
   def testDomainSettingsPost(self):
@@ -285,8 +283,7 @@ class AdminDomainTest(test_utils.BaseTest):
 class AdminMapTest(test_utils.BaseTest):
   def testNavigate(self):
     with test_utils.RootLogin():
-      response = self.DoGet(
-          '/.admin?map=http://app.com/root/.maps/x', status=302)
+      response = self.DoGet('/.admin?map=http://app.com/root/.maps/x', 302)
       self.assertEquals(
           'http://app.com/root/.admin/x', response.headers['Location'])
 
@@ -328,7 +325,7 @@ class AdminMapTest(test_utils.BaseTest):
     map_object = test_utils.CreateMap()
     map_id = map_object.id
     with test_utils.Login('unprivileged'):
-      self.DoPost('/.admin/' + map_id, 'wipe=1&xsrf_token=XSRF', status=403)
+      self.DoPost('/.admin/' + map_id, 'wipe=1&xsrf_token=XSRF', 403)
 
 
 if __name__ == '__main__':

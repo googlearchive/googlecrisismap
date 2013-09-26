@@ -61,39 +61,38 @@ class ShareTest(test_utils.BaseTest):
     with test_utils.Login('editor'):
       self.DoPost('/.share/' + self.m.id,
                   'role=MAP_VIEWER&recipient=friend@gmail.test&xsrf_token=XSRF',
-                  status=403)
+                  403)
 
   def testSharePostFailureInvalidId(self):
     """Sharing should fail if the map ID is invalid."""
     with test_utils.Login('owner'):
       self.DoPost('/.share/xxx',
                   'role=MAP_VIEWER&recipient=friend@gmail.test&xsrf_token=XSRF',
-                  status=404)
+                  404)
 
   def testSharePostFailureInvalidRole(self):
     """Sharing should fail if the specified role is invalid."""
     with test_utils.Login('owner'):
       self.DoPost('/.share/%s' % self.m.id,
-                  'role=other&recipient=friend@gmail.test&xsrf_token=XSRF',
-                  status=400)
+                  'role=other&recipient=friend@gmail.test&xsrf_token=XSRF', 400)
 
   def testSharePostFailureMissingParameter(self):
     """Sharing should fail if the role or recipient parameter is missing."""
     # Try with missing recipient email.
     with test_utils.Login('owner'):
       self.DoPost('/.share/%s' % self.m.id,
-                  'role=MAP_VIEWER&xsrf_token=XSRF', status=400)
+                  'role=MAP_VIEWER&xsrf_token=XSRF', 400)
 
     # Try with missing role.
     with test_utils.Login('owner'):
       self.DoPost('/.share/%s' % self.m.id,
-                  'recipient=foo@bar.com&xsrf_token=XSRF', status=400)
+                  'recipient=foo@bar.com&xsrf_token=XSRF', 400)
 
   def testSharePostFailureInvalidEmail(self):
     """Sharing should fail if the recipient's address is badly formatted."""
     with test_utils.Login('owner'):
       self.DoPost('/.share/%s' % self.m.id,
-                  'role=MAP_VIEWER&recipient=@@..&xsrf_token=XSRF', status=400)
+                  'role=MAP_VIEWER&recipient=@@..&xsrf_token=XSRF', 400)
 
 if __name__ == '__main__':
   test_utils.main()

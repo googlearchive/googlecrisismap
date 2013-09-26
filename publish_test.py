@@ -60,7 +60,7 @@ class PublishTest(test_utils.BaseTest):
       for label in ['', '!', 'f#oo', '?a', 'qwerty!', '9 3']:
         self.DoPost('/xyz.com/.publish',
                     'label=%s&map=%s&xsrf_token=XSRF' % (label, self.map_id),
-                    status=400)
+                    400)
 
   def testValidLabels(self):
     """Tests to makes sure valid labels do get published."""
