@@ -246,7 +246,7 @@ html, body {
 /* Panel contents */
 .cm-panel-header {
   position:relative;
-  margin-top:12px;
+  margin:12px 0 6px;
 }
 
 /* Make the map title and description appear editable. */
