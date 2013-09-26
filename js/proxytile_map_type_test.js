@@ -34,6 +34,10 @@ function ProxyTileMapTypeTest() {
   this.catcher = new TimeoutCatcher();
   this.setForTest_('goog.global.setTimeout',
                    goog.bind(this.catcher.setTimeout, this.catcher));
+  this.setForTest_('cm.Analytics.logEvent',
+                   function(category, action, label, value) {});
+  this.setForTest_('cm.Analytics.logTime',
+                   function(category, variable, time, label, value) {});
 }
 ProxyTileMapTypeTest.prototype = new cm.TestBase();
 registerTestSuite(ProxyTileMapTypeTest);
@@ -77,4 +81,3 @@ ProxyTileMapTypeTest.prototype.tileLifeCycle = function() {
   expectThat(tile.tileData, isNull);
   expectEq(0, tile.childNodes.length);
 };
-

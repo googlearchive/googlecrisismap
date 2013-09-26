@@ -21,11 +21,13 @@ goog.require('goog.style');
 // How many retries of a tile fetch.
 var MAX_RETRIES = 10;
 
+var TRANSPARENT_TILE_REGEXP = /maps\.gstatic\.com\/mapfiles\/transparent\.png/;
+
 /**
  * @class This class implements the MapType interface and
  * is provided for rendering image tiles. Unlike the Maps API ImageMapType,
  * this maptype retries images on error. The WMS/ESRI tile proxying code
- * signals that a tile isn't ready yet with a 503.
+ * signals that a tile isn't ready yet with a 417.
  *
  * @param {Object} opts Options for the layer.
  * @constructor
@@ -78,7 +80,6 @@ goog.inherits(cm.ProxyTileMapType, google.maps.MVCObject);
  * @return {Element} The freshly painted new div.
  */
 cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
-  // window.console.log('getTile for ' + coord + ' at zoom level ' + zoom);
   // Create an empty tile div to paint later.
   var tileDiv = cm.ui.create('div');
   // Set tile width and height before painting it.
@@ -89,8 +90,8 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
   if (!tileSrcUrl) {
     return tileDiv;
   }
-  var tileId = zoom + ',' + coord.x + ',' + coord.y;
-  this.tiles_[tileId] = tileDiv;
+  var tileCoords = zoom + ',' + coord.x + ',' + coord.y;
+  this.tiles_[tileCoords] = tileDiv;
 
   var tileImg = cm.ui.create('img');
   goog.style.setOpacity(
@@ -99,10 +100,13 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
 
   tileDiv.tileData = {
     tileSrc: tileSrcUrl,
-    tileId: tileId,
+    tileCoords: tileCoords,
     retries: 0,
-    retryTimeout: null
+    retryTimeout: null,
+    startTime: new Date().getTime()
   };
+
+
   // TODO(arb): Create an "outstanding tiles" counter, and trigger the loading
   // spinner.
 
@@ -111,36 +115,46 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     // Race condition here - we could be invoked after the tile has been
     // cleaned up. When the tile is painted, getTile() will be called before
     // a 'load' or 'error' event is fired, so we always expect the tile div's
-    // data to be valid unless the tile has already been released
-    if (!tileDiv.tileData) return;
+    // data to be valid unless the tile has already been released.
+    var tileData = tileDiv.tileData;
+    if (!tileData) return;
+    // Only log a succesful fetch if the loaded image is not a transparent tile.
+    if (!TRANSPARENT_TILE_REGEXP.test(tileImg.src)) {
+      cm.Analytics.logTime('wms_tile_fetch', tileData.retries,
+                           new Date().getTime() - tileData.startTime,
+                           tileData.tileSrcUrl + ':' +
+                           tileData.tileCoords.replace(/\,/, '/', 'g'));
+    }
     // TODO(arb): decrement the outstanding tile counter.
-    //window.console.log('loaded tile for ' + tileDiv.tileData.tileId +
-    //                   ' on attempt ' + tileDiv.tileData.retries);
-    tileDiv.tileData.retryTimeout = null;
+    tileData.retryTimeout = null;
   }, this);
   // Set up an error handler
   cm.events.listen(tileImg, 'error', function(e) {
+    var tileData = tileDiv.tileData;
     // Race condition here, too.
-    if (!tileDiv.tileData) return;
-    var retries = tileDiv.tileData.retries;
-    if (retries > MAX_RETRIES) {
+    if (!tileData) return;
+    var retries = tileData.retries;
+    if (retries >= MAX_RETRIES) {
+      cm.Analytics.logEvent(
+          'wms_tile_fetch', 'failure', tileData.tileSrcUrl, 1);
+      // Set back to an empty tile to avoid the nasty broken image icon.
+      tileDiv.firstChild.setAttribute(
+          'src', '//maps.gstatic.com/mapfiles/transparent.png');
       return;
     }
-    tileDiv.tileData.retries = retries + 1;
-    // set back to an empty tile in the meantime to avoid the nasty broken
-    // image icon.
+    tileData.retries = retries + 1;
+    // Set back to an empty tile to avoid the nasty broken image icon.
     tileDiv.firstChild.setAttribute(
         'src', '//maps.gstatic.com/mapfiles/transparent.png');
     // TODO(arb): work out a reasonable retry approach.
-    var retry = Math.random() * 1000 * Math.pow(1.5, 2 + retries);
-    tileDiv.tileData.retryTimeout = goog.global.setTimeout(function() {
+    var retryDelay = Math.random() * 1000 * Math.pow(1.5, 2 + retries);
+    tileData.retryTimeout = goog.global.setTimeout(function() {
       // You are in a twisty little maze of race conditions, all alike.
-      if (!tileDiv.tileData) return;
+      if (!tileData) return;
       // Try to fetch the tile again.
       tileImg.removeAttribute('src');
-      //window.console.log('retrying ' + tileDiv.tileData.tileSrc);
-      tileImg.setAttribute('src', tileDiv.tileData.tileSrc);
-    }, retry);
+      tileImg.setAttribute('src', tileData.tileSrc);
+    }, retryDelay);
   }, this);
 
   // Finally, paint the tile.
@@ -159,7 +173,7 @@ cm.ProxyTileMapType.prototype.releaseTile = function(tileDiv) {
     if (tileDiv.tileData.retryTimeout) {
       goog.global.clearTimeout(tileDiv.tileData.retryTimeout);
     }
-    delete this.tiles_[tileDiv.tileData.tileId];
+    delete this.tiles_[tileDiv.tileData.tileCoords];
     tileDiv.tileData = null;
     while (tileDiv.firstChild) {
       cm.events.dispose(tileDiv.firstChild);
@@ -174,8 +188,8 @@ cm.ProxyTileMapType.prototype.releaseTile = function(tileDiv) {
  */
 cm.ProxyTileMapType.prototype.updateOpacity_ = function() {
   var opacity = /** @type number */(this.get('opacity'));
-  for (var tileId in this.tiles_) {
-    var tile = /** @type {!Element} */(this.tiles_[tileId]);
+  for (var tileCoords in this.tiles_) {
+    var tile = /** @type {!Element} */(this.tiles_[tileCoords]);
     goog.style.setOpacity(tile, opacity);
   }
 };
@@ -186,4 +200,3 @@ goog.exportProperty(cm.ProxyTileMapType.prototype, 'getTile',
                     cm.ProxyTileMapType.prototype.getTile);
 goog.exportProperty(cm.ProxyTileMapType.prototype, 'releaseTile',
                     cm.ProxyTileMapType.prototype.releaseTile);
-

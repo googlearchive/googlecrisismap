@@ -72,3 +72,26 @@ cm.Analytics.initialize = function(opt_analyticsId) {
 cm.Analytics.logEvent = function(category, action, opt_label, opt_value) {
   _gaq.push(['_trackEvent', category, action, opt_label, opt_value]);
 };
+
+/**
+ * Push a timing event onto the analytics command queue. See
+ * https://developers.google.com/analytics/devguides/collection/gajs/gaTrackingTiming
+ * @param {string} category A short string identifying the event category
+ *     (usually a noun for the object or category of object that was affected,
+ *     e.g. "wms"), used for easier viewing of reports.  Our
+ *     convention is to use lowercase_with_underscores.
+ * @param {string} variable A short string  identifying the type event being
+ *     timed (similar to an action, e.g. "tile_fetch"). Our convention
+ *     is to use lowercase_with_underscores.
+ * @param {number} time The number of ellapsed milliseconds to report.
+ * @param {string=} opt_label An optional more specific label (usually a unique
+ *     programmatic ID, e.g. tilset ID, layer ID, URL, etc.).
+ * @param {number=} opt_sample An optional numeric value for the percentage
+ *     of visitors whose timing hits are tracked. Each hit counts
+ *     against the limit of 500 hits per session, after which no hits
+ *     are processed for a given session.
+ */
+cm.Analytics.logTime = function(category, variable, time,
+                                opt_label, opt_sample) {
+  _gaq.push(['_trackTiming', category, variable, time, opt_label, opt_sample]);
+};
