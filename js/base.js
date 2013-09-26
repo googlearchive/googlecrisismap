@@ -20,6 +20,17 @@ goog.provide('cm');
 cm = {};
 
 
+// All localizable messages are declared below.  Please provide a @desc for
+// each message to give the translators some context.
+//
+//   - Constant messages are declared as constants of the form "MSG_FOO".
+//
+//   - Parameterizable messages are defined in functions named "cm.getMsgFoo".
+//     (Closure forces us to assign each message *after substitution* to a
+//     variable like MSG_FOO, so the only way to make messages parameterizable
+//     is to assign to a local variable in a function and return the variable.)
+
+
 // Generic messages.
 
 /** @desc Label for an OK button on a dialog with OK and Cancel buttons. */
@@ -67,11 +78,45 @@ cm.MSG_HELP = goog.getMsg('Help');
 /** @desc Header for the about box. */
 cm.MSG_ABOUT_HEADER = goog.getMsg('Google Crisis Map');
 
+/** @desc Text in a Help pop-up for people viewing the map. */
+cm.MSG_ABOUT_HTML = goog.getMsg(
+    'Tips for using this site:' +
+    '<ul>' +
+    '  <li>Zoom the map using either the on-screen controls or your mouse.' +
+    '  </li>' +
+    '  <li>Find additional layers in the Layers list, where you can turn' +
+    '  them on or off.  Scroll to see all layers.</li>' +
+    '  <li>Zoom to an appropriate view for each layer by clicking the "Zoom' +
+    '  to area" links in the Layers list.</li>' +
+    '  <li>View selected layers in <a href="http://www.google.com/earth/"' +
+    '  target="_blank">Google Earth</a> by clicking the "Download KML" links' +
+    '  in the Layers list.</li>' +
+    '  <li>Share the map in e-mail by clicking the Share button and copying' +
+    '  the URL provided there. The URL will restore your current view,' +
+    '  including the set of layers that you have turned on.</li>' +
+    '  <li>Embed the map on your website or blog by getting a snippet of ' +
+    '  HTML code from the Share button.</li>' +
+    '  <li>Share the link on Google+, Twitter or Facebook by clicking the ' +
+    '  appropriate button in the Share window.</li>' +
+    '</ul>');
+
 
 // Footer view
 
 /** @desc The link text for opening the map in a new browser window. */
 cm.MSG_FULL_MAP_LINK = goog.getMsg('Full map');
+
+/**
+ * @param {string} publisherName Name of the person or organization that
+ *     published the map.
+ * @return {string} The localized message.
+ */
+cm.getMsgPublisherAttribution = function(publisherName) {
+  /** @desc Attribution for the person or organization publishing the map. */
+  var MSG_PUBLISHER_ATTRIBUTION = goog.getMsg(
+      'Published by {$publisherName}', {'publisherName': publisherName});
+  return MSG_PUBLISHER_ATTRIBUTION;  // Closure forces this silly circumlocution
+};
 
 /**
  * @desc The link text in the footer for reporting abuse of the terms of
@@ -94,6 +139,9 @@ cm.MSG_LANGUAGE_DEFAULT = goog.getMsg('Default language');
 
 
 // Importer view
+
+/** @desc A temporary message shown while contents are loading. */
+cm.MSG_LOADING = goog.getMsg('Loading...');
 
 /**
  * @desc Label for the submit button of the importer dialog, which will import
@@ -132,12 +180,6 @@ cm.MSG_NO_PREVIEW =
     goog.getMsg('This folder has no layers visible by default.');
 
 
-// Inspector View
-
-/** @desc Text of link to proceed to the "Import layers" dialog. */
-cm.MSG_IMPORT_LAYERS = goog.getMsg('Import published layers \xbb');
-
-
 // Layers button
 
 /** @desc Standard label for the 'Layers' button in embedded mode. */
@@ -169,9 +211,9 @@ cm.MSG_UNSUPPORTED_KML_WARNING = goog.getMsg(
  * @desc Warning message when the data file is empty or contains no
  * features.
  */
-
 cm.MSG_NO_DATA_WARNING = goog.getMsg(
     'This layer currently contains nothing to show on the map.');
+
 /**
  * @desc Label for faded out layer entry when layer is not visible at the
  * current zoom level.
@@ -179,8 +221,19 @@ cm.MSG_NO_DATA_WARNING = goog.getMsg(
 cm.MSG_OUT_OF_ZOOM_RANGE_TOOLTIP =
     goog.getMsg('Data not available at current zoom level.');
 
-/** @desc Section heading for the map legend. */
+/** @desc Label for the map legend or an area for editing the map legend. */
 cm.MSG_LEGEND = goog.getMsg('Legend');
+
+/**
+ * @param {string} formattedTime A formatted date and time.
+ * @return {string} The localized message.
+ */
+cm.getMsgLastUpdatedTime = function(formattedTime) {
+  /** @desc Indicator for the time that the layer was last updated. */
+  var MSG_LAST_UPDATED = goog.getMsg(
+      'Last updated: {$formattedTime}', {'formattedTime': formattedTime});
+  return MSG_LAST_UPDATED;  // Closure forces this silly circumlocution
+};
 
 
 // Legend editor
@@ -210,7 +263,7 @@ cm.MSG_REVERT = goog.getMsg('Revert');
 
 // Map view
 
-/** @desc Copyright notice for OpenStreetMap base map data. */
+/** @desc Copyright notice map data from OpenStreetMap. */
 cm.MSG_OSM_COPYRIGHT_HTML = goog.getMsg(
     'Map data \u00a9 ' +
     '<a href="http://www.openstreetmap.org/copyright" target="_blank">' +
@@ -233,9 +286,9 @@ cm.MSG_DRAFT_TOOLTIP = goog.getMsg(
 cm.MSG_RESET_VIEW_LINK = goog.getMsg('Reset to default view');
 
 
-// Share.js
+// Share popup
 
-/** @desc Standard label for the 'Share' button on the map. */
+/** @desc Label for a button to share the current map view. */
 cm.MSG_SHARE_BUTTON = goog.getMsg('Share');
 
 /** @desc Title for the share box. */
@@ -258,7 +311,7 @@ cm.MSG_GPLUS_SHARE_LABEL = goog.getMsg('Share on Google+');
 cm.MSG_TWITTER_SHARE_LABEL = goog.getMsg('Tweet this map');
 
 
-// Share email view
+// Collaborate popup
 
 /** @desc Heading of the dialog for inviting another user to collaborate. */
 cm.MSG_INVITE_TITLE = goog.getMsg('Invite someone to collaborate');
@@ -331,7 +384,290 @@ cm.MSG_UNSAVED_CHANGES = goog.getMsg(
     ' the page without clicking the "Save" link.');
 
 
-// Layer editor tooltips
+
+// Inspector
+
+/** @desc Text of link to proceed to the "Import layers" dialog. */
+cm.MSG_IMPORT_LAYERS = goog.getMsg('Import published layers \xbb');
+
+/** @desc Label for a text field for a map title or layer title. */
+cm.MSG_TITLE = goog.getMsg('Title');
+
+/** @desc Label for a text field for a map description or layer description. */
+cm.MSG_DESCRIPTION = goog.getMsg('Description');
+
+/** @desc Label for a text field for the content at the bottom of the map. */
+cm.MSG_FOOTER = goog.getMsg('Footer');
+
+/**
+ * @desc Label for an area for editing the map's default viewport, which is
+ *     used to determine the zoom level and visible area of the map when it
+ *     is initially loaded.
+ */
+cm.MSG_DEFAULT_VIEWPORT = goog.getMsg('Default viewport');
+
+/**
+ * @desc Label for the menu for choosing the type of base map (road map,
+ *     satellite map, etc.) displayed by default when the map initially loads.
+ */
+cm.MSG_DEFAULT_BASE_MAP = goog.getMsg('Default base map');
+
+/** @desc One of the available options for a type of base map. */
+cm.MSG_BASE_MAP_TYPE_ROADMAP = goog.getMsg('Road map');
+
+/** @desc One of the available options for a type of base map. */
+cm.MSG_BASE_MAP_TYPE_SATELLITE = goog.getMsg('Satellite imagery');
+
+/** @desc One of the available options for a type of base map. */
+cm.MSG_BASE_MAP_TYPE_HYBRID = goog.getMsg('Satellite imagery with labels');
+
+/** @desc One of the available options for a type of base map. */
+cm.MSG_BASE_MAP_TYPE_TERRAIN = goog.getMsg('Terrain');
+
+/**
+ * @desc One of the available options for a type of base map; this option
+ *     allows the user to customize the style of the base map.
+ */
+cm.MSG_BASE_MAP_TYPE_CUSTOM = goog.getMsg('Custom');
+
+/**
+ * @desc Label for a text field where the user can enter code to customize the
+ *     style of the base map.  It's important to show that the code should be
+ *     entered in JSON format, so "(JSON)" should appear in all translations.
+ */
+cm.MSG_CUSTOM_BASE_MAP_STYLE = goog.getMsg('Custom base map style (JSON)');
+
+/**
+ * @desc Label for a text field for entering a name for the custom style that
+ *     the user has defined in the "Custom base map style (JSON)" field.
+ */
+cm.MSG_CUSTOM_STYLE_NAME = goog.getMsg('Custom style name');
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Label for an area for editing the layer's viewport, which determines
+ *     the rectangular area that the map zooms to when the user clicks
+ *     "Zoom to area".  The "Zoom to area" part in quotation marks refers to a
+ *     command in the UI, so it should be translated identically to the other
+ *     "Zoom to area" message.
+ */
+cm.UNTRANSLATED_MSG_LAYER_VIEWPORT = '"Zoom to area" viewport';
+
+/**
+ * @desc Label for a checkbox to copy the current map's viewport to the layer's
+ *     viewport fields, as an alternative to typing in numbers for the viewport.
+ */
+cm.MSG_USE_CURRENT_MAP_VIEWPORT = goog.getMsg('Use current map viewport');
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc A warning message that asks the user to fill in the layer viewport
+ *     for "Tile service" layers.  The words "Tile service" in quotation marks
+ *     refer to the "Tile service" option in the UI, and they should be
+ *     translated identically to the other message for "Tile service".
+ */
+cm.UNTRANSLATED_MSG_TILE_LAYER_VIEWPORT_WARNING =
+    'For "Tile service" layers, please provide accurate viewport bounds ' +
+    'in order to ensure that only tiles within the bounds are requested.';
+
+/** @desc Label for an area for entering the minimum zoom level of the map. */
+cm.MSG_MINIMUM_ZOOM = goog.getMsg('Minimum zoom level');
+
+/** @desc Label for an area for entering the maximum zoom level of the map. */
+cm.MSG_MAXIMUM_ZOOM = goog.getMsg('Maximum zoom level');
+
+/** @desc Label for a menu for selecting the type of a map layer. */
+cm.MSG_LAYER_TYPE = goog.getMsg('Layer type');
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Menu option for a service that delivers layer tiles.
+ */
+cm.UNTRANSLATED_MSG_LAYER_TYPE_TILE_SERVICE = 'Tile service';
+
+/** @desc Menu option for a layer from the Google Fusion Tables product. */
+cm.MSG_LAYER_TYPE_FUSION_TABLES = goog.getMsg('Google Fusion Tables');
+
+/** @desc Menu option for a layer from the Google Maps Engine product. */
+cm.MSG_LAYER_TYPE_MAPS_ENGINE = goog.getMsg('Google Maps Engine');
+
+/** @desc Menu option for the traffic layer from Google Maps. */
+cm.MSG_LAYER_TYPE_TRAFFIC = goog.getMsg('Traffic (from Google Maps)');
+
+/** @desc Menu option for the transit layer from Google Maps. */
+cm.MSG_LAYER_TYPE_TRANSIT = goog.getMsg('Transit (from Google Maps)');
+
+/** @desc Menu option for the weather layer from Google Maps. */
+cm.MSG_LAYER_TYPE_WEATHER = goog.getMsg('Weather (from Google Maps)');
+
+/** @desc Menu option for the clouds layer from Google Maps. */
+cm.MSG_LAYER_TYPE_CLOUDS = goog.getMsg('Clouds (from Google Maps)');
+
+/** @desc Label for a text field for the URL of a data source. */
+cm.MSG_SOURCE_URL = goog.getMsg('Source URL');
+
+/**
+ * @desc Label for a checkbox that controls whether to show a link to
+ *     download the data for this layer.
+ */
+cm.MSG_SHOW_DOWNLOAD_LINK = goog.getMsg('Show download link?');
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Label for a checkbox that controls whether the URL that the user
+ *     entered should be treated as a tile index.
+ */
+cm.UNTRANSLATED_MSG_TILE_INDEX = 'Tile index URL?';
+
+/**
+ * @desc Label for a text field for entering the Table ID of a table in
+ *     Google Fusion Tables.  This should match the translation of the
+ *     message "Table ID" in the Google Fusion Tables product.
+ */
+cm.MSG_GFT_TABLE_ID = goog.getMsg('Table ID');
+
+/**
+ * @desc Label for a text field for entering a column name.  The purpose of
+ *     entering the column name is to specify which column contains location
+ *     information in a table of data in Google Fusion Tables.
+ */
+cm.MSG_GFT_LOCATION_COLUMN = goog.getMsg('Location column');
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Label for a text field for entering a condition that is used to filter
+ *     the data (from a table in Google Fusion Tables) to be shown on the map.
+ *     An example of a condition would be "type = 'tornado'" or "speed > 60".
+ */
+cm.UNTRANSLATED_MSG_GFT_FILTER_CONDITION = 'Filter condition';
+
+/**
+ * @desc Label for a menu for selecting the color of the text labels
+ *     on a weather layer.
+ */
+cm.MSG_WEATHER_LABEL_COLOR = goog.getMsg('Label color');
+
+/** @desc The color black in a color selection menu. */
+cm.MSG_BLACK = goog.getMsg('Black');
+
+/** @desc The color white in a color selection menu. */
+cm.MSG_WHITE = goog.getMsg('White');
+
+/**
+ * @desc Label for a menu for selecting the temperature unit to use
+ *     on a weather layer (the options in the menu are Celsius and Fahrenheit).
+ */
+cm.MSG_WEATHER_TEMPERATURE_UNIT = goog.getMsg('Temperature unit');
+
+/** @desc An option in a menu for selecting temperature units. */
+cm.MSG_CELSIUS = goog.getMsg('Celsius');
+
+/** @desc An option in a menu for selecting temperature units. */
+cm.MSG_FAHRENHEIT = goog.getMsg('Fahrenheit');
+
+/**
+ * @desc Label for a menu for selecting the speed unit (mph or km/h)
+ *     to use for displaying wind speeds for a weather layer.
+ */
+cm.MSG_WEATHER_WIND_SPEED_UNIT = goog.getMsg('Wind speed unit');
+
+/**
+ * @desc Label for a text field for the Map ID of a map in Google Maps Engine.
+ *     Should match the translation for "Map ID" in the GME product.
+ */
+cm.MSG_GME_MAP_ID = goog.getMsg('Map ID');
+
+/**
+ * @desc Label for a text field for a layer key in Google Maps Engine.
+ *     Should match the translation for "Layer key" in the GME product.
+ */
+cm.MSG_GME_LAYER_KEY = goog.getMsg('Layer key');
+
+/** @desc Label for a list of map layers that the user can select from. */
+cm.MSG_WMS_LAYERS = goog.getMsg('Layers');
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Label for a menu for selecting the type of coordinates to use
+ *     for a tile service.
+ */
+cm.UNTRANSLATED_MSG_TILE_COORDINATE_TYPE = 'Tile coordinate type';
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc An option in a menu for selecting a type of coordinates.
+ */
+cm.UNTRANSLATED_MSG_GOOGLE_MAPS_COORDINATES = 'Google Maps tile coordinates';
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc An option in a menu for selecting a type of coordinates.  "Quadkey"
+ *     is a technical term invented by Bing Maps.
+ */
+cm.UNTRANSLATED_MSG_BING_MAPS_QUADKEYS = 'Bing Maps quadkeys';
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc An option in a menu for selecting a type of coordinates.
+ */
+cm.UNTRANSLATED_MSG_TMS_COORDINATES = 'Tile Map Service (TMS) coordinates';
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Label for a menu for selecting the type of a folder (in which
+ *     layers are organized).
+ */
+cm.UNTRANSLATED_MSG_FOLDER_TYPE = 'Folder type';
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc A menu option that sets a folder to be unlocked, meaning that the
+ *     contents within the folder are visible and can be manipulated.
+ */
+cm.UNTRANSLATED_MSG_FOLDER_TYPE_UNLOCKED = 'Unlocked';
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc A menu option that sets a folder to be locked, meaning that the
+ *     contents within the folder are hidden and cannot be manipulated.
+ */
+cm.UNTRANSLATED_MSG_FOLDER_TYPE_LOCKED = 'Locked';
+
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc A menu option that sets a folder to be restricted so that only one
+ *     of the items inside it is shown at a time.
+ */
+cm.UNTRANSLATED_MSG_FOLDER_TYPE_SINGLE_SELECT = 'Single-select';
+
+
+// Inspector tooltips
 
 /** @desc Tooltip for editing the layer's title. */
 cm.MSG_LAYER_TITLE_TOOLTIP = goog.getMsg(
@@ -342,88 +678,136 @@ cm.MSG_LAYER_DESCRIPTION_TOOLTIP = goog.getMsg(
     'HTML of the layer description to display in the map\'s layer list.');
 
 /** @desc Tooltip for editing the layer's legend. */
-cm.MSG_LEGEND_TOOLTIP = goog.getMsg(
-    'The legend to display for this layer.');
+cm.MSG_LEGEND_TOOLTIP = goog.getMsg('The legend to display for this layer.');
 
 /**
- * @desc Tooltip for editing the layer's viewport.  The "Zoom to area" part
- * in quotation marks refers to the message MSG_ZOOM_TO_AREA_LINK and should
- * exactly match the translation for that message.
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Tooltip for editing the layer's viewport.  The "Zoom to area" part
+ *     in quotation marks refers to a command in the UI and should be
+ *     translated identically to the other "Zoom to area" message.
  */
-cm.MSG_LAYER_VIEWPORT_TOOLTIP = goog.getMsg(
+cm.UNTRANSLATED_MSG_LAYER_VIEWPORT_TOOLTIP =
     'The bounding coordinates of the area to zoom to when the user clicks ' +
-    '"Zoom to area".');
+    '"Zoom to area".';
 
-/** @desc Tooltip for editing the layer's minimum zoom level. */
-cm.MSG_MIN_ZOOM = goog.getMsg(
+/**
+ * @desc Tooltip for a text field for a layer's minimum zoom level.
+ *     [BACKUP_MESSAGE_ID: 1222561086658662105] <- remove by 2013-06-30.
+ */
+cm.MSG_MINIMUM_ZOOM_TOOLTIP = goog.getMsg(
     'The lowest zoom level at which to show this layer (0=fully zoomed out, ' +
     '21=fully zoomed in).');
 
-/** @desc Tooltip for editing the layer's maximum zoom level. */
-cm.MSG_MAX_ZOOM = goog.getMsg(
+/**
+ * @desc Tooltip for a text field for a layer's maximum zoom level.
+ *     [BACKUP_MESSAGE_ID: 7963246557554006791] <- remove by 2013-06-30.
+ */
+cm.MSG_MAXIMUM_ZOOM_TOOLTIP = goog.getMsg(
     'The highest zoom level at which to show this layer (0=fully zoomed out, ' +
     '21=fully zoomed in).');
 
-/** @desc Tooltip for editing the layer's source data type. */
-cm.MSG_SOURCE_DATA_TYPE = goog.getMsg(
+/**
+ * @desc Tooltip for a menu for selecting the type of a map layer.
+ *     [BACKUP_MESSAGE_ID: 1910785398096973936] <- remove by 2013-06-30.
+ */
+cm.MSG_LAYER_TYPE_TOOLTIP = goog.getMsg(
     'The data type or format of the layer\'s data.');
 
-/** @desc Tooltip for editing the layer data's source URL. */
-cm.MSG_SOURCE_URL = goog.getMsg(
-    'The complete public URL where the layer\'s data is hosted. (For Tile ' +
-    'layers, this is a URL template such as ' +
-    'http://foo.com/maptile/example/{X}_{Y}_{Z}.png with placeholders for ' +
-    'X, Y, and Z.)');
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Tooltip for the text field for a layer's data source URL.  "Quadkey"
+ *     is a technical term invented by Bing Maps.
+ */
+cm.UNTRANSLATED_MSG_SOURCE_URL_TOOLTIP =
+    'The public URL of the layer data.  (For Google Maps tiles and TMS ' +
+    'tiles, this is a URL template like http://example.com/{X}_{Y}_{Z}.png ' +
+    'with placeholders for X, Y, and Z values.  For Bing Maps tiles, this is ' +
+    'the tile URL without the quadkey at the end.)';
 
-/** @desc Tooltip for toggling the display layer's data download link. */
-cm.MSG_SHOW_DOWNLOAD_LINK = goog.getMsg(
+/**
+ * @desc Tooltip for a checkbox that sets whether to show a download link.
+ *     [BACKUP_MESSAGE_ID: 936745501152598628] <- remove by 2013-06-30.
+ */
+cm.MSG_SHOW_DOWNLOAD_LINK_TOOLTIP = goog.getMsg(
     'Whether or not to display a link to the data source URL.');
 
-/** @desc For a Fusion Table layer, tooltip for editing the Fusion Table ID. */
-cm.MSG_FUSION_TABLE_ID = goog.getMsg(
-    'The numeric ID of the Fusion Table.  In Fusion Tables, <b>File</b> &gt; ' +
-    '<b>About</b> shows this ID.');
+/**
+ * @desc Tooltip for a text field for entering the ID of a table in
+ *     Google Fusion Tables.  For every table, Google Fusion Tables shows
+ *     two different IDs: one made only of digits, and one made of digits and
+ *     letters.  We want to ask for the one made of digits and letters.
+ *     [BACKUP_MESSAGE_ID: 1377315150680845923] <- remove by 2013-06-30.
+ */
+cm.MSG_GFT_TABLE_ID_TOOLTIP = goog.getMsg(
+    'The alphanumeric ID of the table, which can be found in the ' +
+    '<b>File</b> &gt; <b>About</b> box in Fusion Tables.');
 
 /**
- * @desc For a Fusion Table layer, tooltip for editing the index of the
- * Fusion Table's location column.
+ * @desc Tooltip for a text field for entering a column name.  The purpose of
+ *     entering the column name is to specify which column contains location
+ *     information in a table of data in Google Fusion Tables.
+ *     [BACKUP_MESSAGE_ID: 8009846162525503389] <- remove by 2013-06-30.
  */
-cm.MSG_FUSION_TABLE_LOCATION_COLUMN = goog.getMsg(
-    'The <a target="_blank" href="http://support.google.com/fusiontables/' +
-    'answer/2590990?hl=en&ref_topic=2573808">location column</a> to use for ' +
-    'plotting the points in the Fusion Table. For two-column locations ' +
-    '(latitude/longitude), use the primary location column.');
+cm.MSG_GFT_LOCATION_COLUMN_TOOLTIP = goog.getMsg(
+    'The name of the <a target="_blank" href="http://support.google.com/' +
+    'fusiontables/answer/2590990?ref_topic=2573808">location column</a>' +
+    'in the Fusion Table to draw on the map.  For two-column locations ' +
+    '(latitude and longitude), use the name of the latitude column.');
 
 /**
- * @desc For a Fusion Table layer, tooltip for editing the Fusion Table
- * query's WHERE clause.
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Tooltip for a text field for entering a condition that will be used
+ *     to filter the data to be shown on the map.  In the <code> example,
+ *     the words "type", "tornado", and "speed" can be translated as long as
+ *     the translated words are written in plain unaccented A-Z letters;
+ *     otherwise do not translate them.  The words AND, WHERE, and SELECT are
+ *     fixed in the syntax of Fusion Tables and should not be translated.
+ *     "Fusion Tables" refers to the Google Fusion Tables product.
  */
-cm.MSG_FUSION_TABLE_WHERE_CLAUSE = goog.getMsg(
-    'The condition to use in the Fusion Tables <a target="_blank" href=' +
-    '"https://developers.google.com/fusiontables/docs/v1/using#queryData">' +
-    'SELECT query\'s WHERE clause.</a>');
-
-/** @desc Tooltip for editing the color of a weather layer's icons. */
-cm.MSG_WEATHER_LABEL_COLOR = goog.getMsg(
-    'The text color for the weather icons.');
+cm.UNTRANSLATED_MSG_GFT_FILTER_CONDITION_TOOLTIP =
+    'A condition used to filter the rows in the Fusion Table to draw on the ' +
+    'map, such as <b><code>type = \'tornado\' AND speed &gt; 60</code></b>. ' +
+    'Write the condition as it would be written in the <a target="_blank" ' +
+    'href="https://developers.google.com/fusiontables/docs/v1/' +
+    'sql-reference#Select">WHERE clause of a Fusion Tables SELECT query</a>. ' +
+    'If this is left blank, all rows in the table that have valid location ' +
+    'values are drawn on the map.';
 
 /**
- * @desc Tooltip for editing the temperature units of a weather layer's
- * icons.
+ * @desc Tooltip for a menu for selecting the color of the text labels
+ *     on a weather layer.
+ *     [BACKUP_MESSAGE_ID: 1379611439718787345] <- remove by 2013-06-30.
  */
-cm.MSG_WEATHER_TEMP_UNITS = goog.getMsg(
-    'The temperature units for the temperatures shown with the weather icons.');
+cm.MSG_WEATHER_LABEL_COLOR_TOOLTIP = goog.getMsg(
+    'The color of the text labels on weather icons.');
 
 /**
- * @desc Tooltip for editing the wind speed units of a weather layer's
- * pop-up windows.
+ * @desc Tooltip for a menu for selecting the temperature unit to use
+ *     on a weather layer (the options in the menu are Celsius and Fahrenheit).
  */
-cm.MSG_WEATHER_WIND_SPEED_UNITS = goog.getMsg(
-    'The speed units to use for wind speeds shown in the weather forecast ' +
+cm.MSG_WEATHER_TEMPERATURE_UNIT_TOOLTIP = goog.getMsg(
+    'The temperature unit for the temperatures shown with the weather icons.');
+
+/**
+ * @desc Tooltip for a menu for selecting the speed unit to use for displaying
+ *     wind speeds for a weather layer.
+ *     [BACKUP_MESSAGE_ID: 5561151520318073865] <- remove by 2013-06-30.
+ */
+cm.MSG_WEATHER_WIND_SPEED_UNIT_TOOLTIP = goog.getMsg(
+    'The speed unit to use for wind speeds shown in the weather forecast ' +
     'pop-up windows.');
 
-/** @desc Tooltip for editing a Google Maps Engine layer's map ID. */
-cm.MSG_GME_MAP_ID = goog.getMsg(
+/**
+  * @desc Tooltip for the text field for a Google Maps Engine map ID.
+ *     [BACKUP_MESSAGE_ID: 2434966409823343020] <- remove by 2013-06-30.
+  */
+cm.MSG_GME_MAP_ID_TOOLTIP = goog.getMsg(
     'The Google Maps Engine map ID.  In <a target="_blank" href=' +
     '"https://developers.google.com/maps/documentation/javascript/' +
     'mapsenginelayer">Google Maps Engine</a>, go to <b>Map details</b> page, ' +
@@ -431,42 +815,61 @@ cm.MSG_GME_MAP_ID = goog.getMsg(
     'Add "-4" to the end of this this ID.');
 
 /**
- * @desc For a Google Maps Engine layer, tooltip for editing the layer
- * key of the source map.
+ * @desc Tooltip for the text field for a Google Maps Engine layer key.
+ *     [BACKUP_MESSAGE_ID: 3296719912787488933] <- remove by 2013-06-30.
  */
-cm.MSG_GME_LAYER_KEY = goog.getMsg(
+cm.MSG_GME_LAYER_KEY_TOOLTIP = goog.getMsg(
     'The Google Maps Engine layer key.  In <a target="_blank" href=' +
     '"https://developers.google.com/maps/documentation/javascript/' +
     'mapsenginelayer">Google Maps Engine</a>, go to <b>Map details</b> page, ' +
     'click <b>Maps API ID: Details</b> and look for <b>Layer key</b>.');
 
-/** @desc Tooltip for selecting layers from a WMS service. */
-cm.MSG_WMS_LAYERS = goog.getMsg(
-    'The list of layers to display from the WMS service. If no options ' +
-    'are displayed, either the WMS server cannot be reached, or the ' +
-    'server is not publishing layers with Spherical Mercator projections.');
+/**
+ * @desc Tooltip for a list of map layers that the user can select from.
+ *     [BACKUP_MESSAGE_ID: 6748479918576975622] <- remove by 2013-06-30.
+ */
+cm.MSG_WMS_LAYERS_TOOLTIP = goog.getMsg(
+    'The list of WMS layers to use.  If nothing is shown in this box, it' +
+    'means that either the WMS server cannot be reached, or the server ' +
+    'is not publishing layers with Spherical Mercator projections.');
 
 /**
- * @desc Tooltip for toggling whether a tile layer's source URL is an
- * indexed tile URL.
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Tooltip for toggling whether a tile layer's source URL is an
+ *     indexed tile URL.
  */
-cm.MSG_TILE_INDEX = goog.getMsg(
-    'Whether the tile layer\'s URL is an indexed tile set.');
+cm.UNTRANSLATED_MSG_TILE_INDEX_TOOLTIP =
+    'Whether the tile layer\'s URL is an indexed tile set.';
 
-/** @desc Tooltip for selecting the type of tile coordinates. */
-cm.MSG_TILE_COORDINATE_TYPE = goog.getMsg(
-    'The type of tile coordinates for the source data (<a target="_blank" ' +
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Tooltip for a menu for selecting the type of coordinates to use
+ *     for a tile service.
+ */
+cm.UNTRANSLATED_MSG_TILE_COORDINATE_TYPE_TOOLTIP =
+    'The type of tile coordinates to use in tile URLs (<a target="_blank" ' +
     'href="https://developers.google.com/maps/documentation/javascript/' +
     'maptypes#CustomMapTypes">Google</a>, <a target="_blank" href=' +
     '"http://msdn.microsoft.com/en-us/library/bb259689.aspx">Bing</a>, or ' +
     '<a target="_blank" href=' +
-    '"http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification">TMS</a>).');
+    '"http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification">TMS</a>).';
 
-/** @desc Tooltip for selecting the folder type. */
-cm.MSG_FOLDER_TYPE = goog.getMsg(
-    'The type of folder: <b>Unlocked (default)</b>: folder contents are ' +
-    'viewable in the map\'s layer list; <b>Locked</b>: folder contents are ' +
-    'hidden from the map\'s layer list; or <b>Single Select</b>: a single ' +
-    'sublayer of the folder may be selected for listing and showing on the ' +
-    'map.');
-
+/**
+ * TODO(kpy): Translation of this message should wait until the glossary is
+ * ready; at that time, wrap this message in a call to goog.getMsg().
+ *
+ * desc Tooltip for a menu for selecting the type of a folder (in which
+ *     layers are organized).  The strings "Unlocked", "Locked", and
+ *     "Single select" that are mentioned in this text refer to the options
+ *     in the menu, so they should be translated identically to the messages
+ *     "Unlocked", "Locked", and "Single-select".
+ */
+cm.UNTRANSLATED_MSG_FOLDER_TYPE_TOOLTIP =
+    '<b>Unlocked</b> (default): folder contents are visible in the layer ' +
+    'list; <b>Locked</b>: folder contents are hidden from the layer list; ' +
+    '<b>Single-select</b>: only one sublayer at a time may be selected ' +
+    'in this folder.';

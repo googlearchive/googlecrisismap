@@ -68,7 +68,6 @@ cm.AboutPopup.populate_ = function(opt_aboutContainer) {
   var aboutBox = opt_aboutContainer || cm.ui.get('cm-aboutText');
   if (aboutBox) {
     var header = cm.ui.create('h2', {'id': 'cm-about-header'});
-    var content = cm.AboutPopup.MSG_ABOUT_HTML_;
     header.appendChild(
         goog.dom.htmlToDocumentFragment(cm.MSG_ABOUT_HEADER));
     aboutBox.appendChild(header);
@@ -76,36 +75,9 @@ cm.AboutPopup.populate_ = function(opt_aboutContainer) {
       'id': 'cm-about-text',
       'class': cm.css.ABOUT_TEXT
     });
-    text.appendChild(goog.dom.htmlToDocumentFragment(content));
+    text.appendChild(goog.dom.htmlToDocumentFragment(cm.MSG_ABOUT_HTML));
     aboutBox.appendChild(text);
     aboutBox.style.display = 'block';
   }
   return aboutBox;
 };
-
-/**
- * TODO(kpy): Make this easier to customize.
- * @desc Text in a Help pop-up for people viewing the map.
- * @private
- */
-cm.AboutPopup.MSG_ABOUT_HTML_ = goog.getMsg(
-    'Tips for using this site:' +
-    '<ul>' +
-    '  <li>Zoom the map using either the on-screen controls or your mouse.' +
-    '  </li>' +
-    '  <li>Find additional layers in the Layers list, where you can turn' +
-    '  them on or off.  Scroll to see all layers.</li>' +
-    '  <li>Zoom to an appropriate view for each layer by clicking the "Zoom' +
-    '  to area" links in the Layers list.</li>' +
-    '  <li>View selected layers in <a href="http://www.google.com/earth/"' +
-    '  target="_blank">Google Earth</a> by clicking the "Download KML" links' +
-    '  in the Layers list.</li>' +
-    '  <li>Share the map in e-mail by clicking the Share button and copying' +
-    '  the URL provided there. The URL will restore your current view,' +
-    '  including the set of layers that you have turned on.</li>' +
-    '  <li>Embed the map on your website or blog by getting a snippet of ' +
-    '  HTML code from the Share button.</li>' +
-    '  <li>Share the link on Google+, Twitter or Facebook by clicking the ' +
-    '  appropriate button in the Share window.</li>' +
-    '</ul>');
-
