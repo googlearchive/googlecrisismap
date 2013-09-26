@@ -400,7 +400,7 @@ cm.TestBase = function() {
   this.originalValues_ = {};
 
   // Install cm.TestBase.equals as the default matcher, so that expectEq,
-  // expectCall, etc. use our matcher instead of gjstest.equals for comparison.
+  // expectCall, etc. use it instead of gjstest.equals for comparison.
   this.setForTest_('gjstest.equals', cm.TestBase.equals);
   this.setForTest_('equals', cm.TestBase.equals);
 
@@ -454,33 +454,92 @@ cm.TestBase = function() {
 };
 
 /**
- * A saner "equals" matcher for test arguments and return values.  Unlike the
- * standard gjstest.equals matcher, which sometimes compares by value and
- * sometimes compares by reference, this matcher compares by value whenever
- * possible.  It compares plain Objects and Arrays recursively, compares
- * objects with an equals() method by calling equals(), compares other objects
- * by reference identity, and compares primitive values using === equality.
+ * An "equals" matcher that uses our saner "match" function.  Installed as
+ * the default matcher for expectEq, expectCall, etc. by cm.TestBase.
  * @param {*} expected The expected value.
  * @return {Matcher} A matcher for the expected value.
  */
 cm.TestBase.equals = function(expected) {
-  return new gjstest.Matcher('equals ' + gjstest.stringify(expected),
-                             'does not equal ' + gjstest.stringify(expected),
-                             function(actual) {
-    if (expected && actual && typeof expected === 'object') {
-      if (expected.constructor === {}.constructor ||
-          expected.constructor === [].constructor) {
-        return gjstest.internal.compareRecursively_(expected, actual) || true;
-      } else if (expected.constructor === actual.constructor) {
-        return expected.equals ? expected.equals(actual) :
-            expected === actual || 'which is a reference to a different object';
-      } else {
-        return 'which is an object with a different constructor';
+  return new gjstest.Matcher(
+      'equals ' + gjstest.stringify(expected),
+      'does not equal ' + gjstest.stringify(expected),
+      function(actual) { return cm.TestBase.match(expected, actual); });
+};
+
+/**
+ * A saner "match" function for test arguments and return values.  Unlike the
+ * standard gjstest.equals matcher, this matcher compares by value whenever
+ * possible, falling back to reference comparison only as a last resort.
+ * Matchers are matched against, objects with an equals() method are compared
+ * with equals(), all other objects and arrays are compared recursively, and
+ * primitive values are compared with ===.
+ * @param {*} expected The expected value, or a Matcher for it.
+ * @param {*} actual The actual value.
+ * @param {string=} opt_path The path of keys dereferenced so far, used to
+ *     produce a message describing a mismatch.
+ * @return {boolean|string} True if the actual value matches the expected
+ *     value, or a string describing the reason it doesn't match.
+ */
+cm.TestBase.match = function(expected, actual, opt_path) {
+  var keyDescription = opt_path ?
+      'whose item ' + opt_path + ' is ' + gjstest.stringify(actual) + ', ' : '';
+  /* Try applying the expected value as a Matcher. */
+  if (expected instanceof gjstest.Matcher) {
+    var result = expected.predicate(actual);
+    return result === true ||
+        keyDescription + (result || 'which ' + expected.negativeDescription);
+  }
+  /* Try the equals() method. */
+  if (typeof expected === 'object' && expected !== null && expected.equals) {
+    return expected.equals(actual) ? true : keyDescription +
+        'which fails the equals() method of ' + gjstest.stringify(expected);
+  }
+  /* Try recursively comparing elements. */
+  if (typeof expected === 'object' && expected !== null &&
+      typeof actual === 'object' && actual !== null) {
+    var isArray = expected.constructor === [].constructor;
+    if (expected.constructor !== actual.constructor) {
+      return keyDescription + 'which has class ' + actual.constructor.name +
+          ' (should be ' + expected.constructor.name + ')';
+    } else if (isArray && actual.length !== expected.length) {
+      return keyDescription + ('which has length ' + actual.length +
+          ' (should be ' + expected.length + ')');
+    } else if (isArray || expected.constructor === {}.constructor) {
+      /**
+       * @param {string} path A key path, such as '[2]' or '.foo'.
+       * @param {string} key A key to append, such as 5 or 'bar'.
+       * @return {string} Path with key added, such as '.foo[5]' or '.foo.bar'.
+       */
+      function appendKey(path, key) {
+        // Only for arrays, we show integer keys like array indices, e.g. '[5]'.
+        // Otherwise, we use . for identifiers, e.g. '.foo', and brackets for
+        // keys that aren't valid identifier strings, e.g. "['^.*']".
+        return (path || '') + (isArray && key.match(/^\d+$/) ? '[' + key + ']' :
+            key.match(/^[a-zA-Z_]\w*$/) ? '.' + key : '[\'' + key + '\']');
+      };
+      for (var key in expected) {
+        var childPath = appendKey(opt_path, key);
+        if (!(key in actual)) {
+          return 'which lacks an expected item at ' + childPath +
+              ' (should be ' + gjstest.stringify(expected[key]) + ')';
+        }
+        var result = cm.TestBase.match(expected[key], actual[key], childPath);
+        if (result !== true) {
+          return result;
+        }
       }
-    } else {
-      return expected === actual;
+      for (var key in actual) {
+        if (!(key in expected)) {
+          return 'which has an unexpected item at ' + appendKey(opt_path, key) +
+              ' (with value ' + gjstest.stringify(actual[key]) + ')';
+        }
+      }
+      return true;
     }
-  });
+  }
+  /* Compare primitive values. */
+  return expected === actual ? true : keyDescription + 'which !== ' +
+      gjstest.stringify(expected);
 };
 
 /**
