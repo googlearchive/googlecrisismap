@@ -548,13 +548,16 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       this.infoWindowLayerId_ = null;
       // FusionTablesLayer makes the info window content available in the event
       // itself, but KmlLayer hides it behind 'featureData'.
+      var contentHtml = (event['featureData'] || event)['infoWindowHtml'];
       var content = cm.MapView.htmlToDivOrNull(
           (event['featureData'] || event)['infoWindowHtml']);
+      // Note that we can't pass in a DOM element; we must pass the content
+      // as a string in order for the infowindow to scroll properly.
       if (content) {
         this.infoWindow_.setOptions(/** @type google.maps.InfoWindowOptions */({
           position: event['latLng'],
           pixelOffset: event['pixelOffset'],
-          content: content
+          content: goog.string.trim(contentHtml)
         }));
         this.infoWindow_.open(this.map_);
         this.infoWindowLayerId_ = id;

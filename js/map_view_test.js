@@ -151,7 +151,7 @@ MapViewTest.prototype.expectInfoWindowOpen_ = function(
   expectCall(goog.dom.htmlToDocumentFragment)(content)
       .willOnce(returnWith(node));
   expectCall(this.infoWindow_.setOptions)({
-    position: position, pixelOffset: pixelOffset, content: node
+    position: position, pixelOffset: pixelOffset, content: content
   });
   expectCall(this.infoWindow_.open)(this.map_);
 };
