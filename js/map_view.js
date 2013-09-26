@@ -167,10 +167,6 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
       this.copyrightDiv_);
 
   // Translate between cm.MapModel.Type and google.maps.MapTypeId.
-  cm.events.onChange(this.map_, 'mapTypeId', function() {
-    appState.set('map_type', goog.object.transpose(
-        cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES)[this.get('mapTypeId')]);
-  }, this);
   cm.events.onChange(appState, 'map_type', function() {
     var mapType = appState.get('map_type') || cm.MapModel.Type.ROADMAP;
     this.set('mapTypeId', cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapType] ||
@@ -191,8 +187,9 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
                      this.updateMapTypeMenu, this);
   // When the map type changes to custom or OSM, the menu may need updating.
   cm.events.onChange(appState, 'map_type', this.updateMapTypeMenu, this);
-  // The menu needs an update just after initial load if the map type is OSM.
-  cm.events.listen(this.map_, 'idle', this.updateMapTypeMenu, this);
+  // Not sure if the "idle" event is ever delayed by a noticable amount.
+  // If not this line can be deleted, since the "idle" listener will also call
+  // updateMapTypeMenu())
   this.updateMapTypeMenu();
 
   // Expose our 'viewport' property as a property of the AppState.
@@ -245,6 +242,9 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
 
   // Initialize the layer visibility according to the AppState.
   this.updateVisibility_();
+
+  this.listenerTokens_['post_load'] = cm.events.listen(
+      this.map_, 'idle', this.postLoad_, this);
 };
 goog.inherits(cm.MapView, google.maps.MVCObject);
 
@@ -296,6 +296,25 @@ cm.MapView.MODEL_TO_MAPS_API_WIND_SPEED_UNITS = goog.object.create(
   google.maps.weather.WindSpeedUnit.MILES_PER_HOUR
 );
 
+/**
+ * Called after the map has fully loaded; we take care of any initialization
+ * that must wait until the map is funlly initialized here.
+ * @private
+ */
+cm.MapView.prototype.postLoad_ = function() {
+  cm.events.unlisten(this.listenerTokens_['post_load'], this);
+  delete this.listenerTokens_['post_load'];
+
+  // The menu needs an update just after initial load if the map type is OSM.
+  this.updateMapTypeMenu();
+
+  cm.events.onChange(this.map_, 'mapTypeId', function() {
+    // Translate between cm.MapModel.Type and google.maps.MapTypeId.
+    this.appState_.set('map_type', goog.object.transpose(
+        cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES)[this.get('mapTypeId')]);
+    cm.Analytics.logAction(cm.Analytics.MapAction.BASE_MAP_SELECTED, null);
+  }, this);
+};
 
 // TODO(kpy) Delete this method when the MapView is properly encapsulated.
 /** @return {!google.maps.Map} The Maps API map object. */

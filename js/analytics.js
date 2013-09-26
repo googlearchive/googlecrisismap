@@ -109,6 +109,7 @@ cm.Analytics.LayersPanelAction = cm.Analytics.prependUiElement_(
 
 /** @type {Object.<string, string>} */
 cm.Analytics.MapAction = cm.Analytics.prependUiElement_('Map', {
+  BASE_MAP_SELECTED: 'Base map menu item selected',
   LAYERS_PANEL_TOGGLED_ON: 'Layers panel button toggled on',
   LAYERS_PANEL_TOGGLED_OFF: 'Layers panel button toggled off',
   MY_LOCATION_CLICKED: 'My location button clicked',
