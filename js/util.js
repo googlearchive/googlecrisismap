@@ -245,7 +245,7 @@ cm.util.getNativeLanguageAndRegionName = function(langCode) {
  */
 cm.util.createLanguageChoices = function(langCodes) {
   var languageChoices = [];
-  if (goog.array.isEmpty(langCodes)) {
+  if (goog.array.isEmpty(langCodes || [])) {
     // Default to showing just English if languages don't load.
     var enName = cm.util.getNativeLanguageAndRegionName('en');
     languageChoices = [{value: 'en', label: enName}];
@@ -262,4 +262,3 @@ cm.util.createLanguageChoices = function(langCodes) {
   }
   return languageChoices;
 };
-
