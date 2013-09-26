@@ -15,26 +15,34 @@ specific language governing permissions and limitations under the License.
 
 {% block content %}
   <div class="cm-error-box">
-    {% if exception.user %}
-      {% if exception.target %}
-        You're signed in as {{exception.subject.email}},
-        but you don't have {{exception.role}} access to that map.
-        (You could try asking the owner of the map for access,
-        or try <a href="{{login_url}}">signing in as a different user</a>.)
-      {% else %}
-        You're signed in as {{exception.subject.email}},
-        but you don't have {{exception.role}} access.
-        (You could try asking a site administrator for access,
-        or try <a href="{{login_url}}">signing in as a different user</a>.)
-      {% endif %}
+    {% if exception.subject %}
+        You're signed in as {{exception.subject.email}}, but
+        <!-- If the role is a MAP role -->
+        {% if exception.role == 'MAP_VIEWER' or exception.role == 'MAP_EDITOR' or exception.role == 'MAP_OWNER' %}
+            you don't have
+            {% if exception.role == 'MAP_VIEWER' %} viewer {% endif %}
+            {% if exception.role == 'MAP_EDITOR' %} editor {% endif %}
+            {% if exception.role == 'MAP_OWNER' %} owner {% endif %}
+            access to that map.
+            (You could try asking the owner of the map for access,
+            or try <a href="{{login_url}}">signing in as a different user</a>.)
+        {% else %}
+            <!-- If the role is an ADMIN role -->
+            {% if exception.role == 'ADMIN' %}
+                you don't have admin access
+            {% else %}
+                <!-- If the role is an DOMAIN related role -->
+                {% if exception.role == 'MAP_CREATOR' %} you cannot create new maps{% endif %}
+                {% if exception.role == 'DOMAIN_ADMIN' %} you do not have admin access{% endif %}
+                {% if exception.role == 'CATALOG_EDITOR' %} you cannot edit the catalog{% endif %}
+            {% endif %}
+
+            {% if exception.target %} for domain {{exception.target}}{% endif %}
+            . (You could try asking a site administrator for access,
+            or try <a href="{{login_url}}">signing in as a different user</a>.)
+        {% endif %}
     {% else %}
-      {% if exception.target %}
-        Please <a href="{{login_url}}">sign in</a>
-        to get {{exception.role}} access to that map.
-      {% else %}
-        Please <a href="{{login_url}}">sign in</a>
-        to get {{exception.role}} access.
-      {% endif %}
+        Please <a href="{{login_url}}">sign in</a> to get access.
     {% endif %}
     <br>&nbsp;<br>
     Return to the <a href="{{root}}">default map</a>.
