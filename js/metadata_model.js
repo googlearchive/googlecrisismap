@@ -173,9 +173,10 @@ cm.MetadataModel.prototype.onChange = function(layer, handler, opt_obj) {
     if (!this.get(address)) {
       this.accelerateUpdates_();
     }
-    return /** @type cm.events.ListenerToken */(
+    return /** @type {cm.events.ListenerToken} */(
         cm.events.onChange(this, address, handler, opt_obj));
   }
+  return /** @type {cm.events.ListenerToken} */(null);
 };
 
 /**
