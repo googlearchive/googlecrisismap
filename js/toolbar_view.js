@@ -62,7 +62,7 @@ var MSG_UNSAVED_CHANGES = goog.getMsg(
    finalized and published in its permanent location. */
 /* URL to the help document for editing maps. */
 var HELP_LINK_URL = 'https://docs.google.com/document/d/' +
-    '1cp9hLYJzGZZtM6IyO2WqIUvolU1WyCadlI_pGGtBGDY/edit#';
+    '1cp9hLYJzGZZtM6IyO2WqIUvolU1WyCadlI_pGGtBGDY/pub';
 
 /**
  * A command toolbar.  For now, this is just a few links, but in future will
