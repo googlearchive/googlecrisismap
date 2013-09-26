@@ -141,7 +141,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
    */
   this.scrollTop_;
 
-  /*
+  /**
    * @type !Object
    * @private
    */
