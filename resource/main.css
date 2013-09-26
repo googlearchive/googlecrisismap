@@ -986,11 +986,12 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
   padding-top:8px;
 }
 .cm-editors > tr > th {
-  padding-right:8px;
+  padding-right:24px;
   font-weight:normal;
   color:#666;
   white-space:nowrap;
   width:1%;
+  position:relative;
 }
 .cm-editors > .cm-text-input-row > th,
 .cm-editors > .cm-text-editor > th {
@@ -1016,6 +1017,31 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
   font-size:13px;
   padding:3px;
   border:1px solid #c0c0c0;
+}
+.cm-help-icon {
+  display:inline-block;
+  cursor:pointer;
+  position:absolute;
+  right:6px;
+}
+div.cm-help-icon {
+  width:15px;
+  height:15px;
+  background:url('question.gif') no-repeat 0 1px;
+  background-size:14px;
+  display:none;
+}
+.cm-editors tr:hover th div.cm-help-icon {
+  display:inline-block;
+}
+.cm-editors-tooltip {
+  max-width:380px;
+  background:#feffcd;
+  border:1px solid #ccc;
+  -webkit-box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  padding:2px 4px;
+  z-index:2;
 }
 
 /* Legend editor */

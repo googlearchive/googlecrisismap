@@ -20,6 +20,10 @@ goog.require('cm.css');
 goog.require('cm.editors');
 goog.require('cm.events');
 goog.require('cm.ui');
+goog.require('goog.ui.Tooltip');
+
+/* Time in ms to delay hiding an editor field tooltip. */
+var TOOLTIP_HIDE_DELAY_MS = 500;
 
 /** @desc Label for the OK button on a dialog with OK and Cancel buttons. */
 var MSG_OK = goog.getMsg('OK');
@@ -79,6 +83,12 @@ cm.InspectorView = function() {
   this.isNew_;
 
   /**
+   * @type Array.<goog.ui.Tooltip>
+   * @private
+   */
+  this.tooltips_ = [];
+
+  /**
    * List of created editors, to dispose on close. Null if disposed.
    * @type {?Array.<cm.Editor>}
    * @private
@@ -112,10 +122,12 @@ cm.InspectorView = function() {
  * @param {Array.<Object.<{key: string,
  *                         label: string,
  *                         type: cm.editors.Type,
+ *                         tooltip: string,
  *                         conditions: Object}>>} editorSpecs
  *     An array of editor specifications.  Each element specifies the key of
  *     the property to edit, the label to show to the user, and the type of
- *     editor to use to edit the property.  The conditions object, if given,
+ *     editor to use to edit the property, and the tooltip to display for it.
+ *     The conditions object, if given,
  *     is a map from property keys to predicates (single-argument functions
  *     that take a property value and return a boolean); the editor is shown
  *     only when all the predicates are true.  Some editors accept other
@@ -165,10 +177,24 @@ cm.InspectorView.prototype.inspect = function(
     // TODO(user) figure out how to get goog.getCssName to work with
     // this
     var cls = 'cm-' + spec.type.toLowerCase().replace(/_/g, '-') + '-editor';
+    var labelElem, helpIcon;
     cm.ui.append(this.tableElem_, row = cm.ui.create('tr', {'class': cls},
         cm.ui.create('th', {},
-            cm.ui.create('label', {'for': id}, spec.label)),
+            labelElem = cm.ui.create('label', {'for': id}, spec.label),
+            helpIcon = spec.tooltip ?
+                cm.ui.create('div', {'class': cm.css.HELP_ICON}) : null),
         cell = cm.ui.create('td')));
+
+    // Display a tooltip when user hovers over the help icon.
+    if (spec.tooltip) {
+      var tooltip = new goog.ui.Tooltip();
+      tooltip.setHtml(spec.tooltip);
+      tooltip.setHideDelayMs(TOOLTIP_HIDE_DELAY_MS);
+      tooltip.className = cm.css.EDITORS_TOOLTIP;
+      tooltip.attach(helpIcon);
+      this.tooltips_.push(tooltip);
+    }
+
     var editor = cm.editors.create(cell, spec.type, id, spec, this.draft_);
     this.editors_.push(editor);
 
@@ -182,8 +208,6 @@ cm.InspectorView.prototype.inspect = function(
         cm.ui.setText(errorSpan, this.get('validation_error') || '');
       }, editor);
     })(errorSpan);
-
-    // TODO(kpy): Offer some help text next to each editor.
 
     // Bind the editor to a property on our draft new version of the object.
     this.draft_.set(spec.key, this.object_.get(spec.key));
@@ -288,6 +312,10 @@ cm.InspectorView.prototype.dispose_ = function(opt_disposeInspector) {
     cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
     cm.ui.remove(this.popup_);
   }
+
+  goog.array.forEach(this.tooltips_, function(tooltip) {
+    tooltip.dispose();
+  });
 };
 
 /**

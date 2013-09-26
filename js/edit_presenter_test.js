@@ -38,8 +38,7 @@ EditPresenterTest.prototype.testInspectEvent = function() {
   // Emitting an INSPECT event on a map should open an inspector on the map.
   expectCall(inspector.inspect)('Edit map details', allOf([
     contains({key: 'title', label: 'Title', type: cm.editors.Type.TEXT}),
-    contains({key: 'description',
-              label: 'Description',
+    contains({key: 'description', label: 'Description',
               type: cm.editors.Type.HTML,
               preview_class: cm.css.MAP_DESCRIPTION}),
     contains({key: 'viewport', label: 'Default viewport',
@@ -50,21 +49,24 @@ EditPresenterTest.prototype.testInspectEvent = function() {
   // Emitting an INSPECT event on a layer should open an inspector on the layer.
   var layer = new cm.LayerModel();
   var layerSpecExpect = allOf([
-    contains({key: 'title', label: 'Title', type: cm.editors.Type.TEXT}),
+    contains({key: 'title', label: 'Title', type: cm.editors.Type.TEXT,
+              tooltip: MSG_LAYER_TITLE_TOOLTIP}),
     contains({key: 'description', label: 'Description',
               type: cm.editors.Type.HTML,
-              preview_class: cm.css.LAYER_DESCRIPTION}),
+              preview_class: cm.css.LAYER_DESCRIPTION,
+              tooltip: MSG_LAYER_DESCRIPTION_TOOLTIP}),
     contains({key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
-              preview_class: cm.css.LAYER_LEGEND,
-              legend_url: '/root/.legend'}),
+              preview_class: cm.css.LAYER_LEGEND, legend_url: '/root/.legend',
+              tooltip: MSG_LEGEND_TOOLTIP}),
     contains({key: 'viewport', label: '"Zoom to area" viewport',
-              type: cm.editors.Type.LAT_LON_BOX, app_state: null}),
-    contains({key: 'min_zoom', type: cm.editors.Type.NUMBER,
-              require_integer: true, label: 'Minimum zoom level',
-              minimum: 0, maximum: 20}),
-    contains({key: 'max_zoom', type: cm.editors.Type.NUMBER,
-              require_integer: true, label: 'Maximum zoom level',
-              minimum: 0, maximum: 20})
+              type: cm.editors.Type.LAT_LON_BOX, app_state: null,
+              tooltip: MSG_LAYER_VIEWPORT_TOOLTIP}),
+    contains({key: 'min_zoom', label: 'Minimum zoom level',
+              type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
+              require_integer: true, tooltip: MSG_MIN_ZOOM}),
+    contains({key: 'max_zoom', label: 'Maximum zoom level',
+              type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
+              require_integer: true, tooltip: MSG_MAX_ZOOM})
   ]);
   expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, null,
                                 layer);

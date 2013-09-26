@@ -31,6 +31,7 @@ goog.require('cm.ShareEmailView');
 goog.require('cm.css');
 goog.require('cm.editors');
 goog.require('cm.events');
+goog.require('cm.tooltips');
 goog.require('goog.net.XhrIo');
 
 /**
@@ -142,48 +143,60 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
 
   var layerFields = [
     // Settings that don't depend on the layer type
-    {key: 'title', label: 'Title', type: cm.editors.Type.TEXT},
+    {key: 'title', label: 'Title', type: cm.editors.Type.TEXT,
+     tooltip: MSG_LAYER_TITLE_TOOLTIP},
     {key: 'description', label: 'Description', type: cm.editors.Type.HTML,
-     preview_class: cm.css.LAYER_DESCRIPTION},
+     preview_class: cm.css.LAYER_DESCRIPTION,
+     tooltip: MSG_LAYER_DESCRIPTION_TOOLTIP},
     {key: 'legend', label: 'Legend', type: cm.editors.Type.LEGEND,
-     preview_class: cm.css.LAYER_LEGEND, legend_url: config['legend_url']},
+     preview_class: cm.css.LAYER_LEGEND, legend_url: config['legend_url'],
+     tooltip: MSG_LEGEND_TOOLTIP},
     {key: 'viewport', label: '"Zoom to area" viewport',
-     type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
+     type: cm.editors.Type.LAT_LON_BOX, app_state: appState,
+     tooltip: MSG_LAYER_VIEWPORT_TOOLTIP},
     {key: 'min_zoom', label: 'Minimum zoom level',
      type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
-     require_integer: true},
+     require_integer: true, tooltip: MSG_MIN_ZOOM},
     {key: 'max_zoom', label: 'Maximum zoom level',
-     type: cm.editors.Type.NUMBER,
-     minimum: 0, maximum: 20, require_integer: true},
+     type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
+     require_integer: true, tooltip: MSG_MAX_ZOOM},
     // Settings that depend on the layer type
     {key: 'type', label: 'Type of source data',
      type: cm.editors.Type.MENU, choices: layerTypeChoices,
-     conditions: {'type': isPlainLayer}},
+     conditions: {'type': isPlainLayer},
+     tooltip: MSG_SOURCE_DATA_TYPE},
     {key: 'url', label: 'Source URL', type: cm.editors.Type.TEXT,
-     conditions: {'type': usesUrlField}},
+     conditions: {'type': usesUrlField},
+     tooltip: MSG_SOURCE_URL},
     {key: 'suppress_download_link', label: 'Show download link?',
      type: cm.editors.Type.CHECKBOX, checked_value: null,
-      unchecked_value: true, conditions: {'type': downloadable}},
+      unchecked_value: true, conditions: {'type': downloadable},
+     tooltip: MSG_SHOW_DOWNLOAD_LINK},
+    // TODO(romano): protect this field with a config variable
     {key: 'url_is_tile_index', label: 'Tile index URL?',
      type: cm.editors.Type.CHECKBOX, checked_value: true,
      unchecked_value: false,
      conditions: {'type': isType(cm.LayerModel.Type.TILE)}},
     {key: 'ft_from', label: 'Fusion Table ID',
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.FUSION)}},
+     conditions: {'type': isType(cm.LayerModel.Type.FUSION)},
+     tooltip: MSG_FUSION_TABLE_ID},
     {key: 'ft_select', label: 'Fusion Table Location Column',
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.FUSION)}},
+     conditions: {'type': isType(cm.LayerModel.Type.FUSION)},
+     tooltip: MSG_FUSION_TABLE_LOCATION_COLUMN},
     {key: 'ft_where', label: 'Fusion Table WHERE Clause',
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.FUSION)}},
+     conditions: {'type': isType(cm.LayerModel.Type.FUSION)},
+     tooltip: MSG_FUSION_TABLE_WHERE_CLAUSE},
     {key: 'label_color', label: 'Label color',
      type: cm.editors.Type.MENU,
      conditions: {'type': isType(cm.LayerModel.Type.WEATHER)},
      choices: [
        {value: cm.LayerModel.LabelColor.BLACK, label: 'Black'},
        {value: cm.LayerModel.LabelColor.WHITE, label: 'White'}
-     ]},
+     ],
+     tooltip: MSG_WEATHER_LABEL_COLOR},
     {key: 'temperature_unit', label: 'Temperature unit',
      type: cm.editors.Type.MENU,
      conditions: {'type': isType(cm.LayerModel.Type.WEATHER)},
@@ -191,7 +204,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
        {value: cm.LayerModel.TemperatureUnit.CELSIUS, label: 'Celsius'},
        {value: cm.LayerModel.TemperatureUnit.FAHRENHEIT,
         label: 'Fahrenheit'}
-     ]},
+     ],
+     tooltip: MSG_WEATHER_TEMP_UNITS},
     {key: 'wind_speed_unit', label: 'Wind speed unit',
      type: cm.editors.Type.MENU,
      conditions: {'type': isType(cm.LayerModel.Type.WEATHER)},
@@ -202,20 +216,22 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
         label: 'm/s'},
        {value: cm.LayerModel.WindSpeedUnit.MILES_PER_HOUR,
         label: 'mph'}
-     ]},
+     ],
+     tooltip: MSG_WEATHER_WIND_SPEED_UNITS},
     {key: 'maps_engine_map_id', label: 'Map ID',
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)}},
+     conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)},
+     tooltip: MSG_GME_MAP_ID},
     {key: 'maps_engine_layer_key', label: 'Layer key',
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)}},
+     conditions: {'type': isType(cm.LayerModel.Type.MAP_DATA)},
+     tooltip: MSG_GME_LAYER_KEY},
     {key: 'wms_layers', label: 'Layers',
      type: cm.editors.Type.WMS_MENU,
      conditions: {'type': isType(cm.LayerModel.Type.WMS)},
-     multiple: true,
-     choices: [],
-     menu_class: cm.css.WMS_MENU_EDITOR,
-     wms_query_url: config['wms_query_url']},
+     multiple: true, choices: [], menu_class: cm.css.WMS_MENU_EDITOR,
+     wms_query_url: config['wms_query_url'],
+     tooltip: MSG_WMS_LAYERS},
     {key: 'tile_coordinate_type', label: 'Tile coordinates',
      type: cm.editors.Type.MENU,
      conditions: {'type': isType(cm.LayerModel.Type.TILE)},
@@ -223,7 +239,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
        {value: cm.LayerModel.TileCoordinateType.GOOGLE,
         label: 'Google Tile Coordinates'},
        {value: cm.LayerModel.TileCoordinateType.BING,
-        label: 'Bing Tile Coordinates'}]},
+        label: 'Bing Tile Coordinates'}],
+     tooltip: MSG_TILE_COORDINATE_TYPE},
     {key: 'folder_type', label: 'Folder type',
       type: cm.editors.Type.MENU,
       choices: [
@@ -231,7 +248,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
         {value: cm.LayerModel.FolderType.LOCKED, label: 'Locked'},
         {value: cm.LayerModel.FolderType.SINGLE_SELECT, label: 'Single select'}
       ],
-      conditions: {'type': isType(cm.LayerModel.Type.FOLDER)}}
+     conditions: {'type': isType(cm.LayerModel.Type.FOLDER)},
+     tooltip: MSG_FOLDER_TYPE}
  ];
 
   // The user has asked us to bring up an inspector.
