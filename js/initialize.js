@@ -194,9 +194,12 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
 
   // Initialize the dynamic module loader and tell it how to find module URLs.
   var getModuleUrl = config['get_module_url'] || function(baseUrl, module) {
-    return baseUrl + '/.js/crisismap_' + module + '__' + opt_language + '.js';
+    return baseUrl.replace(/\/$/, '') + '/.js/crisismap_' + module + '__' +
+        opt_language + '.js';
   };
-  goog.module.initLoader(jsBaseUrl, getModuleUrl);
+  // initLoader must be passed a non-null base URL - or else it doesn't get
+  // initialised correctly (see b/8933525 for the gory details)
+  goog.module.initLoader(jsBaseUrl || '/', getModuleUrl);
   goog.module.require('sanitizer', 'html', function(html) {
     installHtmlSanitizer(html);
     // We need to defer buildUi until after sanitizer_module.js is loaded,
