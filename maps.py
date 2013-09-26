@@ -107,6 +107,9 @@ class ClientConfig(db.Model):
   # The API key to use for Google APIs (from the Google APIs Console).
   google_api_key = db.StringProperty(default='')
 
+  # Whether or not to enable the tabbed UI.
+  use_tab_panel = db.BooleanProperty(default=False)
+
   # Note: When adding future settings, the default value should reflect the
   # behavior prior to the introduction of the new setting.  To avoid confusion
   # with None, the default value for Boolean settings should always be False.
