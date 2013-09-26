@@ -81,9 +81,11 @@ def Route(template, handler):
 
 
 app = webapp2.WSGIApplication([
+    Route('/', 'index.Index'),
     RootPathRoute([
         OptionalDomainRoute([
             # User-facing request handlers
+            Route('', 'index.Index'),
             Route('/', 'index.Index'),
             Route('/<label>', 'maps.MapByLabel'),
 
