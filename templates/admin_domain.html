@@ -114,4 +114,33 @@ specific language governing permissions and limitations under the License.
     <p><input type="submit" value="Add User" class="cm-button cm-submit">
   </form>
 </div>
+
+{% if show_welcome %}
+{# TODO(rew): This is largely cribbed from welcome.html; generalize that #}
+{# template and include it here instead. #}
+<div class="cm-popup" id="domain-welcome-popup" style="display:none">
+  <form method="post" action="javascript:void(0);">
+  <h2>Domain administration</h2>
+  <div class="cm-section">
+    <div class="cm-p">
+      Google Crisis Map organizes maps under <b>domains</b> that identify the
+      organization publishing them.  Your domain is {{domain.name}}.  From here,
+      you can set various defaults for your domain, add new users, and manage
+      the permissions those users have.
+    </div>
+    <div class="cm-p">
+      Since you created <b>{{domain.name}}</b>, you have been added as its
+      administrator, which gives you access to this page.  You can add other
+      administrators, but a domain should always have at least one
+      administrator.
+    </div>
+    <div class="cm-button-area">
+      <input type="submit" class="cm-submit cm-button" value="OK"
+             onclick="hide($('domain-welcome-popup'))">
+    </div>
+  </form>
+</div>
+<script type="text/javascript" src="{{root}}/.static/popups.js"></script>
+<script>showPopup($('domain-welcome-popup'))</script>
+{% endif %}
 {% endblock %}

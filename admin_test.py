@@ -98,6 +98,12 @@ class AdminTest(test_utils.BaseTest):
     response = self.DoGet(AdminUrl('nosuchdomain.com'), status=404)
     self.assertIn('nosuchdomain.com', response.status)
 
+  def testGet_WelcomeText(self):
+    test_utils.BecomeAdmin()
+    domains.Domain.Create('anydomain.com')
+    response = self.DoGet(AdminUrl('anydomain.com')+'?welcome=1')
+    self.assertIn('domain-welcome-popup', response.body)
+
   def testUserPermissionsPost_NoSuchDomain(self):
     self.assertIsNone(domains.Domain.Get('nosuchdomain.com'))
     test_utils.BecomeAdmin()
@@ -155,7 +161,8 @@ class AdminTest(test_utils.BaseTest):
   def testPost_CreateDomain(self):
     self.assertIsNone(domains.Domain.Get('bar.com'))
     test_utils.SetUser('foo@bar.com')
-    self.DoCreateDomainPost('bar.com')
+    response = self.DoCreateDomainPost('bar.com')
+    self.assertTrue('welcome=1' in response.headers['Location'])
     self.assertTrue(domains.Domain.Get('bar.com'))
     # The current user should have been granted administrative rights
     self.assertTrue(perms.CheckAccess(

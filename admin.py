@@ -85,6 +85,8 @@ class Admin(base_handler.BaseHandler):
         'domain': domain, 'users': emails, 'domains': domain_list,
         'labels': labels, 'user_permission_choices': USER_PERMISSION_CHOICES,
         'initial_domain_role_choices': INITIAL_DOMAIN_ROLE_CHOICES}
+    if self.request.get('welcome'):
+      context['show_welcome'] = True
     self.response.out.write(self.RenderTemplate('admin_domain.html', context))
 
   def GetGeneralAdmin(self):
@@ -96,6 +98,7 @@ class Admin(base_handler.BaseHandler):
   def Post(self, domain, user):
     """Landing for posts from the domain administration page."""
     which = self.request.POST.pop('form')
+    target = self.request.path
     if which != 'create-domain':
       perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain, user)
       if not domains.Domain.Get(domain):
@@ -104,11 +107,12 @@ class Admin(base_handler.BaseHandler):
       self.UpdateDomainSettings(self.request.POST, domain)
     elif which == 'create-domain':
       self.CreateDomain(domain, user)
+      target += '?welcome=1'
     elif which == 'add-user':
       self.AddUser(self.request.POST, domain)
     else:   # User or domain permissions
       self.UpdatePermissions(self.request.POST, domain)
-    self.redirect(self.request.path_qs)
+    self.redirect(target)
 
   def UpdateDomainSettings(self, inputs, domain_name):
     domain = domains.Domain.Get(domain_name)
