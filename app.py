@@ -100,7 +100,7 @@ app = webapp2.WSGIApplication([
             Route('/.prefs', 'prefs.Prefs'),
             Route('/.publish', 'publish.Publish'),
             Route('/.redirect/<label>', 'redirect.Redirect'),
-            Route('/.wms/tiles/<tileset_id>/<z>/<x>/<y>.png',
+            Route('/.wms/tiles/<tileset_id>/<z>/<x>/<y>.<fmt>',
                   'wmscache.tilecache_main.Tiles'),
 
             # XHR or JSONP request handlers
