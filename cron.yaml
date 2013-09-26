@@ -11,6 +11,6 @@
 
 cron:
 - description: clean up after any crashed tileworkers
-  url: /crisismap/.wms/cleanup
+  url: /.wms/cleanup
   schedule: every 5 minutes
 
