@@ -42,7 +42,7 @@ cm.TextEditor = function(parentElem, id, options) {
   // When the user makes an edit in the UI, update the MVCObject property.
   cm.events.listen(
       this.input_, ['change', 'input', 'keyup', 'cut', 'paste'], function() {
-    this.setValid(this.input_.value);
+    this.setValid(this.input_.value.replace(/^\s+|\s+$/g, ''));
   }, this);
 };
 goog.inherits(cm.TextEditor, cm.Editor);

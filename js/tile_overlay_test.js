@@ -25,11 +25,10 @@ function TileOverlayTest() {
     wms_tiles_url: '/root/.wms/tiles'
   };
 
-  this.projection_ = createMockFunction();
-  this.projection_.fromLatLngToPoint = createMockFunction('fromLatLngToPoint');
-  this.projection_.fromPointToLatLng = createMockFunction('fromPointToLatLng');
+  this.projection_ = {};
   expectCall(this.map_.getProjection)().willRepeatedly(
       returnWith(this.projection_));
+  this.setForTest_('cm.geometry.computeOverlap', createMockFunction());
 }
 TileOverlayTest.prototype = new cm.TestBase();
 registerTestSuite(TileOverlayTest);
@@ -142,16 +141,8 @@ TileOverlayTest.prototype.toggleUrlIsTileIndex = function() {
 TileOverlayTest.prototype.testGoogleTileAddressing = function() {
   this.layer_.set('url', 'http://google.tileset.url/{Z}/{X}/{Y}.png');
   var tileOverlay = this.createTileOverlay_();
-
-  var boundingBox = [new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0)];
-  expectCall(this.projection_.fromLatLngToPoint)(_)
-      .willRepeatedly(returnWith({}));
-  var url = tileOverlay.getTileUrl_(boundingBox, false,
-                                    new google.maps.Point(3, 6), 4);
+  expectCall(cm.geometry.computeOverlap)(this.projection_, _, 3, 6, 4);
+  var url = tileOverlay.getTileUrl_(new google.maps.Point(3, 6), 4);
   expectEq('http://google.tileset.url/4/3/6.png', url);
 };
 
@@ -164,17 +155,8 @@ TileOverlayTest.prototype.testBingTileAddressing = function() {
                   cm.LayerModel.TileCoordinateType.BING);
   this.layer_.set('url', 'http://bing.tileset.url');
   var tileOverlay = this.createTileOverlay_();
-
-  var boundingBox = [new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0)];
-  expectCall(this.projection_.fromLatLngToPoint)(_)
-      .willRepeatedly(returnWith({}));
-
-  var url = tileOverlay.getTileUrl_(boundingBox, false,
-                                    new google.maps.Point(3, 6), 4);
+  expectCall(cm.geometry.computeOverlap)(this.projection_, _, 3, 6, 4);
+  var url = tileOverlay.getTileUrl_(new google.maps.Point(3, 6), 4);
   expectEq('http://bing.tileset.url/0231', url);
 };
 
@@ -186,17 +168,8 @@ TileOverlayTest.prototype.testTMSTileAddressing = function() {
   this.layer_.set('tile_coordinate_type',
                   cm.LayerModel.TileCoordinateType.TMS);
   var tileOverlay = this.createTileOverlay_();
-
-  var boundingBox = [new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0),
-                     new google.maps.LatLng(0, 0)];
-  expectCall(this.projection_.fromLatLngToPoint)(_)
-      .willRepeatedly(returnWith({}));
-
-  var url = tileOverlay.getTileUrl_(boundingBox, false,
-                                    new google.maps.Point(3, 6), 4);
+  expectCall(cm.geometry.computeOverlap)(this.projection_, _, 3, 6, 4);
+  var url = tileOverlay.getTileUrl_(new google.maps.Point(3, 6), 4);
   expectEq('http://tms.tileset.url/4/3/9', url);
 };
 
@@ -226,7 +199,6 @@ TileOverlayTest.prototype.expectWmsQuery_ = function(params, tilesetId) {
 
 /** Tests WMS tileset ID updates. */
 TileOverlayTest.prototype.updateWmsTilesetId = function() {
-  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
   this.layer_.set('url', 'http://wms.service.url');
   this.layer_.set('wms_layers', ['wms_layer_1', 'wms_layer_2']);
   this.layer_.set('type', cm.LayerModel.Type.WMS);
@@ -250,4 +222,39 @@ TileOverlayTest.prototype.updateWmsTilesetId = function() {
   }, 'abad1dea');
   this.layer_.set('wms_layers', ['wms_layer_3', 'wms_layer_4']);
   expectEq('abad1dea', tileOverlay.get('wms_tileset_id'));
+};
+
+/** Tests tile fetching for WMS layers with bounding box metadata. */
+TileOverlayTest.prototype.testWmsTileFetching = function() {
+  this.layer_.set('type', cm.LayerModel.Type.WMS);
+  this.layer_.getSourceAddress = function() {
+    return 'WMS:http://wms.service.url';
+  };
+  this.layer_.set('wms_layers', ['wms_layer_1']);
+  var tileOverlay = this.createTileOverlay_();
+  tileOverlay.set('wms_tileset_id', 'abc');
+
+  this.metadataModel_.set(
+      'WMS:http://wms.service.url',
+      {'wms_layers':
+       {'wms_layer_1': {'minx': -110, 'maxx': -90, 'miny': 10, 'maxy': 30},
+        'wms_layer_2': {'minx': -10, 'maxx': 10, 'miny': 50, 'maxy': 60}}});
+  expectCall(cm.geometry.computeOverlap)(
+      this.projection_, [new google.maps.LatLng(10, -110),
+                         new google.maps.LatLng(10, -90),
+                         new google.maps.LatLng(30, -90),
+                         new google.maps.LatLng(30, -110),
+                         new google.maps.LatLng(10, -110)],
+      0, 1, 2);
+  tileOverlay.getTileUrl_(new google.maps.Point(0, 1), 2);
+
+  tileOverlay.set('wms_layers', ['wms_layer_2']);
+  expectCall(cm.geometry.computeOverlap)(
+      this.projection_, [new google.maps.LatLng(50, -10),
+                         new google.maps.LatLng(50, 10),
+                         new google.maps.LatLng(60, 10),
+                         new google.maps.LatLng(60, -10),
+                         new google.maps.LatLng(50, -10)],
+      1, 1, 2);
+  tileOverlay.getTileUrl_(new google.maps.Point(1, 1), 2);
 };

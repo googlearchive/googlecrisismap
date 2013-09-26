@@ -12,11 +12,9 @@
 /**
  * @fileoverview Geometry functions for managing polygons and tile bounds.
  *     TODO(romano): Replace this file since there are known bugs in
- *     quadTileOverlap, and nothing in this file is in the 'cm' namespace
- *     (b/7979024).
+ *     edgeTileOverlap_ (b/7979024).
  * @author giencke@google.com (Pete Giencke)
  */
-
 goog.provide('cm.geometry');
 
 goog.require('cm');
@@ -24,9 +22,16 @@ goog.require('cm.ui');
 goog.require('goog.array');
 
 /**
+ * @type {Object}
+ */
+cm.geometry = {};
+
+/**
+ * Overlap types, used by TileOverlay to determine whether to fetch a tile, and
+ * whether the request should be for a transparent tile.
  * @enum {number}
  */
-var Overlap = {
+cm.geometry.Overlap = {
   OUTSIDE: 0,
   INSIDE: 1,
   INTERSECTING: 2
@@ -39,8 +44,9 @@ var Overlap = {
  * @param {google.maps.Point} low The bottom-left of a rectangle.
  * @param {google.maps.Point} high The top-right of the rectangle.
  * @return {boolean} True if the boxes overlap.
+ * @private
  */
-function boundingBoxesOverlap(quad, low, high) {
+cm.geometry.boundingBoxesOverlap_ = function(quad, low, high) {
   if (quad[0].x < low.x &&
       quad[1].x < low.x &&
       quad[2].x < low.x &&
@@ -66,20 +72,20 @@ function boundingBoxesOverlap(quad, low, high) {
     return false;
   }
   return true;
-}
+};
 
 /**
- * Intersects the line given by a, b with the rectangle given by low, high.
- * It computes dot products with the normal of the line.
- * Returns OUTSIDE, INSIDE, or INTERSECTING, which specifies the line's
- * relationship to the bounding box.
+ * Intersects the line segment (a, b) with the tile defined by the coordinates
+ * low and high. It computes dot products with the normal of the line.
+ * Returns the overlap type (see computeOverlap() for details).
  * @param {google.maps.Point} a First endpoint of the line.
  * @param {google.maps.Point} b Second endpoint of the line.
- * @param {google.maps.Point} low Minimum (x, y) corner of the rectangle.
- * @param {google.maps.Point} high MAximum (x, y) corner of the rectangle.
- * @return {Overlap} The overlap status (INSIDE, OUTSIDE, or INTERSECTING).
+ * @param {google.maps.Point} low Tile corner with minimum lat/lng coordinates.
+ * @param {google.maps.Point} high Tile corner with maximum lat/lng coordinates.
+ * @return {cm.geometry.Overlap} The overlap type.
+ * @private
  */
-function edgeTileOverlap(a, b, low, high) {
+cm.geometry.edgeTileOverlap_ = function(a, b, low, high) {
   var nx = b.y - a.y;
   var ny = a.x - b.x;
   var d = nx * a.x + ny * a.y;
@@ -91,45 +97,51 @@ function edgeTileOverlap(a, b, low, high) {
       d_lo_hi < 0 &&
       d_hi_lo < 0 &&
       d_hi_hi < 0) {
-    return Overlap.OUTSIDE;
+    return cm.geometry.Overlap.OUTSIDE;
   } else if (d_lo_lo > 0 &&
              d_lo_hi > 0 &&
              d_hi_lo > 0 &&
              d_hi_hi > 0) {
-    return Overlap.INSIDE;
+    return cm.geometry.Overlap.INSIDE;
   } else {
-    return Overlap.INTERSECTING;
+    return cm.geometry.Overlap.INTERSECTING;
   }
-}
+};
 
 /**
- * Returns the type of overlap between the quadrilateral and the box defined by
- * the given points. The quadrilateral must be convex and its points must be
- * specified in counter-clockwise order.
- * @param {Array.<google.maps.Point>} quad The quadrilateral with which to
- *     intersect the box.
- * @param {google.maps.Point} upperLeft The upper-left box corner.
- * @param {google.maps.Point} lowerRight The lower-right box corner.
- * @return {Overlap} The type of overlap.
+ * Returns the type of overlap between a convex quadrilateral and a tile with
+ * the given tile corner coordinates. The quadrilateral vertices must be
+ * specified in counter-clockwise order. See computeOverlap() for an
+ * explanation of the return values.
+ * @param {Array.<google.maps.Point>} quad The convex quadrilateral vertices
+ *   in counter-clockwise order.
+ * @param {google.maps.Point} low Tile corner with minimum lat/lng coordinates.
+ * @param {google.maps.Point} high Tile corner with maximum lat/lng coordinates.
+ * @return {cm.geometry.Overlap} The type of overlap.
+ * @private
  */
-function quadTileOverlap(quad, upperLeft, lowerRight) {
-  if (!boundingBoxesOverlap(quad, upperLeft, lowerRight)) {
-    return Overlap.OUTSIDE;
+cm.geometry.quadTileOverlap_ = function(quad, low, high) {
+  if (!cm.geometry.boundingBoxesOverlap_(quad, low, high)) {
+    return cm.geometry.Overlap.OUTSIDE;
   }
-  var a = edgeTileOverlap(quad[0], quad[1], upperLeft, lowerRight);
-  var b = edgeTileOverlap(quad[1], quad[2], upperLeft, lowerRight);
-  var c = edgeTileOverlap(quad[2], quad[3], upperLeft, lowerRight);
-  var d = edgeTileOverlap(quad[3], quad[0], upperLeft, lowerRight);
-  if (a == Overlap.OUTSIDE || b == Overlap.OUTSIDE || c == Overlap.OUTSIDE ||
-      d == Overlap.OUTSIDE) {
-    return Overlap.OUTSIDE;
+  var a = cm.geometry.edgeTileOverlap_(quad[0], quad[1], low, high);
+  var b = cm.geometry.edgeTileOverlap_(quad[1], quad[2], low, high);
+  var c = cm.geometry.edgeTileOverlap_(quad[2], quad[3], low, high);
+  var d = cm.geometry.edgeTileOverlap_(quad[3], quad[0], low, high);
+  if (a == cm.geometry.Overlap.OUTSIDE ||
+      b == cm.geometry.Overlap.OUTSIDE ||
+      c == cm.geometry.Overlap.OUTSIDE ||
+      d == cm.geometry.Overlap.OUTSIDE) {
+    return cm.geometry.Overlap.OUTSIDE;
   }
-  if (a == Overlap.INSIDE && b == Overlap.INSIDE && c == Overlap.INSIDE &&
-      d == Overlap.INSIDE) {
-    return Overlap.INSIDE;
+  if (a == cm.geometry.Overlap.INSIDE &&
+      b == cm.geometry.Overlap.INSIDE &&
+      c == cm.geometry.Overlap.INSIDE &&
+      d == cm.geometry.Overlap.INSIDE) {
+    return cm.geometry.Overlap.INSIDE;
   }
-  return Overlap.INTERSECTING;
-}
+  return cm.geometry.Overlap.INTERSECTING;
+};
 
 /**
  * Applies the projection to the array of lat-lng coordinates.
@@ -137,65 +149,44 @@ function quadTileOverlap(quad, upperLeft, lowerRight) {
  * @param {Array.<google.maps.LatLng>} latlngs An array of lat/lng
  *     coordinates to project.
  * @return {Array.<google.maps.Point>} The projected points.
+ * @private
  */
-function applyProjection(projection, latlngs) {
+cm.geometry.applyProjection_ = function(projection, latlngs) {
   return goog.array.map(latlngs, function(latlng) {
     return projection.fromLatLngToPoint(latlng);
   });
-}
+};
 
 /**
- * Return the world coordinates of the upper-left and lower-right corners of
- * the given tile.
+ * Returns the type of overlap between a quadrilateral and a tile in world
+ * coordinates, after applying the given projection to the quadrilateral
+ * vertices. The quadrilateral is expected to be convex, and the vertices
+ * given in counter-clockwise order.
+ * The overlap types have the following meanings:
+ *   OUTSIDE: The tile and quadrilateral areas do not overlap.
+ *   INTERSECTING: The quadrilateral area overlaps with the tile area, including
+ *     the case where the quadrilateral lies completely within the tile, but
+ *     excluding the case where the tile lies completely within the
+ *     quadrilateral.
+ *   INSIDE: The tile lies completely within the quadrilateral (but not vice
+ *     versa). When the quadrilateral is within the tile, the overlap is
+ *     considered intersecting because this information is used to determine
+ *     whether to request a transparent PNG tile.
+
+ * @param {google.maps.Projection} projection The map projection.
+ * @param {Array.<google.maps.LatLng>} latLngs An array of lat/lng
+ *     coordinates to project.
  * @param {number} x The tile's x-coordinate.
  * @param {number} y The tile's y-coordinate.
  * @param {number} zoom The tile's zoom level.
- * @return {Array.<google.maps.Point>} The tile's upper-left and
- *     lower-right coordinates.
+ * @return {cm.geometry.Overlap} The overlap type.
  */
-function getTileRange(x, y, zoom) {
+cm.geometry.computeOverlap = function(projection, latLngs, x, y, zoom) {
+  // Compute the world coordinates of the tile's upper-left and
+  // lower-right corners.
   var z = Math.pow(2, zoom);
-
-  /**
-   * @param {number} dx An x offset in tile coordinates.
-   * @param {number} dy A y offset in tile coordinates.
-   * @return {google.maps.Point} The point at the given tile coordinates.
-   */
-  function p(dx, dy) {
-    return new google.maps.Point((x + dx) * 256 / z,
-                                 (y + dy) * 256 / z);
-  }
-
-  return [p(0, 0), p(1, 1)];
-}
-
-/**
- * Creates a rough bounding box based upon layer x, y, and z.
- * @param {google.maps.Projection} projection A projection.
- * @param {google.maps.LatLng} latLng The center of the box.
- * @param {number} zoom The zoom level.
- * @return {Array.<google.maps.LatLng>} The four corners of the box.
- */
-function getBoundingBox(projection, latLng, zoom) {
-  // A magical number which helps make the viewport a bit bigger
-  var SCALE_FACTOR = 1.1;
-  var w = cm.ui.document.body.offsetWidth;
-  var h = cm.ui.document.body.offsetHeight;
-  var xy = projection.fromLatLngToPoint(latLng);
-  var scale = Math.pow(2, zoom * SCALE_FACTOR);
-  var llx = xy.x - w / scale;
-  var lly = xy.y + h / scale;
-  var urx = xy.x + w / scale;
-  var ury = xy.y - h / scale;
-  var ll = projection.fromPointToLatLng(new google.maps.Point(llx, lly));
-  var ur = projection.fromPointToLatLng(new google.maps.Point(urx, ury));
-
-  var polyCoords = [
-      new google.maps.LatLng(ll.lat(), ll.lng()),
-      new google.maps.LatLng(ll.lat(), ur.lng()),
-      new google.maps.LatLng(ur.lat(), ur.lng()),
-      new google.maps.LatLng(ur.lat(), ll.lng()),
-      new google.maps.LatLng(ll.lat(), ll.lng())
-  ];
-  return polyCoords;
-}
+  var low = new google.maps.Point(x * 256 / z, y * 256 / z);
+  var high = new google.maps.Point((x + 1) * 256 / z, (y + 1) * 256 / z);
+  return cm.geometry.quadTileOverlap_(cm.geometry.applyProjection_(
+      projection, latLngs), low, high);
+};

@@ -25,7 +25,6 @@ goog.require('cm.events');
 goog.require('cm.geometry');
 goog.require('goog.Uri');
 goog.require('goog.net.Jsonp');
-goog.require('goog.net.XhrIo');
 
 // Period to refresh the dynamic tile index json.
 var INDEX_REFRESH_PERIOD_MS = 180000; // 3 min
@@ -34,8 +33,8 @@ var INDEX_REFRESH_PERIOD_MS = 180000; // 3 min
 var MAX_TILE_LOAD_MS = 2000; // 2s
 
 /**
- * A map overlay which displays tiles and a bounding box.  It wraps an
- * ImageMapType and defines the same interface as KmlLayer, namely setMap.
+ * A map overlay for displaying tiles.  It wraps an ImageMapType and defines
+ * the same interface as KmlLayer, namely setMap.
  * @param {cm.LayerModel} layer The layer model.
  * @param {google.maps.Map} map The map on which to display this tile layer.
  * @param {cm.AppState} appState The application state model.
@@ -103,11 +102,32 @@ cm.TileOverlay = function(layer, map, appState, metadataModel, opt_config) {
   this.lastTilesLoadedMs_ = 0;
 
   /**
-   * The bounds of this map.  Initialized in init_().
+   * The latitude-longitude box for which tiles need to be fetched, i.e. any
+   * tile that overlaps with this box should be fetched. The box may be
+   * determined either from metadata defining the layer's content, or from
+   * properties of the layer model. If the layer model has no 'viewport' or
+   * 'full_extent' properties, the tileFetchExtent_ is also used as the
+   * 'zoom-to' area.
    * @type {google.maps.LatLngBounds}
    * @private
    */
-  this.bounds_ = new google.maps.LatLngBounds();
+  this.tileFetchExtent_ = null;
+
+  /**
+   * The corners of the tileFetchExtent_ in counterclockwise order, stored for
+   * efficiency so that each tile fetch does not have to convert a LatLngBounds
+   * object into an array of LatLng objects.
+   * @private
+   */
+  this.tileFetchExtentCorners_ = [];
+
+  /**
+   * Whether the getDefaultViewport() method called by MapView.zoomToArea()
+   * should return the tileFetchExtent_.
+   * @type {boolean}
+   * @private
+   */
+  this.useTileFetchExtentAsViewport_ = false;
 
   /**
    * The URL pattern for requesting tiles, using either Google or Bing tile
@@ -156,29 +176,6 @@ cm.TileOverlay = function(layer, map, appState, metadataModel, opt_config) {
   this.requestDescriptor_ = null;
 
   /**
-   * To be populated if bounds are specified.
-   * @type {?string}
-   * @private
-   */
-  this.boundsString_ = null;
-
-  /**
-   * Minimum zoom at which tiles are visible. If NaN, visible at all
-   * levels less than or equal to this.maxZoom_.
-   * @type {number}
-   * @private
-   */
-  this.minZoom_ = NaN;
-
-  /**
-   * Maximum zoom at which tiles are visible. If NaN, visible at all
-   * levels greater than or equal to this.minZoom_.
-   * @type {number}
-   * @private
-   */
-  this.maxZoom_ = NaN;
-
-  /**
    * The map's projection, for computing point coordinates to LatLngs;
    * populated when the map finishes initialising.
    * @type {google.maps.Projection}
@@ -204,29 +201,6 @@ cm.TileOverlay = function(layer, map, appState, metadataModel, opt_config) {
   this.isHybrid_ = /** @type boolean */(layer.get('is_hybrid'));
 
   /**
-   * @type {cm.LatLonBox}
-   * @private
-   */
-  this.viewport_ = /** @type cm.LatLonBox */(layer.get('viewport')) ||
-      cm.LatLonBox.ENTIRE_MAP;
-
-  // To be populated if bounds are specified
-  /**
-   * @type {?string}
-   */
-  this.bounds_string = null;
-
-  /**
-   * @type {number}
-   */
-  this.minZoom = NaN;
-
-  /**
-   * @type {number}
-   */
-  this.maxZoom = NaN;
-
-  /**
    * @type {boolean}
    * @private
    */
@@ -237,27 +211,21 @@ cm.TileOverlay = function(layer, map, appState, metadataModel, opt_config) {
   this.bindTo('url_is_tile_index', layer);
   this.bindTo('wms_layers', layer);
 
-  var layerBounds = layer.get('bounds');
-  if (layerBounds) {
-    this.boundsString_ = /** @type {string} */(layerBounds['coords']);
-    this.minZoom_ = parseInt(layerBounds['min_zoom'], 10);
-    this.maxZoom_ = parseInt(layerBounds['max_zoom'], 10);
-
-    if (layerBounds['display_bounds']) {
-      /**
-       * A polygon that is rendered around the imagery for better
-       * discoverability.
-       * @type {google.maps.Polygon}
-       * @private
-       */
-      this.outline_ = new google.maps.Polygon(
-          /** @type {google.maps.PolygonOptions} */({
+  var viewport = layer.get('viewport');
+  if (viewport && viewport['display_bounds']) {
+    /**
+     * A polygon that is rendered around the imagery for better
+     * discoverability.
+     * @type {google.maps.Polygon}
+     * @private
+     */
+    this.outline_ = new google.maps.Polygon(
+      /** @type {google.maps.PolygonOptions} */({
         fillOpacity: 0,
         strokeColor: '#ff0000',
         strokeWeight: 1,
         clickable: false
-      }));
-    }
+    }));
   }
 
   cm.events.onChange(this, ['url', 'wms_layers'],
@@ -266,6 +234,16 @@ cm.TileOverlay = function(layer, map, appState, metadataModel, opt_config) {
   cm.events.onChange(this, ['url_is_tile_index', 'wms_tileset_id'],
                      this.updateTileUrlPattern_, this);
   this.updateTileUrlPattern_();
+
+  // When there is change to the WMS layers (with potentially new bounding
+  // boxes), update the area from which tiles are fetched.
+  cm.events.onChange(layer, 'wms_layers', this.updateTileFetchExtent_, this);
+
+  // Also update the tile fetch area when the metadata for this layer's source
+  // URL changes. Since the MapView creates a new TileOverlay whenever the layer
+  // model's 'url' property changes, it's sufficient to set up a listener only
+  // one time, here in the constructor.
+  this.metadataModel_.onChange(this.layer_, this.updateTileFetchExtent_, this);
 
   // Try to initialize the layer, and if unsuccessful, set up a listener to
   // retry until the projection is valid.
@@ -303,38 +281,8 @@ cm.TileOverlay.prototype.initialize_ = function() {
   // We can only finish initializing if we have both a projection and a tile url
   // pattern.
   if (this.projection_ && this.tileUrlPattern_) {
-    // Define the bounding box to intersect with requested tile coordinates
-    // when determining whether to fetch tiles. Also optionally drawn on
-    // the map for content discoverability.
-    var boundingBox;
-    if (this.boundsString_) {
-      boundingBox = cm.TileOverlay.normalizeCoords(this.boundsString_);
-      for (var i = 0; i < boundingBox.length; ++i) {
-        this.bounds_.extend(boundingBox[i]);
-      }
-    } else {
-      // Until MapRoot layers include something akin to a 'bounds' field,
-      // use the viewport as a poor approximation for avoiding unnecessary
-      // tile requests. Since we still use the intersect functions in
-      // geometry.js, the polygon coordinates must be provided in
-      // counter-clockwise order.
-      var n = this.viewport_.getNorth();
-      var s = this.viewport_.getSouth();
-      var e = this.viewport_.getEast();
-      var w = this.viewport_.getWest();
-      boundingBox = [new google.maps.LatLng(s, w), new google.maps.LatLng(s, e),
-                     new google.maps.LatLng(n, e), new google.maps.LatLng(n, w),
-                     new google.maps.LatLng(s, w)];
-      // For tile layers with no explicit bounds, set this to null so
-      // that getDefaultViewport() returns null.
-      this.bounds_ = null;
-    }
-
-    this.mapType_ = this.initializeImageMapType_(boundingBox);
-    if (this.outline_) {
-      this.outline_.setPath(boundingBox);
-    }
-
+    this.updateTileFetchExtent_();
+    this.mapType_ = this.initializeImageMapType_();
     cm.events.onChange(this.appState_, 'layer_opacities', this.updateOpacity_,
                        this);
     this.updateOpacity_();
@@ -357,35 +305,60 @@ cm.TileOverlay.prototype.updateOpacity_ = function() {
 };
 
 /**
- * Converts the coordinates string into an array of LatLngs.
- * @param {string} coordString String in the format "lng1,lat1 lng2,lat2".
- * @return {Array.<google.maps.LatLng>} An array of LatLngs.
+ * Update the rectangular latitude/longitude region with which the current
+ * viewport must overlap in order to trigger a tile fetch request.
+ * @private
  */
-cm.TileOverlay.normalizeCoords = function(coordString) {
-  var outputCoordArray = [];
-  var splitSpaces = String(coordString).split(' ');
-  var splitSpace;
-  for (splitSpace in splitSpaces) {
-    var splitCommas = splitSpaces[splitSpace].split(',');
-    var lng = splitCommas[0];
-    var lat = splitCommas[1];
-    if (lat != undefined && lng != undefined) {
-      outputCoordArray.push(new google.maps.LatLng(parseFloat(lat),
-                                                   parseFloat(lng)));
+cm.TileOverlay.prototype.updateTileFetchExtent_ = function() {
+  var sw = null;
+  var ne = null;
+  this.useTileFetchExtentAsViewport_ = false;
+
+  var wmsMetadata = this.metadataModel_.getWmsLayerExtents(this.layer_);
+  var wmsLayers = this.get('wms_layers');
+  if (wmsMetadata && wmsLayers && wmsLayers.length) {
+    // TODO(romano): for now we just take the first WMS layer's bounding box;
+    // instead we should take the union of the WMS layers' bounding boxes.
+    var wmsBbox = wmsMetadata[wmsLayers[0]];
+    if (wmsBbox) {
+      var n = wmsBbox['maxy'], s = wmsBbox['miny'];
+      var e = wmsBbox['maxx'], w = wmsBbox['minx'];
+      sw = new google.maps.LatLng(s, w);
+      ne = new google.maps.LatLng(n, e);
+      this.useTileFetchExtentAsViewport_ = true;
     }
   }
-  return outputCoordArray;
+  if (!sw || !ne) {
+    // Use the layer model's viewport as an approximation for the tile fetch
+    // extent.
+    var viewport = /** @type cm.LatLonBox */(this.layer_.get('viewport')) ||
+        cm.LatLonBox.ENTIRE_MAP;
+    sw = new google.maps.LatLng(viewport.getSouth(), viewport.getWest());
+    ne = new google.maps.LatLng(viewport.getNorth(), viewport.getEast());
+  }
+
+  // Update the tile fetch area, and the copy used by getTileUrl_.
+  var se = new google.maps.LatLng(sw.lat(), ne.lng());
+  var nw = new google.maps.LatLng(ne.lat(), sw.lng());
+  this.tileFetchExtent_ = new google.maps.LatLngBounds(sw, ne);
+  this.tileFetchExtentCorners_ = [sw, se, ne, nw, sw];
+
+  // Update the outline drawn on the map for content discoverability.
+  if (this.outline_) {
+    // Extend the lat/lng array so that a closed curve is drawn.
+    this.outline_.setPath([this.tileFetchExtentCorners_,
+                           this.tileFetchExtent_.getSouthWest()]);
+  }
 };
 
 /**
- * @param {Array.<google.maps.LatLng>} boundingBox The box used to determine
- *     whether or not to request a tile.
+ * Instantiate a custom ImageMapType.
  * @return {cm.ProxyTileMapType} The image map type object.
  * @private
  */
-cm.TileOverlay.prototype.initializeImageMapType_ = function(boundingBox) {
+cm.TileOverlay.prototype.initializeImageMapType_ = function() {
   var mapTypeOptions = {
-    getTileUrl: goog.bind(this.getTileUrl_, this, boundingBox, this.isHybrid_),
+    getTileUrl: goog.bind(this.getTileUrl_, this),
     tileSize: new google.maps.Size(256, 256)
   };
 
@@ -393,26 +366,17 @@ cm.TileOverlay.prototype.initializeImageMapType_ = function(boundingBox) {
 };
 
 /**
- * @param {Array.<google.maps.LatLng>} boundingBox The box used to determine
- *     whether or not to request a tile.
- * @param {boolean} isHybrid If true, the file extension for Google tiles is
- *     replaced with .png along the edge and .jpg inside so that the border
- *     tiles are transparent and the inside tiles are compressed.
+ * Private function to bind to an instance of the TileOverlay for implementing
+ * the ImageMapType's getTileUrl() function.
  * @param {google.maps.Point} coord The tile coordinates.
  * @param {number} zoom The map zoom level.
  * @return {?string} The URL of the tile to fetch.
  * @private
  */
-cm.TileOverlay.prototype.getTileUrl_ = function(boundingBox, isHybrid,
-                                                coord, zoom) {
+cm.TileOverlay.prototype.getTileUrl_ = function(coord, zoom) {
   this.lastTilesLoadedMs_ = new Date().getTime();
   var tileUrl = this.tileUrlPattern_;
   if (!tileUrl) return null;
-
-  if (!isNaN(this.minZoom_) && zoom < this.minZoom_ ||
-      !isNaN(this.maxZoom_) && zoom > this.maxZoom_) {
-    return null;
-  }
 
   // If we're zoomed out far enough, we get tiles outside a valid x range
   // because maps repeats the globe.
@@ -425,13 +389,14 @@ cm.TileOverlay.prototype.getTileUrl_ = function(boundingBox, isHybrid,
   var y = coord.y;
   coord.x = x;
 
-  // Do not make any tile requests outside of the bounding box.
-  var tileCorners = getTileRange(x, y, zoom);
-  var boundaryOverlap = quadTileOverlap(applyProjection(
-      this.projection_, boundingBox), tileCorners[0], tileCorners[1]);
-  if (boundaryOverlap === Overlap.OUTSIDE) {
+  // Do not make any tile requests outside of the layer's extent.
+  var boundaryOverlap = cm.geometry.computeOverlap(
+      this.projection_, this.tileFetchExtentCorners_, x, y, zoom);
+  if (boundaryOverlap === cm.geometry.Overlap.OUTSIDE) {
     return null;
   }
+  var requestPng = !this.isHybrid_ ||
+      boundaryOverlap === cm.geometry.Overlap.INTERSECTING;
   if (this.tileCoordinateType_ === cm.LayerModel.TileCoordinateType.BING) {
     // Reference: http://msdn.microsoft.com/en-us/library/bb259689.aspx
     var quadKey = '';
@@ -452,11 +417,8 @@ cm.TileOverlay.prototype.getTileUrl_ = function(boundingBox, isHybrid,
     // Replace parameters in Tile URL, e.g. http://foo/{X}_{Y}_{Z}.jpg
     url = url.replace(/{X}/, x.toString()).
               replace(/{Y}/, y.toString()).
-              replace(/{Z}/, zoom.toString());
-    if (isHybrid) {
-      url = url.replace(/\.\w*$/, boundaryOverlap === Overlap.INTERSECTING ?
-                        '.png' : '.jpg');
-    }
+              replace(/{Z}/, zoom.toString()).
+              replace(/\.\w*$/, requestPng ? '.png' : 'jpg');
     // If loading from google static tile service, round robin between
     // mw1 and mw2 - browser will open 4 parallel connections to each.
     if (coord.x % 2 == 1) {
@@ -656,10 +618,13 @@ cm.TileOverlay.prototype.getMap = function() {
 };
 
 /**
- * Returns the LatLngBounds object that shows the entire tile layer.  When the
- * user clicks on the "Zoom to" link, the map is fit to this bounds.
+ * Returns the LatLngBounds object approximating the smallest possible
+ * rectangular region in which the tile layer has content. The map will
+ * be fit to this area when the user clicks on the "Zoom to area" link
+ * only if the layer model has no defined 'viewport' or 'full extent'
+ * properties (see MapView.zoomToLayer()).
  * @return {google.maps.LatLngBounds} The layer's bounds.
  */
 cm.TileOverlay.prototype.getDefaultViewport = function() {
-  return this.bounds_;
+  return this.useTileFetchExtentAsViewport_ ? this.tileFetchExtent_ : null;
 };

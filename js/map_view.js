@@ -692,8 +692,9 @@ cm.MapView.prototype.matchViewport = function(box) {
 };
 
 /**
- * Zooms the map to a layer, using the overlay's getDefaultViewport
- * method if it exists or the LayerModel's viewport otherwise.
+ * Zooms the map to a layer, using the layer's viewport if it exists; otherwise,
+ * use the layer's full extent if it exists; otherwise, use the overlay's
+ * getDefaultViewport method.
  * @param {string} id A layer ID.
  */
 cm.MapView.prototype.zoomToLayer = function(id) {

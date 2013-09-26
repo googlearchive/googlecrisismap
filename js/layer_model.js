@@ -18,6 +18,7 @@ goog.provide('cm.LayerModel');
 goog.require('cm');
 goog.require('cm.Html');
 goog.require('cm.LatLonBox');
+goog.require('goog.Uri');
 goog.require('goog.functions');
 goog.require('goog.math');
 goog.require('goog.object');
@@ -393,9 +394,18 @@ cm.LayerModel.prototype.getSourceAddress = function() {
     case cm.LayerModel.Type.KML:
     case cm.LayerModel.Type.GEORSS:
     case cm.LayerModel.Type.TILE:
+    case cm.LayerModel.Type.WMS:
+      var url = /** @type string */(this.get('url') || '');
+      if (type === cm.LayerModel.Type.WMS) {
+        url = new goog.Uri(url, true)
+            .removeParameter('service')
+            .removeParameter('version')
+            .removeParameter('request')
+            .toString();
+      }
       return goog.object.transpose(
           cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES)[type] +
-          ':' + (this.get('url') || '');
+              ':' + url;
     default:
       return '';
   }

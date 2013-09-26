@@ -25,8 +25,9 @@ goog.require('goog.net.Jsonp');
  * @param {Object} opt_initialMetadata Initial metadata to load into the model.
  * @param {string?} opt_metadataUrl URL from which to fetch metadata updates,
  *     including the ?key=<cache-key> parameter, so that it gets the updates
- *     for all the layers in the initial model.  If this URL is provided, the
- *     MetadataModel will periodically use it to get updated metadata.
+ *     for all the source addresses in the initial model.  If this URL is
+ *     provided, the MetadataModel will periodically use it to get updated
+ *     metadata.
  * @constructor
  * @extends {google.maps.MVCObject}
  */
@@ -45,8 +46,9 @@ cm.MetadataModel = function(mapModel, opt_initialMetadata, opt_metadataUrl) {
 
   /**
    * @private {goog.structs.Set} Addresses that are loaded by the given
-   *     metadataUrl with its ?key= parameter.  When requesting metadata, we
-   *     only need to specify additional addresses not already in this set.
+   *     metadataUrl with its ?key=<cache-key> parameter, i.e all source
+   *     addresses in the initial model.  When requesting metadata, we only
+   *     need to specify additional addresses not already in this set.
    */
   this.initialAddresses_ = new goog.structs.Set();
 
@@ -153,6 +155,19 @@ cm.MetadataModel.prototype.setUpdateTime = function(layer, time) {
   }
 };
 
+/**
+ * For WMS layers, returns the bounding boxes for all published layers at the
+ * given layer's source URL, or null if the layer is not a WMS layer, or no
+ * metadata is available.
+ * @param {cm.LayerModel} layer The layer model.
+ * @return {Object} A dictionary of layer bounding boxes keyed by WMS layer
+ *   name.
+ */
+cm.MetadataModel.prototype.getWmsLayerExtents = function(layer) {
+  var address = layer.getSourceAddress();
+  var metadata = this.get(address) || {};
+  return metadata['wms_layers'] || null;
+};
 
 /**
  * Registers a callback to be called on changes to the metadata for the given
@@ -169,14 +184,11 @@ cm.MetadataModel.prototype.setUpdateTime = function(layer, time) {
  */
 cm.MetadataModel.prototype.onChange = function(layer, handler, opt_obj) {
   var address = layer.getSourceAddress();
-  if (address) {
-    if (!this.get(address)) {
-      this.accelerateUpdates_();
-    }
-    return /** @type {cm.events.ListenerToken} */(
-        cm.events.onChange(this, address, handler, opt_obj));
+  if (address && !this.get(address)) {
+    this.accelerateUpdates_();
   }
-  return /** @type {cm.events.ListenerToken} */(null);
+  return /** @type {cm.events.ListenerToken} */(address ?
+      cm.events.onChange(this, address, handler, opt_obj) : null);
 };
 
 /**
@@ -198,8 +210,8 @@ cm.MetadataModel.prototype.updateActiveMetadata_ = function() {
   }
 
   // We only need to add "source=" params for the additional addresses that
-  // weren't in the initial set, as the existing "key=" param in the URL should
-  // get metadata for all the layers that were present on initial page load.
+  // weren't in the initial set, as the existing ?key=<cache-key> parameter in
+  // the URL should get metadata for all layers present on initial page load.
   var that = this;
   var params = {'source': getSourceAddresses(this.mapModel_)
       .difference(this.initialAddresses_).getValues()};

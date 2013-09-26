@@ -14,7 +14,8 @@
 var MAPROOT = {'layers': [
   {'id': '1', 'type': 'KML', 'source': {'kml': {'url': 'http://a.com/b.kml'}}},
   {'id': '5', 'type': 'KML', 'source': {'kml': {'url': 'http://j.com/z.kml'}}},
-  {'id': '3', 'type': 'TRAFFIC'}
+  {'id': '3', 'type': 'TRAFFIC'},
+  {'id': '7', 'type': 'WMS', 'source': {'wms': {'url': 'http://d.com'}}}
 ]};
 
 var METADATA_URL = '/root/.metadata?key=foobar';
@@ -42,6 +43,10 @@ function MetadataModelTest() {
       'length': 0,
       'fetch_error_occurred': true,
       'has_unsupported_kml': true
+    },
+    'WMS:http://d.com': {
+      'wms_layers': {'wms0' : {'minx': 1.1, 'miny': 2.2,
+                               'maxx': 3.3, 'maxy': 4.4}}
     }
   }, METADATA_URL);
 }
@@ -64,6 +69,13 @@ MetadataModelTest.prototype.testGetters = function() {
   expectTrue(this.metadataModel_.fetchErrorOccurred(layer5));
   expectEq(0, this.metadataModel_.getLength(layer5));
   expectEq(null, this.metadataModel_.getUpdateTime(layer5));
+
+  var layer7 = this.mapModel_.getLayer('7');
+  var extent = this.metadataModel_.getWmsLayerExtents(layer7)['wms0'];
+  expectEq(1.1, extent['minx']);
+  expectEq(2.2, extent['miny']);
+  expectEq(3.3, extent['maxx']);
+  expectEq(4.4, extent['maxy']);
 };
 
 

@@ -402,4 +402,3 @@ class MapList(base_handler.BaseHandler):
         'catalog_domains': sorted(perms.GetAccessibleDomains(
             user, perms.Role.CATALOG_EDITOR))
     }))
-

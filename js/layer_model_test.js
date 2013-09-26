@@ -404,6 +404,26 @@ LayerModelTest.prototype.testGetSourceAddress = function() {
   expectEq('GOOGLE_MAP_TILES:' +
            'http://mw1.google.com/mw-weather/radar/maptiles/index.js',
            layerModel.getSourceAddress());
+
+  layerModel = cm.LayerModel.newFromMapRoot(
+      {type: 'WMS', source: {wms:
+        {url: 'http://irs.gis-lab.info/?layers=osm'}}});
+  expectEq('WMS:http://irs.gis-lab.info/?layers=osm',
+           layerModel.getSourceAddress());
+
+  layerModel = cm.LayerModel.newFromMapRoot(
+      {type: 'WMS', source: {wms:
+        {url: 'http://njwebmap.state.nj.us/njimagery?' +
+              'VERSION=1.1.1&SERVICE=WMS&REQUEST=GetCapabilities'}}});
+  expectEq('WMS:http://njwebmap.state.nj.us/njimagery',
+           layerModel.getSourceAddress());
+
+  layerModel = cm.LayerModel.newFromMapRoot(
+      {type: 'WMS', source: {wms: {
+        url: 'http://wms.hogwarts.edu?' +
+             'service=magic&spell=alohomora&charm=unlocking'}}});
+  expectEq('WMS:http://wms.hogwarts.edu?spell=alohomora&charm=unlocking',
+           layerModel.getSourceAddress());
 };
 
 /** Tests creation of a WMS layer. */
