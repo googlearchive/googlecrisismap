@@ -34,7 +34,7 @@ Event = utils.Struct(
 class EventLog(db.Model):
   """Information about an interesting event."""
   time = db.DateTimeProperty()
-  user_id = db.StringProperty()
+  uid = db.StringProperty()
   event = db.StringProperty(required=True, choices=list(Event))
   domain_name = db.StringProperty()
   map_id = db.StringProperty()
@@ -47,11 +47,11 @@ class EventLog(db.Model):
 
 def RecordEvent(event, domain_name=None, map_id=None, map_version_key=None,
                 catalog_entry_key=None, acceptable_purpose=None,
-                acceptable_org=None, org_name=None, user_id=None):
+                acceptable_org=None, org_name=None, uid=None):
   """Stores an event log entry."""
   try:
     EventLog(time=datetime.datetime.utcnow(),
-             user_id=user_id or users.GetCurrent().id,
+             uid=uid or users.GetCurrent().id,
              event=event,
              domain_name=domain_name,
              map_id=map_id,
