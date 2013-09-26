@@ -251,6 +251,42 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
 }
 
 /**
+ * Constructs a map: loads the HTML sanitizer, then builds the map viewer UI.
+ * TODO(kpy): This adds a 9-kb HTTP fetch to each pageview.  Speed up pageviews
+ * by loading the sanitizer dynamically or moving sanitization to the server.
+ * @constructor
+ * @param {string|Element} frame The DOM element in which to render the UI,
+ *     or the ID of such a DOM element.
+ * @param {Object=} opt_config The configuration settings.
+ */
+cm.Map = function(frame, opt_config) {
+  /**
+   * Queue of callbacks that are waiting for the Map instance to be made.
+   * @type {Array.<function(google.maps.Map)>}
+   * @private
+   */
+  this.getMapCallbacks_ = [];
+
+  var config = opt_config || {};
+  var getModuleUrl = config['get_module_url'];
+
+  // Wrap the getModuleUrl function in an adapter for the goog.module API.
+  var googModuleGetModuleUrl = function(baseUrl, module) {
+    return getModuleUrl(module, config['lang']);
+  };
+
+  goog.module.initLoader('', googModuleGetModuleUrl);
+  var self = this;
+  goog.module.require('sanitizer', 'html', function(html) {
+    installHtmlSanitizer(html);
+    // We need to defer buildUi until after sanitizer_module.js is loaded,
+    // so we call buildUi inside this callback.
+    self.buildUi_(config['map_root'], frame, config['map_picker_items'], config,
+                  config['lang']);
+  });
+};
+
+/**
  * Constructs the map viewer UI.
  * @param {Object} mapRoot The MapRoot JSON to parse and render.
  * @param {string|Element} frame The DOM element in which to render the UI,
@@ -260,8 +296,10 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
  *     url: The URL to navigate to when the item is clicked.
  * @param {Object=} opt_config The configuration settings.
  * @param {string} opt_language The (optional) BCP 47 language code.
+ * @private
  */
-function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language) {
+cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
+                                     opt_language) {
   var config = opt_config || {};
 
   // Create the AppState and the model; set up configuration flags.
@@ -307,6 +345,13 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language) {
   // map <div> element, and other views add stuff within that <div> element.
   var mapView = new cm.MapView(mapElem, mapModel, appState, metadataModel,
                                touch, config, preview);
+  this.map_ = mapView.getMap();
+  var self = this;
+  goog.array.forEach(this.getMapCallbacks_, function(callback) {
+    callback(self.map_);
+  });
+  this.getMapCallbacks_ = [];
+
   var searchbox = null;
   if (!config['hide_search_box']) {
     searchbox = new cm.SearchBox(mapView.getMap());
@@ -417,36 +462,30 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language) {
   cm.events.emit(goog.global, 'resize');
 
   // Expose the google.maps.Map and the MapModel for testing and debugging.
-  window['theMap'] = mapView.getMap();
+  window['theMap'] = this.map_;
   window['mapModel'] = mapModel;
-}
+};
 
 /**
- * Constructs a map: loads the HTML sanitizer, then builds the map viewer UI.
- * TODO(kpy): This adds a 9-kb HTTP fetch to each pageview.  Speed up pageviews
- * by loading the sanitizer dynamically or moving sanitization to the server.
- * @constructor
- * @param {string|Element} frame The DOM element in which to render the UI,
- *     or the ID of such a DOM element.
- * @param {Object=} opt_config The configuration settings.
+ * Get the google.maps.Map managed by the Map Viewer.
+ * @param {!function(!google.maps.Map)} callback Will be called when the
+ *     map is available.
  */
-cm.Map = function(frame, opt_config) {
-  var config = opt_config || {};
-  var getModuleUrl = config['get_module_url'];
+cm.Map.prototype.getMap = function(callback) {
+  if (this.map_) {
+    callback(this.map_);
+  } else {
+    this.getMapCallbacks_.push(callback);
+  }
+};
 
-  // Wrap the getModuleUrl function in an adapter for the goog.module API.
-  var googModuleGetModuleUrl = function(baseUrl, module) {
-    return getModuleUrl(module, config['lang']);
-  };
-
-  goog.module.initLoader('', googModuleGetModuleUrl);
-  goog.module.require('sanitizer', 'html', function(html) {
-    installHtmlSanitizer(html);
-    // We need to defer buildUi until after sanitizer_module.js is loaded,
-    // so we call buildUi inside this callback.
-    buildUi(config['map_root'], frame, config['map_picker_items'], config,
-            config['lang']);
-  });
+/**
+ * Centers the map on the place specified by the autocomplete widget bounds.
+ * @param {google.maps.LatLngBounds} bounds The object from
+ *     google.maps.places.Autocomplete().getPlace().geometry.viewport.
+ */
+cm.Map.prototype.fitBounds = function(bounds) {
+  this.map_.fitBounds(bounds);
 };
 
 // window doesn't exist in gjstests
