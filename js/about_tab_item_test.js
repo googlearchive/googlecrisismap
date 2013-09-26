@@ -13,6 +13,8 @@ goog.require('cm.TestBase');
 goog.require('cm.ToolbarView');
 goog.require('cm.css');
 
+goog.require('goog.module');
+
 function AboutTabItemTest() {
   cm.TestBase.call(this);
   this.mapModel_ = cm.MapModel.newFromMapRoot({});

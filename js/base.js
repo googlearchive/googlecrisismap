@@ -75,6 +75,19 @@ cm.MSG_SIGN_OUT = goog.getMsg('Sign out');
 /** @desc Link or button text that shows documentation or help instructions. */
 cm.MSG_HELP = goog.getMsg('Help');
 
+// Labels for the tabs in the panel.
+
+/**
+ * @desc Label for the tab that holds the map's title, description,
+ *   and publisher.
+ */
+cm.MSG_ABOUT_TAB_lABEL = goog.getMsg('About');
+
+/**
+ * @desc Label for the tab that holds the descriptions of all the layers
+ *   on the map.
+ */
+cm.MSG_LAYERS_TAB_LABEL = goog.getMsg('Layers');
 
 // About
 

@@ -11,6 +11,7 @@
 
 goog.provide('cm.AboutTabItem');
 
+goog.require('cm');
 goog.require('cm.MapModel');
 goog.require('cm.MapTabItem');
 goog.require('cm.TabItem');
@@ -147,7 +148,9 @@ cm.AboutTabItem.prototype.handleResetView_ = function() {
 };
 
 /** @override */
-cm.AboutTabItem.prototype.getTitle = function() { return 'About'; };
+cm.AboutTabItem.prototype.getTitle = function() {
+  return cm.MSG_ABOUT_TAB_lABEL;
+};
 
 /** @override */
 cm.AboutTabItem.prototype.getIcon = function() { return null; };

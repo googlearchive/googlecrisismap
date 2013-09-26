@@ -17,7 +17,7 @@ function TabPanelViewTest() {
   // TODO(rew): This should be shared setup somewhere; need to look at how
   // widespread this kind of initialization is, and extract.
   this.mapDiv_ = new FakeElement('div');
-  this.mapModel_ = new google.maps.MVCObject();
+  this.mapModel_ = cm.MapModel.newFromMapRoot({});
   this.mapModel_.set('title', 'TabPanelViewTest map');
   this.mapModel_.set(
       'description',
@@ -49,6 +49,8 @@ TabPanelViewTest.prototype.testCreation = function() {
   expectDescendantOf(
       this.parent_,
       withText(hasSubstr(this.mapModel_.get('description').toText())));
+
+  expectThat(allTabs[1], withText(hasSubstr('Layers')));
 
   // As the standard tab items are implemented, this test should grow to
   // expect them.

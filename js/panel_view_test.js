@@ -289,7 +289,7 @@ PanelViewTest.prototype.testFilterLayers = function() {
 };
 
 /** Tests that the layer filter is controlled by the config variable. */
-PanelViewTest.prototype.testFilterLayers = function() {
+PanelViewTest.prototype.testFilterLayersDisabled = function() {
   this.config_ = {'enable_layer_filter': false};
   var parent = this.createView_();
   expectNoDescendantOf(parent, withClass(cm.css.LAYER_FILTER));

@@ -17,7 +17,7 @@ function LayerEntryViewTest() {
 
   // The LayerModel is just a simple MVCObject, so it's much simpler to test it
   // as an MVCObject than to create a mock instance.
-  this.layerModel_ = this.createFakeLayer_('layer0');
+  this.layerModel_ = this.createFakeLayer('layer0');
   this.layerModel_.set('title', 'monsters');
   this.layerModel_.set(
       'description', cm.Html.fromSanitizedHtml('lots of monsters'));
@@ -64,29 +64,6 @@ LayerEntryViewTest.prototype.createView_ = function(
                                      this.metadataModel_, this.appState_,
                                      opt_config, index);
   return parent;
-};
-
-/**
- * Creates a fake folder with an empty sublayer list.
- * @param {string} id The ID.
- * @param {boolean=} opt_folder Pass true if this layer should be a folder.
- * @param {string=} opt_source The return value for getSourceAddress.
- * @param {string=} opt_singleSelect The return value for isSingleSelect.
- * @return {google.maps.MVCArray} The new layer.
- * @private
- */
-LayerEntryViewTest.prototype.createFakeLayer_ = function(id, opt_folder,
-  opt_source, opt_singleSelect) {
-    layer = new google.maps.MVCObject();
-    layer.set('id', id);
-    if (opt_folder) {
-      layer.set('type', cm.LayerModel.Type.FOLDER);
-    }
-    layer.set('sublayers', new google.maps.MVCArray());
-    layer.isSingleSelect = function() { return (opt_singleSelect || false); };
-    layer.getSourceAddress = function() { return (opt_source || 'XYZ:xyz'); };
-    layer.getSublayerIds = function() { return [] };
-    return layer;
 };
 
 /**
@@ -540,7 +517,7 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
 LayerEntryViewTest.prototype.createSingleSelect_ = function(sublayerIds) {
   var children = [];
   goog.array.forEach(sublayerIds, function(id) {
-    var childModel = this.createFakeLayer_(id, true, 'ABC:abc', false);
+    var childModel = this.createFakeLayer(id, true, 'ABC:abc', false);
     children.push(childModel);
   }, this);
 
@@ -695,7 +672,7 @@ LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
 
 /** Tests that a locked folder's sublayers are not shown. */
 LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
-  var childModel = this.createFakeLayer_('child', true, 'PQR:pqr', false);
+  var childModel = this.createFakeLayer('child', true, 'PQR:pqr', false);
   this.layerModel_.getSublayerIds = function() { return ['child']; };
   this.layerModel_.isSingleSelect = function() { return false; };
 
@@ -807,9 +784,9 @@ LayerEntryViewTest.prototype.testUpdateMatchingSublayersMessage = function() {
   // We need the layers to be disabled, or the sublayer messages won't show.
   expectCall(this.appState_.getLayerEnabled)(_)
     .willRepeatedly(returnWith(false));
-  sub1 = this.createFakeLayer_('sub1');
+  sub1 = this.createFakeLayer('sub1');
   sub1.set('parent', this.layerModel_);
-  sub2 = this.createFakeLayer_('sub2');
+  sub2 = this.createFakeLayer('sub2');
   sub2.set('parent', this.layerModel_);
   this.layerModel_.get('sublayers').setAt(0, sub1);
   this.layerModel_.get('sublayers').setAt(1, sub2);

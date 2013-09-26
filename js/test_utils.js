@@ -598,16 +598,24 @@ cm.TestBase.expectFalse = function(actual) {
  * @param {number=} opt_count The expected count of matching events; defaults
  *   to 1 if not set.  You may pass cm.TestBase.AT_LEAST_ONCE to permit any
  *   non-zero number of calls.
+ * @param {function=} opt_verifier A function that will verify that the event
+ *   matches expectations; it should take a single argument (the additional
+ *   properties associated with the event) and return a true on a match and
+ *   false otherwise.
  */
-cm.TestBase.prototype.expectEvent = function(source, type, opt_count) {
+cm.TestBase.prototype.expectEvent = function(source, type, opt_count,
+                                             opt_verifier) {
   var eventRecord = {
     source: source,
     type: type,
     expected: opt_count === undefined ? 1 : opt_count,
-    called: 0
+    called: 0,
+    verifier: opt_verifier || null
   };
   this.trackedEvents_.push(eventRecord);
-  cm.events.listen(source, type, function() { this.called++; }, eventRecord);
+  cm.events.listen(source, type, function(properties) {
+    if (!this.verifier || this.verifier(properties)) this.called++;
+  }, eventRecord);
 };
 
 /**
@@ -1097,7 +1105,7 @@ function expectDescendantOf(element, var_args) {
 
 /**
  * Asserts that none of an element's descendants meet all the given conditions.
- * @param {FakeElement} element The element under which to search.
+ * @param {FakeElement} element The  element under which to search.
  * @param {FakeElement|string|gjstest.Matcher} var_args Any number of
  *     conditions to satisfy.  Supply a FakeElement to require a particular
  *     element; or supply a string to require a particular nodeName; or use
@@ -1244,4 +1252,29 @@ cm.TestBase.verifyCallCount_ = function(record, errString) {
   } else {
     expectEq(expected, called, errString);
   }
+};
+
+// TODO(rew): This doesn't really belong here; the fake DOM and mocks for
+// cm.ui should be kept isolated so they can be re-used elsewhere. b/10566080
+
+/**
+ * Creates a fake folder with an empty sublayer list.
+ * @param {string} id The ID.
+ * @param {boolean=} opt_folder Pass true if this layer should be a folder.
+ * @param {string=} opt_source The return value for getSourceAddress.
+ * @param {string=} opt_singleSelect The return value for isSingleSelect.
+ * @return {google.maps.MVCArray} The new layer.
+ */
+cm.TestBase.prototype.createFakeLayer = function(id, opt_folder,
+  opt_source, opt_singleSelect) {
+  var layer = new google.maps.MVCObject();
+  layer.set('id', id);
+  if (opt_folder) {
+    layer.set('type', cm.LayerModel.Type.FOLDER);
+  }
+  layer.set('sublayers', new google.maps.MVCArray());
+  layer.isSingleSelect = function() { return (opt_singleSelect || false); };
+  layer.getSourceAddress = function() { return (opt_source || 'XYZ:xyz'); };
+  layer.getSublayerIds = function() { return []; };
+  return layer;
 };
