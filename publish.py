@@ -40,7 +40,6 @@ class Publish(base_handler.BaseHandler):
       self.redirect('/crisismap/maps')
     else:
       raise base_handler.Error(
-          'The label of the map must contain only alphanumeric characters,'
-          ' "-", "_", and must not be empty.')
+          400, 'Only letters, digits, "-", and "_" are allowed in the label.')
 
 app = webapp2.WSGIApplication([(r'.*', Publish)])

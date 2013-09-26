@@ -20,10 +20,14 @@ import urllib
 import xml.etree.ElementTree as ElementTree
 import zipfile
 
+import base_handler
 import legend_item_extractor
 from legend_item_extractor import GetLegendItems
+import model
 import mox
 import test_utils
+
+from google.appengine.api import urlfetch
 
 
 class LegendItemExtractorTest(test_utils.BaseTest):
@@ -527,73 +531,61 @@ class LegendItemExtractorTest(test_utils.BaseTest):
         line_tuple,
         legend_item_extractor.Extract(kml % '<LinearRing></LinearRing>'))
 
-  def testKMLRetrieval(self):
-    """Tests GetLegendItem's GetKmlFromURL and GetKmlFromFileContent methods."""
-    kml_url = 'http://www.maps.com:123/?map=321'
+  def testKmlRetrieval(self):
+    """Tests GetLegendItem's GetKmlFromUrl and GetKmlFromFileContent methods."""
+    url = 'http://www.maps.com:123/?map=321'
 
-    def DoTest(kml, expected=None):
-      response = self.mox.CreateMockAnything()
-      response.read().AndReturn(kml)
-      self.mox.StubOutWithMock(urllib, 'urlopen')
-      urllib.urlopen(kml_url).AndReturn(response)
+    def DoTest(kml, expected):
+      self.mox.StubOutWithMock(urlfetch, 'fetch')
+      urlfetch.fetch(url).AndReturn(model.Struct(content=kml))
 
       self.mox.ReplayAll()
-      self.assertEquals(expected,
-                        GetLegendItems.GetKmlFromURL(kml_url))
+      self.assertEquals(expected, GetLegendItems.GetKmlFromUrl(url))
       self.mox.VerifyAll()
       self.mox.UnsetStubs()
 
-    DoTest('not kml')
+    DoTest('not kml', None)
     DoTest('<kml></kml>', '<kml></kml>')
 
-  def testKMZRetrieval(self):
+  def testKmzRetrieval(self):
     """Tests GetLegendItem's retrieval of KMZ archive files."""
-    kml_url = 'http://www.maps.com:123/?map=321'
-    content = 'kmz_content'
+    url = 'http://www.maps.com:123/?map=321'
 
-    def DoTest(filenames, expected_filename=None):
-      response = self.mox.CreateMockAnything()
-      response.read().AndReturn(content)
-      self.mox.StubOutWithMock(urllib, 'urlopen')
-      urllib.urlopen(kml_url).AndReturn(response)
+    def DoTest(pairs, expected_content):
+      string_io = StringIO.StringIO()
+      zip_file = zipfile.ZipFile(string_io, 'w')
+      for name, content in pairs:
+        zip_file.writestr(name, content)
+      zip_file.close()
 
-      self.mox.StubOutClassWithMocks(StringIO, 'StringIO')
-      self.mox.StubOutClassWithMocks(zipfile, 'ZipFile')
-      string_io = StringIO.StringIO(content)
-      zip_file = zipfile.ZipFile(string_io)
-      zip_file.infolist().AndReturn([type('fileinfo', (object,),
-                                          {'filename': name})
-                                     for name in filenames])
-      expected_kml = None
-      if expected_filename is not None:
-        expected_kml = '<kml></kml>'
-        zip_file.read(expected_filename).AndReturn(expected_kml)
+      self.mox.StubOutWithMock(urlfetch, 'fetch')
+      urlfetch.fetch(url).AndReturn(model.Struct(content=string_io.getvalue()))
 
       self.mox.ReplayAll()
-      self.assertEquals(expected_kml,
-                        GetLegendItems.GetKmlFromURL(kml_url))
+      self.assertEquals(expected_content, GetLegendItems.GetKmlFromUrl(url))
       self.mox.VerifyAll()
       self.mox.UnsetStubs()
 
-    DoTest([])
-    DoTest(['no', 'kml', 'files'])
-    DoTest(['not_kml.kmz', 'first.kml', 'second.kml'], 'first.kml')
+    DoTest([], None)
+    DoTest([('no', 'x'), ('kml', 'y'), ('files', 'z')], None)
+    DoTest([('does-not-parse.kml', '<kml>blah</kml')], None)
+    DoTest([('foo.png', 'x'), ('bar.kml', '<kml>hey</kml>')], '<kml>hey</kml>')
 
   def testGetLegendItems(self):
     """Tests the GetLegendItems handler."""
-    kml_url = 'http://www.maps.com:123/?map=321'
+    url = 'http://www.maps.com:123/?map=321'
     kml = 'the kml'
     items = ['icons'], ['lines'], ['polygons'], ['static icons'], ['colors']
 
-    self.mox.StubOutWithMock(GetLegendItems, 'GetKmlFromURL')
-    GetLegendItems.GetKmlFromURL(kml_url).AndReturn(kml)
+    self.mox.StubOutWithMock(GetLegendItems, 'GetKmlFromUrl')
+    GetLegendItems.GetKmlFromUrl(url).AndReturn(kml)
     self.mox.StubOutWithMock(legend_item_extractor, 'Extract')
     legend_item_extractor.Extract(kml).AndReturn(items)
     self.mox.ReplayAll()
 
     handler = test_utils.SetupHandler(
-        '/crisismap/legend/' + urllib.quote(kml_url), GetLegendItems())
-    handler.get(urllib.quote(kml_url))
+        '/crisismap/legend/' + urllib.quote(url), GetLegendItems())
+    handler.get(urllib.quote(url))
     self.assertEquals(
         json.dumps({'icon_styles': items[0], 'line_styles': items[1],
                     'polygon_styles': items[2],
@@ -603,16 +595,28 @@ class LegendItemExtractorTest(test_utils.BaseTest):
 
   def testGetLegendItemsInvalidUrl(self):
     """Tests the GetLegendItems handler for invalid URLs."""
-    kml_url = 'http://www.maps.com:123/?map=321'
+    url = 'http://www.maps.com:123/?map=321'
 
-    self.mox.StubOutWithMock(GetLegendItems, 'GetKmlFromURL')
-    GetLegendItems.GetKmlFromURL(kml_url).AndReturn(None)
+    self.mox.StubOutWithMock(GetLegendItems, 'GetKmlFromUrl')
+    GetLegendItems.GetKmlFromUrl(url).AndReturn(None)
     self.mox.ReplayAll()
 
     handler = test_utils.SetupHandler(
-        '/crisismap/legend/' + urllib.quote(kml_url), GetLegendItems())
-    handler.get(urllib.quote(kml_url))
+        '/crisismap/legend/' + urllib.quote(url), GetLegendItems())
+    handler.get(urllib.quote(url))
     self.assertEquals(400, handler.response.status_int)
+
+  def testGetLegendItemsUnsafeUrl(self):
+    """Tests the GetLegendItems handler for unsafe URLs."""
+    url = '/etc/passwd'
+    handler = test_utils.SetupHandler(
+        '/crisismap/legend/' + urllib.quote(url), GetLegendItems())
+    self.assertRaises(base_handler.Error, handler.get, urllib.quote(url))
+
+    url = 'ftp://www.maps.com:123/?map=321'
+    handler = test_utils.SetupHandler(
+        '/crisismap/legend/' + urllib.quote(url), GetLegendItems())
+    self.assertRaises(base_handler.Error, handler.get, urllib.quote(url))
 
 
 if __name__ == '__main__':

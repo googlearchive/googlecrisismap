@@ -92,8 +92,11 @@ def ToHtmlSafeJson(data, **kwargs):
 
 
 class Error(Exception):
-  """General error that carries a message with it."""
-  pass
+  """An error that carries an HTTP status and a message to show the user."""
+
+  def __init__(self, status, message):
+    Exception.__init__(self, message)
+    self.status = status
 
 
 class BaseHandler(webapp2.RequestHandler):
@@ -113,8 +116,7 @@ class BaseHandler(webapp2.RequestHandler):
     return template.render(path, context or {})
 
   def initialize(self, request, response):  # pylint: disable=g-bad-name
-    # webapp2 __init__ calls initialize automatically - we call it again
-    # ourselves.
+    # webapp2 __init__ calls initialize automatically; we call it again here.
     if request is None:
       return
     super(BaseHandler, self).initialize(request, response)
@@ -122,14 +124,15 @@ class BaseHandler(webapp2.RequestHandler):
         request.get('hl'), request.headers.get('accept-language'))
 
   def handle_exception(self, exception, debug):  # pylint: disable=g-bad-name
-    """Render a basic error template on failure to access protected content."""
-    self.response.set_status(403, message=exception.message)
+    """Renders a basic template on error."""
     if isinstance(exception, model.AuthorizationError):
+      self.response.set_status(403, message=exception.message)
       self.response.out.write(self.RenderTemplate('unauthorized.html', {
           'exception': exception,
           'login_url': users.create_login_url(self.request.url)
       }))
     elif isinstance(exception, Error):
+      self.response.set_status(exception.status, message=exception.message)
       self.response.out.write(self.RenderTemplate('error.html', {
           'exception': exception
       }))

@@ -26,6 +26,9 @@ import zipfile
 import webapp2
 
 import base_handler
+import jsonp
+
+from google.appengine.api import urlfetch
 
 LINE_DEFAULT_KML_COLOR = 'FFFF8C8C'
 LINE_DEFAULT_WIDTH = 2
@@ -402,10 +405,9 @@ class GetLegendItems(base_handler.BaseHandler):
     """Returns legend items extracted from kml at given URL.
 
     Args:
-      kml_url: URL of the KML or KMZ resource to extract KML files from. May be
-        escaped.
+      kml_url: URL-encoded URL of the KML or KMZ resource.
     """
-    kml = self.GetKmlFromURL(urllib.unquote(kml_url))
+    kml = self.GetKmlFromUrl(jsonp.SanitizeUrl(urllib.unquote(kml_url)))
     if kml is None:
       self.error(400)
       self.response.out.write('Failed to get KML from ' +
@@ -422,7 +424,7 @@ class GetLegendItems(base_handler.BaseHandler):
     })
 
   @classmethod
-  def GetKmlFromURL(cls, url):
+  def GetKmlFromUrl(cls, url):
     """Retrieves KML content a URL.
 
     Args:
@@ -431,8 +433,7 @@ class GetLegendItems(base_handler.BaseHandler):
     Returns:
       A string representing KML or None upon a failure.
     """
-    response = urllib.urlopen(url)
-    return cls.GetKmlFromFileContent(response.read())
+    return cls.GetKmlFromFileContent(urlfetch.fetch(url).content)
 
   @classmethod
   def GetKmlFromFileContent(cls, content):

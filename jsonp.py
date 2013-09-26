@@ -37,25 +37,6 @@ HTTP_TOO_MANY_REQUESTS = 429  # this HTTP status code is not defined in httplib
 JSON_CALLBACK_RE = re.compile(r'^\w+\((.*)\)[\s;]*$', re.UNICODE | re.DOTALL)
 
 
-class Error(Exception):
-  """An error that includes an HTTP status code and an error message.
-
-  Code in this module raises this exception for any problem that occurs while
-  handling the user's request.  This exception is caught at the top level and
-  the status code and error message are sent to the user in the HTTP reply.
-  """
-
-  def __init__(self, status, message):
-    """Constructor.
-
-    Args:
-      status: An HTTP status code (an integer).
-      message: A message to display to the user.
-    """
-    Exception.__init__(self, message)
-    self.status = status
-
-
 def SanitizeUrl(url):
   """Checks and returns a URL that is safe to fetch, or raises an error.
 
@@ -66,12 +47,12 @@ def SanitizeUrl(url):
     The URL, only if it is considered safe to fetch.
 
   Raises:
-    Error: The URL was missing or not safe to fetch.
+    base_handler.Error: The URL was missing or not safe to fetch.
   """
   scheme, netloc, path, query, _ = urlparse.urlsplit(url)
   if scheme in ['http', 'https'] and '.' in netloc:
     return urlparse.urlunsplit((scheme, netloc, path, query, ''))
-  raise Error(httplib.BAD_REQUEST, 'Missing or invalid URL.')
+  raise base_handler.Error(httplib.BAD_REQUEST, 'Missing or invalid URL.')
 
 
 def ParseJson(json_string):
@@ -82,15 +63,15 @@ def ParseJson(json_string):
   try:
     return json.loads(json_string)
   except (TypeError, ValueError):
-    raise Error(httplib.FORBIDDEN, 'Invalid JSON.')
+    raise base_handler.Error(httplib.FORBIDDEN, 'Invalid JSON.')
 
 
 def AssertRateLimitNotExceeded(client_ip):
   """Raises an error if the given IP exceeds its allowed request rate."""
   cache_key = pickle.dumps(('jsonp.qpm', client_ip))
   if memcache.get(cache_key) >= MAX_OUTBOUND_QPM_PER_IP:
-    raise Error(HTTP_TOO_MANY_REQUESTS,
-                'Rate limit exceeded; please try again later.')
+    raise base_handler.Error(HTTP_TOO_MANY_REQUESTS,
+                             'Rate limit exceeded; please try again later.')
   memcache.add(cache_key, 0, 60)
   memcache.incr(cache_key)
 
@@ -111,7 +92,7 @@ def FetchJson(url, post_json, use_cache, client_ip):
     A dictionary or list parsed from the fetched JSON.
 
   Raises:
-    Error: The request failed or exceeded the rate limit.
+    base_handler.Error: The request failed or exceeded the rate limit.
   """
   url = SanitizeUrl(url)
   cache_key = pickle.dumps(('jsonp.content', url, post_json))
@@ -124,7 +105,7 @@ def FetchJson(url, post_json, use_cache, client_ip):
     headers = post_json and {'Content-Type': 'application/json'} or {}
     result = urlfetch.fetch(url, post_json, method, headers)
     if result.status_code != httplib.OK:
-      raise Error(result.status_code, 'Request failed.')
+      raise base_handler.Error(result.status_code, 'Request failed.')
     value = ParseJson(result.content)
     memcache.set(cache_key, value, CACHE_SECONDS)
   return value
@@ -201,13 +182,9 @@ class Jsonp(base_handler.BaseHandler):
     post_json = self.request.get('post_json', '')
     use_cache = not self.request.get('no_cache')
     hl = self.request.get('hl', '')
-    try:
-      data = FetchJson(url, post_json, use_cache, self.request.remote_addr)
-      if hl:
-        LocalizeMapRoot(data, hl)
-      self.WriteJson(data)
-    except Error, e:
-      self.error(e.status)
-      self.response.out.write(e.message)
+    data = FetchJson(url, post_json, use_cache, self.request.remote_addr)
+    if hl:
+      LocalizeMapRoot(data, hl)
+    self.WriteJson(data)
 
 app = webapp2.WSGIApplication([('.*', Jsonp)])

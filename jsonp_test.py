@@ -17,6 +17,7 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 import copy
 import httplib
 
+import base_handler
 import jsonp
 import test_utils
 
@@ -26,10 +27,10 @@ class JsonpTest(test_utils.BaseTest):
     """Asserts that jsonp.Error is raised with the given status code."""
     try:
       callable_obj(*args)
-    except jsonp.Error, exception:
+    except base_handler.Error, exception:
       self.assertEquals(expected_status, exception.status)
     else:
-      self.fail('jsonp.Error not raised')
+      self.fail('base_handler.Error not raised')
 
   def testSanitizeUrl(self):
     """Confirms that SanitizeUrl raises appropriate errors for unsafe URLs."""
