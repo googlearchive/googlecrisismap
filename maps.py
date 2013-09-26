@@ -286,6 +286,10 @@ class MapByLabel(base_handler.BaseHandler):
     domain = domain or model.Config.Get('primary_domain', '')
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
+      # Fall back to the map list for users that go to /crisismap/maps.
+      # TODO(kpy): Remove this when the UI has a way to get to the map list.
+      if label == 'maps':
+        return self.redirect('.maps')
       raise base_handler.Error(404, 'Label %s/%s not found.' % (domain, label))
     config = GetConfig(self.request, root_path, None, entry)
     config['label'] = label
@@ -320,8 +324,7 @@ class MapById(base_handler.BaseHandler):
       url = '../%s/.maps/%s' % (map_domain, map_id)
       if self.request.GET:  # preserve query params on redirect
         url += '?' + urllib.urlencode(self.request.GET.items())
-      self.redirect(url)
-      return
+      return self.redirect(url)
 
     config = GetConfig(self.request, '../../', map_object)
     # Security note: cm_config_json is assumed to be safe JSON; all other
