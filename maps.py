@@ -283,7 +283,8 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
 
     # In developer mode only, allow query params to override the result.
     # Developers can also specify map_root directly as a query param.
-    for name in ClientConfig.properties().keys() + ['map_root']:
+    for name in (
+        ClientConfig.properties().keys() + ['map_root', 'use_tab_panel']):
       value = request.get(name)
       if value:
         result[name] = json.loads(value)

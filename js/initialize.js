@@ -33,6 +33,7 @@ goog.require('cm.PanelView');
 goog.require('cm.Presenter');
 goog.require('cm.SearchBox');
 goog.require('cm.ShareButton');
+goog.require('cm.TabPanelView');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
@@ -58,7 +59,7 @@ goog.require('goog.ui.Component');
  * @param {boolean} preview True if the map is being displayed as a preview.
  * @param {Element} mapWrapperElem The box around the map to resize.
  * @param {Element} footerElem The footer element.
- * @param {cm.PanelView} panelView The panel view.
+ * @param {cm.PanelView|cm.TabPanelView} panelView The panel view.
  * @param {Element} panelElem The panel element.
  * @param {Array.<cm.ExtraViewsPlugin>} extraViewsPlugins An array of
  *     cm.ExtraViewsPlugin instances to be set up by this method.
@@ -335,12 +336,18 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language) {
   if (config['show_login']) {
     new cm.LoginView(panelElem, config);
   }
-  var panelView = new cm.PanelView(
-      frameElem, panelElem, mapElem, mapModel, metadataModel, appState, config);
-  if (opt_menuItems && opt_menuItems.length &&
-      !config['draft_mode'] && !config['enable_editing']) {
-    panelView.enableMapPicker(new cm.MapPicker(panelView.getHeader(),
-                                               opt_menuItems));
+  var panelView;
+  if (config['use_tab_panel']) {
+    panelView = new cm.TabPanelView(frameElem, panelElem, mapElem, mapModel,
+                                    metadataModel, appState, config);
+  } else {
+    panelView = new cm.PanelView(frameElem, panelElem, mapElem, mapModel,
+                                 metadataModel, appState, config);
+  }
+  if (opt_menuItems && opt_menuItems.length && !config['draft_mode'] &&
+      !config['enable_editing'] && panelView.getHeader()) {
+      panelView.enableMapPicker(new cm.MapPicker(panelView.getHeader(),
+                                                 opt_menuItems));
   }
   var footerParams = {
     'publisher_name': config['publisher_name'],

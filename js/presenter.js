@@ -25,6 +25,7 @@ goog.require('cm.Analytics');
 goog.require('cm.AppState');
 goog.require('cm.MapView');
 goog.require('cm.PanelView');
+goog.require('cm.TabPanelView');
 goog.require('cm.events');
 goog.require('cm.ui');
 
@@ -36,7 +37,7 @@ goog.require('cm.ui');
  * and also logs those actions as Analytics events.
  * @param {cm.AppState} appState The application state model.
  * @param {cm.MapView} mapView The map view.
- * @param {cm.PanelView} panelView The panel view.
+ * @param {cm.PanelView|cm.TabPanelView} panelView The panel view.
  * @param {Element} panelElem The panel element.
  * @param {string} mapId The map ID, for logging with Analytics.
  * @constructor

@@ -55,8 +55,8 @@ cm.NavigationAndLogoPlugin.prototype.maybeBuildExtraViews =
  * in floating position. Adjust the positions of the NavigationView and LogoView
  * based on the other views and the viewport size.
  * @param {Element} container The box which we render inside.
- * @param {cm.PanelView|{setMaxHeight:function(?number)}} panelView The
- *     PanelView instance.
+ * @param {cm.PanelView|cm.TabPanelView|{setMaxHeight:function(?number)}}
+ *     panelView The PanelView instance.
  * @param {cm.PanelViewPosition} panelViewPosition The current layout state of
  *     the PanelView.
  * @param {Object.<string, cm.ExtraView>} extraViews The map of ExtraView short

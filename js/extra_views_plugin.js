@@ -76,7 +76,7 @@ cm.ExtraViewsPlugin.prototype.maybeBuildExtraViews =
  * sizeComponents() so most layout has already taken place and can just be
  * adjusted as needed.
  * @param {Element} container The box which we render inside.
- * @param {cm.PanelView} panelView The PanelView instance.
+ * @param {cm.PanelView|cm.TabPanelView} panelView The PanelView instance.
  * @param {cm.PanelViewPosition} panelViewPosition The current layout state
  *     of the PanelView.
  * @param {!Object.<string, cm.ExtraView>} extraViews The map of ExtraView
