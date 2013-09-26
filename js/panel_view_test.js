@@ -175,16 +175,16 @@ PanelViewTest.prototype.testRemoveLayer = function() {
 /** Tests the placement of the layers panel when it is opened. */
 PanelViewTest.prototype.testPanelOpen = function() {
   var parent = this.createView_();
-  var panelLayers = expectDescendantOf(parent, withClass('cm-panel-layers'));
+  var scroll = expectDescendantOf(parent, withClass('cm-panel-scroll'));
 
   parent.offsetWidth = 49;
   this.panelView_.setMaxHeight(500);
-  this.panelView_.panelLayersTop_.offsetTop = 100;  // for positionPanelLayers_
+  this.panelView_.scrollTop_.offsetTop = 100;  // for positionPanelScroll_
 
   cm.events.emit(parent, 'panelopen');
   expectEq(cm.css.OPEN, parent.className);
   expectEq(Math.round((500 - 49) / 2) + 'px', parent.style.left);
-  expectEq('400px', panelLayers.style.maxHeight);
+  expectEq('400px', scroll.style.maxHeight);
 
   // And if the container is wider than the body...
   parent.offsetWidth = 502;

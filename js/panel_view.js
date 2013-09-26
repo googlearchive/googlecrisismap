@@ -133,7 +133,13 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
    * @type Element
    * @private
    */
-  this.panelLayersTop_;
+  this.scroll_;
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.scrollTop_;
 
   /*
    * @type !Object
@@ -171,21 +177,24 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
                       'span', {'class': cm.css.DRAFT_INDICATOR,
                                'title': cm.MSG_DRAFT_TOOLTIP},
                       cm.MSG_DRAFT_LABEL) : null,
-                  this.titleElem_ = cm.ui.create('h1',
-                      {'class': cm.css.MAP_TITLE}),
-                  publisherName ? cm.ui.create('div',
-                      {'class': cm.css.MAP_PUBLISHER},
-                      cm.getMsgPublisherAttribution(publisherName)) : null),
+                  this.titleElem_ = cm.ui.create(
+                      'h1', {'class': cm.css.MAP_TITLE}),
+                  publisherName ? cm.ui.create(
+                      'div', {'class': cm.css.MAP_PUBLISHER},
+                      cm.getMsgPublisherAttribution(publisherName)) : null)),
+          this.scrollTop_ = cm.ui.create('div'),
+          this.scroll_ = cm.ui.create('div', {'class': cm.css.PANEL_SCROLL},
               this.descElem_ = cm.ui.create(
-                  'div', {'class': cm.css.MAP_DESCRIPTION})),
-          this.panelLinks_ = cm.ui.create('div', {'class': cm.css.PANEL_LINKS},
-              setDefaultViewLink = this.config_['enable_editing'] ?
-                  cm.ui.createLink(cm.MSG_SET_DEFAULT_VIEW_LINK) : null,
-              setDefaultViewLink && cm.ui.create('br'),
-              resetLink = cm.ui.createLink(cm.MSG_RESET_VIEW_LINK)),
-          this.panelLayersTop_ = cm.ui.create('div'),
-          this.panelLayers_ = cm.ui.create('div',
-              {'class': cm.css.PANEL_LAYERS})));
+                  'div', {'class': cm.css.MAP_DESCRIPTION}),
+              this.panelLinks_ = cm.ui.create(
+                  'div', {'class': cm.css.PANEL_LINKS},
+                  setDefaultViewLink = this.config_['enable_editing'] ?
+                      cm.ui.createLink(cm.MSG_SET_DEFAULT_VIEW_LINK) : null,
+                  setDefaultViewLink && cm.ui.create('br'),
+                  resetLink = cm.ui.createLink(cm.MSG_RESET_VIEW_LINK)),
+              this.panelLayers_ = cm.ui.create('div',
+                  {'class': cm.css.PANEL_LAYERS})
+          )));
   if (this.config_['hide_panel_header']) {
     this.panelHeader_.style.display = 'none';
     this.descElem_.style.display = 'none';
@@ -250,9 +259,9 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
   goog.array.forEach(layers.getArray(), this.addLayer_, this);
 
   // Listen to changes in the inner panel's height.
-  this.positionPanelLayers_();
+  this.positionPanelScroll_();
   cm.events.listen(this.panelInner_, goog.events.EventType.RESIZE,
-                   this.positionPanelLayers_, this);
+                   this.positionPanelScroll_, this);
 
   // Listen to the open/close events triggered on the layers panel container.
   cm.events.listen(parentElem, 'panelopen', this.open_, this);
@@ -267,17 +276,17 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
 cm.PanelView.prototype.setMaxHeight = function(height) {
   this.panelMaxHeight_ = height;
   this.parentElem_.style.maxHeight = height ? height + 'px' : '';
-  this.positionPanelLayers_();
+  this.positionPanelScroll_();
 };
 
 /**
  * Adjusts the top and maxHeight of the panel layers container.
  * @private
  */
-cm.PanelView.prototype.positionPanelLayers_ = function() {
-  this.panelLayers_.style.maxHeight = this.panelMaxHeight_ ?
-      (this.panelMaxHeight_ - this.panelLayersTop_.offsetTop) + 'px' : '';
-  this.panelLayers_.style.top = this.panelLayersTop_.offsetTop + 'px';
+cm.PanelView.prototype.positionPanelScroll_ = function() {
+  this.scroll_.style.maxHeight = this.panelMaxHeight_ ?
+      (this.panelMaxHeight_ - this.scrollTop_.offsetTop) + 'px' : '';
+  this.scroll_.style.top = this.scrollTop_.offsetTop + 'px';
 };
 
 /**
@@ -336,7 +345,7 @@ cm.PanelView.prototype.open_ = function() {
   this.parentElem_.style.left = Math.max(0, Math.round(x)) + 'px';
   // If the panel hasn't been displayed previously, this is its first
   // opportunity to measure its size and position the layer list accordingly.
-  this.positionPanelLayers_();
+  this.positionPanelScroll_();
 };
 
 /**
