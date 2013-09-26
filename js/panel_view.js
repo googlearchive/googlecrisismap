@@ -223,8 +223,10 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
   }
 
   // Reset to the default view of the map.
-  cm.events.forward(resetLink, 'click', goog.global,
-                    cm.events.RESET_VIEW, {model: model});
+  cm.events.listen(resetLink, 'click', function() {
+    cm.Analytics.logAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
+    cm.events.emit(goog.global, cm.events.RESET_VIEW, {model: this.model_});
+  }, this);
 
   // Open the property inspector on the map.
   cm.events.forward(this.titleElem_, 'click', goog.global,

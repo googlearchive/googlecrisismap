@@ -64,12 +64,15 @@ cm.ShareButton = function(map, appState, showFacebookButton,
   // causes the dialog box to "flicker")
   cm.events.listen(button, 'mousedown', function() {
     if (!this.popup_.isVisible()) {
+      cm.Analytics.logAction(cm.Analytics.MapAction.SHARE_TOGGLED_ON, null);
       goog.dom.classes.add(button, cm.css.SELECTED);
       cm.events.emit(goog.global, cm.events.SHARE_BUTTON);
       // TODO(kpy): Let the cm.Presenter open the cm.SharePopup, instead of
       // making the popup private to the cm.ShareButton.  This decoupling will
       // enable us to open the popup from other places, e.g. toolbar or panel.
       this.popup_.show();
+    } else {
+      cm.Analytics.logAction(cm.Analytics.MapAction.SHARE_TOGGLED_OFF, null);
     }
   }, this);
 
@@ -439,4 +442,3 @@ cm.ShareBox.prototype.setShareUrl_ = function(url, opt_shortUrl) {
 
 /** @const {string} URL for the goo.gl URL Shortener API. */
 cm.ShareBox.GOOGL_API_URL = 'https://www.googleapis.com/urlshortener/v1/url';
-

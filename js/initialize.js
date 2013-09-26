@@ -216,11 +216,14 @@ function installHtmlSanitizer(html) {
  *     title: The title to display in the menu.
  *     url: The URL to navigate to when the item is clicked.
  * @param {Object=} opt_config The configuration settings.
- * @param {string=} opt_mapName The (optional) map_name for Analytics logging.
+ * @param {string=} opt_unused Used to be the publication label for a map,
+ *     which differentiated between draft maps and published maps.  However,
+ *     it is now unused.  It should be removed outright, but chasing down the
+ *     callsites is non-trivial, so that was deferred.
  * @param {string} opt_language The (optional) BCP 47 language code.
  */
 function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
-                    opt_mapName, opt_language) {
+                    opt_unused, opt_language) {
   var config = opt_config || {};
 
   // Initialize the dynamic module loader and tell it how to find module URLs.
@@ -235,8 +238,7 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
     installHtmlSanitizer(html);
     // We need to defer buildUi until after sanitizer_module.js is loaded,
     // so we call buildUi inside this callback.
-    buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
-            opt_language);
+    buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language);
   });
 }
 
@@ -249,11 +251,9 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
  *     title: The title to display in the menu.
  *     url: The URL to navigate to when the item is clicked.
  * @param {Object=} opt_config The configuration settings.
- * @param {string=} opt_mapName The (optional) map_name for Analytics logging.
  * @param {string} opt_language The (optional) BCP 47 language code.
  */
-function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
-                 opt_language) {
+function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language) {
   var config = opt_config || {};
 
   // Create the AppState and the model; set up configuration flags.
@@ -273,10 +273,9 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
   cm.events.forward(mapModel, cm.events.MODEL_CHANGED, goog.global);
 
   // Set up Analytics.
-  cm.Analytics.initialize(config['analytics_id'] || '');
-  if (opt_mapName) {
-    cm.Analytics.logEvent('map', 'load', config['map_id'], embedded ? 1 : 0);
-  }
+  cm.Analytics.initialize(config['analytics_id'] || '',
+                          /** @type string */(mapModel.get('id')));
+  cm.Analytics.logAction(cm.Analytics.PassiveAction.PAGE_LOADED, null);
 
   // Create the DOM tree within the frame.
   var frameElem = (typeof frame == 'string') ? cm.ui.get(frame) : frame;
@@ -375,7 +374,7 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_mapName,
   // Create the Presenter and let it set up the view based on the model and URI.
   var presenter = new cm.Presenter(
       appState, mapView, panelView, panelElem, config['map_id'] || '');
-  presenter.resetView(mapModel, window.location, true);
+  presenter.resetView(mapModel, window.location);
 
   // If "#gz=..." is specified, get the user's geolocation and zoom to it.
   var match = window.location.hash.match('gz=([0-9]+)');

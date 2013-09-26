@@ -612,13 +612,21 @@ cm.MapView.prototype.updateVisibility_ = function() {
     var minZoom = layer.get('min_zoom'), maxZoom = layer.get('max_zoom');
 
     // Turn on the overlay if the layer is on and the zoom level is in range.
-    var visible = visibleLayerIds.contains(id) &&
+    var become_visible = visibleLayerIds.contains(id) &&
         !(goog.isNumber(minZoom) && zoom < minZoom) &&
         !(goog.isNumber(maxZoom) && zoom > maxZoom);
-    this.overlays_[id].setMap(visible ? this.map_ : null);
+    var is_visible = this.overlays_[id].getMap() != null;
+    if (become_visible && !is_visible) {
+      this.overlays_[id].setMap(this.map_);
+      cm.Analytics.logAction(cm.Analytics.PassiveAction.LAYER_DISPLAYED, id);
+    } else if (!become_visible && is_visible) {
+      this.overlays_[id].setMap(null);
+      cm.Analytics.logAction(cm.Analytics.PassiveAction.LAYER_HIDDEN, id);
+    }
+
 
     // Close the infowindow if its layer is turned off.
-    if (!visible && this.infoWindowLayerId_ == id) {
+    if (!become_visible && this.infoWindowLayerId_ == id) {
       this.infoWindow_.close();
       this.infoWindowLayerId_ = null;
     }
@@ -736,4 +744,3 @@ cm.MapView.prototype.zoomToLayer = function(id) {
 cm.MapView.prototype.setMapType_ = function(id, mapType) {
   this.map_.mapTypes.set(id, /** @type google.maps.MapType */(mapType));
 };
-

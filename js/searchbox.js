@@ -16,6 +16,7 @@
 goog.provide('cm.SearchBox');
 
 goog.require('cm');
+goog.require('cm.Analytics');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
@@ -125,8 +126,8 @@ cm.SearchBox.isStreetAddress_ = function(result) {
  * @private
  */
 cm.SearchBox.prototype.goToPlace_ = function(geometry, addMarker) {
-  cm.events.emit(goog.global, cm.events.LOCATION_SEARCH,
-                 {marker: addMarker});  // for analytics
+  cm.Analytics.logAction(
+      cm.Analytics.MapAction.SEARCH_QUERY_ENTERED, null, addMarker ? 1 : 0);
 
   if (geometry.viewport) {
     this.map_.fitBounds(geometry.viewport);

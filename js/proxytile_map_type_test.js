@@ -34,8 +34,8 @@ function ProxyTileMapTypeTest() {
   this.catcher = new TimeoutCatcher();
   this.setForTest_('goog.global.setTimeout',
                    goog.bind(this.catcher.setTimeout, this.catcher));
-  this.setForTest_('cm.Analytics.logEvent',
-                   function(category, action, label, value) {});
+  this.setForTest_('cm.Analytics.logAction',
+                   function(event, layerId, opt_value) {});
   this.setForTest_('cm.Analytics.logTime',
                    function(category, variable, time, label, value) {});
 }

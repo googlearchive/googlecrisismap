@@ -21,6 +21,13 @@ DEFAULT_MAP_TYPE_IDS = [google.maps.MapTypeId.ROADMAP,
                         google.maps.MapTypeId.HYBRID,
                         google.maps.MapTypeId.TERRAIN];
 
+// TODO(rew): This file needs a refactor - there are repeated calls
+// to set up a layer and add it to a map (see e.g. addOverlayKml), and
+// the endless expectations set for setMap() and getMap() just introduce
+// fragility.  The repeated code should be extracted to a helper function,
+// and the fragility should be removed by creating a map fake that just
+// tracks what the current correct value for set/getMap is.
+
 function MapViewTest() {
   cm.TestBase.call(this);
 
@@ -284,6 +291,7 @@ MapViewTest.prototype.addOverlayKml = function() {
       preserveViewport: true,
       suppressInfoWindows: true
   });
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -301,6 +309,7 @@ MapViewTest.prototype.addOverlayGeoRss = function() {
       preserveViewport: true,
       suppressInfoWindows: true
   });
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -318,6 +327,7 @@ MapViewTest.prototype.addOverlayFusionTables = function() {
     query: {select: 'icecream', from: 123, where: ''},
     suppressInfoWindows: true
   });
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -332,6 +342,7 @@ MapViewTest.prototype.addOverlayTile = function() {
   var overlay = this.expectNew_(
       'cm.TileOverlay', layerModel, this.map_,
       this.appState_, this.metadataModel_, this.config_);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false, this.config_);
@@ -343,6 +354,7 @@ MapViewTest.prototype.addOverlayTraffic = function() {
   this.stubReturnVisibleLayerIds_(['x']);
 
   var overlay = this.expectNew_('google.maps.TrafficLayer');
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -354,6 +366,7 @@ MapViewTest.prototype.addOverlayTransit = function() {
   this.stubReturnVisibleLayerIds_(['x']);
 
   var overlay = this.expectNew_('google.maps.TransitLayer');
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -370,6 +383,7 @@ MapViewTest.prototype.addOverlayWeather = function() {
     'temperatureUnits': 'c',
     'windSpeedUnits': 'kph'
   });
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -381,6 +395,7 @@ MapViewTest.prototype.addOverlayCloud = function() {
   this.stubReturnVisibleLayerIds_(['x']);
 
   var overlay = this.expectNew_('google.maps.weather.CloudLayer');
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -423,6 +438,7 @@ MapViewTest.prototype.addOverlayMapsEngineExternal = function() {
     layerId: 'igram',
     suppressInfoWindows: true
   });
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -448,6 +464,7 @@ MapViewTest.prototype.addOverlayMapsEngineExternalLegacyIdScheme = function() {
     layerId: 'word',
     suppressInfoWindows: true
   });
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -483,6 +500,7 @@ MapViewTest.prototype.addCacheBuster = function() {
       preserveViewport: _,
       suppressInfoWindows: _
   });
+  expectCall(overlay.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay.setMap)(null);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -502,6 +520,7 @@ MapViewTest.prototype.doNotAddCacheBuster = function() {
       preserveViewport: _,
       suppressInfoWindows: _
   });
+  expectCall(overlay.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay.setMap)(null);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -512,32 +531,37 @@ MapViewTest.prototype.propertiesChanged = function() {
   var model = this.addLayer_(
       {id: 'cotton-candy', type: cm.LayerModel.Type.KML, url: 'url'});
   var overlay = this.expectNew_('google.maps.KmlLayer', _);
+  expectCall(overlay.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay.setMap)(null);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
 
   // Change the URL
+  expectCall(overlay.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay.setMap)(null).times(2);
   model.set('url', 'newurl');
 
   // Change the layer type to a tile
   expectCall(overlay.setMap)(null);
   overlay = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
+  expectCall(overlay.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay.setMap)(null);
   model.set('type', cm.LayerModel.Type.TILE);
 
   // Change whether the URL is a tile index.
+  expectCall(overlay.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay.setMap)(null).times(2);
   model.set('url_is_tile_index', true);
 
   // Change the layer type to fusion.
   expectCall(overlay.setMap)(null);
   overlay = this.expectNew_('google.maps.FusionTablesLayer', _);
-  expectCall(overlay.setMap)(null);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   model.set('type', cm.LayerModel.Type.FUSION);
 
   // Change an FT query parameter.
-  expectCall(overlay.setMap)(null).times(2);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
+  expectCall(overlay.setMap)(null);
   model.set('ft_select', 'geometry');
 
   // Change the layer type to WEATHER.
@@ -548,7 +572,7 @@ MapViewTest.prototype.propertiesChanged = function() {
     'temperatureUnits': 'c',
     'windSpeedUnits': 'kph'
   });
-  expectCall(overlay.setMap)(null);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   model.set('type', cm.LayerModel.Type.WEATHER);
 
   // Change the label color.
@@ -559,7 +583,7 @@ MapViewTest.prototype.propertiesChanged = function() {
     'temperatureUnits': 'c',
     'windSpeedUnits': 'kph'
   });
-  expectCall(overlay.setMap)(null);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   model.set('label_color', cm.LayerModel.LabelColor.WHITE);
 
   // Change the temperature unit.
@@ -570,7 +594,7 @@ MapViewTest.prototype.propertiesChanged = function() {
     'temperatureUnits': 'f',
     'windSpeedUnits': 'kph'
   });
-  expectCall(overlay.setMap)(null);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   model.set('temperature_unit', cm.LayerModel.TemperatureUnit.FAHRENHEIT);
 
   // Change the wind speed unit.
@@ -581,7 +605,7 @@ MapViewTest.prototype.propertiesChanged = function() {
     'temperatureUnits': 'f',
     'windSpeedUnits': 'ms'
   });
-  expectCall(overlay.setMap)(null);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   model.set('wind_speed_unit', cm.LayerModel.WindSpeedUnit.METERS_PER_SECOND);
 };
 
@@ -596,10 +620,12 @@ MapViewTest.prototype.layersAddedEvent = function() {
   var layer1 = this.addLayer_({id: 'mango',
                               type: cm.LayerModel.Type.KML, url: 'url'});
   var overlay1 = this.expectNew_('google.maps.KmlLayer', _);
+  expectCall(overlay1.getMap)().willOnce(returnWith(null));
   expectCall(overlay1.setMap)(this.map_);
   var layer2 = this.addLayer_({id: 'banana',
                               type: cm.LayerModel.Type.TILE});
   var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
+  expectCall(overlay2.getMap)().willOnce(returnWith(null));
   expectCall(overlay2.setMap)(this.map_);
   this.stubReturnVisibleLayerIds_(['banana', 'mango']);
 
@@ -615,10 +641,12 @@ MapViewTest.prototype.layersRemovedEvent = function() {
   var layer1 = this.addLayer_({id: 'mango',
                               type: cm.LayerModel.Type.KML, url: 'url'});
   var overlay1 = this.expectNew_('google.maps.KmlLayer', _);
+  expectCall(overlay1.getMap)().willOnce(returnWith(null));
   expectCall(overlay1.setMap)(this.map_);
   var layer2 = this.addLayer_({id: 'banana',
                               type: cm.LayerModel.Type.TILE});
   var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
+  expectCall(overlay2.getMap)().willOnce(returnWith(null));
   expectCall(overlay2.setMap)(this.map_);
   this.stubReturnVisibleLayerIds_(['banana', 'mango']);
 
@@ -638,10 +666,10 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
   this.stubReturnVisibleLayerIds_(['bubble-gum']);
 
   var overlay = this.expectNew_('google.maps.KmlLayer', _);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
-
   // featureData is defined in KML events.
   var kmlEvent = {
     featureData: {infoWindowHtml: 'grossest ice cream ever'},
@@ -677,11 +705,12 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
  * Tests that clicking on an overlay with empty info window does not
  * open the info window.
  */
-MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
+MapViewTest.prototype.clickingEmptyOverlayDoesNotOpensInfoWindow = function() {
   this.addLayer_({id: 'bubble-gum', type: cm.LayerModel.Type.KML, url: 'url'});
   this.stubReturnVisibleLayerIds_(['bubble-gum']);
 
   var overlay = this.expectNew_('google.maps.KmlLayer', _);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   new cm.MapView(this.elem_, this.mapModel_, this.appState_,
                  this.metadataModel_, false);
@@ -713,7 +742,9 @@ MapViewTest.prototype.updateVisibility = function() {
   // ...expect two layers to be created and added to the map...
   var overlay1 = this.expectNew_('google.maps.KmlLayer', _);
   var overlay2 = this.expectNew_('google.maps.TrafficLayer');
+  expectCall(overlay1.getMap)().willOnce(returnWith(null));
   expectCall(overlay1.setMap)(this.map_);
+  expectCall(overlay2.getMap)().willOnce(returnWith(null));
   expectCall(overlay2.setMap)(this.map_);
 
   // ...when a new cm.MapView is created.
@@ -721,7 +752,9 @@ MapViewTest.prototype.updateVisibility = function() {
                  this.metadataModel_, false);
 
   // Then expect both layers to be removed from the map...
+  expectCall(overlay1.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay1.setMap)(null);
+  expectCall(overlay2.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay2.setMap)(null);
 
   // ...when both layers are turned off.
@@ -744,7 +777,9 @@ MapViewTest.prototype.infoWindowClosesWhenLayerTurnedOff = function() {
   // ...expect two layers to be created and added to the map...
   var overlay1 = this.expectNew_('google.maps.TransitLayer');
   var overlay2 = this.expectNew_('cm.TileOverlay', _, _, _, _, _);
+  expectCall(overlay1.getMap)().willOnce(returnWith(null));
   expectCall(overlay1.setMap)(this.map_);
+  expectCall(overlay2.getMap)().willOnce(returnWith(null));
   expectCall(overlay2.setMap)(this.map_);
 
   // ...when a new cm.MapView is created.
@@ -759,7 +794,8 @@ MapViewTest.prototype.infoWindowClosesWhenLayerTurnedOff = function() {
 
   // Expect cookies-and-cream to disappear from the map, but do not expect
   // the InfoWindow to be closed...
-  expectCall(overlay1.setMap)(this.map_);
+  expectCall(overlay1.getMap)().willOnce(returnWith(this.map_));
+  expectCall(overlay2.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay2.setMap)(null);
 
   // ...when cookies-and-cream is turned off.
@@ -768,7 +804,9 @@ MapViewTest.prototype.infoWindowClosesWhenLayerTurnedOff = function() {
 
   // Expect neither layer to be shown on the map, and expect the InfoWindow
   // to be closed...
+  expectCall(overlay1.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay1.setMap)(null);
+  expectCall(overlay2.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay2.setMap)(null);
   expectCall(this.infoWindow_.close)();
 
@@ -800,6 +838,7 @@ MapViewTest.prototype.zoomToKMLLayerModelViewport = function() {
     preserveViewport: true,
     suppressInfoWindows: true
   });
+  expectCall(overlay.getMap)().willRepeatedly(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -828,6 +867,7 @@ MapViewTest.prototype.zoomToGeoRSSLayerModelViewport = function() {
   this.stubReturnVisibleLayerIds_(['guava']);
 
   var overlay = this.expectNew_('google.maps.KmlLayer', _);
+  expectCall(overlay.getMap)().willRepeatedly(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -856,6 +896,7 @@ MapViewTest.prototype.zoomToLayerDefaultViewport = function() {
   this.stubReturnVisibleLayerIds_(['chocolate']);
 
   var overlay = this.expectNew_('google.maps.KmlLayer', _);
+  expectCall(overlay.getMap)().willRepeatedly(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -885,6 +926,7 @@ MapViewTest.prototype.zoomToLayerDefaultViewportNotInitialized =
 
   // Expect one overlay to be created and added to the map...
   var overlay = this.expectNew_('google.maps.KmlLayer', _);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
 
   // When a new cm.MapView is created.
@@ -917,6 +959,7 @@ MapViewTest.prototype.zoomToLayerModelViewport = function() {
   this.stubReturnVisibleLayerIds_(['chocolate']);
 
   var overlay = this.expectNew_('google.maps.TrafficLayer');
+  expectCall(overlay.getMap)().willRepeatedly(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -950,6 +993,7 @@ MapViewTest.prototype.zoomToLayerFullExtent = function() {
   this.stubReturnVisibleLayerIds_(['chocolate']);
 
   var overlay = this.expectNew_('google.maps.TrafficLayer');
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
@@ -971,24 +1015,28 @@ MapViewTest.prototype.layerMinMaxZoom = function() {
 
   // The map initializes at zoom level 0, at which the layer isn't visible.
   var overlay = this.expectNew_('google.maps.TrafficLayer');
-  expectCall(overlay.setMap)(null);
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
 
   var mapView = new cm.MapView(
       this.elem_, this.mapModel_, this.appState_, this.metadataModel_, false);
 
   // The layer should be visible at zoom level 5.
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   mapView.set('zoom', 5);
 
   // Zoom out to level 4.  The overlay should disappear.
+  expectCall(overlay.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay.setMap)(null);
   mapView.set('zoom', 4);
 
   // Zoom in to level 8.  The overlay should appear.
+  expectCall(overlay.getMap)().willOnce(returnWith(null));
   expectCall(overlay.setMap)(this.map_);
   mapView.set('zoom', 8);
 
   // Zoom in to level 9.  The overlay should disappear.
+  expectCall(overlay.getMap)().willOnce(returnWith(this.map_));
   expectCall(overlay.setMap)(null);
   mapView.set('zoom', 9);
 };

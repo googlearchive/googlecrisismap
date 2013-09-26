@@ -16,6 +16,7 @@
 goog.provide('cm.TileOverlay');
 
 goog.require('cm');
+goog.require('cm.Analytics');
 goog.require('cm.AppState');
 goog.require('cm.LatLonBox');
 goog.require('cm.LayerModel');
@@ -623,6 +624,8 @@ cm.TileOverlay.prototype.setMap = function(map) {
     // Only push the overlay if initialize_() succeeded.
     if (this.initDone_) {
       this.map_.overlayMapTypes.push(mapType);
+      cm.Analytics.logAction(cm.Analytics.PassiveAction.LAYER_DISPLAYED,
+                             /** @type {string} */(this.layer_.get('id')));
     }
   } else if (!map && this.onMap_) {
     var index = null;
@@ -635,6 +638,8 @@ cm.TileOverlay.prototype.setMap = function(map) {
       this.map_.overlayMapTypes.removeAt(
           /** @type {number} */ (index));
     }
+    cm.Analytics.logAction(cm.Analytics.PassiveAction.LAYER_HIDDEN,
+                           /** @type {string} */(this.layer_.get('id')));
   }
   if (this.outline_) {
     this.outline_.setMap(map);

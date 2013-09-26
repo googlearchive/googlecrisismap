@@ -16,6 +16,7 @@
 goog.provide('cm.LayerEntryView');
 
 goog.require('cm');
+goog.require('cm.Analytics');
 goog.require('cm.AppState');
 goog.require('cm.LayerModel');
 goog.require('cm.MetadataModel');
@@ -333,6 +334,10 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
     // the 'click' event occurs, so we have to read .checked asynchronously.
     goog.global.setTimeout(goog.bind(function() {
       var value = this.checkboxElem_.checked;
+      cm.Analytics.logAction(
+          value ? cm.Analytics.LayersPanelAction.TOGGLED_ON :
+              cm.Analytics.LayersPanelAction.TOGGLED_OFF,
+          id);
       cm.events.emit(this, cm.events.TOGGLE_LAYER, {id: id, value: value});
     }, this), 0);
   }, this);
@@ -344,8 +349,10 @@ cm.LayerEntryView = function(parentElem, model, metadataModel,
   cm.events.onChange(
       model, ['min_zoom', 'max_zoom'], this.updateFade_, this);
 
-  cm.events.forward(zoomLink, 'click', this,
-                    cm.events.ZOOM_TO_LAYER, {id: id});
+  cm.events.listen(zoomLink, 'click', function() {
+    cm.Analytics.logAction(cm.Analytics.LayersPanelAction.ZOOM_TO_AREA, id);
+    cm.events.emit(this, cm.events.ZOOM_TO_LAYER, {id: id});
+  }, this);
   if (editLink) {
     cm.events.forward(editLink, 'click', goog.global,
                       cm.events.INSPECT, {object: model});

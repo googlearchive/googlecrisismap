@@ -15,6 +15,7 @@
  */
 goog.provide('cm.MyLocationButton');
 
+goog.require('cm.Analytics');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
@@ -38,6 +39,7 @@ cm.MyLocationButton = function(map) {
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(button);
 
   cm.events.listen(button, 'click', function() {
+    cm.Analytics.logAction(cm.Analytics.MapAction.MY_LOCATION_CLICKED, null);
     cm.events.emit(goog.global, cm.events.GO_TO_MY_LOCATION);
   }, this);
 };

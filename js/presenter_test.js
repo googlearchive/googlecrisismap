@@ -34,46 +34,9 @@ function PresenterTest() {
   this.panelElem_ = new FakeElement('div');
   this.presenter_ = new cm.Presenter(
       this.appState_, this.mapView_, this.panelView_, this.panelElem_, 'map1');
-
-  var events = [];
-  this.events_ = events;
-  this.setForTest_('cm.Analytics.logEvent',
-                   function(category, action, label, value) {
-    events.push([category, action, label, value]);
-  });
 }
 PresenterTest.prototype = new cm.TestBase();
 registerTestSuite(PresenterTest);
-
-/** Tests that opening/closing the panel logs the correct Analytics events. */
-PresenterTest.prototype.openClosePanel = function() {
-  cm.events.emit(this.panelElem_, 'panelopen');
-  expectEq([['panel', 'open', 'map1', 1]], this.events_);
-
-  this.events_.splice(0, this.events_.length);  // clear the array in place
-  cm.events.emit(this.panelElem_, 'panelclose');
-  expectEq([['panel', 'close', 'map1', 0]], this.events_);
-};
-
-/** Tests that the resetView method sends the correct Analytics events. */
-PresenterTest.prototype.resetView = function() {
-  expectCall(this.mapView_.matchViewport)(_);
-  this.presenter_.resetView(this.mapModel_);
-  expectEq([['layer', 'reset_on', 'map1.layer1', 1]], this.events_);
-
-  this.events_.splice(0, this.events_.length);  // clear the array in place
-  this.appState_.setLayerEnabled('layer1', false);
-  this.appState_.setLayerEnabled('layer2', true);
-  expectCall(this.mapView_.matchViewport)(_);
-  this.presenter_.resetView(this.mapModel_);
-  expectEq([['layer', 'reset_on', 'map1.layer1', 1],
-            ['layer', 'reset_off', 'map1.layer2', 0]], this.events_);
-
-  this.events_.splice(0, this.events_.length);  // clear the array in place
-  expectCall(this.mapView_.matchViewport)(_);
-  this.presenter_.resetView(this.mapModel_, '', true);
-  expectEq([['layer', 'load_on', 'map1.layer1', 1]], this.events_);
-};
 
 /** Tests that zoomToUserLocation sets the map view correctly. */
 PresenterTest.prototype.zoomToUserLocation = function() {

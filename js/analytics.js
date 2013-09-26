@@ -37,12 +37,102 @@ var _gaq = _gaq || [];  // Google Analytics command queue
 cm.Analytics = function() { };
 
 /**
- * Initialize Google Analytics.
- * @param {string=} opt_analyticsId The Analytics account ID that should be
- *     associated with this logged session.
+ * Permissible action categories; these essentially record the kind of page
+ * the user is visiting.
+ * @enum {string}
  */
-cm.Analytics.initialize = function(opt_analyticsId) {
-  var analyticsId = opt_analyticsId || DEFAULT_ANALYTICS_ID;
+cm.Analytics.Category = {
+  DRAFT_MAP: 'Draft map',
+  PUBLISHED_MAP: 'Published map'
+};
+
+/**
+ * Separator for concatenated strings like uiElement + uiEvent and
+ * map ID + layer ID.
+ * @private
+ * @type {string}
+ */
+cm.Analytics.SEPARATOR_ = ' - ';
+
+/**
+ * Prepends the uiElement on all the event strings.
+ * @private
+ * @param {string} uiElement The UI element where these events are taking place.
+ * @param {Object.<string, string>} uiEvents The mapping of symbolic constants
+ *   to event strings; the event strings are the ones being prepended.
+ * @return {Object.<string, string>} A new dictionary where the event strings
+ *   from uiEvents have been prepended with the uiElement.
+ */
+cm.Analytics.prependUiElement_ = function(uiElement, uiEvents) {
+  var actions = {};
+  for (var event in uiEvents) {
+    actions[event] = uiElement + cm.Analytics.SEPARATOR_ + uiEvents[event];
+  }
+  return actions;
+};
+
+/**
+ * CrisisMap actions concatenate the name of the UI element being manipulated
+ * and the precise manipulation, so for instance 'Map - Displayed' or
+ * 'Layer - Selected'.  The enums that follow list the actions by their
+ * associated UI.
+ *
+ * Naming guidelines - Action strings should read like English and include a
+ * verb in the past tense.  For user events, they should accurately describe
+ * the user's actions - link clicked, checkbox toggled, etc.  Passive events
+ * should avoid words that are suggestive of UI actions. In particular, use
+ * "revealed" and "hidden" for the passive events, not the more active "opened"
+ *  and "closed."
+ *
+ * Use sentence-case, capitalize proper nouns, and fully capitalize acronyms.
+ * Do not repeat the name of the UI element; that will be concatenated
+ * automatically.  Remove articles (the, a, an).  The name of the constant is
+ * looser - concatenate the important words from the english description with
+ * underlines in between.
+ */
+
+/** @type {Object.<string, string>} */
+cm.Analytics.LayersPanelAction = cm.Analytics.prependUiElement_(
+    'Layers panel', {
+      TOGGLED_OFF: 'Layer checkbox toggled off',
+      TOGGLED_ON: 'Layer checkbox toggled on',
+      VIEW_RESET: '"View reset" clicked',
+      ZOOM_TO_AREA: 'Layer "Zoom to area" clicked'
+    });
+
+/** @type {Object.<string, string>} */
+cm.Analytics.MapAction = cm.Analytics.prependUiElement_('Map', {
+  LAYERS_PANEL_TOGGLED_ON: 'Layers panel button toggled on',
+  LAYERS_PANEL_TOGGLED_OFF: 'Layers panel button toggled off',
+  MY_LOCATION_CLICKED: 'My location button clicked',
+  SEARCH_QUERY_ENTERED: 'Search query entered',
+  SHARE_TOGGLED_OFF: 'Share button toggled off',
+  SHARE_TOGGLED_ON: 'Share button toggled on'
+});
+
+/** @type {Object.<string, string>} */
+cm.Analytics.PassiveAction = cm.Analytics.prependUiElement_('Passive', {
+  LAYER_DISPLAYED: 'Layer displayed',  // Not working after first load
+  LAYER_HIDDEN: 'Layer hidden',   // Not working
+  PAGE_LOADED: 'Page loaded'
+});
+
+/**
+ * The ID of the map currently being viewed/edited; set in initialize().
+ * @private
+ * @type {(string|null)}
+ */
+cm.Analytics.currentMapId_ = null;
+
+/**
+ * Initialize Google Analytics.
+ * @param {string} analyticsId The Analytics account ID that should be
+ *     associated with this logged session.
+ * @param {string} mapId The ID of the map being viewed/edited.
+ */
+cm.Analytics.initialize = function(analyticsId, mapId) {
+  analyticsId = analyticsId || DEFAULT_ANALYTICS_ID;
+  cm.Analytics.currentMapId_ = mapId;
   _gaq.push(['_setAccount', analyticsId]);
   _gaq.push(['_trackPageview']);
 
@@ -57,20 +147,43 @@ cm.Analytics.initialize = function(opt_analyticsId) {
 
 
 /**
- * Push an event onto the analytics command queue.
- * @param {string} category A short string identifying the event category
- *     (usually a noun for the object or category of object that was affected,
- *     e.g. "layer").  Our convention is to use lowercase_with_underscores.
- * @param {string} action A short string identifying the user action to be
- *     logged (usually a verb or verb phrase, e.g. "toggle_on").
- *     Our convention is to use lowercase_with_underscores.
- * @param {string=} opt_label An optional more specific label (usually a unique
- *     programmatic ID, e.g. map ID, layer ID, URL, e-mail address, etc.).
+ * Returns the correct category for the given action.
+ * @param {string} action The action being logged; should be a member of one
+ *     of the cm.Analytics.FooAction lists above.
+ * @return {string} The category.
+ * @private
+ */
+cm.Analytics.categoryForAction_ = function(action) {
+  // TODO(rew): this needs to become more sophisticated when we
+  // track DRAFT_MAP v PUBLISHED_MAP
+  return cm.Analytics.Category.PUBLISHED_MAP;
+};
+
+/**
+ * Push an action onto the analytics command queue.
+ * @param {string} action A string identifying the user action; taken from
+ *     the correct cm.Analytics.<UI Element>Action list, above.
+ * @param {?string} layerId  The ID of a layer associated with
+ *     the action.  If no layer is associated with the action, pass null.
  * @param {number=} opt_value An optional numeric value for the event (Analytics
  *     will compute sums and averages of these values).
  */
-cm.Analytics.logEvent = function(category, action, opt_label, opt_value) {
-  _gaq.push(['_trackEvent', category, action, opt_label, opt_value]);
+cm.Analytics.logAction = function(action, layerId, opt_value) {
+  if (layerId) {
+    _gaq.push(['_setCustomVar', 1, 'Layer ID',
+               cm.Analytics.currentMapId_ + cm.Analytics.SEPARATOR_ + layerId,
+               3]);
+  }
+  _gaq.push(['_trackEvent', cm.Analytics.categoryForAction_(action), action,
+             cm.Analytics.currentMapId_, opt_value,
+             (action in cm.Analytics.PassiveAction)]);
+  if (layerId) {
+    // Best practices per the Analytics team - clear custom variables
+    // that are tied to events immediately after the event has been
+    // pushed.  This avoids them being inadvertently carried on other
+    // events.
+    _gaq.push(['_setCustomVar', 1, 'Layer ID', null, 3]);
+  }
 };
 
 /**
