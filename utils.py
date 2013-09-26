@@ -67,6 +67,12 @@ def GetUserDomain(user):
   return user and user.email().split('@')[-1]
 
 
+def GetCurrentUserId():
+  """Gets the user's numeric ID, or None if no user is signed in."""
+  user = users.get_current_user()
+  return user and user.user_id()
+
+
 def GetCurrentUserEmail():
   """Gets the user's normalized address, or '' if no user is signed in."""
   user = users.get_current_user()

@@ -9,8 +9,9 @@
 # OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 # specific language governing permissions and limitations under the License.
 
-"""Storage for user preferences and action history."""
+"""Storage for application-wide event logs."""
 
+import datetime
 import logging
 import utils
 
@@ -18,20 +19,23 @@ from google.appengine.ext import db
 
 __author__ = 'romano@google.com (Raquel Romano)'
 
-# User actions to log.
-# Action is capitalized like an enum class.  # pylint: disable=g-bad-name
-Action = utils.Struct(
-    CREATE='CREATE',
-    DELETE='DELETE',
-    PUBLISH='PUBLISH',
+# Events to log.
+# Event is capitalized like an enum class.  # pylint: disable=g-bad-name
+Event = utils.Struct(
+    DOMAIN_CREATED='DOMAIN_CREATED',
+    MAP_CREATED='MAP_CREATED',
+    MAP_DELETED='MAP_DELETED',
+    MAP_PUBLISHED='MAP_PUBLISHED',
+    MAP_UNPUBLISHED='MAP_UNPUBLISHED'
 )
 
 
-class UserActionLog(db.Model):
-  """Information about a user action."""
-  time = db.DateTimeProperty(auto_now_add=True)
-  user = db.UserProperty(auto_current_user_add=True)
-  action = db.StringProperty(required=True, choices=list(Action))
+class EventLog(db.Model):
+  """Information about an interesting event."""
+  time = db.DateTimeProperty()
+  user_id = db.StringProperty()
+  event = db.StringProperty(required=True, choices=list(Event))
+  domain_name = db.StringProperty()
   map_id = db.StringProperty()
   map_version_key = db.StringProperty()
   catalog_entry_key = db.StringProperty()
@@ -39,16 +43,21 @@ class UserActionLog(db.Model):
   acceptable_org = db.BooleanProperty(default=False)
   org_name = db.StringProperty()
 
-  @staticmethod
-  def Log(action, map_id=None, map_version_key=None, catalog_entry_key=None,
-          acceptable_purpose=None, acceptable_org=None, org_name=None):
-    """Stores a user action log entry."""
-    try:
-      UserActionLog(action=action, map_id=map_id,
-                    map_version_key=map_version_key,
-                    catalog_entry_key=catalog_entry_key,
-                    acceptable_purpose=acceptable_purpose,
-                    acceptable_org=acceptable_org,
-                    org_name=org_name).put()
-    except Exception, e:  # pylint: disable=broad-except
-      logging.exception(e)
+
+def RecordEvent(event, domain_name=None, map_id=None, map_version_key=None,
+                catalog_entry_key=None, acceptable_purpose=None,
+                acceptable_org=None, org_name=None, user_id=None):
+  """Stores an event log entry."""
+  try:
+    EventLog(time=datetime.datetime.utcnow(),
+             user_id=user_id or utils.GetCurrentUserId(),
+             event=event,
+             domain_name=domain_name,
+             map_id=map_id,
+             map_version_key=map_version_key,
+             catalog_entry_key=catalog_entry_key,
+             acceptable_purpose=acceptable_purpose,
+             acceptable_org=acceptable_org,
+             org_name=org_name).put()
+  except Exception, e:  # pylint: disable=broad-except
+    logging.exception(e)

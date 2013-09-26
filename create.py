@@ -28,8 +28,10 @@ class Create(base_handler.BaseHandler):
     """Creates a new map."""
     map_object = model.Map.Create('{"title": "Untitled map"}', domain)
     acceptable_org = bool(self.request.get('acceptable_org'))
-    logs.UserActionLog.Log(
-        logs.Action.CREATE, map_id=map_object.id,
+    logs.RecordEvent(
+        logs.Event.MAP_CREATED,
+        domain_name=domain,
+        map_id=map_object.id,
         acceptable_purpose=bool(self.request.get('acceptable_purpose')),
         acceptable_org=acceptable_org,
         org_name=acceptable_org and self.request.get('organization') or '')
