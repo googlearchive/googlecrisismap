@@ -353,12 +353,10 @@ class MapList(base_handler.BaseHandler):
   def Get(self, user, domain=None):  # pylint: disable=g-bad-name
     """Produces the map listing page."""
     maps = list(model.Map.GetViewable(user, domain))
-    creator_domains = perms.GetDomainsWithRole(perms.Role.MAP_CREATOR)
     catalog_domains = perms.GetDomainsWithRole(perms.Role.CATALOG_EDITOR)
     title = 'Maps for all domains'
     if domain:
       title = 'Maps for %s' % domain
-      creator_domains = [domain]
 
     # Attach to each Map a 'catalog_entries' attribute with a list of the
     # CatalogEntry objects that link to that Map.
@@ -371,7 +369,6 @@ class MapList(base_handler.BaseHandler):
     self.response.out.write(self.RenderTemplate('map_list.html', {
         'title': title,
         'maps': maps,
-        'creator_domains': creator_domains,
         'catalog_domains': catalog_domains,
         'profile': profiles.Profile.Get(user)
     }))

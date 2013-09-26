@@ -44,6 +44,24 @@ specific language governing permissions and limitations under the License.
   <div class="cm-navbar">
     {# Left sidebar #}
     {% block navbar %}
+    {% include "create.html" %}
+    <div class="cm-button-area">
+      <form>
+        {% if navbar.creator_domains|length > 1 %}
+          <select id="domain" style="margin-bottom:6px;">
+            {% for domain in navbar.creator_domains %}
+              <option value="{{domain}}">{{domain}}</option>
+            {% endfor %}
+          </select>
+        {% else %}
+          {% if navbar.creator_domains %}
+            <input type="hidden" id="domain" value="{{navbar.creator_domains.0}}">
+          {% endif %}
+        {% endif %}
+        <input type="button" class="cm-create cm-button" onclick="showCreatePopup()"
+               title="Create a new map" value="Create map">
+      </form>
+    </div>
     <ul>
       {# Navigation links #}
       {% block navlinks %}

@@ -199,6 +199,7 @@ class BaseHandler(webapp2.RequestHandler):
         'user_domain': domain_name,
         'admin_domains': perms.GetDomains(email, perms.Role.DOMAIN_ADMIN),
         'catalog_domains': perms.GetDomains(email, perms.Role.CATALOG_EDITOR),
+        'creator_domains': perms.GetDomainsWithRole(perms.Role.MAP_CREATOR),
         'add_domain_create_link': domains.Domain.Get(domain_name) is None,
         'is_admin': perms.CheckAccess(perms.Role.ADMIN, perms.GLOBAL_TARGET),
     }
