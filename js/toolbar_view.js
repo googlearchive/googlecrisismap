@@ -79,6 +79,19 @@ var HELP_LINK_URL = 'https://docs.google.com/document/d/' +
  */
 cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
     touch, opt_diffUrl) {
+  var shareEmailLink = cm.ui.createLink(MSG_SHARE_EMAIL_LINK);
+  cm.events.forward(shareEmailLink, 'click',
+                    goog.global, cm.events.SHARE_EMAIL);
+
+  // TODO(romano): move the toolbars into the inner panel element, which
+  // contains the collapse button, map title, description, and layers.
+  var toolbarElem = cm.ui.create('div', {'class': cm.css.TOOLBAR},
+      cm.ui.createLink(MSG_BACK_TO_MAP_LIST, mapListUrl),
+      cm.ui.SEPARATOR_DOT, shareEmailLink);
+
+  var helpLink = cm.ui.createLink(MSG_HELP_LINK, HELP_LINK_URL, '_blank');
+  cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, helpLink);
+
   // Initially, neither the undo nor the redo operation can be done.
   var undoLink = cm.ui.createLink('Undo');
   var redoLink = cm.ui.createLink('Redo');
@@ -96,34 +109,12 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
       goog.dom.classes.enable(redoLink, cm.css.DISABLED, !e.redo_possible);
   }, this);
 
-  var toolbarElem = cm.ui.create('div', {'class': cm.css.TOOLBAR});
-  var backToMapsLink = cm.ui.createLink(MSG_BACK_TO_MAP_LIST, mapListUrl);
-  cm.ui.append(toolbarElem, backToMapsLink, cm.ui.SEPARATOR_DOT,
-               undoLink, cm.ui.SEPARATOR_DOT, redoLink, cm.ui.SEPARATOR_DOT);
-
-  if (!touch) {
-    var arrangeLink = cm.ui.createLink(MSG_ARRANGE_LAYERS_LINK);
-    cm.ui.append(toolbarElem, arrangeLink, cm.ui.SEPARATOR_DOT);
-    cm.events.forward(arrangeLink, 'click', goog.global, cm.events.ARRANGE);
-  }
-
-  var addNewLayerLink = cm.ui.createLink(MSG_ADD_NEW_LAYERS);
-  cm.events.forward(addNewLayerLink, 'click', goog.global,
-      cm.events.IMPORT);
-  cm.ui.append(toolbarElem, addNewLayerLink, cm.ui.SEPARATOR_DOT);
-
-  // TODO(joeysilva): Use INSPECT event to create new folders by using a type
-  // FOLDER argument.
-  var addNewFolderLink = cm.ui.createLink(MSG_ADD_NEW_FOLDER);
-  cm.events.forward(
-      addNewFolderLink, 'click', goog.global, cm.events.ADD_LAYERS, {
-        layers: [{title: MSG_UNTITLED_FOLDER, type: cm.LayerModel.Type.FOLDER}]
-      });
-  cm.ui.append(toolbarElem, addNewFolderLink);
+  var editToolbarElem = cm.ui.create('div', {'class': cm.css.EDIT_TOOLBAR},
+      undoLink, cm.ui.SEPARATOR_DOT, redoLink);
 
   if (enableSave) {
     var saveLink = cm.ui.createLink('Saved');
-    cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, saveLink);
+    cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT, saveLink);
 
     // The "Save" link is initially disabled. Changing the model enables it.
     goog.dom.classes.add(saveLink, cm.css.DISABLED);
@@ -163,22 +154,37 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
         return MSG_UNSAVED_CHANGES;
       }
     };
+  }
 
-    var shareEmailLink = cm.ui.createLink(MSG_SHARE_EMAIL_LINK);
-    cm.events.forward(shareEmailLink, 'click',
-                      goog.global, cm.events.SHARE_EMAIL);
-    cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, shareEmailLink);
+  var addNewLayerLink = cm.ui.createLink(MSG_ADD_NEW_LAYERS);
+  cm.events.forward(addNewLayerLink, 'click', goog.global,
+      cm.events.IMPORT);
+  cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT,
+               addNewLayerLink, cm.ui.SEPARATOR_DOT);
+
+  // TODO(joeysilva): Use INSPECT event to create new folders by using a type
+  // FOLDER argument.
+  var addNewFolderLink = cm.ui.createLink(MSG_ADD_NEW_FOLDER);
+  cm.events.forward(
+      addNewFolderLink, 'click', goog.global, cm.events.ADD_LAYERS, {
+        layers: [{title: MSG_UNTITLED_FOLDER, type: cm.LayerModel.Type.FOLDER}]
+      });
+  cm.ui.append(editToolbarElem, addNewFolderLink, cm.ui.SEPARATOR_DOT);
+
+  if (!touch) {
+    var arrangeLink = cm.ui.createLink(MSG_ARRANGE_LAYERS_LINK);
+    cm.events.forward(arrangeLink, 'click', goog.global, cm.events.ARRANGE);
+    cm.ui.append(editToolbarElem, arrangeLink);
   }
 
   if (devMode) {
     var diffJsonLink = cm.ui.createLink(opt_diffUrl ? 'Diff' : 'Show JSON');
-    cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, diffJsonLink);
     cm.events.listen(diffJsonLink, 'click', goog.bind(
         this.handleDiffJsonClick_, this, mapModel, opt_diffUrl));
+    cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT, diffJsonLink);
   }
 
-  var helpLink = cm.ui.createLink(MSG_HELP_LINK, HELP_LINK_URL, '_blank');
-  cm.ui.append(toolbarElem, cm.ui.SEPARATOR_DOT, helpLink);
+  toolbarElem.appendChild(editToolbarElem);
   parentElem.appendChild(toolbarElem);
 };
 

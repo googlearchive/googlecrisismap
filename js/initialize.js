@@ -52,10 +52,11 @@ goog.require('goog.ui.Component');
  * @param {boolean} preview True if the map is being displayed as a preview.
  * @param {Element} mapWrapperElem The box around the map to resize.
  * @param {Element} footerElem The footer element.
+ * @param {cm.PanelView} panelView The panel view.
  * @param {Element} panelElem The panel element.
  */
 function sizeComponents(map, container, searchbox, embedded, touch, preview,
-                        mapWrapperElem, footerElem, panelElem) {
+                        mapWrapperElem, footerElem, panelView, panelElem) {
 
   /**
    * Returns the value of the given style property for an element.  Assumes the
@@ -101,25 +102,28 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
 
   goog.dom.classes.enable(container, cm.css.TOUCH, touch);
 
-  var embed_action = embedded ||
-      container.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
-  if (!embed_action) {
+  // The panel can be in docked, floating, or embedded (i.e. hidden under a
+  // button) mode.  When the window width is small, embedded mode is forced.
+  embedded = embedded || container.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
+  if (!embedded) {
     cm.events.emit(panelElem, 'panelclose');
   }
-  goog.dom.classes.enable(container, cm.css.EMBEDDED, embed_action);
+  goog.dom.classes.enable(container, cm.css.EMBEDDED, embedded);
+  var floating = goog.dom.classes.has(container, cm.css.PANEL_FLOAT);
+  goog.dom.classes.enable(container, cm.css.PANEL_DOCK, !embedded && !floating);
 
   mapWrapperElem.style.height = getMapHeight() + 'px';
 
-  // In floating mode, the panel has variable height based on its content,
-  // but we need to limit its maximum height to fit over the map.
-  var panelFloat = goog.dom.classes.has(container, cm.css.PANEL_FLOAT);
+  // In floating or embedded mode, the panel has variable height based on its
+  // content, but we need to limit its maximum height to fit over the map.
   var floatMaxHeight = getMapHeight() - 10;  // allow 5px top and bottom margin
-  panelElem.style.maxHeight = panelFloat ? floatMaxHeight + 'px' : '';
+  panelView.updatePanelPositionAndSize(embedded || floating ?
+      floatMaxHeight : null);
 
   // TODO(kpy): Rework this value.  The relevant Maps API bug, which hid the
   // searchbox behind other controls, has since been fixed.
   var uncoveredMapWidth =
-      mapWrapperElem.offsetWidth - (panelFloat ? panelElem.offsetWidth : 0);
+      mapWrapperElem.offsetWidth - (floating ? panelElem.offsetWidth : 0);
   if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX || preview) {
     searchbox.hide();
   } else {
@@ -271,13 +275,13 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
   // Lay out the UI components.  This needs to happen (in order to determine
   // the size of the map's DOM element) before we set up the viewport.
   sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
-                 preview, mapWrapperElem, footerElem, panelElem);
+                 preview, mapWrapperElem, footerElem, panelView, panelElem);
   // We readjust the layout whenever the ViewportSizeMonitor detects that the
   // window resized, and also when anything emits 'resize' on goog.global.
   cm.events.forward(new goog.dom.ViewportSizeMonitor(), 'resize', goog.global);
   cm.events.listen(goog.global, 'resize', function() {
     sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
-                   preview, mapWrapperElem, footerElem, panelElem);
+                   preview, mapWrapperElem, footerElem, panelView, panelElem);
   });
 
   // If allowed, pass the google.maps.Map element to the parent frame.
@@ -318,8 +322,9 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     // This loads the 'edit' module, then calls the function in arg 3, passing
     // it the object that the module exported with the name 'cm.ToolbarView'.
     goog.module.require('edit', 'cm.ToolbarView', function(ToolbarView) {
+      var innerPanelElem = cm.ui.getByClass(cm.css.PANEL_INNER, panelElem);
       var toolbarView = new ToolbarView(
-          panelElem, mapModel, !!config['save_url'], config['dev_mode'],
+          innerPanelElem, mapModel, !!config['save_url'], config['dev_mode'],
           config['map_list_url'], touch, config['diff_url']);
     });
     goog.module.require('edit', 'cm.EditPresenter', function(EditPresenter) {
@@ -328,6 +333,9 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
     });
     goog.module.require('sanitizer', 'html', installHtmlSanitizer);
   }
+
+  // Trigger resizing of the panel components when initialization is done.
+  cm.events.emit(goog.global, 'resize');
 
   // Expose the google.maps.Map and the MapModel for testing and debugging.
   window['theMap'] = mapView.getMap();

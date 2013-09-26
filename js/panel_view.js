@@ -46,7 +46,7 @@ var MSG_DRAFT_TOOLTIP = goog.getMsg(
 
 
 /**
- * Panel view, containing the map description and layer list.
+ * Panel view, containing the map information and layers list.
  * @param {Element} frameElem The frame element surrounding the entire UI.
  * @param {Element} parentElem The DOM element in which to create the panel.
  * @param {Element} mapContainer The map container to put the expand button on.
@@ -101,6 +101,24 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
    * @type Element
    * @private
    */
+  this.panelInner_;
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.panelOuterHeader_;
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.panelHeader_;
+
+  /**
+   * @type Element
+   * @private
+   */
   this.titleElem_;
 
   /**
@@ -113,13 +131,19 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
    * @type Element
    * @private
    */
-  this.layerListElem_;
+  this.panelLinks_;
 
   /**
    * @type Element
    * @private
    */
-  this.headerElem_;
+  this.panelLayers_;
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.panelLayersTop_;
 
   /*
    * @type !Object
@@ -142,25 +166,31 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
 
   // Create the elements for the map title and description.
   var setDefaultViewLink, resetLink;
-  cm.ui.append(parentElem, cm.ui.create('div', {'class': cm.css.PANEL_INNER},
-      collapse,
-      this.headerElem_ = cm.ui.create('div', {'class': cm.css.PANEL_HEADER},
-          this.config_['draft_mode'] ? cm.ui.create(
-              'span',
-              {'class': cm.css.DRAFT_INDICATOR, 'title': MSG_DRAFT_TOOLTIP},
-              MSG_DRAFT_LABEL) : null,
-          this.titleElem_ = cm.ui.create('h1',
-              {'class': cm.css.MAP_TITLE})),
-      this.descElem_ = cm.ui.create('div', {'class': cm.css.MAP_DESCRIPTION}),
-      cm.ui.create('div', {'class': cm.css.PANEL_LINKS},
-          setDefaultViewLink = this.config_['enable_editing'] ?
-              cm.ui.createLink(MSG_SET_DEFAULT_VIEW_LINK) : null,
-          setDefaultViewLink && cm.ui.create('br'),
-          resetLink = cm.ui.createLink(MSG_RESET_VIEW_LINK)),
-      this.layerListElem_ = cm.ui.create('div', {'class': cm.css.PANEL_LAYERS})
-  ));
+  cm.ui.append(parentElem,
+      this.panelInner_ = cm.ui.create('div', {'class': cm.css.PANEL_INNER},
+          this.panelOuterHeader_ = cm.ui.create(
+              'div', {'class': cm.css.PANEL_OUTER_HEADER},
+              collapse,
+              this.panelHeader_ = cm.ui.create(
+                  'div', {'class': cm.css.PANEL_HEADER},
+                  this.config_['draft_mode'] ? cm.ui.create(
+                      'span', {'class': cm.css.DRAFT_INDICATOR,
+                               'title': MSG_DRAFT_TOOLTIP},
+                      MSG_DRAFT_LABEL) : null,
+                  this.titleElem_ = cm.ui.create('h1',
+                      {'class': cm.css.MAP_TITLE})),
+              this.descElem_ = cm.ui.create(
+                  'div', {'class': cm.css.MAP_DESCRIPTION})),
+          this.panelLinks_ = cm.ui.create('div', {'class': cm.css.PANEL_LINKS},
+              setDefaultViewLink = this.config_['enable_editing'] ?
+                  cm.ui.createLink(MSG_SET_DEFAULT_VIEW_LINK) : null,
+              setDefaultViewLink && cm.ui.create('br'),
+              resetLink = cm.ui.createLink(MSG_RESET_VIEW_LINK)),
+          this.panelLayersTop_ = cm.ui.create('div'),
+          this.panelLayers_ = cm.ui.create('div',
+              {'class': cm.css.PANEL_LAYERS})));
   if (this.config_['hide_panel_header']) {
-    this.headerElem_.style.display = 'none';
+    this.panelHeader_.style.display = 'none';
     this.descElem_.style.display = 'none';
   }
 
@@ -214,11 +244,24 @@ cm.PanelView = function(frameElem, parentElem, mapContainer,
 };
 
 /**
+ * Adjusts the top of the panel layers container and, if necessary, the maximum
+ * height of the whole panel. This is triggered in initialize.js by resizing
+ * of the browser window, so that the map's height can be passed in.
+ * @param {number?} height The maximum height of the panel, in pixels.
+ */
+cm.PanelView.prototype.updatePanelPositionAndSize = function(height) {
+  this.panelLayers_.style.top = this.panelLayersTop_.offsetTop + 'px';
+  this.parentElem_.style.maxHeight = height ? height + 'px' : '';
+  this.panelLayers_.style.maxHeight =
+      height ? (height - this.panelLayersTop_.offsetTop) + 'px' : '';
+};
+
+/**
  * Return the panel's header element
  * @return {Element} The header element.
  */
 cm.PanelView.prototype.getHeader = function() {
-  return this.headerElem_;
+  return this.panelHeader_;
 };
 
 /**
@@ -241,6 +284,9 @@ cm.PanelView.prototype.updateTitle_ = function() {
   var title = /** @type string */(this.model_.get('title'));
   cm.ui.setText(this.titleElem_, title);
   cm.ui.document.title = title;
+
+  // Trigger updates to the panel size and position.
+  cm.events.emit(goog.global, 'resize');
 };
 
 /**
@@ -254,6 +300,9 @@ cm.PanelView.prototype.updateDescription_ = function() {
   // are any block tags in the map description.  Remove them and scrolling works
   // just fine.  Block tags in layer descriptions are harmless, though.
   // Requires further investigation.
+
+  // Trigger updates to the panel size and position.
+  cm.events.emit(goog.global, 'resize');
 };
 
 /**
@@ -286,7 +335,7 @@ cm.PanelView.prototype.close_ = function() {
 cm.PanelView.prototype.addLayer_ = function(layer, index) {
   var id = /** @type string */(layer.get('id'));
   this.layerEntryViews_[id] = new cm.LayerEntryView(
-      this.layerListElem_, layer, this.metadataModel_,
+      this.panelLayers_, layer, this.metadataModel_,
       this.appState_, this.config_, index);
   var view = this.layerEntryViews_[id];
   cm.events.listen(view, cm.events.DELETE_LAYER, function(e) {

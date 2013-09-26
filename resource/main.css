@@ -31,7 +31,7 @@ html, body {
 .cm-layout-rtl .cm-aboutText,
 .cm-layout-rtl .cm-mapbutton,
 .cm-layout-rtl .cm-footer {
-  direction: rtl;
+  direction:rtl;
 }
 /* Style for a single box container. */
 .cm-frame {
@@ -53,7 +53,7 @@ html, body {
   display:inline;
 }
 .cm-map-title-picker:hover, .cm-edit .cm-map-title:hover {
-  text-decoration: underline;
+  text-decoration:underline;
 }
 .cm-header h1 {  /* product heading */
   font-size:16px;
@@ -71,7 +71,7 @@ html, body {
 
 /* Links */
 .cm-popup h2 + a {
-  float: right;
+  float:right;
 }
 .cm-panel a, .cm-footer a, .cm-popup a {
   text-decoration:none;
@@ -197,7 +197,7 @@ html, body {
   right:inherit !important;
   height:auto !important;
   max-height:98%;
-  overflow:auto;
+  overflow-y:hidden;
   z-index:1;
   opacity:0.90;
   box-shadow:0 2px 4px rgba(0, 0, 0, 0.4);
@@ -235,8 +235,6 @@ html, body {
 
 /* Panel contents */
 .cm-panel-header {
-  padding:2px 0 8px 0;
-  margin-left:-19px;
   position:relative;
 }
 
@@ -245,49 +243,47 @@ html, body {
   cursor:pointer;
 }
 .cm-map-title {
-  width:240px; /** space for vertical scrollbar */
+  width:260px;
 }
 .cm-edit .cm-map-title {
-  padding-right: 20px;
 }
 .cm-edit .cm-map-title:after {
-  content: url('edit_pencil.png');
-  opacity: .40;
-  /* @alternate */ filter: alpha(opacity=40);
-  /* @alternate */ filter: progid:DXImageTransform.Microsoft.Alpha(opacity=0.4);
+  content:url('edit_pencil.png');
+  vertical-align:-20%;
+  opacity:.40;
+  /* @alternate */ filter:alpha(opacity=40);
+  /* @alternate */ filter:progid:DXImageTransform.Microsoft.Alpha(opacity=0.4);
 }
 .cm-embedded .cm-map-title {
   display:inline;
-  display:inline-block;
   width:450px !important;
 }
 .cm-panel .cm-draft-indicator {
-  padding:0 1px;
-  margin-right:0.5em;
-  border:1px solid #000;
+  padding:1px 2px;
+  margin-right:0.3em;
+  border:1px solid gray;
   font-weight:bold;
   cursor:default;
+  color:#666;
+  vertical-align:2px;
 }
 .cm-map-description, .cm-preview.cm-map-description {
   font-size:12px;
   color:#222;
-  width:240px; /** space for vertical scrollbar */
+  width:260px;
 }
 .cm-embedded .cm-map-description {
   width:450px !important;
 }
 .cm-panel .cm-panel-links {
-  margin:8px 0 8px -19px;
+  margin:4px 0 4px 0;
 }
 .cm-panel .cm-map-description {
-  padding-top:0px;
-  margin-left:-19px;
 }
 .cm-map-description a {
   font-size:12px;
 }
 .cm-panel {
-  overflow:auto;
   background:#fff;
   border-left:1px solid #ccc;
   float:right;
@@ -302,8 +298,8 @@ html, body {
 }
 .cm-panel-inner {
   overflow-x:visible;
-  overflow-y:auto;
-  padding:20px 20px 10px 34px;
+  overflow-y:hidden;
+  padding:20px 0 10px 10px;
   position:absolute;
   top:0;
   bottom:0;
@@ -318,33 +314,41 @@ html, body {
 }
 .cm-embedded.cm-touch .cm-panel-inner {
   height:100%;
-  overflow:auto;
   top:auto;
   bottom:auto;
 }
+.cm-panel-outer-header {
+  overflow-x:visible;
+  margin-top:35px;
+  margin-right:10px;
+}
 .cm-panel-layers {
-  /* TODO(kpy): We go +20px then -19px so many times it makes my head spin. */
-  margin-left:-19px;
+  overflow:auto;
+}
+.cm-panel-dock .cm-panel-layers {
+  position:absolute;
+  bottom:0;
+  right:0;
+  left:0;
+  margin-left:10px;
+}
+.cm-sublayers {
+  position:relative;
+  margin-left:20px;
 }
 .cm-layer-entry {
-  margin-top:10px;
   position:relative;
-  left:20px;
-  margin-right:20px;
-  margin-bottom:20px;
-  margin-left:-1px;
+  margin:10px 0 20px 2px;
 }
 .cm-layer-entry.cm-contains-promoted-sublayer > * > .cm-layer-entry {
   display:none;
 }
 .cm-layer-entry.cm-contains-promoted-sublayer > * > .cm-layer-entry.cm-promoted-sublayer {
-  display: block;
+  display:block;
 }
 .cm-panel .cm-layer-title {
   font-size:14px;
   line-height:16px;
-  padding-left:2px;
-  margin-left:-23px;
 }
 .cm-embedded .cm-panel {
   float:none;
@@ -361,19 +365,20 @@ html, body {
 .cm-embedded .cm-panel {
   display:none;
 }
+.cm-embedded .cm-panel-outer-header {
+  margin-top:20px;
+}
 .cm-panel.cm-open,
 .cm-embedded .cm-panel-button,
 .cm-embedded .cm-panel .cm-close-button {
   display:block;
 }
 .cm-panel input[type=checkbox] {
-  margin-left:-19px;
   margin-bottom:-2px;
 }
 
 /* Map */
 .cm-map-wrapper {
-  margin-right:252px;
 }
 .cm-panel-left .cm-map-wrapper {
   margin-right:0px;
@@ -394,7 +399,7 @@ html, body {
   margin-right:-50px;
 }
 .cm-map-copyright, .cm-map-copyright a {
-  color: #444;
+  color:#444;
 }
 
 /* Popups and dialogs */
@@ -413,7 +418,7 @@ html, body {
   box-shadow:0 4px 16px rgba(0,0,0,0.2);
 }
 .cm-popup h2:first-child {
-  margin-top: 0;
+  margin-top:0;
 }
 .cm-popup > :first-child {
   margin-top:0;
@@ -593,7 +598,7 @@ input[type=checkbox]:active {
   background:#ebebeb;
 }
 input[type=checkbox]:hover {
-  border-color:#C6C6C6;
+  border-color:#c6c6c6;
   -webkit-box-shadow:inset 0px 1px 1px rgba(0,0,0,0.1);
   -moz-box-shadow:inset 0px 1px 1px rgba(0,0,0,0.1);
   box-shadow:inset 0px 1px 1px rgba(0,0,0,0.1);
@@ -613,11 +618,9 @@ input[type=checkbox]:checked::after {
   vertical-align:top;
 }
 .cm-checkbox-folder-decoration {
-  display:inline-block;
   background:url('folder_border.png') no-repeat;
-  width:20px;
   height:13px;
-  margin-left:-18px;
+  margin:-18px 0 0 -2px;
 }
 
 /* About popup */
@@ -649,16 +652,16 @@ input[type=checkbox]:checked::after {
   background:#fff;
   border:1px solid #c6c6c6;
   padding:0 0 6px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  -webkit-box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  -moz-box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  -webkit-box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  -moz-box-shadow:0 2px 4px rgba(0,0,0,0.2);
   position:relative;
   top:11px;
   display:none;
   z-index:1;
   width:auto;
-  margin-right: 5%;
-  float: right;
+  margin-right:5%;
+  float:right;
 }
 .cm-sublayer-picker ul {
   list-style:none;
@@ -669,7 +672,7 @@ input[type=checkbox]:checked::after {
 .cm-sublayer-picker li {
   font-weight:normal;
   display:block;
-  float: none;
+  float:none;
   padding:5px 25px;
   color:#333;
   white-space:nowrap;
@@ -783,17 +786,19 @@ input[type=checkbox]:checked::after {
 .cm-toolbar {
   position:absolute;
   top:4px;
-  left:8px;
-  font-size:11px;
+  margin-right:12px;
 }
 .cm-toolbar a.cm-disabled,
 .cm-toolbar a.cm-disabled:hover {
   color:#888;
-  text-decoration: none;
+  text-decoration:none;
   cursor:default;
 }
 .cm-toolbar a.cm-error {
   color:#c00;
+}
+.cm-toolbar .cm-edit-toolbar {
+  margin-right:24px;
 }
 
 /* Importer dialog */
@@ -815,7 +820,7 @@ input[type=checkbox]:checked::after {
 }
 .cm-layer-item {
   position:relative;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom:1px solid #ebebeb;
   width:100%;
   display:table;
   cursor:pointer;
@@ -856,7 +861,7 @@ input[type=checkbox]:checked::after {
   opacity:0.8;
   width:27px;
   height:27px;
-  padding: 3px !important;
+  padding:3px !important;
   background-image:url('my_location_160dpi.png') !important;
   background-size:32px 32px !important;
   background-repeat:no-repeat !important;
@@ -1140,7 +1145,7 @@ textarea.cm-legend-text {
   cursor:default;
 }
 .cm-html-editor .cm-disclosure .cm-label {
-  color: #666;
+  color:#666;
   font-size:12px;
   cursor:default;
 }
@@ -1210,7 +1215,7 @@ textarea.cm-legend-text {
 .cm-validation-error {
   display:block;
   font-size:11px;
-  color: #a00;
+  color:#a00;
 }
 .cm-arranger {
   cursor:move;
@@ -1333,11 +1338,11 @@ textarea.cm-legend-text {
 .cm-lat-lng {
   position:absolute;
   font-size:12px;
-  width: 400px;
+  width:400px;
   left:0;
   bottom:0;
   padding:2px 6px;
-  z-index: 1
+  z-index:1
 }
 
 /* Arranger panel with draggable elements */

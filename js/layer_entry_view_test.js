@@ -80,7 +80,8 @@ LayerEntryViewTest.prototype.createView_ = function(
  */
 LayerEntryViewTest.prototype.testConstructor = function() {
   var parent = this.createView_();
-  var contentElem = expectDescendantOf(parent, 'div', withClass(cm.css.HIDDEN));
+  var contentElem = expectDescendantOf(
+      parent, 'div', withClass(cm.css.CONTENT), withClass(cm.css.HIDDEN));
   expectDescendantOf(
       parent, withClass(cm.css.LAYER_TITLE), withText('monsters'));
   expectDescendantOf(
@@ -482,9 +483,10 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
       .willRepeatedly(returnWith(true));
   cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
   expectTrue(checkbox.checked);
-  // Warning element is hidden initially, all other are visible.
-  expectNoDescendantOf(parent, 'div', withClass(cm.css.HIDDEN),
-                       not(withClass(cm.css.WARNING)));
+  // Warning element is hidden initially.
+  expectNoDescendantOf(parent, 'div', withClass(cm.css.HIDDEN), not(anyOf(
+      [withClass(cm.css.WARNING),
+       withClass(cm.css.CHECKBOX_FOLDER_DECORATION)])));
 
   // Disable the layer.
   expectCall(this.appState_.getLayerEnabled)('layer0')
