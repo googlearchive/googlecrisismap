@@ -335,5 +335,5 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems,
 
 // window doesn't exist in gjstests
 if (typeof window !== 'undefined') {
-  window['initialize'] = initialize;
+  window['cm_initialize'] = initialize;
 }
