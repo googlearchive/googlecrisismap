@@ -15,10 +15,6 @@
  * @author romano@google.com (Raquel Romano)
  */
 
-goog.require('goog.ui.FlatMenuButtonRenderer');
-goog.require('goog.ui.MenuItem');
-goog.require('goog.ui.Select');
-
 goog.provide('cm.SublayerPicker');
 
 /**
@@ -40,42 +36,40 @@ cm.SublayerPicker = function(parentElem, layerModel, selectedId) {
   this.layerModel_ = layerModel;
 
   /**
-   * @type goog.ui.Select
+   * @type Element
    * @private
    */
-  this.select_ = new goog.ui.Select(
-      '', null, goog.ui.FlatMenuButtonRenderer.getInstance());
-  this.select_.render(parentElem);
+  this.select_ = cm.ui.create('select', {});
+  cm.ui.append(parentElem, this.select_);
 
   // Create a menu element for each sublayer.
   var sublayers = this.layerModel_.get('sublayers');
-  this.layerModel_.get('sublayers').forEach(goog.bind(function(sublayer) {
+  var me = this;
+  this.layerModel_.get('sublayers').forEach(function(sublayer) {
     var id = sublayer.get('id');
-    var item = new goog.ui.MenuItem(sublayer.get('title'), id);
-    this.select_.addItem(item);
-    if (id === selectedId) {
-      this.select_.setSelectedItem(item);
-      this.select_.setCaption(/** @type string */(sublayer.get('title')));
-    }
-  }, this));
-
-  cm.events.listen(this.select_, goog.ui.Component.EventType.CHANGE,
-                   this.handleMenuChange_, this);
+    var option = cm.ui.create('option', {'value': id},
+        sublayer.get('title'));
+    option.selected = (id === selectedId);
+    cm.ui.append(me.select_, option);
+  });
+  cm.events.listen(this.select_, 'change', this.handleMenuChange_, this);
 };
 
 /**
  * Handle menu selection changes.
- * @param {Object} e The event payload.
  * @private
  */
-cm.SublayerPicker.prototype.handleMenuChange_ = function(e) {
+cm.SublayerPicker.prototype.handleMenuChange_ = function() {
+  goog.array.forEach(this.select_.options, function(option) {
+    option.selected = (option.value === this.select_.value);
+  }, this);
   cm.events.emit(this, cm.events.SELECT_SUBLAYER,
-                 {id: this.select_.getSelectedItem().getModel()});
+                 {id: this.select_.value});
 };
 
 /**
  * Remove the element containing the menu from the DOM.
  */
 cm.SublayerPicker.prototype.dispose = function() {
-  this.select_.dispose();
+  cm.ui.remove(this.select_);
 };
