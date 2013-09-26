@@ -25,6 +25,7 @@ import webapp2
 import webob
 
 import base_handler
+import model
 import mox
 
 from google.appengine.api import taskqueue
@@ -86,6 +87,13 @@ def DatetimeWithUtcnow(now):
   # member; we have to subclass datetime.datetime instead.
   return type('datetime.datetime', (datetime.datetime,),
               {'utcnow': staticmethod(lambda: now)})
+
+
+def CreateMapAsAdmin(**kwargs):
+  BecomeAdmin()
+  map_object = model.Map.Create(
+      '{"description": "description", "title": "title"}', 'xyz.com', **kwargs)
+  return map_object, map_object.GetCurrent().id
 
 
 class BaseTest(unittest.TestCase):

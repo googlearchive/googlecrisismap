@@ -16,6 +16,7 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import create
 import model
+import perms
 import test_utils
 
 
@@ -24,8 +25,8 @@ class CreateTest(test_utils.BaseTest):
 
   def testCreate(self):
     # Grant google.com MAP_CREATOR permission for the test domain
-    model.SetGlobalRoles('google.com',
-                         [[model.Role.MAP_CREATOR, 'xyz.com']])
+    perms.SetGlobalRoles('google.com',
+                         [[perms.Role.MAP_CREATOR, 'xyz.com']])
     # foo@google.com should be able to create a map.
     test_utils.SetUser('foo@google.com')
     handler = test_utils.SetupHandler(
@@ -41,12 +42,12 @@ class CreateTest(test_utils.BaseTest):
     # Without MAP_CREATOR, foo@google.com shouldn't be able to create a map.
     test_utils.SetUser('foo@google.com')
     handler = test_utils.SetupHandler('/create', create.Create())
-    self.assertRaises(model.AuthorizationError, handler.post)
+    self.assertRaises(perms.AuthorizationError, handler.post)
 
   def testDomainRole(self):
     # Grant MAP_CREATOR permission to foo@xyz.com
     user = 'foo@xyz.com'
-    model.SetGlobalRoles(user, [[model.Role.MAP_CREATOR, 'xyz.com']])
+    perms.SetGlobalRoles(user, [[perms.Role.MAP_CREATOR, 'xyz.com']])
     # foo@xyz.com should be able to create a map.
     test_utils.SetUser(user)
     handler = test_utils.SetupHandler(
@@ -61,7 +62,7 @@ class CreateTest(test_utils.BaseTest):
     self.assertEquals(None, map_object.domain_role)
 
     # Now set the initial_domain_role for xyz.com.
-    model.Config.Set('initial_domain_role:xyz.com', model.Role.MAP_EDITOR)
+    model.Config.Set('initial_domain_role:xyz.com', perms.Role.MAP_EDITOR)
     # Create another map.
     test_utils.SetUser(user)
     handler = test_utils.SetupHandler(
@@ -72,7 +73,7 @@ class CreateTest(test_utils.BaseTest):
     map_object = model.Map.Get(location.split('/')[-1])
     self.assertTrue(map_object is not None)
     self.assertEquals(['xyz.com'], map_object.domains)
-    self.assertEquals(model.Role.MAP_EDITOR, map_object.domain_role)
+    self.assertEquals(perms.Role.MAP_EDITOR, map_object.domain_role)
 
 
 if __name__ == '__main__':

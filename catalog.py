@@ -18,6 +18,7 @@ import webapp2
 
 import base_handler
 import model
+import utils
 
 from google.appengine.api import users
 
@@ -31,7 +32,7 @@ class Catalog(base_handler.BaseHandler):
     self.response.out.write(self.RenderTemplate('catalog.html', {
         'domain': domain,
         'entries': list(entries),
-        'user_domain': model.GetUserDomain(users.get_current_user())
+        'user_domain': utils.GetUserDomain(users.get_current_user())
     }))
 
   def post(self, domain):  # pylint: disable=g-bad-name

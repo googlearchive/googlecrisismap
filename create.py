@@ -18,6 +18,7 @@ import webapp2
 
 import base_handler
 import model
+import utils
 
 from google.appengine.api import users
 
@@ -28,7 +29,7 @@ class Create(base_handler.BaseHandler):
   def post(self):  # pylint: disable=g-bad-name
     domain = self.request.get('domain')
     if not domain:
-      domain = model.GetUserDomain(users.get_current_user())
+      domain = utils.GetUserDomain(users.get_current_user())
     domain_role = model.GetInitialDomainRole(domain)
     map_object = model.Map.Create(
         '{"title": "Untitled map"}', domain, domain_role=domain_role)

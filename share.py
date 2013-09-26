@@ -17,6 +17,7 @@ __author__ = 'muzny@google.com (Grace Muzny)'
 import webapp2
 
 import model
+import perms
 
 from google.appengine.api import mail
 from google.appengine.api import users
@@ -47,8 +48,8 @@ class Share(webapp2.RequestHandler):
 
     recipient_user = users.User(recipient_email)
     # Give the user the proper permission.
-    if role not in [model.Role.MAP_VIEWER, model.Role.MAP_EDITOR,
-                    model.Role.MAP_OWNER]:
+    if role not in [perms.Role.MAP_VIEWER, perms.Role.MAP_EDITOR,
+                    perms.Role.MAP_OWNER]:
       # Invalid permission type.
       self.response.set_status(404)
       self.error(404)

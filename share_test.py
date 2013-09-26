@@ -17,6 +17,7 @@ __author__ = 'muzny@google.com (Grace Muzny)'
 import os
 
 import model
+import perms
 import share
 import test_utils
 
@@ -67,7 +68,7 @@ Access the map at: %s
   def testSharePostSuccess(self):
     """Shares the map with another person successfully."""
     user = users.User('user@gmail.com')
-    access_policy = model.AccessPolicy()
+    access_policy = perms.AccessPolicy()
     message = 'hello'
     for role in ['MAP_VIEWER', 'MAP_EDITOR', 'MAP_OWNER']:
       handler = test_utils.SetupHandler(

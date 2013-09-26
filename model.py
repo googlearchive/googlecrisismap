@@ -15,61 +15,16 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import base64
-import collections
 import json
 import os
 import random
 
 import cache
+import perms
+import utils
 
 from google.appengine.api import users
 from google.appengine.ext import db
-
-
-class Struct(object):
-  """A simple bag of attributes."""
-
-  def __init__(self, **kwargs):
-    self.__dict__.update(kwargs)
-
-  def __iter__(self):
-    return iter(self.__dict__)
-
-
-# Access role constants.
-# Role is capitalized like an enum class.  # pylint: disable=g-bad-name
-Role = Struct(
-    # Global roles
-    ADMIN='ADMIN',  # can view, edit, or change permissions for anything
-
-    # Domain-specific roles
-    CATALOG_EDITOR='CATALOG_EDITOR',  # can edit the catalog for a domain
-    DOMAIN_ADMIN='DOMAIN_ADMIN',  # can grant permissions for the domain
-    MAP_CREATOR='MAP_CREATOR',  # can create new maps
-
-    # Map-specific roles
-    MAP_OWNER='MAP_OWNER',  # can change permissions for a map
-    MAP_EDITOR='MAP_EDITOR',  # can save new versions of a map
-    MAP_VIEWER='MAP_VIEWER',  # can view current version of a map
-)
-
-# Prefix used when setting a config for a user/domain's roles
-ROLE_PREFIX = 'global_roles:'
-
-
-class Error(Exception):
-  """Base class for map exceptions."""
-  pass
-
-
-class AuthorizationError(Error):
-  """User not authorized to perform operation."""
-
-  def __init__(self, user, role, target):
-    Error.__init__(self, 'User %s lacks %s access to %r' % (user, role, target))
-    self.user = user
-    self.role = role
-    self.target = target
 
 
 def StructFromModel(model):
@@ -89,11 +44,12 @@ def StructFromModel(model):
     and key().id().  Returns None if 'model' is None.
   """
   if model:
-    return Struct(id=model.key().id(),
-                  name=model.key().name(),
-                  key=model.key(),
-                  **dict((name, prop.get_value_for_datastore(model))
-                         for (name, prop) in model.properties().iteritems()))
+    return utils.Struct(
+        id=model.key().id(),
+        name=model.key().name(),
+        key=model.key(),
+        **dict((name, prop.get_value_for_datastore(model))
+               for (name, prop) in model.properties().iteritems()))
 
 
 def ResultIterator(query):
@@ -156,18 +112,6 @@ class Config(db.Model):
     cache.Delete([Config, key])
 
 
-def GetUserDomain(user):
-  """Extracts the domain part of a User object's email address.
-
-  Args:
-    user: A google.appengine.api.users.User object.
-
-  Returns:
-    A string, the part after the '@' in the user's e-mail address, or None.
-  """
-  return user and '@' in user.email() and user.email().split('@')[-1]
-
-
 def SetInitialDomainRole(domain, role):
   """Sets the domain_role to apply to newly created maps for a given domain.
 
@@ -188,250 +132,6 @@ def GetInitialDomainRole(domain):
     A Role constant, or None.
   """
   return Config.Get('initial_domain_role:' + domain)
-
-
-def SetGlobalRoles(subject, roles):
-  """Sets the access roles for a given user or domain that apply to all maps.
-
-  Args:
-    subject: A string, either an e-mail address or a domain name.
-    roles: A list of roles (see Role) that the user or domain should have.
-        The CATALOG_EDITOR, MAP_CREATOR, and DOMAIN_ACCESS roles for a
-        particular domain should be specified as a two-item
-        list, e.g., [Role.CATALOG_EDITOR, domain].
-  """
-  Config.Set(ROLE_PREFIX + subject, roles)
-
-
-def GetGlobalRoles(subject):
-  """Gets the access roles for a given user or domain that apply to all maps.
-
-  Args:
-    subject: An e-mail address or a domain name.
-
-  Returns:
-    The list of global roles (see Role) that the user or domain has.
-    The CATALOG_EDITOR access role for a particular domain is specified as
-    a two-item list: [Role.CATALOG_EDITOR, domain].
-  """
-  return Config.Get(ROLE_PREFIX + subject, [])
-
-
-def SetDomainRoles(subject, domain, new_roles):
-  """Gives the subject the listed roles to the given domain.
-
-  Args:
-    subject: An e-mail address or a domain name; the person/domain whose
-        roles are being set.
-    domain: The domain to whose access is being set.
-    new_roles: The list of roles the subject should receive; if the subject
-        currently has roles that are not in new_roles, they will be revoked.
-  """
-  global_roles = [role for role in GetGlobalRoles(subject)
-                  if not isinstance(role, list) or role[1] != domain]
-  global_roles += [[role, domain] for role in new_roles]
-  SetGlobalRoles(subject, global_roles)
-
-
-def GetDomainRoles(subject, domain):
-  """Returns the list of roles held by subject in domain."""
-  global_roles = GetGlobalRoles(subject)
-  return [r[0] for r in global_roles if isinstance(r, list) and r[1] == domain]
-
-
-def GetDomainsWithRole(role, user=None):
-  """Gets the domains for which the given user has the given type of access.
-
-  Args:
-    role: A Role constant.
-    user: A google.appengine.api.users.User object, or None.
-
-  Returns:
-    A list of strings (domain names).  Note that users with ADMIN access will
-    actually have access for all domains, but the result will only include the
-    domains that are specifically granted to the user or the user's domain.
-  """
-  user = user or users.get_current_user()
-  email, domain = user.email(), GetUserDomain(user)
-  domains = set()
-  for item in GetGlobalRoles(email) + GetGlobalRoles(domain):
-    if isinstance(item, list) and item[0] == role:
-      domains.add(item[1])
-  return sorted(domains)
-
-
-def GetSubjectsInDomain(domain):
-  """Retrieves all users granted permissions in the given domain.
-
-  Args:
-    domain: (string) the name of the domain being queried.
-
-  Returns:
-    A dictionary that maps users (or domains) to the list of granted
-    permissions.  Note that permissions they inherit from their domain
-    are NOT returned.
-  """
-  all_perms = Config.GetAll()
-  result = collections.defaultdict(list)
-  for key, value in all_perms.iteritems():
-    if not key.startswith(ROLE_PREFIX):
-      continue
-    user = key[len(ROLE_PREFIX):]
-    for perm in value:
-      if isinstance(perm, list) and perm[1] == domain:
-        result[user].append(perm[0])
-  return result
-
-
-class AccessPolicy(object):
-  """Wraps up authorization for user actions."""
-
-  def HasRoleAdmin(self, user):
-    """Returns True if a user should get ADMIN access."""
-    # Users get admin access if they have global admin access or if they
-    # have App Engine administrator permission for this app.
-    return user and (self.HasGlobalRole(user, Role.ADMIN) or
-                     (user == users.get_current_user() and
-                      users.is_current_user_admin()))
-
-  def HasRoleDomainAdmin(self, user, domain):
-    """Returns True if the user should get DOMAIN_ADMIN access for a domain."""
-    # Users get domain administration access if they have DOMAIN_ADMIN access
-    # to the domain, or if they have admin access.
-    return user and (self.HasGlobalRole(user, [Role.DOMAIN_ADMIN, domain]) or
-                     self.HasRoleAdmin(user))
-
-  def HasRoleCatalogEditor(self, user, domain):
-    """Returns True if a user should get CATALOG_EDITOR access for a domain."""
-    # Users get catalog editor access if they have catalog editor access to the
-    # specified domain, if they have catalog editor access to all domains, or
-    # if they have admin access.
-    return user and (self.HasGlobalRole(user, [Role.CATALOG_EDITOR, domain]) or
-                     self.HasGlobalRole(user, Role.CATALOG_EDITOR) or
-                     self.HasRoleAdmin(user))
-
-  def HasRoleMapCreator(self, user, domain):
-    """Returns True if a user should get MAP_CREATOR access."""
-    # Users get creator access if they have global map creator access or if
-    # they have admin access.
-    return user and (self.HasGlobalRole(user, [Role.MAP_CREATOR, domain]) or
-                     self.HasRoleAdmin(user))
-
-  def HasRoleMapOwner(self, user, map_object):
-    """Returns True if a user should get MAP_OWNER access to a given map."""
-    # Users get owner access if they are in the owners list for the map, if
-    # their domain is an owner of the map, if they have global owner access
-    # to all maps, or if they have admin access.
-    return user and (user.email() in map_object.owners or
-                     self.HasDomainRole(user, Role.MAP_OWNER, map_object) or
-                     self.HasGlobalRole(user, Role.MAP_OWNER) or
-                     self.HasRoleAdmin(user))
-
-  def HasRoleMapEditor(self, user, map_object):
-    """Returns True if a user should get MAP_EDITOR access to a given map."""
-    # Users get editor access if they are in the editors list for the map, if
-    # their domain is an editor of the map, if they have global editor access
-    # to all maps, or if they have owner access.
-    return user and (user.email() in map_object.editors or
-                     self.HasDomainRole(user, Role.MAP_EDITOR, map_object) or
-                     self.HasGlobalRole(user, Role.MAP_EDITOR) or
-                     self.HasRoleMapOwner(user, map_object))
-
-  def HasRoleMapViewer(self, user, map_object):
-    """Returns True if the user has MAP_VIEWER access to a given map."""
-    # Users get viewer access if the map is world-readable, if they are in the
-    # viewers list for the map, if their domain is a viewer of the map, if they
-    # have global viewer access to all maps, or if they have editor access.
-    return (map_object.world_readable or
-            user and (user.email() in map_object.viewers or
-                      self.HasDomainRole(user, Role.MAP_VIEWER, map_object) or
-                      self.HasGlobalRole(user, Role.MAP_VIEWER) or
-                      self.HasRoleMapEditor(user, map_object)))
-
-  def HasDomainRole(self, user, role, map_object):
-    """Returns True if the user's domain has the given access to the map."""
-    return user and (GetUserDomain(user) in map_object.domains and
-                     role == map_object.domain_role)
-
-  def HasGlobalRole(self, user, role):
-    """Returns True if the user or user's domain has the given role globally."""
-    return user and (role in GetGlobalRoles(user.email()) or
-                     role in GetGlobalRoles(GetUserDomain(user)))
-
-
-def CheckAccess(role, target=None, user=None, policy=None):
-  """Checks whether the given user has the specified access role.
-
-  Args:
-    role: A Role constant identifying the desired access role.
-    target: The object to which access is desired.  If 'role' is MAP_OWNER,
-        MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
-        CATALOG_EDITOR, MAP_CREATOR, or DOMAIN_ADMIN, this must be a domain
-        name (a string).  For other roles, this argument is not used.
-    user: (optional) A google.appengine.api.users.User object.  If not
-        specified, access permissions are checked for the current user.
-    policy: The access policy to apply.
-
-  Returns:
-    True if the user has the specified access permission.
-
-  Raises:
-    ValueError: The specified role is not a valid member of Role.
-  """
-
-  def RequireTargetClass(required_cls, cls_desc):
-    if not isinstance(target, required_cls):
-      raise ValueError('For role %r, target must be a %s' % (role, cls_desc))
-
-  policy = policy or AccessPolicy()
-  user = user or users.get_current_user()
-
-  # Roles that are unrelated to a target.
-  if role == Role.ADMIN:
-    return policy.HasRoleAdmin(user)
-
-  # Roles with a domain as the target.
-  if role == Role.CATALOG_EDITOR:
-    RequireTargetClass(basestring, 'string')
-    return policy.HasRoleCatalogEditor(user, target)
-  if role == Role.MAP_CREATOR:
-    RequireTargetClass(basestring, 'string')
-    return policy.HasRoleMapCreator(user, target)
-  if role == Role.DOMAIN_ADMIN:
-    RequireTargetClass(basestring, 'string')
-    return policy.HasRoleDomainAdmin(user, target)
-
-  # Roles with a Map as the target
-  RequireTargetClass(Map, 'Map')
-  if role == Role.MAP_OWNER:
-    return policy.HasRoleMapOwner(user, target)
-  if role == Role.MAP_EDITOR:
-    return policy.HasRoleMapEditor(user, target)
-  if role == Role.MAP_VIEWER:
-    return policy.HasRoleMapViewer(user, target)
-
-  raise ValueError('Invalid role %r' % role)
-
-
-def AssertAccess(role, target=None, user=None, policy=None):
-  """Requires that the given user has the specified access role.
-
-  Args:
-    role: A Role constant identifying the desired access role.
-    target: The object to which access is desired.  If 'role' is MAP_OWNER,
-        MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
-        CATALOG_EDITOR, MAP_CREATOR or DOMAIN_ADMIN, this must be a domain name
-        (a string).  For other roles, this argument is not used.
-    user: (optional) A google.appengine.api.users.User object.  If not
-        specified, access permissions are checked for the current user.
-    policy: The access policy to apply.
-
-  Raises:
-    AuthorizationError: If the user lacks the given access permission.
-  """
-  user = user or users.get_current_user()  # ensure user is set in error message
-  if not CheckAccess(role, target, user, policy):
-    raise AuthorizationError(user, role, target)
 
 
 def DoAsAdmin(function, *args, **kwargs):
@@ -510,7 +210,7 @@ class MapModel(db.Model):
 
   # Default role for users in one of the domains listed in the domains property.
   # domain_role can be set to admin, but we won't honor it.
-  domain_role = db.StringProperty(choices=list(Role))
+  domain_role = db.StringProperty(choices=list(perms.Role))
 
   # World-readable maps can be viewed by anyone.
   world_readable = db.BooleanProperty(default=False)
@@ -684,7 +384,7 @@ class CatalogEntry(object):
     domain = str(domain)  # accommodate Unicode strings
     if ':' in domain:
       raise ValueError('Invalid domain %r' % domain)
-    AssertAccess(Role.CATALOG_EDITOR, domain)
+    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain)
     model = CatalogEntryModel.Create(domain, label, map_object, is_listed)
 
     # We use '*' in the cache key for the list that includes all domains.
@@ -706,7 +406,7 @@ class CatalogEntry(object):
       ValueError: if there's no CatalogEntry with the given domain and label.
     """
     domain = str(domain)  # accommodate Unicode strings
-    AssertAccess(Role.CATALOG_EDITOR, domain)
+    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain)
     entry = CatalogEntryModel.Get(domain, label)
     if not entry:
       raise ValueError('No CatalogEntry %r in domain %r' % (label, domain))
@@ -746,7 +446,7 @@ class CatalogEntry(object):
   def Put(self):
     """Saves any modifications to the datastore."""
     domain = str(self.domain)  # accommodate Unicode strings
-    AssertAccess(Role.CATALOG_EDITOR, domain)
+    perms.AssertAccess(perms.Role.CATALOG_EDITOR, domain)
     self.model.put()
     # We use '*' in the cache key for the list that includes all domains.
     cache.Delete([CatalogEntry, '*', 'all'])
@@ -808,7 +508,7 @@ class Map(object):
   @staticmethod
   def GetAll():
     """Yields all maps in reverse update order."""
-    AssertAccess(Role.ADMIN)
+    perms.AssertAccess(perms.Role.ADMIN)
     return Map._GetAll()
 
   @staticmethod
@@ -818,9 +518,9 @@ class Map(object):
     # Also, we should only project the fields we want.
     user = users.get_current_user()
     # Share the AccessPolicy object to avoid fetching access lists repeatedly.
-    policy = AccessPolicy()
+    policy = perms.AccessPolicy()
     for m in Map._GetAll():
-      if m.CheckAccess(Role.MAP_VIEWER, user, policy=policy):
+      if m.CheckAccess(perms.Role.MAP_VIEWER, user, policy=policy):
         yield m
 
   @staticmethod
@@ -833,7 +533,7 @@ class Map(object):
     if not model or model.is_deleted:
       return None
     map_object = Map(model)
-    map_object.AssertAccess(Role.MAP_VIEWER)
+    map_object.AssertAccess(perms.Role.MAP_VIEWER)
     return map_object
 
   @staticmethod
@@ -842,7 +542,7 @@ class Map(object):
     """Stores a new map with the given properties and MapRoot JSON content."""
     # maproot_json must be syntactically valid JSON, but otherwise any JSON
     # object is allowed; we don't check for MapRoot validity here.
-    AssertAccess(Role.MAP_CREATOR, domain)
+    perms.AssertAccess(perms.Role.MAP_CREATOR, domain)
     if owners is None:
       owners = [users.get_current_user().email()]
     if editors is None:
@@ -867,7 +567,7 @@ class Map(object):
 
   def PutNewVersion(self, maproot_json):
     """Stores a new MapVersionModel object for this Map and returns its ID."""
-    self.AssertAccess(Role.MAP_EDITOR)
+    self.AssertAccess(perms.Role.MAP_EDITOR)
     maproot = json.loads(maproot_json)  # validate the JSON first
 
     new_version = MapVersionModel(parent=self.model, maproot_json=maproot_json)
@@ -886,12 +586,12 @@ class Map(object):
     """Gets this map's latest version.
 
     Returns:
-      A Struct with the properties of this map's current version, along with
-      a property 'id' containing the version's ID; or None if the current
+      A utils.Struct with the properties of this map's current version, along
+      with a property 'id' containing the version's ID; or None if the current
       version has not been set.  (Version IDs are not necessarily in creation
       order, and are unique within a particular Map but not across all Maps.)
     """
-    self.AssertAccess(Role.MAP_VIEWER)
+    self.AssertAccess(perms.Role.MAP_VIEWER)
     return self.current_version and StructFromModel(self.current_version)
 
   def Delete(self):
@@ -899,46 +599,46 @@ class Map(object):
 
     Sets a flag on the entity without actually removing it from the datastore.
     """
-    self.AssertAccess(Role.MAP_OWNER)
+    self.AssertAccess(perms.Role.MAP_OWNER)
     self.model.is_deleted = True
     self.model.put()
     cache.Delete([Map, self.id, 'json'])
 
   def GetCurrentJson(self):
     """Gets the current JSON for public viewing only."""
-    self.AssertAccess(Role.MAP_VIEWER)
+    self.AssertAccess(perms.Role.MAP_VIEWER)
     return cache.Get([Map, self.id, 'json'],
                      lambda: getattr(self.GetCurrent(), 'maproot_json', None))
 
   def GetVersions(self):
     """Yields all versions of this map in order from newest to oldest."""
-    self.AssertAccess(Role.MAP_EDITOR)
+    self.AssertAccess(perms.Role.MAP_EDITOR)
     query = MapVersionModel.all().ancestor(self.model).order('-created')
     return ResultIterator(query)
 
   def GetVersion(self, version_id):
     """Returns a specific version of this map."""
-    self.AssertAccess(Role.MAP_EDITOR)
+    self.AssertAccess(perms.Role.MAP_EDITOR)
     version = MapVersionModel.get_by_id(version_id, parent=self.model.key())
     return StructFromModel(version)
 
   def SetWorldReadable(self, world_readable):
     """Sets whether the map is world-readable."""
-    self.AssertAccess(Role.MAP_OWNER)
+    self.AssertAccess(perms.Role.MAP_OWNER)
     self.model.world_readable = world_readable
     self.model.put()
 
   def RevokePermission(self, role, user):
     """Revokes user permissions for the map."""
-    self.AssertAccess(Role.MAP_OWNER)
+    self.AssertAccess(perms.Role.MAP_OWNER)
     email = str(user.email())  # The lists need basic strings.
     # Does nothing if the user does not have the role to begin with or if
     # the role is not editor, viewer, or owner.
-    if role == Role.MAP_VIEWER and email in self.model.viewers:
+    if role == perms.Role.MAP_VIEWER and email in self.model.viewers:
       self.model.viewers.remove(email)
-    elif role == Role.MAP_EDITOR and email in self.model.editors:
+    elif role == perms.Role.MAP_EDITOR and email in self.model.editors:
       self.model.editors.remove(email)
-    elif role == Role.MAP_OWNER and email in self.model.owners:
+    elif role == perms.Role.MAP_OWNER and email in self.model.owners:
       self.model.owners.remove(email)
     self.model.put()
 
@@ -947,16 +647,17 @@ class Map(object):
     # When a user's permission is changed to viewer, editor, or owner,
     # their former permission level is revoked.
     # Does nothing if role is not in permissions.
-    self.AssertAccess(Role.MAP_OWNER)
+    self.AssertAccess(perms.Role.MAP_OWNER)
     email = str(user.email())  # The lists need basic strings.
-    permissions = [Role.MAP_VIEWER, Role.MAP_EDITOR, Role.MAP_OWNER]
+    permissions = [
+        perms.Role.MAP_VIEWER, perms.Role.MAP_EDITOR, perms.Role.MAP_OWNER]
     if role not in permissions:
       return
-    elif role == Role.MAP_VIEWER and email not in self.model.viewers:
+    elif role == perms.Role.MAP_VIEWER and email not in self.model.viewers:
       self.model.viewers.append(email)
-    elif role == Role.MAP_EDITOR and email not in self.model.editors:
+    elif role == perms.Role.MAP_EDITOR and email not in self.model.editors:
       self.model.editors.append(email)
-    elif role == Role.MAP_OWNER and email not in self.model.owners:
+    elif role == perms.Role.MAP_OWNER and email not in self.model.owners:
       self.model.owners.append(email)
 
     # Take away the other permissions
@@ -967,11 +668,11 @@ class Map(object):
 
   def CheckAccess(self, role, user=None, policy=None):
     """Checks whether a user has the specified access role for this map."""
-    return CheckAccess(role, self, user, policy=policy)
+    return perms.CheckAccess(role, self, user, policy=policy)
 
   def AssertAccess(self, role, user=None, policy=None):
     """Requires a user to have the specified access role for this map."""
-    AssertAccess(role, self, user, policy=policy)
+    perms.AssertAccess(role, self, user, policy=policy)
 
 
 class EmptyMap(Map):
@@ -990,7 +691,7 @@ class EmptyMap(Map):
 
   def GetCurrent(self):
     key = db.Key.from_path('MapModel', '0', 'MapVersionModel', 1)
-    return Struct(id=1, key=key, maproot_json=self.JSON)
+    return utils.Struct(id=1, key=key, maproot_json=self.JSON)
 
   def GetVersions(self):
     return [self.GetCurrent()]

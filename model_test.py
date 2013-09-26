@@ -15,18 +15,11 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import model
+import perms
 import test_utils
 
 from google.appengine.api import memcache
 from google.appengine.api import users
-
-
-def GetRolesForMap(map_object):
-  """Gets the set of all roles that the current user has for a MapModel."""
-  map_roles = set(model.Role) - set(
-      ['CATALOG_EDITOR', 'MAP_CREATOR', 'DOMAIN_ADMIN'])
-  return set([role for role in map_roles
-              if model.CheckAccess(role, target=map_object)])
 
 
 class MapTests(test_utils.BaseTest):
@@ -34,193 +27,6 @@ class MapTests(test_utils.BaseTest):
 
   def setUp(self):
     super(MapTests, self).setUp()
-
-  def testUserRoles(self):
-    """Verifies that user access permissions restrict actions correctly."""
-    # Check admin roles.
-    test_utils.BecomeAdmin()
-    m = model.Map.Create('{}', 'xyz.com',
-                         owners=['owner@gmail.com'],
-                         editors=['editor@gmail.com'],
-                         viewers=['viewer@gmail.com'])
-    self.assertEquals(set(['ADMIN', 'MAP_OWNER', 'MAP_EDITOR', 'MAP_VIEWER']),
-                      GetRolesForMap(m))
-
-    # Verify an admin can perform all operations.
-    version_id = m.PutNewVersion('{}')
-    m.SetWorldReadable(False)
-    m.GetCurrent()
-    m.GetVersions()
-    m.GetVersion(version_id)
-
-    # Check owner roles.
-    test_utils.SetUser('owner@gmail.com')
-    self.assertEquals(set(['MAP_OWNER', 'MAP_EDITOR', 'MAP_VIEWER']),
-                      GetRolesForMap(m))
-
-    # Verify the owner can perform expected operations.
-    self.assertRaises(
-        model.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-    version_id = m.PutNewVersion('{}')
-    m.SetWorldReadable(False)
-    m.GetCurrent()
-    m.GetVersions()
-    m.GetVersion(version_id)
-
-    # Check editor roles.
-    test_utils.SetUser('editor@gmail.com')
-    self.assertEquals(set(['MAP_EDITOR', 'MAP_VIEWER']),
-                      GetRolesForMap(m))
-
-    # Verify the editor can perform expected operations.
-    self.assertRaises(
-        model.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-    version_id = m.PutNewVersion('{}')
-    self.assertRaises(model.AuthorizationError, m.SetWorldReadable, False)
-    m.GetCurrent()
-    m.GetVersions()
-    m.GetVersion(version_id)
-
-    # Check viewer roles.
-    test_utils.SetUser('viewer@gmail.com')
-    self.assertEquals(set(['MAP_VIEWER']), GetRolesForMap(m))
-
-    # Verify the viewer can perform expected operations.
-    self.assertRaises(
-        model.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-    self.assertRaises(model.AuthorizationError, m.PutNewVersion, '{}')
-    m.GetCurrent()
-    m.GetCurrentJson()
-    self.assertRaises(model.AuthorizationError, m.GetVersion, version_id)
-    self.assertRaises(model.AuthorizationError, m.GetVersions)
-
-    # Check roles for an unknown user.
-    test_utils.SetUser('random@gmail.com')
-    # Random user can't view a non-world-readable map.
-    self.assertEquals(set(), GetRolesForMap(m))
-
-    # Verify that all operations fail.
-    self.assertRaises(model.AuthorizationError, m.PutNewVersion, '{}')
-    self.assertRaises(model.AuthorizationError, m.GetCurrent)
-    self.assertRaises(model.AuthorizationError, m.GetVersions)
-    self.assertRaises(model.AuthorizationError, m.GetVersion, version_id)
-
-    # Check roles for an unknown user on a published map.
-    m.model.world_readable = True
-
-    self.assertEquals(set(['MAP_VIEWER']), GetRolesForMap(m))
-
-    # Verify the user can perform only the expected operations.
-    self.assertRaises(
-        model.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-    self.assertRaises(model.AuthorizationError, m.PutNewVersion, '{}')
-    self.assertRaises(model.AuthorizationError, m.SetWorldReadable, True)
-    m.GetCurrent()
-    self.assertRaises(model.AuthorizationError, m.GetVersion, version_id)
-    self.assertRaises(model.AuthorizationError, m.GetVersions)
-
-  def testDomainRoles(self):
-    """Verifies that domain access permissions restrict actions correctly."""
-    test_utils.BecomeAdmin()
-    m = model.Map.Create('{}', 'foo.com', domain_role='MAP_OWNER')
-
-    # Verify that user@foo.com gets the domain role for foo.com.
-    test_utils.SetUser('user@foo.com')
-    self.assertEquals(set(['MAP_OWNER', 'MAP_EDITOR', 'MAP_VIEWER']),
-                      GetRolesForMap(m))
-
-    m.model.domain_role = model.Role.MAP_EDITOR
-    self.assertEquals(set(['MAP_EDITOR', 'MAP_VIEWER']), GetRolesForMap(m))
-
-    m.model.domain_role = model.Role.MAP_VIEWER
-    self.assertEquals(set(['MAP_VIEWER']), GetRolesForMap(m))
-
-    # Verify that ADMIN doesn't apply to domains.
-    m.model.domain_role = model.Role.ADMIN
-    self.assertEquals(set(), GetRolesForMap(m))
-
-  def testMapCreatorDomains(self):
-    """Verifies that the map_creator_domains setting is respected."""
-    test_utils.BecomeAdmin()
-    model.SetGlobalRoles('foo.com', [[model.Role.MAP_CREATOR, 'xyz.com']])
-
-    # bar@foo.com has the CREATOR role.
-    current_user = test_utils.SetUser('bar@foo.com')
-    access_policy = model.AccessPolicy()
-    self.assertTrue(
-        access_policy.HasGlobalRole(
-            current_user, [model.Role.MAP_CREATOR, 'xyz.com']))
-    self.assertTrue(
-        model.CheckAccess(model.Role.MAP_CREATOR, 'xyz.com'),
-        'user %s in domain %s failed CheckAccess for %s' % (
-            current_user, model.GetUserDomain(current_user),
-            [model.Role.MAP_CREATOR, 'xyz.com']))
-    self.assertFalse(model.CheckAccess(model.Role.ADMIN))
-    model.Map.Create('{}', 'xyz.com')
-
-    # foo@bar.com doesn't have the CREATOR role.
-    test_utils.SetUser('foo@bar.com')
-    self.assertFalse(
-        model.CheckAccess(
-            model.Role.MAP_CREATOR, target='xyz.com'))
-    self.assertRaises(
-        model.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-
-  def testDomainAdminRole(self):
-    test_utils.BecomeAdmin()
-    model.SetGlobalRoles('xyz.com', [[model.Role.DOMAIN_ADMIN, 'xyz.com']])
-    model.SetGlobalRoles(
-        'foo@not-xyz.com', [[model.Role.DOMAIN_ADMIN, 'xyz.com']])
-    test_utils.SetUser('foo@xyz.com')
-    self.assertTrue(
-        model.CheckAccess(model.Role.DOMAIN_ADMIN, 'xyz.com'))
-    test_utils.SetUser('foo@not-xyz.com')
-    self.assertTrue(
-        model.CheckAccess(model.Role.DOMAIN_ADMIN, 'xyz.com'))
-    test_utils.SetUser('bar@not-xyz.com')
-    self.assertFalse(
-        model.CheckAccess(model.Role.DOMAIN_ADMIN, 'xyz.com'))
-    test_utils.BecomeAdmin()
-    self.assertTrue(
-        model.CheckAccess(model.Role.DOMAIN_ADMIN, 'xyz.com'))
-
-  def assertEqualDomainPerms(self, expected, actual):
-    self.assertEqual(len(expected), len(actual))
-    for key, perms in expected.iteritems():
-      self.assertIn(key, actual)
-      self.assertItemsEqual(perms, actual[key])
-
-  def testSetGetDomainRoles(self):
-    test_utils.BecomeAdmin()
-    # Anyone at xyz.com can create maps on xyz or on abc.com
-    model.SetDomainRoles('xyz.com', 'xyz.com', [model.Role.MAP_CREATOR])
-    model.SetDomainRoles('xyz.com', 'abc.com', [model.Role.MAP_CREATOR])
-    # Anyone at abc.com can create maps and edit the catalog at abc.com
-    model.SetDomainRoles('abc.com', 'abc.com',
-                         [model.Role.CATALOG_EDITOR, model.Role.MAP_CREATOR])
-    # Sally is a domain admin and catalog editor for xyz.com, and a map creator
-    # for abc.com
-    model.SetDomainRoles('sally@xyz.com', 'xyz.com',
-                         [model.Role.DOMAIN_ADMIN, model.Role.CATALOG_EDITOR])
-    model.SetDomainRoles('sally@xyz.com', 'abc.com', [model.Role.MAP_CREATOR])
-    # Bob is a map creator at xyz.com, despite belonging to abc.com
-    model.SetDomainRoles('bob@abc.com', 'xyz.com', [model.Role.MAP_CREATOR])
-    # Zarg is a map creator at unimportant.org
-    model.SetDomainRoles('zarg@unimportant.org', 'unimportant.org',
-                         [model.Role.MAP_CREATOR])
-    # Ensure other values stored in Config don't interfere
-    model.SetInitialDomainRole('xyz.com', model.Role.MAP_VIEWER)
-
-    self.assertEqualDomainPerms(
-        {'xyz.com': [model.Role.MAP_CREATOR],
-         'sally@xyz.com': [model.Role.DOMAIN_ADMIN, model.Role.CATALOG_EDITOR],
-         'bob@abc.com': [model.Role.MAP_CREATOR]},
-        model.GetSubjectsInDomain('xyz.com'))
-    self.assertEqualDomainPerms(
-        {'xyz.com': [model.Role.MAP_CREATOR],
-         'abc.com': [model.Role.CATALOG_EDITOR, model.Role.MAP_CREATOR],
-         'sally@xyz.com': [model.Role.MAP_CREATOR]},
-        model.GetSubjectsInDomain('abc.com'))
 
   def testVersions(self):
     """Verifies that creating and setting versions works properly."""
@@ -251,7 +57,7 @@ class MapTests(test_utils.BaseTest):
     m = model.Map.Create(json, 'xyz.com')
 
     test_utils.SetUser('random@gmail.com')
-    self.assertRaises(model.AuthorizationError, m.GetCurrent)
+    self.assertRaises(perms.AuthorizationError, m.GetCurrent)
 
     test_utils.SetUser('admin@google.com')
     m.SetWorldReadable(True)
@@ -261,14 +67,14 @@ class MapTests(test_utils.BaseTest):
     test_utils.SetUser('admin@google.com')
     m.SetWorldReadable(False)
     test_utils.SetUser('random@gmail.com')
-    self.assertRaises(model.AuthorizationError, m.GetCurrent)
+    self.assertRaises(perms.AuthorizationError, m.GetCurrent)
 
   def testRevokePermission(self):
     """Verifies internal model permission lists are correctly modified."""
     admin = test_utils.BecomeAdmin()
     json = '{"description": "description1"}'
     m = model.Map.Create(json, 'xyz.com')
-    access_policy = model.AccessPolicy()
+    access_policy = perms.AccessPolicy()
 
     user = users.User('user@gmail.com')
     user2 = users.User('user2@gmail.com')
@@ -278,9 +84,9 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([], m.model.editors)
     self.assertEquals([admin.email()], m.model.owners)
 
-    permissions = {model.Role.MAP_VIEWER: m.model.viewers,
-                   model.Role.MAP_EDITOR: m.model.editors,
-                   model.Role.MAP_OWNER: m.model.owners}
+    permissions = {perms.Role.MAP_VIEWER: m.model.viewers,
+                   perms.Role.MAP_EDITOR: m.model.editors,
+                   perms.Role.MAP_OWNER: m.model.owners}
     for role in permissions:
       # Local copy is manually updated to reflect proper state of model list.
       expected_users = list(permissions[role])
@@ -314,9 +120,9 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([admin.email()], m.model.owners)
 
     # Should do nothing: only viewer, editor, owner revokable.
-    m.AssertAccess(model.Role.ADMIN, admin)
-    m.RevokePermission(model.Role.ADMIN, admin)
-    m.AssertAccess(model.Role.ADMIN, admin)
+    m.AssertAccess(perms.Role.ADMIN, admin)
+    m.RevokePermission(perms.Role.ADMIN, admin)
+    m.AssertAccess(perms.Role.ADMIN, admin)
 
     self.assertEquals([], m.model.viewers)
     self.assertEquals([], m.model.editors)
@@ -329,7 +135,7 @@ class MapTests(test_utils.BaseTest):
     test_utils.BecomeAdmin()
     json = '{"description": "description1"}'
     m = model.Map.Create(json, 'xyz.com')
-    access_policy = model.AccessPolicy()
+    access_policy = perms.AccessPolicy()
 
     admin = test_utils.SetUser('admin@google.com')
     user = users.User('user@gmail.com')
@@ -339,9 +145,9 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([], m.model.editors)
     self.assertEquals([admin.email()], m.model.owners)
 
-    permissions = {model.Role.MAP_VIEWER: m.model.viewers,
-                   model.Role.MAP_EDITOR: m.model.editors,
-                   model.Role.MAP_OWNER: m.model.owners}
+    permissions = {perms.Role.MAP_VIEWER: m.model.viewers,
+                   perms.Role.MAP_EDITOR: m.model.editors,
+                   perms.Role.MAP_OWNER: m.model.owners}
     for role in permissions:
       expected_users = list(permissions[role])
       m.ChangePermissionLevel(role, user)  # Grant permission.
@@ -359,8 +165,8 @@ class MapTests(test_utils.BaseTest):
 
     # Should do nothing: only viewer, editor, owner roles
     # changeable permissions.
-    m.ChangePermissionLevel(model.Role.ADMIN, user)
-    self.assertFalse(m.CheckAccess(model.Role.ADMIN, user, access_policy))
+    m.ChangePermissionLevel(perms.Role.ADMIN, user)
+    self.assertFalse(m.CheckAccess(perms.Role.ADMIN, user, access_policy))
 
   def testCreate(self):
     """Verifies that map creation works properly."""
@@ -376,7 +182,7 @@ class MapTests(test_utils.BaseTest):
 
   def testDelete(self):
     """Tests whether map deletion works properly."""
-    m, _ = CreateMapAsAdmin()
+    m, _ = test_utils.CreateMapAsAdmin()
     self.assertEquals(m, model.Map.Get(m.id))
     m.Delete()
     self.assertEquals(None, model.Map.Get(m.id))
@@ -411,8 +217,8 @@ class MapTests(test_utils.BaseTest):
     model.Config.Set(key, [3, 4, {'a': 'b'}, None])
     self.assertEquals([3, 4, {'a': 'b'}, None], model.Config.Get(key))
     self.assertEquals(None, model.GetInitialDomainRole('xyz.com'))
-    model.SetInitialDomainRole('xyz.com', model.Role.MAP_VIEWER)
-    self.assertEquals(model.Role.MAP_VIEWER,
+    model.SetInitialDomainRole('xyz.com', perms.Role.MAP_VIEWER)
+    self.assertEquals(perms.Role.MAP_VIEWER,
                       model.GetInitialDomainRole('xyz.com'))
 
   def testGetAll(self):
@@ -429,15 +235,8 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals(all_maps, ModelKeys(list(model.Map.GetViewable())))
     self.assertEquals(all_maps, ModelKeys(list(model.Map.GetAll())))
     test_utils.SetUser('john.q.public@gmail.com')
-    self.assertRaises(model.AuthorizationError, model.Map.GetAll)
+    self.assertRaises(perms.AuthorizationError, model.Map.GetAll)
     self.assertEquals(public_maps, ModelKeys(model.Map.GetViewable()))
-
-
-def CreateMapAsAdmin(**kwargs):
-  test_utils.BecomeAdmin()
-  map_object = model.Map.Create(
-      '{"description": "description", "title": "title"}', 'xyz.com', **kwargs)
-  return map_object, map_object.GetCurrent().id
 
 
 class CatalogEntryTests(test_utils.BaseTest):
@@ -445,14 +244,14 @@ class CatalogEntryTests(test_utils.BaseTest):
 
   def testCreate(self):
     """Tests creation of a CatalogEntry."""
-    mm, _ = CreateMapAsAdmin(viewers=['random_user@gmail.com'])
+    mm, _ = test_utils.CreateMapAsAdmin(viewers=['random_user@gmail.com'])
 
     # Random users shouldn't be able to create catalog entries.
     test_utils.SetUser('random_user@gmail.com')
-    self.assertRaises(model.AuthorizationError, model.CatalogEntry.Create,
+    self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Create,
                       'foo.com', 'label', mm, is_listed=True)
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Create should work.
-    model.SetGlobalRoles('random_user@gmail.com', [model.Role.CATALOG_EDITOR])
+    perms.SetGlobalRoles('random_user@gmail.com', [perms.Role.CATALOG_EDITOR])
     mc = model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
 
     self.assertEquals('foo.com', mc.domain)
@@ -465,7 +264,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     model.CatalogEntry.Create('foo.com', 'label', mm)
 
   def testDelete(self):
-    mm, _ = CreateMapAsAdmin(viewers=['random_user@gmail.com'])
+    mm, _ = test_utils.CreateMapAsAdmin(viewers=['random_user@gmail.com'])
     model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
 
     # Validate that CatalogEntry is created successfully.
@@ -474,10 +273,10 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertRaises(ValueError, model.CatalogEntry.Delete, 'foo.com', 'xyz')
     # Random users shouldn't be able to delete catalog entries.
     test_utils.SetUser('random_user@gmail.com')
-    self.assertRaises(model.AuthorizationError, model.CatalogEntry.Delete,
+    self.assertRaises(perms.AuthorizationError, model.CatalogEntry.Delete,
                       'foo.com', 'label')
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Delete should work.
-    model.SetGlobalRoles('random_user@gmail.com', [model.Role.CATALOG_EDITOR])
+    perms.SetGlobalRoles('random_user@gmail.com', [perms.Role.CATALOG_EDITOR])
     model.CatalogEntry.Delete('foo.com', 'label')
 
     # Assert that the entry is successfully deleted.
@@ -487,7 +286,7 @@ class CatalogEntryTests(test_utils.BaseTest):
 
   def testUpdate(self):
     """Tests modification and update of an existing CatalogEntry."""
-    mm, vid = CreateMapAsAdmin(viewers=['random_user@gmail.com'])
+    mm, vid = test_utils.CreateMapAsAdmin(viewers=['random_user@gmail.com'])
     mc = model.CatalogEntry.Create('foo.com', 'label', mm, is_listed=True)
     self.assertEquals('title', mc.title)
 
@@ -501,9 +300,9 @@ class CatalogEntryTests(test_utils.BaseTest):
 
     # Random users shouldn't be able to update catalog entries.
     test_utils.SetUser('random_user@gmail.com')
-    self.assertRaises(model.AuthorizationError, mc.Put)
+    self.assertRaises(perms.AuthorizationError, mc.Put)
     # After we grant the CATALOG_EDITOR role, CatalogEntry.Put should work.
-    model.SetGlobalRoles('random_user@gmail.com', [model.Role.CATALOG_EDITOR])
+    perms.SetGlobalRoles('random_user@gmail.com', [perms.Role.CATALOG_EDITOR])
     mc.Put()
 
     # The CatalogEntry should now point at the new MapVersion.
@@ -515,7 +314,7 @@ class CatalogEntryTests(test_utils.BaseTest):
 
   def testListedMaps(self):
     """Tests CatalogEntry.GetAll{InDomain} and .GetListed{InDomain}."""
-    mm, _ = CreateMapAsAdmin()
+    mm, _ = test_utils.CreateMapAsAdmin()
     mc = model.CatalogEntry.Create('foo.com', 'abcd', mm, is_listed=False)
 
     self.assertEquals(0, len(model.CatalogEntry.GetListed()))
@@ -542,26 +341,6 @@ class CatalogEntryTests(test_utils.BaseTest):
     maps = model.CatalogEntry.GetListedInDomain('foo.com')
     self.assertEquals(1, len(maps))
     self.assertEquals(mc.model.key(), maps[0].model.key())
-
-  def testCheckAccessRaisesOnBadTarget(self):
-    my_map, _ = CreateMapAsAdmin()
-
-    # Roles that require a domain as the target
-    for role in (model.Role.CATALOG_EDITOR, model.Role.MAP_CREATOR):
-      # Test both no target and a target of the wrong class
-      self.assertRaises(ValueError, model.CheckAccess, role)
-      self.assertRaises(ValueError, model.CheckAccess, role, target=my_map)
-
-    # Roles that require a map as a target
-    for role in (model.Role.MAP_OWNER, model.Role.MAP_EDITOR,
-                 model.Role.MAP_VIEWER):
-      # Test both no target and a target of the wrong class
-      self.assertRaises(ValueError, model.CheckAccess, role)
-      self.assertRaises(ValueError, model.CheckAccess, role, target='xyz.com')
-
-  def testCheckAssertRaisesOnUnknownRole(self):
-    self.assertFalse('NotARole' in model.Role)
-    self.assertRaises(ValueError, model.CheckAccess, 'NotARole')
 
 
 if __name__ == '__main__':

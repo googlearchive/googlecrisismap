@@ -23,9 +23,9 @@ import zipfile
 import base_handler
 import legend_item_extractor
 from legend_item_extractor import GetLegendItems
-import model
 import mox
 import test_utils
+import utils
 
 from google.appengine.api import urlfetch
 
@@ -537,7 +537,7 @@ class LegendItemExtractorTest(test_utils.BaseTest):
 
     def DoTest(kml, expected):
       self.mox.StubOutWithMock(urlfetch, 'fetch')
-      urlfetch.fetch(url).AndReturn(model.Struct(content=kml))
+      urlfetch.fetch(url).AndReturn(utils.Struct(content=kml))
 
       self.mox.ReplayAll()
       self.assertEquals(expected, GetLegendItems.GetKmlFromUrl(url))
@@ -559,7 +559,7 @@ class LegendItemExtractorTest(test_utils.BaseTest):
       zip_file.close()
 
       self.mox.StubOutWithMock(urlfetch, 'fetch')
-      urlfetch.fetch(url).AndReturn(model.Struct(content=string_io.getvalue()))
+      urlfetch.fetch(url).AndReturn(utils.Struct(content=string_io.getvalue()))
 
       self.mox.ReplayAll()
       self.assertEquals(expected_content, GetLegendItems.GetKmlFromUrl(url))

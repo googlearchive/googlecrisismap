@@ -15,7 +15,7 @@ __author__ = 'rew@google.com (Becky Willrich)'
 import urllib
 
 import admin
-import model
+import perms
 import test_utils
 
 
@@ -24,14 +24,14 @@ class AdminTest(test_utils.BaseTest):
 
   def setUp(self):
     super(AdminTest, self).setUp()
-    model.SetDomainRoles('xyz.com', 'xyz.com', [model.Role.MAP_CREATOR])
-    model.SetDomainRoles(
+    perms.SetDomainRoles('xyz.com', 'xyz.com', [perms.Role.MAP_CREATOR])
+    perms.SetDomainRoles(
         'admin@xyz.com', 'xyz.com',
-        [model.Role.CATALOG_EDITOR, model.Role.DOMAIN_ADMIN])
-    model.SetDomainRoles(
-        'catalog@xyz.com', 'xyz.com', [model.Role.CATALOG_EDITOR])
-    model.SetDomainRoles(
-        'outsider@not-xyz.com', 'xyz.com', [model.Role.MAP_CREATOR])
+        [perms.Role.CATALOG_EDITOR, perms.Role.DOMAIN_ADMIN])
+    perms.SetDomainRoles(
+        'catalog@xyz.com', 'xyz.com', [perms.Role.CATALOG_EDITOR])
+    perms.SetDomainRoles(
+        'outsider@not-xyz.com', 'xyz.com', [perms.Role.MAP_CREATOR])
 
   def testGet_WithPermissions(self):
     test_utils.SetUser('admin@xyz.com')
@@ -51,7 +51,7 @@ class AdminTest(test_utils.BaseTest):
     test_utils.SetUser('nobody@xyz.com')
     handler = test_utils.SetupHandler(
         '/crisismap/a/.admin/xyz.com', admin.Admin())
-    self.assertRaises(model.AuthorizationError, handler.get, 'xyz.com')
+    self.assertRaises(perms.AuthorizationError, handler.get, 'xyz.com')
 
   def testPost(self):
     # Give catalog@ domain admin; revoke perms for outsider@; create
@@ -74,13 +74,13 @@ class AdminTest(test_utils.BaseTest):
     self.assertTrue(
         '/crisismap/a/.admin/xyz.com' in response.headers['Location'])
 
-    self.assertItemsEqual([model.Role.DOMAIN_ADMIN, model.Role.CATALOG_EDITOR],
-                          model.GetDomainRoles('catalog@xyz.com', 'xyz.com'))
-    self.assertFalse(model.GetDomainRoles('outsider@not-xyz.com', 'xyz.com'))
+    self.assertItemsEqual([perms.Role.DOMAIN_ADMIN, perms.Role.CATALOG_EDITOR],
+                          perms.GetDomainRoles('catalog@xyz.com', 'xyz.com'))
+    self.assertFalse(perms.GetDomainRoles('outsider@not-xyz.com', 'xyz.com'))
     self.assertItemsEqual(
-        [model.Role.DOMAIN_ADMIN, model.Role.MAP_CREATOR,
-         model.Role.CATALOG_EDITOR],
-        model.GetDomainRoles('admin2@xyz.com', 'xyz.com'))
+        [perms.Role.DOMAIN_ADMIN, perms.Role.MAP_CREATOR,
+         perms.Role.CATALOG_EDITOR],
+        perms.GetDomainRoles('admin2@xyz.com', 'xyz.com'))
 
   def testValidateEmail(self):
     self.assertTrue(admin.ValidateEmail('user@domain.subdomain.com'))

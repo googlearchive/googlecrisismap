@@ -25,6 +25,7 @@ import base_handler
 import cache
 import metadata
 import model
+import perms
 
 from google.appengine.api import users
 from google.appengine.ext import db
@@ -249,7 +250,7 @@ def GetConfig(request, map_object=None, catalog_entry=None):
     config['map_id'] = map_object.id
     config['save_url'] = '/crisismap/api/maps/%s' % map_object.id
     config['share_url'] = '/crisismap/share/%s' % map_object.id
-    config['enable_editing'] = map_object.CheckAccess(model.Role.MAP_EDITOR)
+    config['enable_editing'] = map_object.CheckAccess(perms.Role.MAP_EDITOR)
     config['draft_mode'] = True
     key = map_object.current_version_key
   if map_object or catalog_entry:

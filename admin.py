@@ -18,7 +18,7 @@ import re
 import webapp2
 
 import base_handler
-import model
+import perms
 
 from google.appengine.api import users
 
@@ -40,9 +40,9 @@ class Admin(base_handler.BaseHandler):
   def get(self, domain):  # pylint: disable=g-bad-name
     """Displays the administration page for the given domain."""
     admin = users.get_current_user()
-    model.AssertAccess(model.Role.DOMAIN_ADMIN, domain)
+    perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain)
 
-    all_users = model.GetSubjectsInDomain(domain)
+    all_users = perms.GetSubjectsInDomain(domain)
     domains = sorted(((u, all_users[u]) for u in all_users if '@' not in u),
                      cmp=lambda x, y: cmp(x[0], y[0]))
     emails = sorted(((u, all_users[u]) for u in all_users if '@' in u),
@@ -63,7 +63,7 @@ class Admin(base_handler.BaseHandler):
       A dictionary keyed by user/domain.  Values are lists of the roles
       which the key should have.
     """
-    curr_users = model.GetSubjectsInDomain(domain).keys()
+    curr_users = perms.GetSubjectsInDomain(domain).keys()
     new_perms = dict((user, []) for user in curr_users)
     new_user = None
     for key, value in inputs.iteritems():
@@ -85,10 +85,10 @@ class Admin(base_handler.BaseHandler):
     return new_perms
 
   def post(self, domain):  # pylint: disable=g-bad-name
-    model.AssertAccess(model.Role.DOMAIN_ADMIN, domain)
+    perms.AssertAccess(perms.Role.DOMAIN_ADMIN, domain)
     new_perms = self.FindNewPerms(self.request.POST, domain)
     for user_or_domain, new_roles in new_perms.iteritems():
-      model.SetDomainRoles(user_or_domain, domain, new_roles)
+      perms.SetDomainRoles(user_or_domain, domain, new_roles)
     self.redirect(self.request.path_qs)
 
 
