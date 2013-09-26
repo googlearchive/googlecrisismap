@@ -59,11 +59,8 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
 
   var publisherName = footerParams['publisher_name'];
   if (publisherName) {
-    /** @desc Indicates which person/company a map was published by. */
-    var MSG_PUBLISHED_BY = goog.getMsg('Published by {$publisherName}',
-        {'publisherName': publisherName});
-    cm.ui.append(parentElem, cm.ui.create('span', {}, MSG_PUBLISHED_BY,
-        cm.ui.SEPARATOR_DOT));
+    cm.ui.append(parentElem, cm.ui.create('span', {},
+        cm.getMsgPublisherAttribution(publisherName), cm.ui.SEPARATOR_DOT));
   }
   cm.ui.append(parentElem, this.footerSpan_);
 

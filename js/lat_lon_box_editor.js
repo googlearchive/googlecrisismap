@@ -88,9 +88,7 @@ cm.LatLonBoxEditor = function(parentElem, id, options) {
    * @private
    */
   this.viewportInfo_ = cm.ui.create('div', {'class': cm.css.VIEWPORT_INFO},
-      'For layers of type \'Tiles\', please provide accurate viewport values' +
-      ' in order to ensure that only tiles within the defined area are' +
-      ' requested.');
+      cm.UNTRANSLATED_MSG_TILE_LAYER_VIEWPORT_WARNING);
 
   cm.ui.append(parentElem,
       cm.ui.create('table',
@@ -106,7 +104,7 @@ cm.LatLonBoxEditor = function(parentElem, id, options) {
       cm.ui.create('div', {'class': cm.css.COPY_VIEWPORT},
           this.copyViewportCheckbox_,
           cm.ui.create('label', {'for': 'cm-copy-viewport-checkbox'},
-              'Copy from map viewport')),
+              cm.MSG_USE_CURRENT_MAP_VIEWPORT)),
       this.nsLabel_,
       this.ewLabel_,
       this.viewportInfo_
@@ -116,6 +114,9 @@ cm.LatLonBoxEditor = function(parentElem, id, options) {
       [this.north_, this.west_, this.east_, this.south_],
       ['change', 'input', 'keyup', 'cut', 'paste'], function() {
     var error = null;
+    // TODO(kpy): This way of constructing error messages doesn't work for
+    // internationalization.  Internationalize these when we get around to
+    // redesigning the LatLonBoxEditor UI.
     function parseValue(input, name, minimum, maximum) {
       var number = input.value - 0;
       if (!input.value.match(/\S/) || isNaN(number) || !isFinite(number)) {

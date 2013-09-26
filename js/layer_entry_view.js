@@ -468,14 +468,13 @@ cm.LayerEntryView.prototype.updateTime_ = function() {
   var time = this.metadataModel_.getUpdateTime(this.model_);
   if (time) {
     // Convert time in seconds to time in milliseconds.
-    var d = new Date(time * 1000);
-    // Format a string that displays Month Day, Year instead of the
-    // getDateString "long" default which includes the day of the week as well.
-    var dateMsg = this.dateFormatter_.format(d);
-    /** @desc The last time this layer was updated. */
-    var MSG_LAST_UPDATED = goog.getMsg('Last updated: {$formattedTime}',
-      {formattedTime: goog.date.relative.getDateString(d, undefined, dateMsg)});
-    message = MSG_LAST_UPDATED;
+    var date = new Date(time * 1000);
+    // For times more than 24 hours ago, we supply a custom string in the form
+    // "Month Day, Year" instead of the getDateString "long" default, which
+    // includes the day of the week as well.
+    var dateMsg = this.dateFormatter_.format(date);
+    message = cm.getMsgLastUpdatedTime(
+        goog.date.relative.getDateString(date, undefined, dateMsg));
   }
   cm.ui.setText(this.timeElem_, message);
 };
