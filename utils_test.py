@@ -78,5 +78,15 @@ class UtilsSetAndTestTests(test_utils.BaseTest):
     self.assertFalse(utils.IsValidEmail('a@b'))
     self.assertFalse(utils.IsValidEmail('a@b.'))
 
+  def testStripHtmlTags(self):
+    self.assertEqual('ac', utils.StripHtmlTags('a<b>c</b>'))
+    self.assertEqual('link', utils.StripHtmlTags('<a href="URL">link</a>'))
+    self.assertEqual('justsomejs', utils.StripHtmlTags(
+        'just<script>some</script>js'))
+    # Keeps entity and charrefs.
+    self.assertEqual('foo &amp; bar', utils.StripHtmlTags('foo &amp; bar'))
+    self.assertEqual('foo &#123; bar', utils.StripHtmlTags('foo &#123; bar'))
+    self.assertEqual('foo &#xf8; bar', utils.StripHtmlTags('foo &#xf8; bar'))
+
 if __name__ == '__main__':
   test_utils.main()

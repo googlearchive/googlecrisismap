@@ -14,10 +14,28 @@ specific language governing permissions and limitations under the License.
 {% load i18n %}
 <!DOCTYPE html> {# activates Strict mode in most browsers including IE8 #}
 <head>
-  <title>Google Crisis Map</title>
+  {# Meta tag block #}
+  <title>{{map_title}}</title>
+  <meta name="description" content="{{map_description}}">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta itemprop="image" content="{{root}}/.static/favicon.ico">
   <meta name="viewport" content="maximum-scale=1.0,initial-scale=1.0,user-scalable=no">
+  <!-- Facebook tags -->
+  <meta content="{{map_title}}" property="og:title">
+  <meta content="{{map_description}}" property="og:description">
+  <meta content="website" property="og:type">
+  <meta content="Google Crisis Map" property="og:site_name">
+  <meta content="{{map_url}}" property="og:url">
+  <meta content="{{map_image}}" property="og:image">
+  <meta content="http://mw1.google.com/crisisresponse/images/crisismap-thumbnail.png" property="og:image">
+  <!-- Twitter tags -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="Google Crisis Map">
+  <meta name="twitter:title" content="{{map_title}}">
+  <meta name="twitter:description" content="{{map_description}}">
+  <meta name="twitter:url" content="{{map_url}}">
+  <meta name="twitter:image" content="{{map_image}}">
+  <meta name="twitter:image" content="http://mw1.google.com/crisisresponse/images/crisismap-thumbnail.png">
   {# Custom head HTML #}
   {{ head_html|safe }}
   <link rel="stylesheet" href="{{root}}/.static/mapviewer.css">

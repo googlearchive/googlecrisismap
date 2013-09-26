@@ -15,6 +15,7 @@
 __author__ = 'giencke@google.com (Pete Giencke)'
 
 import json
+import re
 import urllib
 import urlparse
 
@@ -25,6 +26,8 @@ import metadata
 import model
 import perms
 import users
+import utils
+
 
 from google.appengine.ext import db
 
@@ -254,6 +257,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
         request.get('hl'),
         request.headers.get('accept-language'),
         maproot_json.get('default_language'))
+    result['thumbnail_url'] = maproot_json.get('thumbnail_url', '')
     ui_region = maproot_json.get('region', ui_region)
     cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
     result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
@@ -305,16 +309,40 @@ class MapByLabel(base_handler.BaseHandler):
       raise base_handler.Error(404, 'Label %s/%s not found.' % (domain, label))
     cm_config = GetConfig(self.request, catalog_entry=entry)
     cm_config['label'] = label
+
+    # Set Facebook / Twitter sharing information. Note that this info does not
+    # go on draft maps.
+    map_title = cm_config['map_root'].get('title') + ' | Google Crisis Map'
+    # Simply stripping HTML
+    map_description = MakePrettyDesc(cm_config['map_root'].get('description'))
+    # Make URL like we do in GetMapMenuItems.
+    map_url = self.request.root_path + '/%s/%s/' % (entry.domain, entry.label)
     # Security note: cm_config_json is assumed to be safe JSON; all other
     # template variables must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
         'head_html': cm_config.get('custom_head_html', ''),
+        'map_title': map_title,
+        'map_description': map_description,
+        'map_url': 'http://google.org/crisismap' + map_url,
+        'map_image': cm_config['thumbnail_url'],
         'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),
         'ui_lang': cm_config['ui_lang'],
         'maps_api_url': cm_config['maps_api_url'],
         'hide_footer': cm_config.get('hide_footer', False),
         'embedded': self.request.get('embedded', False)
     }))
+
+
+def MakePrettyDesc(desc):
+  """Utility for making map descriptions presentable for FB/Twitter."""
+
+  block_tag = re.compile(r'<(p|div|br|li|td)[^>]*>', re.I)
+  tag = re.compile(r'<[^>]*>')
+  spaces = re.compile(r'(\s|&nbsp;)+(/(\s|&nbsp;)+)+')
+  # Replace certain HTML tags with '/' and compress spaces.
+  desc = re.sub(spaces, ' / ', re.sub(tag, '', re.sub(block_tag, ' / ', desc)))
+  # Strip all other HTML tags.
+  return utils.StripHtmlTags(desc)
 
 
 class MapById(base_handler.BaseHandler):
@@ -341,8 +369,10 @@ class MapById(base_handler.BaseHandler):
 
     cm_config = GetConfig(self.request, map_object=map_object,
                           xsrf_token=self.xsrf_token)
-    # Security note: cm_config_json is assumed to be safe JSON; all other
-    # template variables must be escaped in the template.
+
+    # Security note: cm_config_json is assumed to be safe JSON, and head_html
+    # and meta_tags are assumed to be safe HTML; all other template variables
+    # must be escaped in the template.
     self.response.out.write(self.RenderTemplate('map.html', {
         'head_html': cm_config.get('custom_head_html', ''),
         'cm_config_json': base_handler.ToHtmlSafeJson(cm_config),

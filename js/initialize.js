@@ -259,7 +259,6 @@ function buildUi(mapRoot, frame, opt_menuItems, opt_config, opt_language) {
   // Create the AppState and the model; set up configuration flags.
   var appState = new cm.AppState(opt_language);
   var mapModel = cm.MapModel.newFromMapRoot(mapRoot);
-  document.title = /** @type string */(mapModel.get('title'));
   var metadataModel = new cm.MetadataModel(
       mapModel, config['metadata'],
       config['enable_metadata_pipeline'] && config['metadata_url']);

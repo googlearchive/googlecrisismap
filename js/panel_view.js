@@ -27,7 +27,7 @@ goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('cm.util');
 goog.require('goog.array');
-goog.require('goog.dom.classes');
+goog.require('goog.dom');
 goog.require('goog.events.EventType');
 goog.require('goog.module');
 goog.require('goog.style');
@@ -317,6 +317,8 @@ cm.PanelView.prototype.updateTitle_ = function() {
   var title = /** @type string */(this.model_.get('title'));
   cm.ui.setText(this.titleElem_, title);
   cm.ui.document.title = title;
+  // var documentTitleElem = goog.dom.getElementsByTagNameAndClass('title')[0];
+  // goog.dom.setTextContent(documentTitleElem, title);
   cm.events.emit(this.panelInner_, goog.events.EventType.RESIZE);
 };
 

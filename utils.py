@@ -12,6 +12,8 @@
 
 """Utilities used throughout crisismap."""
 
+from HTMLParser import HTMLParseError
+from HTMLParser import HTMLParser
 import re
 import time
 
@@ -98,3 +100,36 @@ def SetAndTest(set_func, test_func, sleep_delta=0.05, num_tries=20):
 
 def IsValidEmail(email):
   return re.match(r'^[^@]+@([\w-]+\.)+[\w-]+$', email)
+
+
+class HtmlStripper(HTMLParser):
+  """Helper class for StripHtmlTags."""
+
+  def __init__(self):
+    HTMLParser.__init__(self)
+    self.reset()
+    self.fed = []
+
+  def handle_data(self, d):
+    self.fed.append(d)
+
+  def handle_entityref(self, name):
+    self.fed.append('&%s;' % name)
+
+  def handle_charref(self, name):
+    self.fed.append('&#%s;' % name)
+
+  def GetData(self):
+    return ''.join(self.fed)
+
+
+def StripHtmlTags(value):
+  """Returns the given HTML with all tags stripped."""
+  s = HtmlStripper()
+  try:
+    s.feed(value)
+    s.close()
+  except HTMLParseError:
+    return value
+  else:
+    return s.GetData()
