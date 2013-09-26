@@ -31,7 +31,7 @@ function main() {
   if (cm_config.maproot_url) {
     var script = document.createElement('script');
     script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', '/crisismap/.jsonp?callback=initMap' +
+    script.setAttribute('src', cm_config.json_proxy_url + '?callback=initMap' +
         '&hl=' + encodeURIComponent(cm_config.ui_lang) +
         '&url=' + encodeURIComponent(cm_config.maproot_url));
     document.getElementsByTagName('head')[0].appendChild(script);
