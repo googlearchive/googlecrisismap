@@ -102,8 +102,11 @@ class ClientConfig(db.Model):
   # Whether to hide the map title and description from the panel.
   hide_panel_header = db.BooleanProperty(default=False)
 
-  # Whether to show OpenStreetMap as a base map option.
+  # Whether to show OpenStreetMap as a base map option to all users.
   enable_osm_map_type = db.BooleanProperty(default=False)
+
+  # Whether to allow OpenStreetMap as a base map option in the editor.
+  enable_osm_map_type_editing = db.BooleanProperty(default=False)
 
   # Note: When adding future settings, the default value should reflect the
   # behavior prior to the introduction of the new setting.  To avoid confusion

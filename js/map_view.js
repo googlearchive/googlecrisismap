@@ -36,8 +36,8 @@ goog.require('goog.json');
  *         control, no pegman)?
  *     panel_side: The side of the map the panel will be placed on,
  *         which dictates placement of the map controls.
- *     enable_osm_map_type: Allow OSM as a base map option.  If the map's
- *         'map_type' is OSM but this is not enabled, we fall back to ROADMAP.
+ *     enable_osm_map_type: Show OSM as an option in the base map menu.  If the
+ *         map's 'map_type' is OSM, we show OSM regardless of this setting.
  * @param {boolean=} opt_preview Whether or not this is a preview view.
  * @constructor
  * @extends google.maps.MVCObject
@@ -157,10 +157,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
         cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES)[this.get('mapTypeId')]);
   }, this);
   cm.events.onChange(appState, 'map_type', function() {
-    var mapType = appState.get('map_type');
-    if (mapType === cm.MapModel.Type.OSM && !this.osmEnabled_) {
-      mapType = cm.MapModel.Type.ROADMAP;  // fall back if OSM is not enabled
-    }
+    var mapType = appState.get('map_type') || cm.MapModel.Type.ROADMAP;
     this.set('mapTypeId', cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[mapType]);
   }, this);
 
@@ -173,10 +170,11 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   cm.events.onChange(this.map_, 'mapTypeId', this.updateMapCopyright, this);
   this.updateMapCopyright();
 
-  // When the map type or style changes, the map type menu may need updating.
-  cm.events.onChange(this.mapModel_,
-                     ['base_map_style', 'base_map_style_name', 'map_type'],
+  // When the custom style changes, the map type menu may need updating.
+  cm.events.onChange(this.mapModel_, ['base_map_style', 'base_map_style_name'],
                      this.updateMapTypeMenu, this);
+  // When the map type changes to custom or OSM, the menu may need updating.
+  cm.events.onChange(this.appState_, 'map_type', this.updateMapTypeMenu, this);
   this.updateMapTypeMenu();
 
   // Expose our 'viewport' property as a property of the AppState.
@@ -314,9 +312,11 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
                     google.maps.MapTypeId.SATELLITE,
                     google.maps.MapTypeId.HYBRID,
                     google.maps.MapTypeId.TERRAIN];
-  var mapType = this.mapModel_.get('map_type');
+  var currentMapType = this.appState_.get('map_type');
+  var modelMapType = this.mapModel_.get('map_type');
   var id, styledMap;
-  if (mapType === cm.MapModel.Type.CUSTOM) {
+  if (currentMapType === cm.MapModel.Type.CUSTOM ||
+      modelMapType === cm.MapModel.Type.CUSTOM) {
     // Add the custom style to the map type registry and show it in the menu.
     id = /** @type string */(
         cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.CUSTOM]);
@@ -333,7 +333,8 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
     this.map_.mapTypes.set(id, /** @type google.maps.MapType */(styledMap));
     mapTypeIds.push(id);
   }
-  if (this.osmEnabled_) {
+  if (this.osmEnabled_ || currentMapType === cm.MapModel.Type.OSM ||
+      modelMapType === cm.MapModel.Type.OSM) {
     // Add the OSM map type to the map type registry and show it in the menu.
     id = /** @type string */(
         cm.MapView.MODEL_TO_MAPS_API_MAP_TYPES[cm.MapModel.Type.OSM]);
@@ -350,10 +351,10 @@ cm.MapView.prototype.updateMapTypeMenu = function() {
     mapTypeIds.push(id);
   }
   this.map_.setOptions({
-      'mapTypeControlOptions': {
-        'mapTypeIds': mapTypeIds,
-        'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
-      }
+    'mapTypeControlOptions': {
+      'mapTypeIds': mapTypeIds,
+      'style': google.maps.MapTypeControlStyle.DROPDOWN_MENU
+    }
   });
 };
 

@@ -78,8 +78,8 @@ function findEditorSpec(key, editorSpecs) {
   }
 }
 
-/** Tests that 'enable_osm_map_type' enables the OSM base map option. */
-EditPresenterTest.prototype.testEnableOsmMapType = function() {
+/** Tests that 'enable_osm_map_type_editing' enables the OSM base map option. */
+EditPresenterTest.prototype.testEnableOsmMapTypeEditing = function() {
   var OSM_CHOICE = {value: 'OSM', label: 'OpenStreetMap'};
   var map = new cm.MapModel();
   var inspector = this.expectNew_('cm.InspectorView'), specs;
@@ -94,9 +94,9 @@ EditPresenterTest.prototype.testEnableOsmMapType = function() {
   var spec = findEditorSpec('map_type', specs);
   expectThat(spec.choices, not(contains(OSM_CHOICE)));
 
-  // Try again, this time with the enable_osm_map_type flag set.
+  // Try again, this time with the enable_osm_map_type_editing flag set.
   presenter = new cm.EditPresenter(null, null, null,
-                                   {enable_osm_map_type: true});
+                                   {enable_osm_map_type_editing: true});
   cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
   // The OSM option should be present this time.
   var spec = findEditorSpec('map_type', specs);
