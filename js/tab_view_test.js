@@ -105,21 +105,6 @@ TabViewTest.prototype.testCreation = function() {
   expectEq(3, allDescendantsOf(this.tabBarElem_, withClass(TAB_CLASS)).length);
 };
 
-TabViewTest.prototype.testExpandCollapse = function() {
-  this.initializeTabView_();
-  var contentElem = findDescendantOf(this.parent_,
-                                     withClass(cm.css.TAB_CONTENT));
-  expectThat(contentElem, not(withClass(cm.css.TAB_CONTENT_COLLAPSED)));
-
-  cm.events.emit(this.tabView_.tabBar_, cm.TabBar.TAB_BAR_TOGGLED,
-                 {collapsed: true});
-  expectThat(contentElem, withClass(cm.css.TAB_CONTENT_COLLAPSED));
-
-  cm.events.emit(this.tabView_.tabBar_, cm.TabBar.TAB_BAR_TOGGLED,
-                 {collapsed: false});
-  expectThat(contentElem, not(withClass(cm.css.TAB_CONTENT_COLLAPSED)));
-};
-
 TabViewTest.prototype.testAppendTabItem = function() {
   this.initializeTabView_();
   this.tabView_.appendTabItem(
@@ -222,24 +207,4 @@ TabViewTest.prototype.testSelectedTabItem = function() {
   // Do not use expectEq() here; it will force the tabs to stringify, which
   // takes long enough to provoke a timeout.
   expectTrue(tab === this.tabView_.selectedTabItem());
-};
-
-TabViewTest.prototype.testExpandCollapse = function() {
-  this.initializeTabView_();
-  var button = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
-  var contentElem = expectDescendantOf(
-      this.parent_, withClass(cm.css.TAB_CONTENT));
-
-  // Collapse the tab panel.
-  cm.events.emit(button, 'click');
-  expectThat(contentElem, withClass(cm.css.TAB_CONTENT_COLLAPSED));
-  var expandButton = findDescendantOf(this.parent_,
-                                      withClass(cm.css.CHEVRON_DOWN));
-  expectNoDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
-
-  // Expand the tab panel.
-  cm.events.emit(button, 'click');
-  expectThat(contentElem, not(withClass(cm.css.TAB_CONTENT_COLLAPSED)));
-  expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
-  expectNoDescendantOf(this.parent_, withClass(cm.css.CHEVRON_DOWN));
 };

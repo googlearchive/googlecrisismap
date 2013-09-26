@@ -24,6 +24,7 @@ function TabPanelViewTest() {
       cm.Html.fromSanitizedHtml('TabPanelViewTest - description for MapModel'));
   this.metadataModel_ = new google.maps.MVCObject();
   this.appState_ = new cm.AppState();
+  this.below_ = false;
   this.config_ = {};
 }
 TabPanelViewTest.prototype = new cm.TestBase();
@@ -33,7 +34,7 @@ TabPanelViewTest.prototype.createTabPanelView_ = function() {
   this.parent_ = new FakeElement('div');
   this.tabPanel_ = new cm.TabPanelView(
       cm.ui.document.body, this.parent_, this.mapDiv_, this.mapModel_,
-      this.metadataModel_, this.appState_, this.config_);
+      this.metadataModel_, this.appState_, this.below_, this.config_);
 };
 
 TabPanelViewTest.prototype.testCreation = function() {
@@ -66,4 +67,50 @@ TabPanelViewTest.prototype.testConstructorHiddenHeader = function() {
   expectNoDescendantOf(
       this.parent_,
       allOf([withClass('goog-tab'), withText(hasSubstr('About'))]));
+};
+
+/** Tests construction when tab panel is placed below the map. */
+TabPanelViewTest.prototype.testConstructorBelow = function() {
+  this.below_ = true;
+  this.createTabPanelView_();
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_BELOW));
+};
+
+
+TabPanelViewTest.prototype.testExpandCollapse = function() {
+  this.createTabPanelView_();
+  var button = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
+
+  // The panel should be expanded by default.
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
+
+  // Collapse the tab panel.
+  cm.events.emit(button, 'click');
+  expectThat(button, withClass(cm.css.CHEVRON_DOWN));
+  expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
+
+  // Expand the tab panel.
+  cm.events.emit(button, 'click');
+  expectThat(button, withClass(cm.css.CHEVRON_UP));
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
+};
+
+TabPanelViewTest.prototype.testExpandCollapseBelow = function() {
+  this.below_ = true;
+  this.createTabPanelView_();
+  var button = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
+
+  // The panel should be collapsed by default. Note that this will change
+  // when we differentiate between mobile and embedded loads.
+  expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
+
+  // Expand the tab panel.
+  cm.events.emit(button, 'click');
+  expectThat(button, withClass(cm.css.CHEVRON_DOWN));
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
+
+  // Collapse the tab panel.
+  cm.events.emit(button, 'click');
+  expectThat(button, withClass(cm.css.CHEVRON_UP));
+  expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
 };

@@ -47,6 +47,7 @@ goog.require('goog.ui.Component');
 
 /** @const */var MIN_DOCUMENT_WIDTH_FOR_SIDEBAR = 600;
 /** @const */var MIN_MAP_WIDTH_FOR_SEARCHBOX = 500;
+/** @const */var BOTTOM_TAB_PANEL_FRAME_HEIGHT_FRACTION = 0.7;
 
 /**
  * Sizes the map and panel elements to fit the window.
@@ -70,7 +71,6 @@ goog.require('goog.ui.Component');
 function sizeComponents(map, container, searchbox, embedded, touch, preview,
                         mapWrapperElem, footerElem, panelView, panelElem,
                         extraViewsPlugins, extraViews, useTabPanel) {
-
   /**
    * Returns the value of the given style property for an element.  Assumes the
    * numerical value for the property.
@@ -109,24 +109,29 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
     }
     var borders = getValue(mapWrapperElem, 'border-top') +
         getValue(mapWrapperElem, 'border-bottom');
-    return container.offsetHeight - footerElem.offsetHeight -
-        margins - borders;
+    var mapHeight = container.offsetHeight - margins - borders -
+        footerElem.offsetHeight;
+    if (useTabPanel && goog.dom.classes.has(panelElem,
+                                            cm.css.TAB_PANEL_BELOW)) {
+      mapHeight = mapHeight - panelElem.offsetHeight;
+    }
+    return mapHeight;
   }
 
   goog.dom.classes.enable(container, cm.css.TOUCH, touch);
-
-  // The panel can be in docked, floating, or embedded (i.e. hidden under a
-  // button) mode.  When the window width is small, embedded mode is forced.
-  embedded = embedded || container.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
-  if (!embedded) {
-    cm.events.emit(panelElem, 'panelclose');
-  }
   var floating = goog.dom.classes.has(container, cm.css.PANEL_FLOAT);
-  if (!useTabPanel) {
-    goog.dom.classes.enable(container, cm.css.EMBEDDED, embedded);
+  var narrow = container.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
+  var narrowOrEmbedded = narrow || embedded;
+  if (useTabPanel) {
+    resizeTabPanel(panelElem, container, footerElem);
+  } else {
+    if (!narrowOrEmbedded) {
+      cm.events.emit(panelElem, 'panelclose');
+    }
     goog.dom.classes.enable(container, cm.css.PANEL_DOCK,
-                            !embedded && !floating);
+                            !narrowOrEmbedded && !floating);
   }
+  goog.dom.classes.enable(container, cm.css.EMBEDDED, narrowOrEmbedded);
 
   // In floating or embedded mode, the panel has variable height based on its
   // content, but we need to limit its maximum height to fit over the map.
@@ -148,7 +153,7 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
   }
 
   // TODO(kpy): Rework this value.  The relevant Maps API bug, which hid the
-  // searchbox behind other controls, has since been fixed.
+  // search box behind other controls, has since been fixed.
   if (searchbox) {
     var uncoveredMapWidth =
         mapWrapperElem.offsetWidth - (floating ? panelElem.offsetWidth : 0);
@@ -159,9 +164,36 @@ function sizeComponents(map, container, searchbox, embedded, touch, preview,
     }
   }
 
-  // Though the API checks the window resize itself, it's good practice to
-  // trigger the resize event any time we change the map container's size.
-  cm.events.emit(map, 'resize');
+  if (!useTabPanel) {
+    // Though the API checks the window resize itself, it's good practice to
+    // trigger the resize event any time we change the map container's size.
+    cm.events.emit(map, 'resize');
+  }
+}
+
+/**
+ * Adjust the tab panel height to a fixed fraction of the frame when the tab
+ * bar is below the map and the tab panel is expanded. This isn't a
+ * TabPanelView method because it needs access to the footer height.
+ * @param {Element} panelElem The panel element.
+ * @param {Element} frameElem The frame element surrounding the entire UI.
+ * @param {Element} footerElem The footer element.
+ */
+function resizeTabPanel(panelElem, frameElem, footerElem) {
+  var expanded = goog.dom.classes.has(panelElem, cm.css.TAB_PANEL_EXPANDED);
+  var below = goog.dom.classes.has(panelElem, cm.css.TAB_PANEL_BELOW);
+  goog.dom.classes.enable(frameElem, cm.css.PANEL_BELOW, below);
+
+  // For now, the left/right-side tab panel are nearly full-height. This should
+  // later change so that the panel height depends on its content.
+  var fraction = below ? BOTTOM_TAB_PANEL_FRAME_HEIGHT_FRACTION : 0.9;
+
+  // Compute the target map height as a percentage of frame element height.
+  var targetPanelHeight = fraction * frameElem.offsetHeight;
+
+  panelElem.style.height = expanded ?
+      Math.min(targetPanelHeight,
+               frameElem.offsetHeight - footerElem.offsetHeight) + 'px' : '';
 }
 
 /**
@@ -327,12 +359,20 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
   var arrangerElem = cm.ui.create(
       'div', {'class': [cm.css.PANEL, cm.css.ARRANGER, cm.css.HIDDEN]});
   var mapElem = cm.ui.create('div', {'class': cm.css.MAP, 'id': 'map'});
-  var mapWrapperElem = cm.ui.create(
-      'div', {'class': cm.css.MAP_WRAPPER}, mapElem, footerElem);
+  var mapWrapperElem = cm.ui.create('div', {'class': cm.css.MAP_WRAPPER},
+                                    mapElem);
+  var narrow = frameElem.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
+  var narrowOrEmbedded = narrow || embedded;
+  if (useTabPanel && narrowOrEmbedded) {
+    cm.ui.append(mapWrapperElem, panelElem);
+  }
+  cm.ui.append(mapWrapperElem, footerElem);
   var aboutTextElem = cm.ui.create(
       'div', {'class': cm.css.ABOUT_TEXT, 'id': 'cm-aboutText'});
-  cm.ui.append(frameElem, panelElem, arrangerElem, mapWrapperElem,
-               aboutTextElem);
+  if (!useTabPanel || !narrowOrEmbedded) {
+    cm.ui.append(frameElem, panelElem);
+  }
+  cm.ui.append(frameElem, arrangerElem, mapWrapperElem, aboutTextElem);
   if (goog.i18n.bidi.IS_RTL) {
     goog.ui.Component.setDefaultRightToLeft(true);
     goog.dom.classes.add(frameElem, cm.css.LAYOUT_RTL);
@@ -367,26 +407,27 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
     }
   }
   if (!(config['hide_my_location_button'] || preview)) {
-    new cm.MyLocationButton(mapView.getMap(), useTabPanel);
+    new cm.MyLocationButton(mapView.getMap());
+  }
+  if (config['show_login']) {
+    new cm.LoginView(panelElem, config);
   }
 
-  if (config['panel_float']) {
-    goog.dom.classes.add(frameElem, cm.css.PANEL_FLOAT);
-  }
   if (config['panel_side'] === 'left') {
     goog.dom.classes.add(frameElem, cm.css.PANEL_LEFT);
   } else {
     goog.dom.classes.add(frameElem, cm.css.PANEL_RIGHT);
   }
-  if (config['show_login']) {
-    new cm.LoginView(panelElem, config);
-  }
   var panelView;
-
   if (useTabPanel) {
+    goog.dom.classes.add(frameElem, cm.css.TABBED);
     panelView = new cm.TabPanelView(frameElem, panelElem, mapElem, mapModel,
-                                    metadataModel, appState, config);
+                                    metadataModel, appState, narrowOrEmbedded,
+                                    config);
   } else {
+    if (config['panel_float']) {
+      goog.dom.classes.add(frameElem, cm.css.PANEL_FLOAT);
+    }
     panelView = new cm.PanelView(frameElem, panelElem, mapElem, mapModel,
                                  metadataModel, appState, config);
   }
@@ -415,14 +456,21 @@ cm.Map.prototype.buildUi_ = function(mapRoot, frame, opt_menuItems, opt_config,
   sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
                  preview, mapWrapperElem, footerElem, panelView, panelElem,
                  extraViewsPlugins, extraViews, useTabPanel);
-  // We readjust the layout whenever the ViewportSizeMonitor detects that the
-  // window resized, and also when anything emits 'resize' on goog.global.
-  cm.events.forward(new goog.dom.ViewportSizeMonitor(), 'resize', goog.global);
+
+  if (!useTabPanel) {
+    // We readjust the layout whenever the ViewportSizeMonitor detects that the
+    // window resized, and also when anything emits 'resize' on goog.global.
+    cm.events.forward(new goog.dom.ViewportSizeMonitor(), 'resize',
+                      goog.global);
+  }
   cm.events.listen(goog.global, 'resize', function() {
     sizeComponents(mapView.getMap(), frameElem, searchbox, embedded, touch,
                    preview, mapWrapperElem, footerElem, panelView, panelElem,
                    extraViewsPlugins, extraViews, useTabPanel);
   });
+  if (useTabPanel) {
+    resizeTabPanel(panelElem, frameElem, footerElem);
+  }
 
   // If allowed, pass the google.maps.Map element to the parent frame.
   if (window != window.parent && config['allow_embed_map_callback']) {
