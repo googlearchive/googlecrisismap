@@ -146,7 +146,7 @@ cm.ShareEmailView = function() {
   this.popup_ = cm.ui.create('div',
                              {'class': [cm.css.SHARE_EMAILER, cm.css.POPUP]},
       this.titleElem_ = cm.ui.create('h2', {}, MSG_INVITE_TITLE),
-      this.tableElem_ = cm.ui.create('table', {'class': 'cm-editors'}),
+      this.tableElem_ = cm.ui.create('table', {'class': cm.css.EDITORS}),
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
       this.inviteBtn_ = cm.ui.create(
           'button', {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
@@ -186,7 +186,7 @@ cm.ShareEmailView.prototype.share = function(share_url) {
   cm.ui.append(
       this.tableElem_,
       cm.ui.create(
-          'tr', {'class': 'cm-text-input-row'},
+          'tr', {'class': cm.css.TEXT_INPUT_ROW},
           cm.ui.create('th', {}, this.emailLabel_),
           cm.ui.create('td', {}, this.emailInput_)),
       cm.ui.create(
@@ -201,7 +201,7 @@ cm.ShareEmailView.prototype.share = function(share_url) {
               ' ', this.owner_,
               cm.ui.create('label', {'for': 'cm-role-owner'}, MSG_OWNER))),
       cm.ui.create(
-          'tr', {'class': 'cm-textarea-row'},
+          'tr', {'class': cm.css.TEXTAREA_ROW},
           cm.ui.create('th', {}, cm.ui.create('label', {}, MSG_INVITE_MESSAGE)),
           cm.ui.create('td', {}, this.messageBox_)));
   cm.ui.showPopup(this.popup_);
