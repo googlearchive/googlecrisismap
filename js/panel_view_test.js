@@ -63,6 +63,14 @@ PanelViewTest.prototype.testConstructorHiddenHeader = function() {
   expectEq('none', description.style.display);
 };
 
+PanelViewTest.prototype.testResetViewLink = function() {
+  var parent = this.createView_();
+  var link = expectDescendantOf(parent, withText(cm.MSG_RESET_VIEW_LINK));
+  this.expectLogAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
+  this.expectEvent(goog.global, cm.events.RESET_VIEW);
+  cm.events.emit(link, 'click');
+};
+
 /**
  * @param {string} id A layer ID.
  * @return {google.maps.MVCObject} A trivial fake for a LayerModel.

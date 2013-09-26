@@ -17,6 +17,8 @@
 
 goog.provide('cm.SublayerPicker');
 
+goog.require('cm.Analytics');
+
 /**
  * Dropdown menu listing all sublayers for a given parent layer. When
  * a sublayer is selected, an event is emitted for view classes to
@@ -63,8 +65,9 @@ cm.SublayerPicker.prototype.handleMenuChange_ = function() {
   goog.array.forEach(this.select_.options, function(option) {
     option.selected = (option.value === this.select_.value);
   }, this);
-  cm.events.emit(this, cm.events.SELECT_SUBLAYER,
-                 {id: this.select_.value});
+  cm.Analytics.logAction(
+      cm.Analytics.LayersPanelAction.SUBLAYER_SELECTED, this.select_.value);
+  cm.events.emit(this, cm.events.SELECT_SUBLAYER, {id: this.select_.value});
 };
 
 /**

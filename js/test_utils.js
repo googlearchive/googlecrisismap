@@ -398,6 +398,8 @@ FakeUi.setText = function(element, text) {
  */
 cm.TestBase = function() {
   this.originalValues_ = {};
+  this.analyticsTracker_ = null;
+  this.trackedEvents_ = [];
 
   // Install cm.TestBase.equals as the default matcher, so that expectEq,
   // expectCall, etc. use it instead of gjstest.equals for comparison.
@@ -452,6 +454,12 @@ cm.TestBase = function() {
   this.setForTest_('goog.global', fakeWindow);
   this.setForTest_('window', fakeWindow);
 };
+
+/**
+ * Constant to use for call counts that should be at least one, but where
+ * the exact number doesn't matter.
+ */
+cm.TestBase.AT_LEAST_ONCE = -1;
 
 /**
  * An "equals" matcher that uses our saner "match" function.  Installed as
@@ -558,6 +566,65 @@ cm.TestBase.expectFalse = function(actual) {
   expectThat(actual, evalsToFalse);
 };
 
+/**
+ * Asserts that a particular event be emitted some number of times before
+ *  the end of the test.
+ * @param {Object} source The expected source of the event.
+ * @param {string} type The expected type of the event.
+ * @param {number=} opt_count The expected count of matching events; defaults
+ *   to 1 if not set.  You may pass cm.TestBase.AT_LEAST_ONCE to permit any
+ *   non-zero number of calls.
+ */
+cm.TestBase.prototype.expectEvent = function(source, type, opt_count) {
+  var eventRecord = {
+    source: source,
+    type: type,
+    expected: opt_count === undefined ? 1 : opt_count,
+    called: 0
+  };
+  this.trackedEvents_.push(eventRecord);
+  cm.events.listen(source, type, function() { this.called++; }, eventRecord);
+};
+
+/**
+ * Causes the test to start capturing Analytics logs.
+ * @private
+ */
+cm.TestBase.prototype.captureAnalyticsLogs_ = function() {
+  if (!this.analyticsTracker_) {
+    this.analyticsTracker_ = new cm.TestBase.AnalyticsTracker();
+    this.setForTest_(
+        'cm.Analytics.logAction',
+        goog.bind(this.analyticsTracker_.logAction, this.analyticsTracker_));
+  }
+};
+
+/**
+ * Returns any accumulated Analytics logs.
+ * @return {?Array.<Object>}
+ * @private
+ */
+cm.TestBase.prototype.analyticsLogs_ = function() {
+  return this.analyticsTracker_ ? this.analyticsTracker_.logs() : null;
+};
+
+/**
+ * Adds an expectation for a particular call to cm.Analytics.logAction()
+ * @param {string} action The expected action from cm.Analytics.
+ * @param {?string} layerId The expected layer ID per cm.Analytics.logAction
+ *   or null if there is no associated layer.
+ * @param {number=} opt_count The expected number of matching logs; defaults
+ *   to 1.  Can be cm.TestBase.AT_LEAST_ONCE to allow any non-zero number of
+ *   matches.
+ * @param {number=} opt_value The expected value if any.
+ */
+cm.TestBase.prototype.expectLogAction = function(
+    action, layerId, opt_count, opt_value) {
+  this.captureAnalyticsLogs_();
+  if (opt_count === undefined) opt_count = 1;
+  this.analyticsTracker_.expectAction(action, layerId, opt_count, opt_value);
+};
+
 // The cm.TestBase method definitions below are all enclosed in a private scope
 // because they use setByDottedName and getByDottedName, which use global.
 (function() {
@@ -585,6 +652,13 @@ cm.TestBase.expectFalse = function(actual) {
   cm.TestBase.prototype.tearDown = function() {
     for (var dottedName in this.originalValues_) {
       setByDottedName(dottedName, this.originalValues_[dottedName]);
+    }
+    if (this.analyticsTracker_) {
+      this.analyticsTracker_.verify();
+    }
+    for (var i = 0; i < this.trackedEvents_.length; i++) {
+      var eventRecord = this.trackedEvents_[i];
+      cm.TestBase.verifyCallCount_(eventRecord, 'Event ' + eventRecord.type);
     }
   };
 
@@ -1020,3 +1094,132 @@ function isShown() {
   return new gjstest.Matcher('is shown', 'is not shown',
                              not(withStyle('display', 'none')).predicate);
 }
+
+/**
+ * Filters an array for elements that match matcher.
+ * @param {array} array The array to filter.
+ * @param {gjstest.Matcher} matcher The matcher to match.
+ * @return {array} The filtered array elements.
+ */
+function filterMatches(array, matcher) {
+  return array.filter(function(x) { return matcher.predicate(x) === true; });
+}
+
+/**
+ * Tracks the expectations of Analytics events.
+ * @constructor
+ */
+cm.TestBase.AnalyticsTracker = function() {
+  /**
+   * The logs which the tracker has captured; each entry is an object
+   * with attributes 'action', 'layerId', and possibly 'value'.
+   * @type {Array.<Object>}
+   * @private
+   */
+  this.logs_ = [];
+  /**
+   * The expectations that have been registered with the tracker; keys
+   * are the action name (so there can only be one expectation per
+   * action) and values are objects with the attributes 'expected' (the
+   * expected call count), 'layerId' (the expected layerId), 'called' (the
+   * actual call count; incremented as logs accrue) and optionally 'value'
+   * (the expected value, if any).
+   * @type {Object.<string, object>}
+   * @private
+   */
+  this.expectedActions_ = {};
+};
+
+/**
+ * Constructs a string suitable for error reporting when checking the
+ * expectations around an action.
+ * @param {string} action The action whose expectations are being checked.
+ * @return {string}
+ * @private
+ */
+cm.TestBase.AnalyticsTracker.prototype.errorDesc_ = function(action) {
+  return 'logAction(' + action + ')';
+};
+
+/**
+ * Mock for cm.Analytics.logAction; adds the logged action to the tracker's
+ * records.  If there is an expectation set for the given action, the logged
+ * action is compared against the expectation and throws on a mismatch.
+ * @param {string} action As per cm.Analytics.logAction.
+ * @param {?string} layerId As per cm.Analytics.logAction.
+ * @param {number=} opt_value As per cm.Analytics.logAction.
+ */
+cm.TestBase.AnalyticsTracker.prototype.logAction = function(
+    action, layerId, opt_value) {
+  var log = {'action': action, 'layerId': layerId};
+  if (opt_value) {
+    log['value'] = opt_value;
+  }
+  this.logs_.push(log);
+  var expected = this.expectedActions_[action];
+  if (expected) {
+    expectEq(expected.layerId, layerId,
+             'as layerId in ' + this.errorDesc_(action));
+    if (expected.value !== undefined) {
+      expectEq(expected.value, opt_value,
+               'as value for ' + this.errorDesc_(action));
+    }
+    expected.called++;
+    if (expected.expected !== cm.TestBase.AT_LEAST_ONCE) {
+      expectLe(expected.called, expected.expected,
+               'for expected call count for ' + this.errorDesc_(action));
+    }
+  }
+};
+
+/**
+ * Fetch the logs accumulated by the tracker.
+ * @return {Array.<Object>}
+ */
+cm.TestBase.AnalyticsTracker.prototype.logs = function() {
+  return this.logs_.slice(0);
+};
+
+/**
+ * Add an expectation that a particular action be logged.
+ * @param {string} action The expected action.
+ * @param {?string} layerId The expected layerId.
+ * @param {number} count The expected number of calls, or
+ *   cm.TestBase.AT_LEAST_ONCE if any number of calls greater than 0 is
+ *   acceptable.
+ * @param {number=} opt_value The expected value if any.
+ */
+cm.TestBase.AnalyticsTracker.prototype.expectAction = function(
+    action, layerId, count, opt_value) {
+  this.expectedActions_[action] = {
+    expected: count, layerId: layerId, called: 0};
+  if (opt_value) {
+    this.expectedActions_[action]['value'] = opt_value;
+  }
+};
+
+/** Verifies that all expectations have been satisfied. */
+cm.TestBase.AnalyticsTracker.prototype.verify = function() {
+  for (var action in this.expectedAction_) {
+    var expected = this.expectedAction_[action];
+    cm.TestBase.verifyCallCount_(expected, this.errorDesc_(action));
+  }
+};
+
+/**
+ * Verifies that the call count for a record matches the expectations.
+ * @param {Object.<string, Object>} record The record of calls; assumes the
+ *   expected call count will be in record.expected and the actual call count
+ *   will be in in record.called.
+ * @param {string} errString An error string to emit on failed expectations.
+ * @private
+ */
+cm.TestBase.verifyCallCount_ = function(record, errString) {
+  var expected = record.expected;
+  var called = record.called;
+  if (expected === cm.TestBase.AT_LEAST_ONCE) {
+    expectGt(called, 0, errString);
+  } else {
+    expectEq(expected, called, errString);
+  }
+};

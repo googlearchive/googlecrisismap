@@ -17,6 +17,7 @@ goog.provide('cm.ShareBox');
 goog.provide('cm.ShareButton');
 goog.provide('cm.SharePopup');
 
+goog.require('cm.Analytics');
 goog.require('cm.AppState');
 goog.require('cm.css');
 goog.require('cm.events');
@@ -263,7 +264,13 @@ cm.ShareBox = function(parentElem, appState, showFacebookButton,
   cm.events.listen(this.shortenCheckbox_, 'click', function() {
     // The setTimeout call is necessary because IE updates the checked property
     // on the checkbox asynchronously under Puppet.
-    goog.global.setTimeout(goog.bind(this.updateLinks, this), 0);
+    goog.global.setTimeout(goog.bind(function() {
+      this.updateLinks();
+      var action = this.shortenCheckbox_.checked ?
+          cm.Analytics.SharePopupAction.SHORTEN_URL_ON :
+          cm.Analytics.SharePopupAction.SHORTEN_URL_OFF;
+      cm.Analytics.logAction(action, null);
+    }, this), 0);
   }, this);
 };
 goog.inherits(cm.ShareBox, goog.Disposable);

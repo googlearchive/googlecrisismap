@@ -50,6 +50,8 @@ SearchboxTest.prototype.autocompletePlaceChangedViewport = function() {
       .willOnce(returnWith(place));
   expectCall(this.map_.fitBounds)(viewport);
 
+  this.expectLogAction(cm.Analytics.MapAction.SEARCH_QUERY_ENTERED, null);
+
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };
 

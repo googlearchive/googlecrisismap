@@ -94,6 +94,9 @@ cm.Analytics.prependUiElement_ = function(uiElement, uiEvents) {
 /** @type {Object.<string, string>} */
 cm.Analytics.LayersPanelAction = cm.Analytics.prependUiElement_(
     'Layers panel', {
+      DOWNLOAD_DATA_LINK_CLICKED: 'Layer download data link clicked',
+      OPACITY_SLIDER_MOVED: 'Layer opacity slider moved',
+      SUBLAYER_SELECTED: 'Sublayer menu item selected',
       TOGGLED_OFF: 'Layer checkbox toggled off',
       TOGGLED_ON: 'Layer checkbox toggled on',
       VIEW_RESET: '"View reset" clicked',
@@ -110,12 +113,22 @@ cm.Analytics.MapAction = cm.Analytics.prependUiElement_('Map', {
   SHARE_TOGGLED_ON: 'Share button toggled on'
 });
 
+// TODO(rew): These aren't tested; need tests to verify they are being
+// emitted.
 /** @type {Object.<string, string>} */
 cm.Analytics.PassiveAction = cm.Analytics.prependUiElement_('Passive', {
   LAYER_DISPLAYED: 'Layer displayed',  // Not working after first load
   LAYER_HIDDEN: 'Layer hidden',   // Not working
+  MAP_ZOOM_CHANGED: 'Map zoom level changed',
   PAGE_LOADED: 'Page loaded'
 });
+
+/** @type {Object.<string, string>} */
+cm.Analytics.SharePopupAction = cm.Analytics.prependUiElement_('Share popup', {
+  SHORTEN_URL_OFF: '"Shorten URLs" toggled off',
+  SHORTEN_URL_ON: '"Shorten URLs" toggled on'
+});
+
 
 /**
  * The ID of the map currently being viewed/edited; set in initialize().
@@ -144,7 +157,6 @@ cm.Analytics.initialize = function(analyticsId, mapId) {
   var s = document.getElementsByTagName('script')[0];
   s.parentNode.insertBefore(ga, s);
 };
-
 
 /**
  * Returns the correct category for the given action.

@@ -38,6 +38,7 @@ LayersButtonTest.prototype.constructorTest = function() {
  * verifying that the button class has changed to now be selected.
  */
 LayersButtonTest.prototype.buttonClickOpensPanel = function() {
+  this.expectLogAction(cm.Analytics.MapAction.LAYERS_PANEL_TOGGLED_ON, null);
   cm.events.emit(this.button_, 'click');
   expectThat(this.button_, isElement(withClass(cm.css.SELECTED)));
 };
@@ -49,6 +50,7 @@ LayersButtonTest.prototype.buttonClickOpensPanel = function() {
 LayersButtonTest.prototype.buttonClickClosesPanel = function() {
   this.button_.className =
       [cm.css.PANEL_BUTTON, cm.css.MAPBUTTON, cm.css.SELECTED].join(' ');
+  this.expectLogAction(cm.Analytics.MapAction.LAYERS_PANEL_TOGGLED_OFF, null);
   cm.events.emit(this.button_, 'click');
   expectThat(this.button_, isElement(not(withClass(cm.css.SELECTED))));
 };

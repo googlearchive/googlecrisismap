@@ -16,6 +16,7 @@
 goog.provide('cm.MapView');
 
 goog.require('cm');
+goog.require('cm.Analytics');
 goog.require('cm.AppState');
 goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
@@ -221,7 +222,13 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   // Update layer visibility when layers are toggled or the zoom level changes.
   cm.events.onChange(appState, 'enabled_layer_ids',
                      this.updateVisibility_, this);
-  cm.events.onChange(this, 'zoom', this.updateVisibility_, this);
+  cm.events.onChange(this, 'zoom', function() {
+    var zoom = /** @type number */(this.get('zoom'));
+    cm.Analytics.logAction(
+        cm.Analytics.PassiveAction.MAP_ZOOM_CHANGED, null, zoom);
+    this.updateVisibility_();
+    cm.events.emit(goog.global, cm.events.ZOOM_CHANGED, {'zoom': zoom});
+  }, this);
 
   cm.events.listen(this.mapModel_, cm.events.LAYERS_ADDED, function(e) {
     goog.array.forEach(e.layers, this.addOverlay_, this);
@@ -631,8 +638,6 @@ cm.MapView.prototype.updateVisibility_ = function() {
       this.infoWindowLayerId_ = null;
     }
   }
-  // Notify other relevant views of the map's zoom change.
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED, {'zoom': zoom});
 };
 
 /**

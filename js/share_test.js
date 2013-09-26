@@ -72,9 +72,10 @@ SharePopupTest.prototype.createPopup_ = function(
 
 /** Tests basic popup functionality. */
 SharePopupTest.prototype.openPopup = function() {
+  // Fronting the popup shouldn't cause SHARE_TOGGLED_ON
+  this.expectLogAction(cm.Analytics.MapAction.SHARE_TOGGLED_ON, null, 0);
   this.createPopup_(true, true, true);
 };
-
 
 /** Tests that links are set correctly when URL shortening is off. */
 SharePopupTest.prototype.nonShortenedLinks = function() {
@@ -113,6 +114,7 @@ SharePopupTest.prototype.shortenUrl = function() {
 
   // Confirm that checking the box puts the shortened URL in the text field...
   var checkbox = expectDescendantOf(parent, withClass(cm.css.SHORTEN_CHECKBOX));
+  this.expectLogAction(cm.Analytics.SharePopupAction.SHORTEN_URL_ON, null);
   checkbox.checked = true;
   cm.events.emit(checkbox, 'click');
   expectDescendantOf(parent,
@@ -136,6 +138,7 @@ SharePopupTest.prototype.shortenUrl = function() {
       '//plus.google.com/share?hl=en&url=' + APPSTATE_URL_ENCODED));
 
   // Confirm that unchecking the box restores the unshortened URL.
+  this.expectLogAction(cm.Analytics.SharePopupAction.SHORTEN_URL_OFF, null);
   checkbox.checked = false;
   cm.events.emit(checkbox, 'click');
   expectDescendantOf(parent, withId(cm.css.SHARE_URL), withValue(APPSTATE_URL));
@@ -163,4 +166,51 @@ SharePopupTest.prototype.showTwitterButtonOnly = function() {
   expectNoDescendantOf(parent, withClass(cm.css.FACEBOOK_LIKE_BUTTON));
   expectNoDescendantOf(parent, withClass(cm.css.GPLUS_SHARE_BUTTON));
   expectDescendantOf(parent, withClass(cm.css.TWITTER_SHARE_BUTTON));
+};
+
+/**
+ * Tests for the ShareButton class
+ * @constructor
+ */
+function ShareButtonTest() {
+  cm.TestBase.call(this);  // set up the fake DOM
+}
+ShareButtonTest.prototype = new cm.TestBase();
+registerTestSuite(ShareButtonTest);
+
+ShareButtonTest.prototype.createButton_ = function() {
+  var appState = stubInstance(cm.AppState, {'getUri': APPSTATE_URI_OBJECT});
+  expectCall(appState.get)('language').willRepeatedly(returnWith('en'));
+
+  var map = stubInstance(google.maps.Map);
+  var mapControls = [];
+  for (var key in google.maps.ControlPosition) {
+    mapControls[google.maps.ControlPosition[key]] = [];
+  }
+  map.controls = mapControls;
+
+  this.popup_ = this.expectNew_('cm.SharePopup', _, _, _, _, _, _);
+  var shareButton = new cm.ShareButton(map, appState, true, true, true);
+  expectThat(mapControls, contains([withClass(cm.css.MAPBUTTON)]));
+  var matches = filterMatches(
+      mapControls, contains(withClass(cm.css.MAPBUTTON)));
+  expectEq(1, matches.length);
+  expectEq(1, matches[0].length);
+  this.button_ = matches[0][0];
+};
+
+ShareButtonTest.prototype.testToggleOn = function() {
+  this.createButton_();
+
+  expectCall(this.popup_.isVisible)().willOnce(returnWith(false));
+  expectCall(this.popup_.show)();
+  this.expectLogAction(cm.Analytics.MapAction.SHARE_TOGGLED_ON, null);
+  cm.events.emit(this.button_, 'mousedown');
+};
+
+ShareButtonTest.prototype.testToggleOff = function() {
+  this.createButton_();
+  expectCall(this.popup_.isVisible)().willOnce(returnWith(true));
+  this.expectLogAction(cm.Analytics.MapAction.SHARE_TOGGLED_OFF, null);
+  cm.events.emit(this.button_, 'mousedown');
 };

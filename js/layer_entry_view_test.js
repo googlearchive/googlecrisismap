@@ -162,6 +162,9 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   // Test that the slider's 'change' event fires a CHANGE_OPACITY event with the
   // correct opacity.
   expectCall(slider.getValue)().willOnce(returnWith(50));
+  // Also expect the corresponding analytics log
+  this.expectLogAction(cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
+                       this.layerModel_.get('id'));
   var changeOpacityEmitted = false;
   var opacity;
   cm.events.listen(goog.global, cm.events.CHANGE_OPACITY, function(e) {
@@ -311,6 +314,20 @@ LayerEntryViewTest.prototype.updateUrlKml = function() {
       'a', withText('Download KML'), withHref('http://unicorns.de'));
 };
 
+/** Tests that a click on a download link generates an Analytics log. */
+LayerEntryViewTest.prototype.downloadUrlGeneratesLog = function() {
+  this.layerModel_.set('type', cm.LayerModel.Type.KML);
+  this.layerModel_.set('url', 'http://monsters.com.au');
+
+  var parent = this.createView_();
+  var link = expectDescendantOf(parent,
+      'a', withText('Download KML'), withHref('http://monsters.com.au'));
+  this.expectLogAction(
+      cm.Analytics.LayersPanelAction.DOWNLOAD_DATA_LINK_CLICKED,
+      this.layerModel_.get('id'));
+  cm.events.emit(link, 'click');
+};
+
 /**
  * Tests that the download links are not created when a GEORSS LayerModel's URL
  * changes, as specified by a true value for suppress_download_link.
@@ -405,11 +422,23 @@ LayerEntryViewTest.prototype.updateUrlOther = function() {
   expectNoDescendantOf(parent, 'a', withText(containsRegExp(/Download/)));
 };
 
+/** Tests that the zoom link issues the expected events. */
+LayerEntryViewTest.prototype.testZoomLink = function() {
+  this.layerModel_.set('viewport', new cm.LatLonBox(30, 40, -30, -60));
+  var parent = this.createView_();
+  var link = expectDescendantOf(parent, 'a',
+                                withText(containsRegExp(/Zoom/)));
+  this.expectLogAction(
+      cm.Analytics.LayersPanelAction.ZOOM_TO_AREA, this.layerModel_.get('id'));
+  this.expectEvent(this.view_, cm.events.ZOOM_TO_LAYER);
+  cm.events.emit(link, 'click');
+};
+
 /**
  * Tests that the zoom link's visibility is updated when the layer's
  * 'viewport' or 'type' property changes.
  */
-LayerEntryViewTest.prototype.testZoomLinks = function() {
+LayerEntryViewTest.prototype.testZoomLinkVisibility = function() {
   // A non-KML layer with a valid viewport...
   this.layerModel_.set('viewport', new cm.LatLonBox(30, 40, -80, -100));
   var parent = this.createView_();
@@ -684,7 +713,10 @@ LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
 };
 
 /**
- * Tests that a TOGGLE_LAYER event is emitted when a checkbox is clicked.
+ * Tests that a TOGGLE_LAYER event is emitted when a checkbox is clicked
+ * and the corresponding Analytics logs are sent.  Note we cannot check the
+ * passive Analytics logs for LAYER_HIDDEN and LAYER_DISPLAYED because we
+ * don't have a real presenter.
  */
 LayerEntryViewTest.prototype.clickCheckbox = function() {
   var parent = this.createView_();
@@ -696,11 +728,13 @@ LayerEntryViewTest.prototype.clickCheckbox = function() {
   });
 
   // Simulate checking the checkbox.
+  this.expectLogAction(cm.Analytics.LayersPanelAction.TOGGLED_ON, 'layer0');
   checkbox.checked = true;
   cm.events.emit(checkbox, 'click');
   expectEq({id: 'layer0', value: true, type: cm.events.TOGGLE_LAYER}, event);
 
   // Simulate unchecking the checkbox.
+  this.expectLogAction(cm.Analytics.LayersPanelAction.TOGGLED_OFF, 'layer0');
   event = null;
   checkbox.checked = false;
   cm.events.emit(checkbox, 'click');

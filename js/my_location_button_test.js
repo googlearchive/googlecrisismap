@@ -37,5 +37,6 @@ MyLocationButtonTest.prototype.clickTest = function() {
   var handler = createMockFunction('handler');
   cm.events.listen(goog.global, cm.events.GO_TO_MY_LOCATION, handler);
   expectCall(handler)(_);
+  this.expectLogAction(cm.Analytics.MapAction.MY_LOCATION_CLICKED, null);
   cm.events.emit(this.button_, 'click');
 };

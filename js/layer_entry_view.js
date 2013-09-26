@@ -459,8 +459,13 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
           break;
       }
       if (linkText && url) {
-        cm.ui.append(this.downloadElem_, cm.ui.SEPARATOR_DOT,
-                     cm.ui.createLink(linkText, url));
+        var link = cm.ui.createLink(linkText, url);
+        cm.ui.append(this.downloadElem_, cm.ui.SEPARATOR_DOT, link);
+        cm.events.listen(link, 'click', function() {
+          cm.Analytics.logAction(
+              cm.Analytics.LayersPanelAction.DOWNLOAD_DATA_LINK_CLICKED,
+              this.model_.get('id'));
+        }, this);
       }
       // Show the file size in human-readable form in a tooltip.
       tip = cm.util.formatFileSize(this.metadataModel_.getLength(this.model_));
@@ -695,9 +700,14 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
       // When the user moves the slider, forward a CHANGE_OPACITY event.
       cm.events.listen(
           this.slider_, goog.ui.Component.EventType.CHANGE, function() {
+            var layerId = /** @type string */(this.model_.get('id'));
+            var level = /** @type number */(this.slider_.getValue());
+            cm.Analytics.logAction(
+                cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
+                layerId, level * 100);
             cm.events.emit(
                 goog.global, cm.events.CHANGE_OPACITY,
-                {id: this.model_.get('id'), opacity: this.slider_.getValue()});
+                {id: layerId, opacity: level});
           }, this),
       // Keep the slider's value updated.
       cm.events.onChange(this.appState_, 'layer_opacities',
