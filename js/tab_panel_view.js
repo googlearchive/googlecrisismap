@@ -12,6 +12,7 @@
 goog.provide('cm.TabPanelView');
 
 goog.require('cm.AboutTabItem');
+goog.require('cm.LayersTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.TabView');
 goog.require('cm.events');
