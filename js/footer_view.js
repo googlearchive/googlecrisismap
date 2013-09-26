@@ -20,12 +20,20 @@ goog.require('cm.AboutPopup');
 goog.require('cm.Html');
 goog.require('cm.MapModel');
 goog.require('cm.ui');
+goog.require('goog.Uri');
 
 /** @desc The link text for opening the map in a new browser window. */
 var MSG_FULL_MAP_LINK = goog.getMsg('Full map');
 
 /** @desc The link text in the footer for the pop-up with help instructions. */
 var MSG_HELP = goog.getMsg('Help');
+
+/** @desc The link text in the footer for reporting abuse. */
+var MSG_REPORT_ABUSE = goog.getMsg('Report abuse');
+
+// URL for the support form for reporting abuse.
+var REPORT_ABUSE_BASE_URL =
+    'https://support.google.com/crisismaps/contact/abuse';
 
 /**
  * The footer below the map in the UI, which includes some custom text from the
@@ -37,12 +45,6 @@ var MSG_HELP = goog.getMsg('Help');
  * @constructor
  */
 cm.FooterView = function(parentElem, popupContainer, mapModel) {
-  /**
-   * @type cm.AboutPopup
-   * @private
-   */
-  this.aboutPopup_ = new cm.AboutPopup(popupContainer);
-
   /**
    * @type cm.MapModel
    * @private
@@ -65,8 +67,14 @@ cm.FooterView = function(parentElem, popupContainer, mapModel) {
   }
 
   var helpLink = cm.ui.createLink(MSG_HELP);
-  helpLink.onclick = goog.bind(this.aboutPopup_.show, this.aboutPopup_);
+  var helpPopup = new cm.AboutPopup(popupContainer);
+  helpLink.onclick = goog.bind(helpPopup.show, helpPopup);
   cm.ui.append(parentElem, helpLink);
+
+  var reportAbuseUri = new goog.Uri(REPORT_ABUSE_BASE_URL);
+  reportAbuseUri.setParameterValue('url', goog.global.location.href);
+  cm.ui.append(parentElem, cm.ui.SEPARATOR_DOT, cm.ui.createLink(
+      MSG_REPORT_ABUSE, reportAbuseUri.toString(), '_blank'));
 
   cm.events.onChange(mapModel, 'footer', this.updateFooter_, this);
   this.updateFooter_();
