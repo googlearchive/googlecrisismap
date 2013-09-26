@@ -461,11 +461,13 @@ cm.TestBase = function() {
   };
 
   // Create a fresh goog.global object, ensuring that global variables and
-  // event listeners don't linger from test to test.
+  // event listeners don't linger from test to test.  We need to include
+  // 'cm' and' goog' so they remain visible to tests in the global namespace.
   var fakeWindow = {
     cm: cm,
     cm_config: {},
     document: fakeDocument,
+    goog: goog,
     setTimeout: function(callback, delay) { callback(); },
     setInterval: function() { },
     clearInterval: function() { }
