@@ -300,7 +300,7 @@ html, body {
   display: inline;
   width: 450px !important;
 }
-.cm-draft-indicator {
+.cm-panel .cm-draft-indicator {
   padding: 1px 2px;
   margin-right: 0.3em;
   border: 1px solid gray;

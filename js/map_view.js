@@ -119,8 +119,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
     scaleControlPosition = google.maps.ControlPosition.LEFT_BOTTOM;
   }
   var minimalMapControls =
-      this.config_['minimal_map_controls'] || opt_touch || opt_preview ||
-          this.config_['use_tab_panel'];
+      this.config_['minimal_map_controls'] || opt_touch || opt_preview;
   var zoomControlStyle = minimalMapControls ?
       google.maps.ZoomControlStyle.SMALL :
       google.maps.ZoomControlStyle.DEFAULT;

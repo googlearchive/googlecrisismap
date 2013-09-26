@@ -29,13 +29,6 @@ cm.TabBar = function() {
   this.tabBar_ = new goog.ui.TabBar(goog.ui.TabBar.Location.TOP);
 
   /**
-   * The element containing the tab bar.
-   * @type Element
-   * @private
-   */
-  this.container_ = cm.ui.create('div', {'class': cm.css.TAB_BAR_CONTAINER});
-
-  /**
    * A container for buttons that appear adjacent to the tab bar.
    * @type Element
    * @private
@@ -60,9 +53,10 @@ cm.TabBar.NEW_TAB_SELECTED = 'TabView.tabBar_.NEW_TAB_SELECTED';
  * @param {Element} parent The node in to which the tab bar should be rendered.
  */
 cm.TabBar.prototype.render = function(parent) {
-  this.tabBar_.render(this.container_);
-  cm.ui.append(this.container_, this.buttons_);
-  cm.ui.append(parent, this.container_);
+  var container = cm.ui.create('div', {'class': cm.css.TAB_BAR_CONTAINER});
+  this.tabBar_.render(container);
+  cm.ui.append(container, this.buttons_);
+  cm.ui.append(parent, container);
 };
 
 /**
@@ -128,12 +122,4 @@ cm.TabBar.prototype.updateTab = function(index, title, isEnabled) {
   var tab = this.tabBar_.getChildAt(index);
   tab.setContent(title);
   tab.setEnabled(isEnabled);
-};
-
-/**
- *
- * @return {number} The tab bar's height.
- */
-cm.TabBar.prototype.getHeight = function() {
-  return this.container_.offsetHeight;
 };

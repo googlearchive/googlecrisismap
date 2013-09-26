@@ -53,6 +53,21 @@ cm.TabView = function() {
    * @private
    */
   this.contentElem_ = cm.ui.create('div', {'class': cm.css.TAB_CONTENT});
+
+  /**
+   * The up/down chevron button for expanding/collapsing the tab bar.
+   * @type Element
+   * @private
+   */
+  this.expandCollapseButton_ = cm.ui.create('div',
+                                            {'class': cm.css.CHEVRON_UP});
+
+  /**
+   * The share button (not yet implemented).
+   * @type Element
+   * @private
+   */
+  this.shareButton_ = cm.ui.create('div');
 };
 
 /** Value for indices to indicate no current selection. */
@@ -64,42 +79,49 @@ cm.TabView.NO_SELECTION = -1;
  * @param {Element} parent The parent into which the TabView should render.
  */
 cm.TabView.prototype.render = function(parent) {
-  this.tabBar_.render(parent);
+  this.parent_ = parent;
+  this.tabBar_.render(this.parent_);
+
+  // Add buttons to the tab bar in the order they should appear from
+  // left to right.
+  this.tabBar_.addButton(this.shareButton_);
+  this.tabBar_.addButton(this.expandCollapseButton_);
 
   // Add the tab content.
-  cm.ui.append(parent, this.contentElem_);
+  cm.ui.append(this.parent_, this.contentElem_);
 
   cm.events.listen(this.tabBar_, cm.TabBar.NEW_TAB_SELECTED,
                    this.handleTabSelected_, this);
+  cm.events.listen(this.expandCollapseButton_, 'click',
+                   this.handleExpandCollapseClick_, this);
 };
 
-/**
- * Add a button to the tab bar. This can later take more arguments if we
- * want the caller to control how/where to add them.
- * @param {Element} button The button to add
- */
-cm.TabView.prototype.addButton = function(button) {
-  this.tabBar_.addButton(button);
-};
 
 /**
- * Fix the preferred height of the panel content so that it does not change on
- * tab selection but does change on window resize.
- * @param {number} height The new content panel height.
+ * Handler for user clicking on the expand or collapse button.
+ * @private
  */
-cm.TabView.prototype.setHeight = function(height) {
-  this.contentElem_.style.height = height - this.tabBar_.getHeight() + 'px';
-};
-
-/**
- * Update classes to either expand or collapse the tab panel.
- * @param {boolean} expand If true, expand the tab panel; otherwise,
- *   collapse it.
- */
-cm.TabView.prototype.setExpanded = function(expand) {
+cm.TabView.prototype.handleExpandCollapseClick_ = function() {
+  var collapsed = goog.dom.classes.has(this.contentElem_,
+                                       cm.css.TAB_CONTENT_COLLAPSED);
   goog.dom.classes.enable(this.contentElem_, cm.css.TAB_CONTENT_COLLAPSED,
-                          !expand);
+                          !collapsed);
+
+  // TODO(romano): the logic for whether the up or down chevron is displayed
+  // will be flipped when the tab bar is positioned below the map.
+  var currentClass;
+  var newClass;
+  if (collapsed) {
+    currentClass = cm.css.CHEVRON_DOWN;
+    newClass = cm.css.CHEVRON_UP;
+  } else {
+    currentClass = cm.css.CHEVRON_UP;
+    newClass = cm.css.CHEVRON_DOWN;
+  }
+  goog.dom.classes.remove(this.expandCollapseButton_, currentClass);
+  goog.dom.classes.add(this.expandCollapseButton_, newClass);
 };
+
 
 /**
  * Updates the content of the TabView based on the state of the TabBar. Used

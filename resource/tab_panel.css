@@ -10,13 +10,21 @@ OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 specific language governing permissions and limitations under the License.
 */
 
+/*
+ * TODO(romano): for now, the tab bar is placed under the map buttons
+ * (i.e., basemap picker and my-location button since the share button
+ * will disappear). Follow-up changes should change this for
+ * 1) desktop: move those buttons to left and make this top:5px
+ * 2) embedded/small-screen: move tab bar to bottom
+ */
+
 .cm-tab-panel {
   background: #fff;
   width: 306px;
   position: absolute;
   top: 5px;
   right: 5px;
-  height: auto;
+  height: auto !important;
   max-height: 98%;
   overflow-y: hidden;
   z-index: 1;
@@ -26,16 +34,8 @@ specific language governing permissions and limitations under the License.
   -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.cm-tabbed .cm-map-wrapper {
-  margin-left: 0 !important;
-}
-
-.cm-tabbed.cm-panel-left .cm-searchbox {
-  margin-left: 320px; /* Move the searchbox over to avoid the panel. */
-}
-
 .cm-tab-bar-container {
-  border-top: 1px solid #ccc;
+  border-top: 1px solid #777;
   border-bottom: 1px solid #ccc;
   background: #f0f0f0;
   position: relative;
@@ -79,36 +79,19 @@ specific language governing permissions and limitations under the License.
   display: none;
 }
 
-.cm-tab-panel-below {
-  top: inherit !important;
-  width: inherit !important;
-  right: inherit !important;
-  left: inherit !important;
-  box-shadow: none;
-  position: relative;
-  max-height: none;
+.cm-tab-panel-bottom {
+  top: inherit!important;
+  width: inherit!important;
+  right: inherit!important;
+  left: inherit!important;
+  bottom: 30px;
 }
 
-.cm-tab-panel-below .cm-tab-container {
-  border-bottom: none;
-  width: 100% !important;
+.cm-tab-my-location-button {
+  margin-right: 317px!important; /* Assumes a fixed-width tabbed panel. */
 }
 
-.cm-tabbed.cm-panel-right .cm-my-location-button {
-  margin-right: 317px;
-}
-
-.cm-tabbed.cm-embedded .cm-my-location-button,
-.cm-tabbed.cm-panel-below .cm-my-location-button {
-  margin-right: 5px !important;
-}
-
-.cm-panel-left .cm-tab-panel {
-  float: left;
-  left: 5px;
-}
-
-/*
+/* 
  * TODO(romano,rew): Basic rules copied from 
  * https://code.google.com/p/closure-library/source/browse/closure/goog/css/tab.css
  * to be replaced with our own rules and merged into main.css.
