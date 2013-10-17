@@ -145,7 +145,8 @@ MapViewTest.newMVCObject_ = function(properties) {
 MapViewTest.prototype.expectInfoWindowOpen_ = function(
     content, position, pixelOffset) {
   // Simulate the conversion of a string of HTML into a DOM node.
-  var node = {innerHTML: content, childNodes: ['x']};
+  var node = {nodeType: goog.dom.NodeType.ELEMENT,
+              innerHTML: content, childNodes: ['x']};
 
   expectCall(this.infoWindow_.close)();
   expectCall(goog.dom.htmlToDocumentFragment)(content)

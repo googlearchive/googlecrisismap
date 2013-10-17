@@ -19,6 +19,7 @@
  */
 FakeElement = function(nodeName, opt_attrs) {
   this.nodeName = nodeName.match(/^#/) ? nodeName : nodeName.toUpperCase();
+  this.nodeType = nodeName.match(/^#/) ? 0 : 1;
   this.id = '';
   this.className = '';
   this.value = '';  // For pretend input objects

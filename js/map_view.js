@@ -624,9 +624,12 @@ cm.MapView.getFeatureData_ = function(layerId, event) {
   // another way to do this without using that function.
   var node = goog.dom.htmlToDocumentFragment(goog.string.trim(htmlString));
   if (node && node.childNodes && node.childNodes.length > 0) {
-    content = /** @type Element */(node);
-  } else if (node.nodeType === goog.dom.NodeType.DOCUMENT_FRAGMENT) {
-    content = cm.ui.create('div', {}, node);
+    if (node.nodeType === goog.dom.NodeType.ELEMENT) {
+      content = node;
+    } else {
+      // node might be a DocumentFragment; wrap it to ensure we have an Element.
+      content = cm.ui.create('div', {}, node);
+    }
   } else {
     return null;
   }
