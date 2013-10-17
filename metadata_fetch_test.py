@@ -21,6 +21,7 @@ import StringIO
 import zipfile
 
 import cache
+import config
 import metadata_fetch
 import test_utils
 import utils
@@ -417,7 +418,7 @@ class MetadataFetchTest(test_utils.BaseTest):
   def testFetchFirstTime(self):
     # Simulate a normal, successful fetch of a document for the first time.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
-    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(utils.Struct(
+    urlfetch.fetch(SOURCE_URL, headers={}, deadline=30).AndReturn(utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=SIMPLE_KML))
 
     self.mox.ReplayAll()
@@ -437,7 +438,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     # Simulate a successful fetch of a document that was previously fetched.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     headers = {'If-none-match': ETAG}
-    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(
+    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=30).AndReturn(
         utils.Struct(status_code=200, headers=RESPONSE_HEADERS_2,
                      content=SIMPLE_KML_2))
 
@@ -466,7 +467,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     # Verify that we send "If-modified-since", and simulate getting a 304.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     headers = {'If-modified-since': LAST_MODIFIED_STRING}
-    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(
+    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=30).AndReturn(
         utils.Struct(status_code=304, headers={}, content='Not modified'))
 
     self.mox.ReplayAll()
@@ -495,7 +496,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     # Verify that we send "If-none-match", and simulate getting a 304.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     headers = {'If-none-match': ETAG}
-    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=10).AndReturn(
+    urlfetch.fetch(SOURCE_URL, headers=headers, deadline=30).AndReturn(
         utils.Struct(status_code=304, headers={}, content='Not modified'))
 
     self.mox.ReplayAll()
@@ -532,7 +533,7 @@ class MetadataFetchTest(test_utils.BaseTest):
   def testFetchDownloadError(self):
     # Simulate a DownloadError.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
-    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndRaise(
+    urlfetch.fetch(SOURCE_URL, headers={}, deadline=30).AndRaise(
         urlfetch_errors.DownloadError('the internets are down'))
 
     self.mox.ReplayAll()
@@ -545,7 +546,7 @@ class MetadataFetchTest(test_utils.BaseTest):
   def testFetchHttpError(self):
     # Simulate a 404 Not found error.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
-    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(
+    urlfetch.fetch(SOURCE_URL, headers={}, deadline=30).AndReturn(
         utils.Struct(status_code=404, headers={}, content='Not found'))
 
     self.mox.ReplayAll()
@@ -556,25 +557,25 @@ class MetadataFetchTest(test_utils.BaseTest):
 
     self.mox.VerifyAll()
 
-  def testDetermineFetchDelay(self):
+  def testDetermineFetchInterval(self):
     # Small files should be fetched every couple of minutes.
-    self.assertBetween(60, 180, metadata_fetch.DetermineFetchDelay(
+    self.assertBetween(60, 180, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 200, 'fetch_length': 100}))
 
     # Medium-sized files should be fetched less often.
-    self.assertBetween(180, 600, metadata_fetch.DetermineFetchDelay(
+    self.assertBetween(180, 600, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 200, 'fetch_length': 100e3}))
 
     # Big files should be fetched every hour or so.
-    self.assertBetween(600, 7200, metadata_fetch.DetermineFetchDelay(
+    self.assertBetween(600, 7200, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 200, 'fetch_length': 1e6}))
 
     # Update at least once a day, no matter how huge the file is.
-    self.assertBetween(7200, 86400, metadata_fetch.DetermineFetchDelay(
+    self.assertBetween(7200, 86400, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 200, 'fetch_length': 100e6}))
 
-    # If we got a 304, delay should depend on fetch_length rather than length.
-    self.assertBetween(60, 180, metadata_fetch.DetermineFetchDelay(
+    # If we got a 304, interval should depend on fetch_length instead of length.
+    self.assertBetween(60, 180, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 304, 'fetch_length': 100, 'length': 1e6}))
 
   def testUpdateMetadata(self):
@@ -590,13 +591,22 @@ class MetadataFetchTest(test_utils.BaseTest):
 
     self.mox.VerifyAll()
 
+  def testUpdateMetadataWithZeroBandwidth(self):
+    # FetchAndUpdateMetadata should not be called
+    config.Set('metadata_max_megabytes_per_day_per_source', 0)
+    metadata_fetch.FetchAndUpdateMetadata = lambda *args: self.fail()
+
+    self.SetTime(1234567890)
+    cache.Set(['metadata', SOURCE_ADDRESS], METADATA)
+    metadata_fetch.UpdateMetadata(SOURCE_ADDRESS)
+
   def testScheduleFetch(self):
     # Expect a task to be queued...
     self.mox.StubOutWithMock(taskqueue, 'add')
     taskqueue.add(queue_name='metadata', method='GET',
                   url='/root/.metadata_fetch',
                   params={'source': SOURCE_ADDRESS},
-                  countdown=metadata_fetch.DetermineFetchDelay(METADATA))
+                  countdown=metadata_fetch.DetermineFetchInterval(METADATA))
 
     # ...when the metadata_active flag is set.
     self.mox.ReplayAll()
@@ -647,9 +657,9 @@ class MetadataFetchTest(test_utils.BaseTest):
 
     # Execute the queued metadata_fetch tasks.
     self.mox.StubOutWithMock(urlfetch, 'fetch')
-    urlfetch.fetch(GEORSS_URL, headers={}, deadline=10).AndReturn(utils.Struct(
+    urlfetch.fetch(GEORSS_URL, headers={}, deadline=30).AndReturn(utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS, content=SIMPLE_GEORSS))
-    urlfetch.fetch(SOURCE_URL, headers={}, deadline=10).AndReturn(utils.Struct(
+    urlfetch.fetch(SOURCE_URL, headers={}, deadline=30).AndReturn(utils.Struct(
         status_code=200, headers=RESPONSE_HEADERS_2, content=SIMPLE_KML))
 
     self.mox.ReplayAll()

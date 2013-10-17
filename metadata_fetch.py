@@ -115,24 +115,17 @@ import cache
 import config
 import maproot
 
+from google.appengine import runtime
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from google.appengine.ext import db
 
-MAX_FETCH_SECONDS = 10  # time to wait for a response from remote servers
+MAX_FETCH_SECONDS = 30  # time to wait for a response from remote servers
 METADATA_TTL_SECONDS = 3600  # time that a metadata record stays cached
-
-# TODO(kpy): Add overall rate-limiting (total bandwidth across all sources).
-MIN_DELAY_SECONDS = 60  # fetch each source at most once per minute
-MIN_DELAY_AFTER_ERROR_SECONDS = 600  # on failure, wait at least 10 minutes
-MAX_DELAY_HOURS = 24  # fetch each source at least once a day
 
 # When estimating the costs we impose on remote servers, we take the content
 # length in bytes and add 50000 to account for request setup and HTTP headers.
 HTTP_FIXED_COST = 50000
-
-# Daily limit to how much data we request from the remote server, per source.
-MAX_MEGABYTES_PER_DAY_PER_SOURCE = 50
 
 # Limitations of KML support in the Maps API's KmlLayer, documented at:
 #     https://developers.google.com/kml/documentation/kmlelementsinmaps
@@ -156,6 +149,9 @@ KML_SUPPORTED_TAGS = {
     'styleUrl', 'targetHref', 'text', 'value', 'viewRefreshMode',
     'viewRefreshTime', 'visibility', 'w', 'west', 'width', 'x', 'y'
 }
+
+# Keep at most 7 days of MetadataFetchLog entries.
+METADATA_FETCH_LOG_TTL = datetime.timedelta(days=7)
 
 
 class MetadataFetchLog(db.Model):
@@ -410,27 +406,42 @@ def FetchAndUpdateMetadata(metadata, address):
   return {'fetch_status': response.status_code, 'fetch_error_occurred': True}
 
 
-def DetermineFetchDelay(metadata):
+def DetermineFetchInterval(metadata):
   """Decides how long to wait before fetching a layer's data again."""
-  # Estimate delay based on a metric of cost expended by the remote server.
-  fetch_cost = HTTP_FIXED_COST + metadata.get('fetch_length', 0)
-  delay = int(fetch_cost / (MAX_MEGABYTES_PER_DAY_PER_SOURCE * 1e6 / 24 / 3600))
+  # TODO(kpy): Add overall rate-limiting (total bandwidth across all sources).
+  # By default, fetch each source at most once per minute.
+  min_interval = config.Get('metadata_min_interval_seconds', 60)
+  # By default, on failure, wait at least 10 minutes before trying again.
+  min_interval_after_error = config.Get(
+      'metadata_min_interval_after_error_seconds', 600)
+  # By default, fetch each source at least once a day.
+  max_interval = config.Get('metadata_max_interval_hours', 24) * 3600
+  # By default, limit fetch bandwidth to 50 megabytes per day per source.
+  mb_per_day = config.Get('metadata_max_megabytes_per_day_per_source', 50)
 
-  # Also keep the delay within our minimum and maximum bounds.
+  # Estimate interval based on a metric of cost expended by the remote server.
+  fetch_cost = HTTP_FIXED_COST + metadata.get('fetch_length', 0)
+  interval = int(fetch_cost / (max(mb_per_day, 0.001) * 1e6 / 24 / 3600))
+
+  # Also keep the interval within our minimum and maximum bounds.
   min_seconds = (metadata.get('fetch_error_occurred') and
-                 MIN_DELAY_AFTER_ERROR_SECONDS or MIN_DELAY_SECONDS)
-  return max(min_seconds, min(MAX_DELAY_HOURS * 3600, delay))
+                 min_interval_after_error or min_interval)
+  return max(min_seconds, min(max_interval, interval))
 
 
 def UpdateMetadata(address):
   """Updates the cached metadata dictionary for a single source."""
+  if config.Get('metadata_max_megabytes_per_day_per_source', 50) == 0:
+    logging.info('Skipped; metadata_max_megabytes_per_day_per_source is 0')
+    return
   fetch_time = time.time()
   metadata = cache.Get(['metadata', address])
   metadata = FetchAndUpdateMetadata(metadata, address)
   metadata['fetch_time'] = fetch_time
   cache.Set(['metadata', address], metadata, METADATA_TTL_SECONDS)
   logging.info('Updated metadata for source: %s %r', address, metadata)
-  MetadataFetchLog.Log(address, metadata)
+  if config.Get('metadata_fetch_log'):
+    MetadataFetchLog.Log(address, metadata)
 
 
 def ScheduleFetch(address, countdown=None):
@@ -438,7 +449,7 @@ def ScheduleFetch(address, countdown=None):
   metadata = cache.Get(['metadata', address]) or {}
   if not metadata.get('fetch_impossible'):
     if countdown is None:
-      countdown = DetermineFetchDelay(metadata)
+      countdown = DetermineFetchInterval(metadata)
     logging.info('Scheduling fetch in %ds for source: %s', countdown, address)
     taskqueue.add(
         queue_name='metadata', countdown=countdown, method='GET',
@@ -457,3 +468,24 @@ class MetadataFetch(base_handler.BaseHandler):
       ScheduleFetch(source)
     else:
       logging.info('Source is no longer active: %s', source)
+
+
+class MetadataFetchLogCleaner(base_handler.BaseHandler):
+  """Deletes old MetadataFetchLog entries."""
+
+  def Get(self):
+    """Deletes MetadataFetchLog entries until the request runs out of time."""
+    count = 0
+    try:
+      query = MetadataFetchLog.all(keys_only=True).order('fetch_time').filter(
+          'fetch_time <', datetime.datetime.utcnow() - METADATA_FETCH_LOG_TTL)
+      keys = query.fetch(100)
+      while keys:
+        db.delete(keys)
+        count += len(keys)
+        query.with_cursor(query.cursor())
+        keys = query.fetch(100)
+    except runtime.DeadlineExceededError:
+      pass
+    logging.info('Deleted %d old MetadataFetchLog entries', count)
+

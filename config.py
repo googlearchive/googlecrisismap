@@ -33,20 +33,22 @@ class Config(db.Model):
   value_json = db.TextProperty()  # the value, serialized to JSON
 
 
-def Get(key):
+def Get(key, default=None):
   """Fetches the configuration value for a given key.
 
   Args:
     key: A string, the name of the configuration item to get.
+    default: An optional default value to return.
 
   Returns:
-    The configuration value, or None if not found.
+    The configuration value, or the specified default value if not found.
   """
 
   def Fetcher():
     config = Config.get_by_key_name(key)
     if config:
       return json.loads(config.value_json)
+    return default
   return cache.Get([Config, key], Fetcher)
 
 

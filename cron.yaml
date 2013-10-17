@@ -14,3 +14,7 @@ cron:
   url: /.wms/cleanup
   schedule: every 5 minutes
 
+- description: clean up old MetadataFetchLog entries
+  url: /.metadata_fetch_log_cleaner
+  schedule: every 5 minutes
+

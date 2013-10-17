@@ -118,6 +118,8 @@ app = webapp2.WSGIApplication([
 
             # Tasks executed by cron or taskqueue
             Route('/.metadata_fetch', 'metadata_fetch.MetadataFetch'),
+            Route('/.metadata_fetch_log_cleaner',
+                  'metadata_fetch.MetadataFetchLogCleaner'),
             Route('/.wms/cleanup', 'wmscache.tileworker.CleanupOldWorkers'),
             Route('/.wms/tileworker', 'wmscache.tileworker.StartWorker'),
         ])
