@@ -17,7 +17,6 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 import base64
 import datetime
 import json
-import os
 import random
 
 import cache
@@ -31,24 +30,6 @@ from google.appengine.ext import db
 
 # A datetime value to represent null (the datastore cannot query on None).
 NEVER = datetime.datetime.utcfromtimestamp(0)
-
-
-def DoAsAdmin(function, *args, **kwargs):
-  """Executes a function with admin privileges for the duration of the call."""
-  original_info = {
-      'USER_IS_ADMIN': os.environ.get('USER_IS_ADMIN', '0'),
-      'USER_EMAIL': os.environ.get('USER_EMAIL', ''),
-      'USER_ID': os.environ.get('USER_ID', '')
-  }
-  try:
-    os.environ.update({
-        'USER_IS_ADMIN': '1',
-        'USER_EMAIL': 'root@google.com',
-        'USER_ID': '0'
-    })
-    return function(*args, **kwargs)
-  finally:
-    os.environ.update(original_info)
 
 
 class MapVersionModel(db.Model):
