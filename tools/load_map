@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2012 Google Inc.  All Rights Reserved.
+# Copyright 2013 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License.  You may obtain a copy
@@ -10,13 +10,13 @@
 # OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 # specific language governing permissions and limitations under the License.
 
-# Starts a Python console connected to an App Engine application.
+# Sets up the 'gmail.test' domain and adds a map using MapRoot JSON from stdin.
+# Prints out the ID of the newly created map, which is owned by root@gmail.test.
 #
 # Usage:
 #
-# tools/console :8000  # connect to localhost, port 8000
-# tools/console xyz.appspot.com  # connect to xyz.appspot.com, port 443
-# tools/console :6789 foo.py -- -x  # connect to localhost:6789, run "foo.py -x"
+# tools/load_map :8000 < maproot.json  # load from file maproot.json
+# echo '{"title":"foo"}' | tools/load_map :8000  # load from stdin
 
 pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
 
@@ -25,7 +25,9 @@ from pprint import *
 from model import *
 from perms import *
 from maps import *
-import domains, users, test_utils
-test_utils.RootLogin().__enter__()
+import sys, domains, users, test_utils
+domains.Domain.Create('gmail.test')
+perms.Grant('root', perms.Role.DOMAIN_ADMIN, 'gmail.test')
+print '/.maps/' + test_utils.CreateMap(sys.stdin.read(), 'gmail.test').id
 "
-$PYTHON $TOOLS_DIR/remote_api.py "$@"
+$PYTHON $TOOLS_DIR/remote_api.py "$@" -c pass
