@@ -20,7 +20,7 @@ goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
 
 
-/** @const @type Array.<string> */
+/** @const Array.<string> */
 cm.layerFilter.DEFAULT_FILTER_KEYS = ['title', 'description'];
 
 /**

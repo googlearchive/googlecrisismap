@@ -34,11 +34,11 @@ goog.require('goog.i18n.MessageFormat');
 goog.require('goog.module');
 goog.require('goog.style');
 
-/** @const @type string */
+/** @const string */
 var EMPTY_PNG = '//maps.gstatic.com/mapfiles/transparent.png';
 
 /**
- * @const @type number
+ * @const number
  * The layer filter input element is shown if there are at least
  * LAYER_FILTER_VISIBILITY_THRESHOLD layers in the map model.
  * NOTE(user): The number was somewhat arbitrarily chosen;
