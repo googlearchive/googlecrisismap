@@ -49,7 +49,8 @@ class Rss2KmlTest(test_utils.BaseTest):
         's=Emergency_Warning:0:Emergency+Warning&'
         's=WatchAndAct:0:Watch+and+Act&'
         's=Advice:0:Advice&'
-        's=:0:NotApplicable')
+        's=:0:NotApplicable&'
+        'p=11111111:44444444')
     last_mod = 'Wed, 26 Sep 2012 02:45:35 GMT'
 
     class DummyRSS(object):
@@ -68,7 +69,7 @@ class Rss2KmlTest(test_utils.BaseTest):
       <title>TITLE2</title>
       <description>DESCR2</description>
       <guid>GUID2</guid>
-      <georss:point>11 22</georss:point>
+      <georss:polygon>11 44 55 22</georss:polygon>
       <category>Advice</category>
     </item>
   </channel>
@@ -79,9 +80,9 @@ class Rss2KmlTest(test_utils.BaseTest):
                    validate_certificate=False, deadline=30).AndReturn(DummyRSS)
     # TODO(arb): test_utils.SetupHandler() doesn't set self.request.query_string
     # This makes our cache key broken.
-    cache_key = 'f8ea888530dedc3e95b2cb0100e09987a851d6d7'
-    memcache.set(cache_key, mox.IgnoreArg(), 120)
-    memcache.set(cache_key + 'last_mod', last_mod, 120)
+    cache_key = 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
+    memcache.set('RSS2KML+' + cache_key, mox.IgnoreArg(), 120)
+    memcache.set('RSS2KML+' + cache_key + 'last_mod', last_mod, 120)
     self.mox.ReplayAll()
     handler.get()
     self.mox.VerifyAll()
@@ -93,14 +94,34 @@ class Rss2KmlTest(test_utils.BaseTest):
       <Icon>
         <href>http://www.rfs.nsw.gov.au/file_system/images/State08/Advice.png</href>
       </Icon>
-  </IconStyle>
+    </IconStyle>
+    <PolyStyle>
+      <color>44444444</color>
+      <colorMode>normal</colorMode>
+      <fill>1</fill>
+      <outline>1</outline>
+    </PolyStyle>
+    <LineStyle>
+      <color>11111111</color>
+      <colorMode>normal</colorMode>
+    </LineStyle>
   </Style>
   <Style id="style_emergency_warning">
     <IconStyle>
       <Icon>
         <href>http://www.rfs.nsw.gov.au/file_system/images/State08/Emergency_Warning.png</href>
       </Icon>
-  </IconStyle>
+    </IconStyle>
+    <PolyStyle>
+      <color>44444444</color>
+      <colorMode>normal</colorMode>
+      <fill>1</fill>
+      <outline>1</outline>
+    </PolyStyle>
+    <LineStyle>
+      <color>11111111</color>
+      <colorMode>normal</colorMode>
+    </LineStyle>
   </Style>
   <Placemark id="GUID">
     <name>TITLE</name>
@@ -116,9 +137,14 @@ class Rss2KmlTest(test_utils.BaseTest):
     <name>TITLE2</name>
     <description>DESCR2</description>
     <MultiGeometry>
-      <Point>
-        <coordinates>22,11,0</coordinates>
-      </Point>
+    <Polygon>
+      <outerBoundaryIs>
+        <LinearRing>
+          <coordinates>44,11,0
+          22,55,0</coordinates>
+        </LinearRing>
+      </outerBoundaryIs>
+    </Polygon>
     </MultiGeometry>
     <styleUrl>#style_advice</styleUrl>
   </Placemark>

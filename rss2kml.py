@@ -86,6 +86,7 @@ class Rss2Kml(base_handler.BaseHandler):
       url: georss URL
       field: the RSS element in the RSS item to inspect
       s: repeated parameter of icon:altitude:substring. Order matters.
+      p: parameter of border:fill for polygons, each aabbggrr strings.
       Will check the specified field for the substring (case insensitive).
       First one to be found, the icon will be substituted into the 'icon_base'.
       If the substring contains the character 0x01 (^a) the string will be
@@ -98,7 +99,7 @@ class Rss2Kml(base_handler.BaseHandler):
     Raises:
       ValueError: If any required arguments are missing.
     """
-    cache_key = hashlib.sha1('RSS2KML+' + self.request.query_string).hexdigest()
+    cache_key = 'RSS2KML+' + hashlib.sha1(self.request.query_string).hexdigest()
 
     kml = memcache.get(cache_key)
     if kml is not None:
@@ -110,6 +111,8 @@ class Rss2Kml(base_handler.BaseHandler):
     url = self.MandatoryParam('url')
     rss_field = self.MandatoryParam('field')
     search_queries = self.request.get_all('s')
+    # TODO(arb): Maybe support multiple polygon styles?
+    polygon_style = self.request.get('p')
 
     searches = []
     for search in search_queries:
@@ -122,7 +125,8 @@ class Rss2Kml(base_handler.BaseHandler):
                                   deadline=30)
     rss_text = rss_response.content
     last_modified_header = rss_response.headers.get('Last-modified')
-    doc = self.GenerateKml(rss_text, icon_base, rss_field, searches)
+    doc = self.GenerateKml(rss_text, icon_base, rss_field, searches,
+                           polygon_style)
     kml = KML_DOCUMENT_TEMPLATE % xml_utils.Serialize(doc)
     self.RespondWithKml(kml, last_modified_header)
     memcache.set(cache_key, kml, TTL)
@@ -135,7 +139,7 @@ class Rss2Kml(base_handler.BaseHandler):
     self.response.headers['Cache-Control'] = (
         'public, max-age=180, must-revalidate')
 
-  def GenerateKml(self, rss, icon_base, rss_field, searches):
+  def GenerateKml(self, rss, icon_base, rss_field, searches, polygon_style):
     """Turn a GeoRSS feed into KML."""
     element = xml_utils.Xml
     xml = xml_utils.Parse(rss)
@@ -150,13 +154,28 @@ class Rss2Kml(base_handler.BaseHandler):
 
     # Now create the icon styles
     styles = []
+    if polygon_style:
+      border, fill = polygon_style.split(':')
+      polystyle = [
+          element('PolyStyle',
+                  element('color', fill),
+                  element('colorMode', 'normal'),
+                  element('fill', 1),
+                  element('outline', 1)),
+          element('LineStyle',
+                  element('color', border),
+                  element('colorMode', 'normal'))]
+    else:
+      polystyle = []
     for icon, safe_name in seen_icons:
       url = icon_base.replace('$', icon)
       styles.append(
           element(
               'Style', {'id': 'style_%s' % safe_name},
               element(
-                  'IconStyle', element('Icon', element('href', url)))))
+                  'IconStyle', element('Icon', element('href', url))),
+              *polystyle))
+
     return element('Document', styles, placemarks)
 
   def ConvertEntry(self, entry, searches, rss_field, seen_icons):
@@ -215,7 +234,8 @@ class Rss2Kml(base_handler.BaseHandler):
       poly = zip(vals[1::2], vals[0::2])
       polygon = '\n'.join('%s,%s,0' % x for x in poly)
       polygon_elements.append(element(
-          'Polygon', element(
+          'Polygon',
+          element(
               'outerBoundaryIs', element(
                   'LinearRing', element('coordinates', polygon)))))
 
