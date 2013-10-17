@@ -206,6 +206,22 @@ cm.events.SELECT_SUBLAYER = 'SELECT_SUBLAYER';
 /** The user requested to delete a layer (undoable). */
 cm.events.DELETE_LAYER = 'DELETE_LAYER';
 
+/**
+ * Information about a feature that's carried with the SELECT_FEATURE event.
+ * @typedef {{layerId: string, title: string, snippet: string, content: Element,
+ *            position: google.maps.LatLng, pixelOffset: google.maps.Size}}
+ */
+cm.events.FeatureData;
+
+/**
+ * The user selected a feature on the map.  A FeatureData object is passed
+ * with this type of event.
+ */
+cm.events.SELECT_FEATURE = 'SELECT_FEATURE';
+
+/** The user deselected the currently selected feature on the map. */
+cm.events.DESELECT_FEATURE = 'DESELECT_FEATURE';
+
 /** The user requested to add/import layers. */
 cm.events.IMPORT = 'IMPORT';
 

@@ -12,6 +12,7 @@
 goog.provide('cm.TabPanelView');
 
 goog.require('cm.AboutTabItem');
+goog.require('cm.DetailsTabItem');
 goog.require('cm.LayersTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.TabView');
@@ -76,6 +77,9 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
    * @private
    */
   this.tabView_ = new cm.TabView();
+
+  /** @private {cm.DetailsTabItem} The tab item for feature details. */
+  this.detailsTab_ = null;
 
   /**
    * Where the tab is positioned relative to the map. Placement below
@@ -226,6 +230,29 @@ cm.TabPanelView.prototype.createTabs_ = function() {
                     cm.events.ZOOM_TO_LAYER],
                    this);
   this.tabView_.appendTabItem(layersTab);
+};
+
+/**
+ * Shows the details for a specific feature in the panel.
+ * @param {cm.events.FeatureData} featureData Information about the feature.
+ */
+cm.TabPanelView.prototype.selectFeature = function(featureData) {
+  if (this.detailsTab_) {
+    this.tabView_.removeTabItem(this.detailsTab_);
+  }
+  this.detailsTab_ = new cm.DetailsTabItem(
+      this.mapModel_, this.appState_, this.config_);
+  this.detailsTab_.loadFeatureData(featureData);
+  this.tabView_.appendTabItem(this.detailsTab_);
+  this.tabView_.selectTabItem(this.detailsTab_);
+};
+
+/** Closes the feature details tab. */
+cm.TabPanelView.prototype.deselectFeature = function() {
+  if (this.detailsTab_) {
+    this.tabView_.removeTabItem(this.detailsTab_);
+    this.detailsTab_ = null;
+  }
 };
 
 /**

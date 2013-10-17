@@ -42,6 +42,8 @@ goog.require('goog.json');
  *     enable_osm_map_type: Show OSM as an option in the base map menu.  If the
  *         map's 'map_type' is OSM, we show OSM regardless of this setting.
  *     json_proxy_url: URL to the JSON proxy service.
+ *     use_details_tab: Show feature details in the tabbed panel instead of an
+ *         infowindow balloon on the map.
  *     wms_configure_url: URL to the WMS tileset configuration service.
  *     wms_tiles_url: URL to the WMS tile cache.
  * @param {boolean=} opt_preview True if this is a preview display of the map.
@@ -82,6 +84,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   this.infoWindow_;
 
   /**
+   * The ID of the layer containing the currently selected feature.
    * @type ?string
    * @private
    */
@@ -197,11 +200,20 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   this.bindTo('viewport', appState);
 
   // Create an infowindow that closes when the user clicks on the map.
+  // TODO(kpy): When the UI switches to the tabbed panel design, remove
+  // this.infoWindow_ and rename infoWindowLayerId_ to selectedFeatureLayerId_.
   this.infoWindow_ = new google.maps.InfoWindow();
-  // The infowindow may not be open, but it's not a problem to call close() on
-  // it multiple times.
-  cm.events.listen(
-      this.map_, 'click', function() { this.infoWindow_.close(); }, this);
+  cm.events.listen(this.map_, 'click', function() {
+    // In the new tabbed panel world, selecting/deselecting a feature will emit
+    // events that trigger UI changes in the TabPanelView.
+    if (this.config_['use_details_tab']) {
+      cm.events.emit(this, cm.events.DESELECT_FEATURE);
+    } else {
+      // The infowindow may not be open, but it's not a problem to call close()
+      // on it multiple times.
+      this.infoWindow_.close();
+    }
+  }, this);
 
   // Helper text for defining lat/lng values when editing a layer's viewport.
   var mouseLatLngElem = cm.ui.create('div', {'class': cm.css.LAT_LNG});
@@ -564,51 +576,68 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
   var overlay = this.overlays_[id];
   if (overlay && !layer.get('suppress_info_windows')) {
     cm.events.listen(overlay, 'click', function(event) {
-      this.infoWindow_.close();
-      this.infoWindowLayerId_ = null;
-      // FusionTablesLayer makes the info window content available in the event
-      // itself, but KmlLayer hides it behind 'featureData'.
-      var contentHtml = (event['featureData'] || event)['infoWindowHtml'];
-      var content = cm.MapView.htmlToDivOrNull(
-          (event['featureData'] || event)['infoWindowHtml']);
-      // Note that we can't pass in a DOM element; we must pass the content
-      // as a string in order for the infowindow to scroll properly.
-      if (content) {
-        this.infoWindow_.setOptions(/** @type google.maps.InfoWindowOptions */({
-          position: event['latLng'],
-          pixelOffset: event['pixelOffset'],
-          content: goog.string.trim(contentHtml)
-        }));
-        this.infoWindow_.open(this.map_);
-        this.infoWindowLayerId_ = id;
+      var featureData = cm.MapView.getFeatureData_(id, event);
+      if (this.config_['use_details_tab']) {
+        if (featureData) {
+          cm.events.emit(this, cm.events.SELECT_FEATURE, featureData);
+        } else {
+          cm.events.emit(this, cm.events.DESELECT_FEATURE);
+        }
+      } else {
+        this.infoWindow_.close();
+        // Note that we can't pass in a DOM element; we must pass the content
+        // as a string in order for the infowindow to scroll properly.
+        if (featureData) {
+          this.infoWindow_.setOptions(
+              /** @type google.maps.InfoWindowOptions */({
+                position: featureData.position,
+                pixelOffset: featureData.pixelOffset,
+                content: featureData.content.innerHTML
+              }));
+          this.infoWindow_.open(this.map_);
+        }
       }
+      this.infoWindowLayerId_ = featureData ? id : null;
     }, this);
   }
 };
 
 /**
- * The Maps API currently passes back an empty DIV when there is no content
- * for the infowindow; this function returns null in that case.
- * @param {string} htmlString A string of HTML.
- * @return {Element} The HTML content as a <div> element, or null if the given
- *     string only contained whitespace or an empty div.
+ * Gathers information about a map feature into data for a SELECT_FEATURE event.
+ * @param {string} layerId The ID of the layer containing the feature.
+ * @param {google.maps.KmlMouseEvent|google.maps.FusionTablesMouseEvent} event
+ *    A Maps API event containing details about a map feature.
+ * @return {?cm.events.FeatureData} An object containing information about the
+ *    feature, or null if the feature has no infowindow content.
+ * @private
  */
-cm.MapView.htmlToDivOrNull = function(htmlString) {
-  if (htmlString) {
-    // Strip whitespace from content before checking if it has child nodes;
-    // otherwise, whitespace (except in IE) becomes a node in the document
-    // fragment, which defeats our attempt to suppress empty infowindows.
-    // TODO(shakusa): htmlToDocumentFragment is somewhat convoluted.  Look for
-    // another way to do this without using that function.
-    var node = goog.dom.htmlToDocumentFragment(goog.string.trim(htmlString));
-    if (node && node.childNodes && node.childNodes.length > 0) {
-      return /** @type Element */(node);
-    }
-    if (node.nodeType === goog.dom.NodeType.DOCUMENT_FRAGMENT) {
-      return cm.ui.create('div', {}, node);
-    }
+cm.MapView.getFeatureData_ = function(layerId, event) {
+  // FusionTablesLayer makes the infowindow content available in the event
+  // itself, but KmlLayer hides it behind 'featureData'.
+  var featureData = event['featureData'] || event;
+  var htmlString = featureData['infoWindowHtml'] || '';
+  var content = null;
+  // Strip whitespace from content before checking if it has child nodes;
+  // otherwise, whitespace (except in IE) becomes a node in the document
+  // fragment, which defeats our attempt to suppress empty infowindows.
+  // TODO(shakusa): htmlToDocumentFragment is somewhat convoluted.  Look for
+  // another way to do this without using that function.
+  var node = goog.dom.htmlToDocumentFragment(goog.string.trim(htmlString));
+  if (node && node.childNodes && node.childNodes.length > 0) {
+    content = /** @type Element */(node);
+  } else if (node.nodeType === goog.dom.NodeType.DOCUMENT_FRAGMENT) {
+    content = cm.ui.create('div', {}, node);
+  } else {
+    return null;
   }
-  return null;
+  return {
+    layerId: layerId,
+    title: featureData['name'] || '',
+    snippet: featureData['snippet'] || '',
+    content: content,
+    position: event['latLng'],
+    pixelOffset: event['pixelOffset']
+  };
 };
 
 /**
@@ -668,10 +697,14 @@ cm.MapView.prototype.updateVisibility_ = function() {
     }
 
 
-    // Close the infowindow if its layer is turned off.
+    // Deselect the selected feature if its layer is turned off.
     if (!become_visible && this.infoWindowLayerId_ == id) {
-      this.infoWindow_.close();
-      this.infoWindowLayerId_ = null;
+      if (this.config_['use_details_tab']) {
+        cm.events.emit(this, cm.events.DESELECT_FEATURE);
+      } else {
+        this.infoWindow_.close();
+        this.infoWindowLayerId_ = null;
+      }
     }
   }
 };

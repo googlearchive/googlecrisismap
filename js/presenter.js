@@ -108,6 +108,15 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     function(event) {
       appState.setMatchedLayers(event.matches);
   });
+
+  if (panelView instanceof cm.TabPanelView) {
+    cm.events.listen(mapView, cm.events.SELECT_FEATURE, function(event) {
+      panelView.selectFeature(event);
+    });
+    cm.events.listen(mapView, cm.events.DESELECT_FEATURE, function(event) {
+      panelView.deselectFeature();
+    });
+  }
 };
 
 

@@ -63,7 +63,8 @@ class MapTest(test_utils.BaseTest):
                        'hide_panel_header': False,
                        'enable_layer_filter': False,
                        'google_api_key': '',
-                       'use_tab_panel': False},
+                       'use_tab_panel': False,
+                       'use_details_tab': False},
                       client_config.AsDict())
 
     config_dict = client_config.AsDict()

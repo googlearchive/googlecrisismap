@@ -83,6 +83,9 @@ cm.MSG_HELP = goog.getMsg('Help');
  */
 cm.MSG_ABOUT_TAB_lABEL = goog.getMsg('About');
 
+/** @desc Label for the tab that shows details for a selected feature. */
+cm.MSG_DETAILS_TAB_LABEL = goog.getMsg('Details');
+
 /**
  * @desc Label for the tab that holds the descriptions of all the layers
  *   on the map.
