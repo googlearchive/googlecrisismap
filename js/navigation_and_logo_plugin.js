@@ -64,8 +64,8 @@ cm.NavigationAndLogoPlugin.prototype.maybeBuildExtraViews =
  */
 cm.NavigationAndLogoPlugin.prototype.sizeComponentsWithExtraViews = function(
     container, panelView, panelViewPosition, extraViews) {
-  var navigationView = /** {@type cm.NavigationView} */ (extraViews.navigation);
-  var logoView = /** {@type cm.LogoView} */ (extraViews.logo);
+  var navigationView = /** @type {cm.NavigationView} */ (extraViews.navigation);
+  var logoView = /** @type {cm.LogoView} */ (extraViews.logo);
   // LogoView's layout is all done with CSS, so this method only needs to do
   // something when a NavigationView is present.
   if (!navigationView) {
