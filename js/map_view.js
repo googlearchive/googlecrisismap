@@ -637,7 +637,7 @@ cm.MapView.getFeatureData_ = function(layerId, event) {
     layerId: layerId,
     title: featureData['name'] || '',
     snippet: featureData['snippet'] || '',
-    content: content,
+    content: /** @type Element */(content),
     position: event['latLng'],
     pixelOffset: event['pixelOffset']
   };
