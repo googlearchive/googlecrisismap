@@ -110,6 +110,7 @@ app = webapp2.WSGIApplication([
             Route('/.legend', 'legend_item_extractor.GetLegendItems'),
             Route('/.jsonp', 'jsonp.Jsonp'),
             Route('/.metadata', 'metadata.Metadata'),
+            Route('/.rss2kml', 'rss2kml.Rss2Kml'),
             Route('/.share/<map_id>', 'share.Share'),
             Route('/.wms/configure',
                   'wmscache.tileset_config.ConfigureTileset'),
