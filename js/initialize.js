@@ -46,9 +46,9 @@ goog.require('goog.i18n.bidi');
 goog.require('goog.module');
 goog.require('goog.ui.Component');
 
-/** @const */var MIN_DOCUMENT_WIDTH_FOR_SIDEBAR = 600;
-/** @const */var MIN_MAP_WIDTH_FOR_SEARCHBOX = 500;
-/** @const */var BOTTOM_TAB_PANEL_FRAME_HEIGHT_FRACTION = 0.7;
+/** @const */var MIN_DOCUMENT_WIDTH_FOR_SIDEBAR = 690;
+/** @const */var MIN_MAP_WIDTH_FOR_SEARCHBOX = 450;
+/** @const */var BOTTOM_TAB_PANEL_FRAME_HEIGHT_FRACTION = 0.5;
 
 /**
  * Sizes the map and panel elements to fit the window.

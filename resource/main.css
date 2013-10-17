@@ -49,7 +49,7 @@ html, body {
 .cm-body, .cm-frame, .cm-frame input, .cm-frame button,
 .cm-popup, .cm-popup input, .cm-about {
   font-size: 13px;
-  font-family: arial, sans-serif;
+  font-family: roboto, arial, sans-serif;
   color: #222;
 }
 .cm-embedded {
@@ -223,7 +223,14 @@ html, body {
   background: url('//maps.gstatic.com/mapfiles/hpimgs28.png') -132px -26px;
 }
 .cm-searchbox {
-  width: 200px;
+  width: 240px;
+  border-left-width: 1px !important;
+}
+.cm-searchbox:hover, .cm-searchbox:focus {
+  border: 1px solid #4d90fe;
+}
+.cm-body .pac-item {
+  padding: 0 8px; /* left-align search results with location query */
 }
 /* NOTE(arb): The lack of a space in the following is on purpose! */
 .cm-panel-collapsed.cm-panel-left .cm-searchbox {
@@ -301,13 +308,11 @@ html, body {
   width: 450px !important;
 }
 .cm-draft-indicator {
-  padding: 1px 2px;
+  padding: 0 2px;
   margin-right: 0.3em;
-  border: 1px solid gray;
-  font-weight: bold;
+  border: 1px solid #666;
   cursor: default;
   color: #666;
-  vertical-align: 2px;
 }
 .cm-map-publisher {
   color: #999;
@@ -546,7 +551,7 @@ html, body {
   padding-left: 4px;
   color: #333;
   font-size: 13px;
-  font-family: arial, sans-serif;
+  font-family: roboto, arial, sans-serif;
   border: 1px solid #d9d9d9;
   border-top: 1px solid silver;
   display: inline-block;
@@ -603,6 +608,10 @@ div.cm-social {
   font-size: 12px;
   border: 0;
   width: 250px;
+  padding: 6px 9px 7px;
+}
+.cm-mapbutton input:hover, .cm-mapbutton input:focus {
+  outline: none;
 }
 
 /* Language selector */
@@ -925,7 +934,6 @@ input[type=checkbox]:checked::after {
   background-image: url('triangle_down.png') !important;
 }
 .cm-my-location-button {
-  opacity: 0.8;
   width: 27px;
   height: 27px;
   padding: 3px !important;
@@ -934,7 +942,6 @@ input[type=checkbox]:checked::after {
   background-repeat: no-repeat !important;
 }
 .cm-my-location-button:hover {
-  opacity: 1.0 !important;
   background-color: white !important;
 }
 /* Support for high density screens. */
@@ -1065,7 +1072,7 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-editors > .cm-html-editor textarea {
   width: 100%;
   height: 6em;
-  font-family: arial;
+  font-family: roboto, arial, sans-serif;
   font-size: 13px;
   padding: 3px 2px;
   border: 1px solid #c0c0c0;
@@ -1168,7 +1175,7 @@ textarea.cm-legend-text {
   position: absolute;
   top: 0;
   left: 0;
-  font-family: arial;
+  font-family: roboto, arial, sans-serif;
   border: none;
   cursor: auto !important;
 }
@@ -1203,7 +1210,7 @@ textarea.cm-legend-text {
 .cm-editors > .cm-wms-menu-editor select {
   width: 100%;
   font-size: 13px;
-  font-family: arial;
+  font-family: roboto, arial, sans-serif;
 }
 .cm-editors > .cm-wms-menu-editor > th {
   vertical-align: top;
@@ -1328,6 +1335,11 @@ textarea.cm-legend-text {
   background: #f5f5f5;
   /* @alternate */ background-image:-webkit-linear-gradient(top, #f5f5f5, #f1f1f1);
   /* @alternate */ background-image:linear-gradient(top, #f5f5f5, #f1f1f1);
+}
+.cm-frame .cm-button {
+  font-size: 12px;
+  font-family: roboto, arial, sans-serif;
+  font-weight: 500;
 }
 .cm-button:hover {
   border: 1px solid #c6c6c6;
