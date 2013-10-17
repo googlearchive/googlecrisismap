@@ -98,11 +98,16 @@ specific language governing permissions and limitations under the License.
       {% block navlinks %}
         <li><a href="{{root}}/.maps">Your list of maps</a></li>
 
-        {% for catalog_domain in navbar.catalog_domains %}
-          <li><a href="{{root}}/{{catalog_domain}}/.catalog">
-              Published maps ({{catalog_domain}})
-          </a></li>
-        {% endfor %}
+        {% if navbar.catalog_domains %}
+          <li>Published maps:</li>
+          {% for catalog_domain in navbar.catalog_domains %}
+            <li>&nbsp;&nbsp;&nbsp;
+              <a href="{{root}}/{{catalog_domain}}/.catalog">
+                {{catalog_domain}}
+              </a>
+            </li>
+          {% endfor %}
+        {% endif %}
 
         {% if user.ga_domain and not navbar.domain_exists %}
           <li>
@@ -111,7 +116,7 @@ specific language governing permissions and limitations under the License.
               {{xsrf_tag|safe}}
               <input type="hidden" name="form" value="create-domain">
               <a href="#" onclick="this.parentNode.submit()">
-                Create domain {{user.ga_domain}}
+                Set up {{user.ga_domain}}
               </a>
             </form>
           </li>
@@ -119,13 +124,24 @@ specific language governing permissions and limitations under the License.
 
         {% for admin_domain in navbar.admin_domains %}
           <li><a href="{{root}}/{{admin_domain}}/.admin">
-              Administer {{admin_domain}}
+            Manage {{admin_domain}}
           </a></li>
         {% endfor %}
 
         {% if navbar.is_admin %}
           <li><a href="{{root}}/.admin">Administer maps</a></li>
         {% endif %}
+
+        <li>&nbsp;</li>
+
+        <li><a href="http://www.google.com/intl/en/policies/">
+          Privacy &amp; terms
+        </a></li>
+
+        <li><a href="http://www.google.org/crisisresponse/crisismap/use-policy.html">
+          Acceptable use policy
+        </a></li>
+
       {% endblock navlinks %}
     </ul>
     {% endblock navbar %}
