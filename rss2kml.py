@@ -24,6 +24,7 @@ KML_DOCUMENT_TEMPLATE = """\
 %s</kml>
 """
 
+import hashlib
 import random
 import re
 import string
@@ -97,11 +98,12 @@ class Rss2Kml(base_handler.BaseHandler):
     Raises:
       ValueError: If any required arguments are missing.
     """
-    cache_key = 'RSS2KML+' + self.request.query_string
+    cache_key = hashlib.sha1('RSS2KML+' + self.request.query_string).hexdigest()
 
     kml = memcache.get(cache_key)
     if kml is not None:
-      self.RespondWithKml(kml)
+      last_mod = memcache.get(cache_key + 'last_mod')
+      self.RespondWithKml(kml, last_mod)
       return
 
     icon_base = self.MandatoryParam('ib')
@@ -116,16 +118,20 @@ class Rss2Kml(base_handler.BaseHandler):
       searches.append((search_string.lower().split(chr(1)), icon, altitude))
     if not searches:
       raise ValueError('need to specify searches - s is mandatory')
-    rss_text = urlfetch.fetch(url, validate_certificate=False,
-                              deadline=30).content
+    rss_response = urlfetch.fetch(url, validate_certificate=False,
+                                  deadline=30)
+    rss_text = rss_response.content
+    last_modified_header = rss_response.headers.get('Last-modified')
     doc = self.GenerateKml(rss_text, icon_base, rss_field, searches)
     kml = KML_DOCUMENT_TEMPLATE % xml_utils.Serialize(doc)
-    self.RespondWithKml(kml)
+    self.RespondWithKml(kml, last_modified_header)
     memcache.set(cache_key, kml, TTL)
+    memcache.set(cache_key + 'last_mod', last_modified_header, TTL)
 
-  def RespondWithKml(self, kml):
+  def RespondWithKml(self, kml, last_modified_header):
     self.response.write(kml)
     self.response.headers['Content-Type'] = KML_CONTENT_TYPE
+    self.response.headers['Last-modified'] = last_modified_header
     self.response.headers['Cache-Control'] = (
         'public, max-age=180, must-revalidate')
 

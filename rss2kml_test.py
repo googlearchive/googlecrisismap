@@ -50,8 +50,10 @@ class Rss2KmlTest(test_utils.BaseTest):
         's=WatchAndAct:0:Watch+and+Act&'
         's=Advice:0:Advice&'
         's=:0:NotApplicable')
+    last_mod = 'Wed, 26 Sep 2012 02:45:35 GMT'
 
     class DummyRSS(object):
+      headers = {'Last-modified': last_mod}
       content = """\
 <rss xmlns:georss="http://www.georss.org/georss" version="2.0">
   <channel>
@@ -77,7 +79,9 @@ class Rss2KmlTest(test_utils.BaseTest):
                    validate_certificate=False, deadline=30).AndReturn(DummyRSS)
     # TODO(arb): test_utils.SetupHandler() doesn't set self.request.query_string
     # This makes our cache key broken.
-    memcache.set(mox.IgnoreArg(), mox.IgnoreArg(), 120)
+    cache_key = 'f8ea888530dedc3e95b2cb0100e09987a851d6d7'
+    memcache.set(cache_key, mox.IgnoreArg(), 120)
+    memcache.set(cache_key + 'last_mod', last_mod, 120)
     self.mox.ReplayAll()
     handler.get()
     self.mox.VerifyAll()
@@ -122,6 +126,7 @@ class Rss2KmlTest(test_utils.BaseTest):
 </kml>
 """
     self.assertEquals(Deindent(expected), Deindent(handler.response.body))
+    self.assertEquals(last_mod, handler.response.headers['Last-modified'])
 
   def testCreatePlacemarkPoint(self):
     item_values = {'point': ['12 24'],
