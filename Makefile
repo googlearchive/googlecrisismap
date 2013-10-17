@@ -94,9 +94,11 @@ clean:
 test: languages.py aux/json_files.js $(LIST)
 	@gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),$$(echo js/*_test.js | tr ' ' ',') | \
 	    python tools/format_gjstest_output.py && \
-	    echo "All JS tests passed.\n" && \
+	    echo "All JS tests passed." && \
+	    echo && \
 	    tools/pytests && \
-	    echo "\nAll JS and Python tests passed."
+	    echo && \
+	    echo "All JS and Python tests passed."
 
 # Run a single JS test using gjstest.
 %_test: aux/json_files.js $(LIST)
