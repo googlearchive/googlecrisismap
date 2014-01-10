@@ -712,7 +712,7 @@ input[type=checkbox]:checked::after {
 .cm-checkbox-folder-decoration {
   background: url('folder_border.png') no-repeat;
   height: 13px;
-  margin: -19px 0 0 -3px;
+  margin: -18px 0 0 -2px;
 }
 
 /* About popup */

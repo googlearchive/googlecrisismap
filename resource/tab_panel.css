@@ -76,6 +76,10 @@ specific language governing permissions and limitations under the License.
   overflow-x: visible;
 }
 
+.cm-tab-content input[type=checkbox] {
+  margin-bottom: -2px;
+}
+
 .cm-scrolling-tab-content {
   overflow-y: auto;
 }
