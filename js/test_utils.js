@@ -630,6 +630,20 @@ cm.TestBase.prototype.duplicateJson = function(json, opt_newProperties) {
 };
 
 /**
+ * Creates and returns a duplicate of json, modifying json.id.
+ * This is a convenience call through to:
+ *    this.duplicateJson(json, {id: json.id + '_' + uniqId}
+ * to return a straight copy with a new unique ID.
+ * @param {Object} json The JSON to duplicate
+ * @param {string} uniqId A string used to unique-ify json.id; often the
+ *   name of the calling test function.
+ * @return {Object} The duplicated JSON.
+ */
+cm.TestBase.prototype.fromTemplateJson = function(json, uniqId) {
+  return this.duplicateJson(json, {id: json.id + '_' + uniqId});
+};
+
+/**
  * Asserts that a particular event be emitted some number of times before
  *  the end of the test.
  * @param {Object} source The expected source of the event.
@@ -1155,6 +1169,24 @@ function expectNoDescendantOf(element, var_args) {
   expectThat(element, not(hasDescendant.apply(null, args)));
 }
 
+/**
+ * Creates a matcher that accepts an element if it has any ancestor that
+ * satisfies all the given conditions.
+ * @param {FakeElement|string|gjstest.Matcher} var_args Any number of
+ *     conditions to satisfy.  Supply a FakeElement to require a particular
+ *     element; or supply a string to require a particular nodeName; or use
+ *     any of the matchers withId, withClass, withAttr, withText.
+ * @return {gjstest.Matcher} A matcher that accepts any FakeElement that has
+ *     any ancestor that satisfies all of the given conditions.
+ */
+function hasAncestor(var_args) {
+  var matcher = isElement.apply(null, arguments);
+  return new gjstest.Matcher(
+      'has an ancestor that ' + matcher.description,
+      'doesn\'t have an ancestor that ' + matcher.description,
+      function(x) { return !!(foundElement = findAncestorOf(x, matcher)); });
+}
+
 function findAncestorOf(element, matcher) {
   while (element.parentNode) {
     if (matcher.predicate(element.parentNode) === true) {
@@ -1179,8 +1211,16 @@ function expectAncestorOf(element, var_args) {
 function isShown() {
   return new gjstest.Matcher(
       'is shown', 'is not shown',
-      allOf([not(withStyle('display', 'none')),
-             not(withClass(cm.css.HIDDEN))]).predicate);
+      function(elem) {
+        var elemIsShown = allOf(
+            [not(withStyle('display', 'none')),
+             not(withClass(cm.css.HIDDEN))]).predicate(elem);
+        if (elem.parentNode) {
+          return elemIsShown && isShown().predicate(elem.parentNode);
+        } else {
+          return elemIsShown;
+        }
+      });
 }
 
 /**

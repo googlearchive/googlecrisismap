@@ -389,11 +389,11 @@ cm.FolderLegendView_.prototype.setupListeners = function() {
         this.appState_);
     goog.array.insertAt(this.sublayerLegendViews_, newLegendView, i);
     this.render(null);
-  });
+  }, this);
   cm.events.listen(sublayers, 'remove_at', function(i, layer) {
     goog.array.removeAt(this.sublayerLegendViews_, i);
     this.render(null);
-  });
+  }, this);
   cm.events.onChange(this.layerModel_, ['folder_type'], function() {
     this.render(null);
   }, this);

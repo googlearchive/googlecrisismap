@@ -17,6 +17,7 @@ goog.require('cm.css');
 
 goog.require('goog.json');
 goog.require('goog.module');
+goog.require('goog.object');
 
 var SIMPLE_LAYER_JSON = {
   id: 'simpleLayer',
@@ -52,10 +53,20 @@ function SimpleLegendViewTest() {
 SimpleLegendViewTest.prototype = new cm.TestBase();
 registerTestSuite(SimpleLegendViewTest);
 
+/**
+ * Uses the passed json to create a map with a single layer, creates a
+ * map model and app state from that, then creates and returns the legend
+ * view for the single layer.
+ * @param {Object} json The json description of the single layer
+ * @param {string} uniqueId A string that can be used to salt the layer's ID
+ *   so that multiple tests can share the same pre-canned JSON.
+ * @return {cm.LegendView} The legend view for the one layer in the map.
+ * @private
+ */
 SimpleLegendViewTest.prototype.createLegendView_ = function(json, uniqueId) {
-  // Need to modify the title to guarantee we get a fresh legend view; otherwise
+  // Need to modify the id to guarantee we get a fresh legend view; otherwise
   // getLegendViewForLayer() will not build a new legend view.
-  var layerJson = this.duplicateJson(json, {id: json.id + '-' + uniqueId});
+  var layerJson = this.fromTemplateJson(json, uniqueId);
   this.mapModel_ = cm.MapModel.newFromMapRoot({layers: [layerJson]});
   this.appState_ = new cm.AppState();
   this.appState_.setFromMapModel(this.mapModel_);
@@ -70,7 +81,8 @@ SimpleLegendViewTest.prototype.createLegendView_ = function(json, uniqueId) {
  *   layer; should carry the cm.css.TABBED_LEGEND_BOX class
  * @private
  */
-SimpleLegendViewTest.prototype.validateRender_ = function(legendBox) {
+SimpleLegendViewTest.prototype.validateRenderingMatchesLayerModel_ = function(
+    legendBox) {
   expectThat(legendBox, withClass(cm.css.TABBED_LEGEND_BOX));
   expectThat(legendBox, not(withClass(cm.css.HIDDEN)));
   expectDescendantOf(legendBox, withText(this.layerModel_.get('title')));
@@ -80,7 +92,7 @@ SimpleLegendViewTest.prototype.validateRender_ = function(legendBox) {
 
 SimpleLegendViewTest.prototype.testGetContent = function() {
   var legendView = this.createLegendView_(SIMPLE_LAYER_JSON, 'testGetContent');
-  this.validateRender_(legendView.getContent());
+  this.validateRenderingMatchesLayerModel_(legendView.getContent());
 };
 
 SimpleLegendViewTest.prototype.testHiddenWhenNoLegend = function() {
@@ -93,7 +105,7 @@ SimpleLegendViewTest.prototype.testHidesOnZoomChange = function() {
   var legendView = this.createLegendView_(
       SIMPLE_LAYER_WITH_ZOOM_BOUNDS_JSON, 'testHidesOnZoomChange');
   var content = legendView.getContent();
-  this.validateRender_(content);
+  this.validateRenderingMatchesLayerModel_(content);
   cm.events.emit(goog.global, cm.events.ZOOM_CHANGED,
                  {zoom: SIMPLE_LAYER_WITH_ZOOM_BOUNDS_JSON.min_zoom - 1});
   expectThat(content, withClass(cm.css.HIDDEN));
@@ -133,7 +145,7 @@ SimpleLegendViewTest.prototype.testUpdatesOnTitleChange = function() {
   // Force render before the title changes
   var content = legendView.getContent();
   this.layerModel_.set('title', 'testUpdatesOnTitleChange');
-  this.validateRender_(content);
+  this.validateRenderingMatchesLayerModel_(content);
 };
 
 SimpleLegendViewTest.prototype.testUpdatesOnLegendChange = function() {
@@ -143,7 +155,7 @@ SimpleLegendViewTest.prototype.testUpdatesOnLegendChange = function() {
   var content = legendView.getContent();
   this.layerModel_.set(
       'legend', cm.Html.fromSanitizedHtml('<b>testUpdatesOnLegendChange</b>'));
-  this.validateRender_(content);
+  this.validateRenderingMatchesLayerModel_(content);
 };
 
 SimpleLegendViewTest.prototype.testUpdatesOnMetadataChange = function() {
@@ -153,7 +165,7 @@ SimpleLegendViewTest.prototype.testUpdatesOnMetadataChange = function() {
   var legendView = this.createLegendView_(
       newJson, 'testUpdatesOnMetadataChange');
   var content = legendView.getContent();
-  this.validateRender_(content);
+  this.validateRenderingMatchesLayerModel_(content);
   this.metadataModel_.set(this.layerModel_.getSourceAddress(),
                          {has_no_features: true});
   expectThat(content, withClass(cm.css.HIDDEN));
@@ -176,8 +188,15 @@ SimpleLegendViewTest.prototype.testUpdatesMetadataListener = function() {
   expectThat(content, withClass(cm.css.HIDDEN));
 };
 
-// TODO(rew): Ensure test case for editing a legend and verifying that
-// the edits are visible in the legend
+SimpleLegendViewTest.prototype.testLegendChangesReflectedInView = function() {
+  var legendView = this.createLegendView_(
+      SIMPLE_LAYER_JSON, 'testLegendChangesReflectedInView');
+  // Force rendering prior to changing the legend
+  var content = legendView.getContent();
+  this.layerModel_.set(
+      'legend', new cm.Html('<b>New legend</b> for you!<br/>'));
+  this.validateRenderingMatchesLayerModel_(content);
+};
 
 var FOLDER_LAYER_JSON = {
   id: 'folderLayer',
@@ -187,11 +206,375 @@ var FOLDER_LAYER_JSON = {
   type: 'FOLDER',
   subtype: 'UNLOCKED'
 };
+
+var RED_LAYER_JSON = {
+  id: 'redLayer',
+  title: 'Red Layer',
+  legend: 'Red</br>Crimson</br>',
+  visibility: 'DEFAULT_ON',
+  type: 'KML'
+};
+
+var BLUE_LAYER_JSON = {
+  id: 'blueLayer',
+  title: 'Blue Layer',
+  legend: 'Blue</br>Navy</br>',
+  visibility: 'DEFAULT_ON',
+  type: 'KML'
+};
+
 function FolderLegendViewTest() {
   cm.TestBase.call(this);
   this.metadataModel_ = new cm.MetadataModel();
+  this.folderTypeToMaprootType = goog.object.transpose(
+      cm.LayerModel.MAPROOT_TO_MODEL_FOLDER_TYPES);
 }
 FolderLegendViewTest.prototype = new cm.TestBase();
 registerTestSuite(FolderLegendViewTest);
 
-// TODO(rew): Add some tests for folder legends!!!!
+FolderLegendViewTest.prototype.getFolderJson_ = function(
+    folderType, uniqueId, sublayerJson) {
+  return this.duplicateJson(
+      FOLDER_LAYER_JSON,
+      {
+        id: FOLDER_LAYER_JSON.id + '-' + uniqueId,
+        list_item_type: this.folderTypeToMaprootType[folderType],
+        sublayers: sublayerJson
+      });
+};
+
+/**
+ * Puts together the scaffolding necessary to produce a legend view of a folder.
+ * By default, creates a folder containing the red layer, the no-legend layer,
+ * and the blue layer, in that order.  Sets this.mapModel_ and this.appState_,
+ * to the map model and app state used to bring up the scaffolding.  Sets
+ * this.layerModel_ to hold the layer model for the newly created folder.
+ * @param {cm.LayerModel.FOLDER_TYPE} folderType The type of folder desired.
+ * @param {string} uniqueId A string that can be used to salt the layer
+ *   ids so they will be unique across all tests; typically the name of
+ *   the test itself.
+ * @param {Array.<Object>=} opt_sublayerJson An array of the JSON descriptions
+ *   of sublayers to be used in place of the default [red, noLegend, blue]
+ *   sublayer list.
+ * @return {cm.LegendView} The legend view created for the folder layer.
+ * @private
+ */
+FolderLegendViewTest.prototype.createLegendView_ = function(
+    folderType, uniqueId, opt_sublayerJson) {
+  // Need to modify the id to guarantee we get a fresh legend view; otherwise
+  // getLegendViewForLayer() will not build a new legend view.
+  var sublayerJson = opt_sublayerJson || [
+    this.fromTemplateJson(RED_LAYER_JSON, uniqueId),
+    this.fromTemplateJson(NO_LEGEND_LAYER_JSON, uniqueId),
+    this.fromTemplateJson(BLUE_LAYER_JSON, uniqueId)];
+
+  this.folderJson_ = this.getFolderJson_(folderType, uniqueId, sublayerJson);
+  this.mapModel_ = cm.MapModel.newFromMapRoot({layers: [this.folderJson_]});
+  this.appState_ = new cm.AppState();
+  this.appState_.setFromMapModel(this.mapModel_);
+  this.layerModel_ = this.mapModel_.get('layers').getAt(0);
+  return cm.LegendView.getLegendViewForLayer(
+      this.layerModel_, this.metadataModel_, this.appState_);
+};
+
+/**
+ * Validates the render of a legend against the layer that produced it.
+ * @param {Element} contentElem The element containing the rendered legend.
+ * @param {cm.LayerModel} layer The model whose legend was rendered.
+ * @param {boolean} titleIsVisible Whether the title of the layer should
+ *   be visible (this varies based on any containing folders)
+ * @param {boolean} isVisible Whether the legend itself should be visible.
+ * @private
+ */
+FolderLegendViewTest.prototype.validateRender_ = function(
+    contentElem, layer, titleIsVisible, isVisible) {
+  expectThat(contentElem, withInnerHtml(layer.get('legend').getHtml()));
+  expectThat(contentElem, isVisible ? isShown() : not(isShown()));
+
+  var box = expectAncestorOf(contentElem, withClass(cm.css.TABBED_LEGEND_BOX));
+  if (titleIsVisible) {
+    var title = expectDescendantOf(box, withClass(cm.css.LAYER_TITLE));
+    expectThat(title, withText(layer.get('title')));
+    expectThat(title, isShown());
+  } else {
+    var title = findDescendantOf(box, withText(layer.get('title')));
+    if (title) {
+      expectThat(title, not(isShown()));
+    }
+  }
+};
+
+/**
+ * Recursive helper function to collect all the sublayers of a given set
+ * of layers.
+ * @param {Array.<cm.LayerModel>} seedLayers The layers whose sublayers are
+ *   being collected.
+ * @return {Array.<cm.LayerModel>} The union of seedLayers and all sublayers,
+ *   including nested ones.
+ * @private
+ */
+FolderLegendViewTest.collectSublayers_ = function(seedLayers) {
+  var result = [];
+  goog.array.forEach(seedLayers, function(layer) {
+    result.push(layer);
+    var sublayers = layer.get('sublayers');
+    if (sublayers && sublayers.length) {
+      result = goog.array.concat(
+          result, FolderLegendViewTest.collectSublayers_(sublayers.getArray()));
+    }
+  });
+  return result;
+};
+
+/**
+ * Compute this.layerMapping_, which maps layer IDs to their rendered
+ * legend content.  This method must be called before legendForId_() and
+ * layerForId_() can be called (see below). The details for this.layerMapping_
+ * are an internal, private detail between this method, legendForId_ and
+ * layerForId_; the agreed format is a mapping from layer IDs to records
+ * containing the matching layer model (under the key 'model') and the DOM
+ * element for the legend's content (under the key 'content').
+ * @param {Element} parentElem The root of the rendered legend content's DOM.
+ * @param {string=} opt_idSuffix An optional suffix to strip from layer IDs.
+ *   Useful for removing the suffixes that were added to ensure the layer IDs
+ *   are unique, so that the ID from the original JSON can be used for lookup.
+ * @private
+ */
+FolderLegendViewTest.prototype.findLayersAndLegends_ = function(
+    parentElem, opt_idSuffix) {
+  var legendContentDivs = allDescendantsOf(
+      parentElem, withClass(cm.css.TABBED_LEGEND_CONTENT));
+  var layerModels = FolderLegendViewTest.collectSublayers_([this.layerModel_]);
+  var layerMapping = {};
+
+  goog.array.forEach(layerModels, function(layer) {
+    for (var i = 0; i < legendContentDivs.length; i++) {
+      if (layer.get('legend').getHtml() === legendContentDivs[i].innerHTML) {
+        var layerId = layer.get('id');
+        if (opt_idSuffix) {
+          var suffixLoc = layerId.lastIndexOf(opt_idSuffix);
+          if (suffixLoc != -1 &&
+              suffixLoc === layerId.length - opt_idSuffix.length) {
+            layerId = layerId.substring(0, suffixLoc - 1);
+          }
+        }
+        layerMapping[layerId] = {model: layer, content: legendContentDivs[i]};
+        break;
+      }
+    }
+  });
+  /** @type {Object.<string, {model: <cm.LayerModel>, content: <Element>}} */
+  this.layerMapping_ = layerMapping;
+};
+
+/**
+ * Returns the DOM element for the specified layer's legend content.
+ * findLayersAndLegends_ above must be called before any calls to this method.
+ * @param {string} layerId The ID for the layer whose legend is sought.
+ * @return {Element} The element that contains the layer's legend content;
+ *   if the legend has a legend box, that box can be found by traversing the
+ *   ancestors of the returned element.
+ * @private
+ */
+FolderLegendViewTest.prototype.legendForId_ = function(layerId) {
+  return this.layerMapping_[layerId].content;
+};
+
+/**
+ * Returns the model for the specified layer. findLayersAndLegends_ above must
+ * be called before any calls to this method.
+ * @param {string} layerId The ID for the layer whose model is sought.
+ * @return {cm.LayerModel} The layer's model.
+ * @private
+ */
+FolderLegendViewTest.prototype.layerForId_ = function(layerId) {
+  return this.layerMapping_[layerId].model;
+};
+
+FolderLegendViewTest.prototype.testUnlockedFolderRendering = function() {
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.UNLOCKED, 'testUnlockedFolderRendering');
+  var legendElem = legendView.getContent();
+  this.findLayersAndLegends_(legendElem, 'testUnlockedFolderRendering');
+
+  // Unlocked folders render as if the the folder layer were a sibling of
+  // its sublayers.  Each visible layer should get a box and have its
+  // title and legend both displayed.
+  var folderLegend = this.legendForId_(FOLDER_LAYER_JSON.id);
+  this.validateRender_(folderLegend, this.layerModel_, true, true);
+
+  var redLegend = this.legendForId_(RED_LAYER_JSON.id);
+  this.validateRender_(
+      redLegend, this.layerForId_(RED_LAYER_JSON.id), true, true);
+
+  var emptyLegend = this.legendForId_(NO_LEGEND_LAYER_JSON.id);
+  this.validateRender_(
+      emptyLegend, this.layerForId_(NO_LEGEND_LAYER_JSON.id),
+      false, false);
+
+  var blueLegend = this.legendForId_(BLUE_LAYER_JSON.id);
+  this.validateRender_(
+      blueLegend, this.layerForId_(BLUE_LAYER_JSON.id), true, true);
+
+  var folderBox = findAncestorOf(
+      folderLegend, withClass(cm.css.TABBED_LEGEND_BOX));
+  expectThat(redLegend, not(hasAncestor(folderBox)));
+  expectThat(emptyLegend, not(hasAncestor(folderBox)));
+  expectThat(blueLegend, not(hasAncestor(folderBox)));
+};
+
+FolderLegendViewTest.prototype.testLockedFolderRendering = function() {
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.LOCKED, 'testLockedFolderRendering');
+  var legendElem = legendView.getContent();
+  var idToLayerAndLegend = this.findLayersAndLegends_(
+      legendElem, 'testLockedFolderRendering');
+
+  // Locked folders render their sublayers' legends within the folder's own
+  // legend box.  No title except the folders' itself should be visible.
+  this.validateRender_(
+      this.legendForId_(FOLDER_LAYER_JSON.id), this.layerModel_, true, true);
+
+  this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
+                       this.layerForId_(RED_LAYER_JSON.id), false, true);
+
+  this.validateRender_(this.legendForId_(NO_LEGEND_LAYER_JSON.id),
+                       this.layerForId_(NO_LEGEND_LAYER_JSON.id), false, false);
+
+  this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
+                       this.layerForId_(BLUE_LAYER_JSON.id), false, true);
+};
+
+FolderLegendViewTest.prototype.testSingleSelectFolderRendering = function() {
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.SINGLE_SELECT,
+      'testSingleSelectFolderRendering');
+  var legendElem = legendView.getContent();
+  this.findLayersAndLegends_(legendElem, 'testSingleSelectFolderRendering');
+
+  // Single-select folders behave exactly as unlocked folders with only a
+  // single enabled sublayer.
+  this.validateRender_(this.legendForId_(FOLDER_LAYER_JSON.id),
+                       this.layerModel_, true, true);
+
+  this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
+                       this.layerForId_(RED_LAYER_JSON.id), true, true);
+
+  this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
+                       this.layerForId_(BLUE_LAYER_JSON.id), false, false);
+};
+
+FolderLegendViewTest.prototype.testSelectNewLayerInSingleSelect = function() {
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.SINGLE_SELECT,
+      'testSelectNewLayerInSingleSelect');
+  var legendElem = legendView.getContent();
+  this.findLayersAndLegends_(legendElem, 'testSelectNewLayerInSingleSelect');
+  this.appState_.selectSublayer(
+      this.layerModel_, this.layerForId_(BLUE_LAYER_JSON.id).id);
+  this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
+                       this.layerForId_(BLUE_LAYER_JSON.id), true, true);
+
+  this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
+                       this.layerForId_(RED_LAYER_JSON.id), false, false);
+};
+
+
+FolderLegendViewTest.prototype.testRenderingAfterAddingSublayer = function() {
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.UNLOCKED, 'testRenderingAfterAddingSublayer');
+  // Render before adding the new layer
+  var legendElem = legendView.getContent();
+  var newLayerId = 'newLayer';
+  var newLayerJson = {
+    id: newLayerId, title: 'Newly added layer', legend: 'A non-empty legend',
+    type: 'KML', visibility: 'DEFAULT_ON'};
+  this.appState_.setLayerEnabled(newLayerId, true);
+  this.layerModel_.get('sublayers').push(
+      cm.LayerModel.newFromMapRoot(newLayerJson));
+  this.findLayersAndLegends_(legendElem, 'testUnlockedFolderRendering');
+  this.validateRender_(this.legendForId_(newLayerId),
+                       this.layerForId_(newLayerId), true, true);
+};
+
+FolderLegendViewTest.prototype.testRenderingAfterRemovingSublayer = function() {
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.UNLOCKED, 'testRenderingAfterRemovingSublayer');
+  // Force render before manipulating the sublayer list
+  var legendElem = legendView.getContent();
+  expectDescendantOf(
+      legendElem, withClass(cm.css.LAYER_TITLE),
+      withText(RED_LAYER_JSON.title));
+  // The layer from RED_LAYER_JSON is first
+  this.layerModel_.get('sublayers').removeAt(0);
+  expectNoDescendantOf(
+      legendElem, withClass(cm.css.LAYER_TITLE),
+      withText(RED_LAYER_JSON.title));
+};
+
+FolderLegendViewTest.prototype.testRenderingAfterChangingFolderType =
+    function() {
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.UNLOCKED,
+      'testRenderingAfterChangingFolderType');
+  var legendElem = legendView.getContent();
+  this.layerModel_.set('folder_type', cm.LayerModel.FolderType.LOCKED);
+  this.findLayersAndLegends_(
+      legendElem, 'testRenderingAfterChangingFolderType');
+  this.validateRender_(
+      this.legendForId_(FOLDER_LAYER_JSON.id), this.layerModel_, true, true);
+
+  this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
+                       this.layerForId_(RED_LAYER_JSON.id), false, true);
+
+  this.validateRender_(this.legendForId_(NO_LEGEND_LAYER_JSON.id),
+                       this.layerForId_(NO_LEGEND_LAYER_JSON.id), false, false);
+
+  this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
+                       this.layerForId_(BLUE_LAYER_JSON.id), false, true);
+};
+
+FolderLegendViewTest.prototype.testRenderingLockedFolderWithNestedFolders =
+    function() {
+  var uniqueId = 'testRenderingLockedFolderWithNestedFolders';
+  var subFolderJson = this.getFolderJson_(
+      cm.LayerModel.FolderType.UNLOCKED, uniqueId, [
+    this.fromTemplateJson(RED_LAYER_JSON, uniqueId),
+    this.fromTemplateJson(BLUE_LAYER_JSON, uniqueId)]);
+  // We must customize the subfolder JSON or it will match the folder created
+  // by createLegendView_ too closely, and the tests won't be able to
+  // distinguish between folder and subfolder.
+  subFolderJson.id = 'subfolderId';
+  subFolderJson.title = 'Subfolder Title';
+  subFolderJson.legend = 'Totally not the folder\'s legend';
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.LOCKED, uniqueId,
+      [subFolderJson, this.fromTemplateJson(SIMPLE_LAYER_JSON, uniqueId)]);
+  var legendElem = legendView.getContent();
+  this.findLayersAndLegends_(legendElem, uniqueId);
+
+  this.validateRender_(
+      this.legendForId_(FOLDER_LAYER_JSON.id), this.layerModel_, true, true);
+  this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
+                       this.layerForId_(RED_LAYER_JSON.id), false, true);
+  this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
+                       this.layerForId_(BLUE_LAYER_JSON.id), false, true);
+  this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
+                       this.layerForId_(RED_LAYER_JSON.id), false, true);
+  this.validateRender_(this.legendForId_(subFolderJson.id),
+                       this.layerForId_(subFolderJson.id), false, true);
+  this.validateRender_(this.legendForId_(SIMPLE_LAYER_JSON.id),
+                       this.layerForId_(SIMPLE_LAYER_JSON.id), false, true);
+};
+
+FolderLegendViewTest.prototype.testFolderWithNoVisibleSublayers = function() {
+  var legendView = this.createLegendView_(
+      cm.LayerModel.FolderType.UNLOCKED, 'testFolderWithNoVisibleSublayers');
+  var legendElem = legendView.getContent();
+  this.findLayersAndLegends_(legendElem, 'testFolderWithNoVisibleSublayers');
+  this.layerModel_.set('legend', new cm.Html(''));
+  this.appState_.setLayerEnabled(this.layerForId_(RED_LAYER_JSON.id).id, false);
+  this.appState_.setLayerEnabled(
+      this.layerForId_(BLUE_LAYER_JSON.id).id, false);
+  expectThat(legendElem, withClass(cm.css.HIDDEN));
+};
