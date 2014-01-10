@@ -62,6 +62,8 @@ specific language governing permissions and limitations under the License.
   cursor: pointer;
   border-left: 1px solid #ccc;
   display: inline-block;
+  -moz-user-select: none;
+  -webkit-user-select: none;
 }
 
 .cm-chevron-down {
@@ -73,6 +75,8 @@ specific language governing permissions and limitations under the License.
   cursor: pointer;
   border-left: 1px solid #ccc;
   display: inline-block;
+  -moz-user-select: none;
+  -webkit-user-select: none;
 }
 
 .cm-tab-content-collapsed {
