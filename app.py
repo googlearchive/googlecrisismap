@@ -27,10 +27,9 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import re
 
-import webapp2
-
 import config
 import utils
+import webapp2
 
 
 class RootPathRoute(webapp2.BaseRoute):
@@ -110,11 +109,14 @@ app = webapp2.WSGIApplication([
             Route('/.legend', 'legend_item_extractor.GetLegendItems'),
             Route('/.jsonp', 'jsonp.Jsonp'),
             Route('/.metadata', 'metadata.Metadata'),
-            Route('/.rss2kml', 'rss2kml.Rss2Kml'),
             Route('/.share/<map_id>', 'share.Share'),
             Route('/.wms/configure',
                   'wmscache.tileset_config.ConfigureTileset'),
             Route('/.wms/query', 'wmscache.wms_query.WmsQuery'),
+
+            # Data proxy and on-the-fly conversion handlers
+            Route('/.kmlify', 'kmlify.Kmlify'),
+            Route('/.rss2kml', 'rss2kml.Rss2Kml'),
 
             # Tasks executed by cron or taskqueue
             Route('/.metadata_fetch', 'metadata_fetch.MetadataFetch'),
