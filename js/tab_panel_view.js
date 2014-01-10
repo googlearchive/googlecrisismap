@@ -32,6 +32,7 @@ var MIN_PANEL_HEIGHT_FOR_EMBEDDED_FORM = 450;
  * @param {cm.MetadataModel} metadataModel The metadata model.
  * @param {cm.AppState} appState The application state model.
  * @param {boolean} below Whether to position the tab panel below the map.
+ * @param {boolean} expand Whether the panel should initially be expanded.
  * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     draft_mode: Indicate that the map is an unpublished draft?
  *     hide_panel_header: Hide the map title and description?
@@ -45,7 +46,8 @@ var MIN_PANEL_HEIGHT_FOR_EMBEDDED_FORM = 450;
  * @constructor
  */
 cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
-                           metadataModel, appState, below, opt_config) {
+                           metadataModel, appState, below, expand,
+                           opt_config) {
   /** The map model
    * @type cm.MapModel
    * @private
@@ -125,7 +127,7 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
 
   this.createTabs_();
   this.createButtons_();
-  this.render_();
+  this.render_(expand);
 };
 
 /**
@@ -140,11 +142,12 @@ cm.TabPanelView.TabPosition = {
 
 /**
  * Render the tab panel into the parent element.
+ * @param {boolean} expand Whether to initially expand the panel.
  * @private
  */
-cm.TabPanelView.prototype.render_ = function() {
+cm.TabPanelView.prototype.render_ = function(expand) {
   this.tabView_.render(this.parentElem_);
-  this.setExpanded_(true);
+  this.setExpanded_(expand);
   this.collapsedAtLeastOnce_ = false;
   cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED, function() {
     this.setExpanded_(true);

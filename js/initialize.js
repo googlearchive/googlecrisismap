@@ -168,10 +168,19 @@ cm.Map = function(frame, opt_config) {
   this.touch_ = cm.util.browserSupportsTouch();
 
   /**
+   * In the old UI, whether to suppress dynamic resizing and pop-up a layers
+   * panel only when the user clicks on the "Layers" button.
    * @type boolean
    * @private
    */
   this.embedded_;
+  /**
+   *
+   * In the new UI, whether on initial load, the panel should be closed.
+   * @type boolean
+   * @private
+   */
+  this.panelClosed_;
 
   /**
    * @type Element
@@ -271,6 +280,7 @@ cm.Map.prototype.buildUi_ = function(frame) {
   var uri = new goog.Uri(window.location);
   var preview = !!uri.getParameterValue('preview');
   this.embedded_ = !!uri.getParameterValue('embedded');
+  this.panelClosed_ = !!uri.getParameterValue('panel_closed');
 
   // Set up the DOM structure.
   this.constructDom_(frame);
@@ -280,7 +290,7 @@ cm.Map.prototype.buildUi_ = function(frame) {
   // contents of the map div, and other views will add content to that div.
   var mapView = new cm.MapView(this.mapElem_, mapModel, appState, metadataModel,
                                this.touch_, this.config_, preview,
-                               this.embedded_);
+                               this.embedded_ || this.panelClosed_);
   this.map_ = mapView.getMap();
   var self = this;
   goog.array.forEach(this.getMapCallbacks_, function(callback) {
@@ -440,6 +450,7 @@ cm.Map.prototype.handleResize_ = function(preview, extraViewsPlugins,
 };
 
 /**
+ * Resize handler for the old UI.
  * @private
  */
 cm.Map.prototype.resizePanel_ = function() {
@@ -447,6 +458,7 @@ cm.Map.prototype.resizePanel_ = function() {
       this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
   var floating = goog.dom.classes.has(this.frameElem_, cm.css.PANEL_FLOAT);
   if (!narrowOrEmbedded) {
+    // Ensure that the pop-up panel is closed when the window is resized.
     cm.events.emit(this.panelElem_, 'panelclose');
   }
   goog.dom.classes.enable(this.frameElem_, cm.css.EMBEDDED, narrowOrEmbedded);
@@ -455,9 +467,10 @@ cm.Map.prototype.resizePanel_ = function() {
 
   // When the panel has variable height based on its content, its maximum
   // height should be limited to fit within the map. This happens when either
-  //   1) the panel is explicitly configured to be floating, or
-  //   2) the map is narrow or embedded, so the panel is a dismissable
-  //      pop-up on top of the map
+  //   1) the panel is explicitly configured to be floating with
+  //      '?panel_float=1', or
+  //   2) the map is currently narrow or it was initialized with '?embedded=1'
+  //      so the panel is a dismissable pop-up opened from the 'Layers' button
   this.mapWrapperElem_.style.height = this.getMapHeight_() + 'px';
   var maxPanelHeight = this.getMapHeight_() - 10;  // 5px top and bottom margin
   this.panelView_.setMaxHeight(narrowOrEmbedded || floating ?
@@ -465,9 +478,10 @@ cm.Map.prototype.resizePanel_ = function() {
 };
 
 /**
- * Adjust the tab panel height to a fixed fraction of the frame when the tab
- * bar is below the map and the tab panel is expanded. This isn't a
- * TabPanelView method because it needs access to the footer height.
+ * Resize handler for the tabbed UI. Adjusts the tab panel height to a
+ * fixed fraction of the frame when the tab bar is below the map and
+ * the tab panel is expanded. This isn't a TabPanelView method because
+ * it needs access to the footer height.
  * @private
  */
 cm.Map.prototype.resizeTabPanel_ = function() {
@@ -662,7 +676,8 @@ cm.Map.prototype.constructPanelView_ = function(appState, mapModel,
     goog.dom.classes.add(this.frameElem_, cm.css.TABBED);
     this.panelView_ = new cm.TabPanelView(
         this.frameElem_, this.panelElem_, this.mapElem_, mapModel,
-        metadataModel, appState, narrow, this.config_);
+        metadataModel, appState, narrow, !this.embedded_ && !this.panelClosed_,
+        this.config_);
   } else {
     this.panelView_ = new cm.PanelView(
         this.frameElem_, this.panelElem_, this.mapElem_, mapModel,

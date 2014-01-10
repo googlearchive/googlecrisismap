@@ -25,6 +25,7 @@ function TabPanelViewTest() {
   this.metadataModel_ = new google.maps.MVCObject();
   this.appState_ = new cm.AppState();
   this.below_ = false;
+  this.expand_ = true;
   this.config_ = {};
 }
 TabPanelViewTest.prototype = new cm.TestBase();
@@ -34,7 +35,8 @@ TabPanelViewTest.prototype.createTabPanelView_ = function() {
   this.parent_ = new FakeElement('div');
   this.tabPanel_ = new cm.TabPanelView(
       cm.ui.document.body, this.parent_, this.mapDiv_, this.mapModel_,
-      this.metadataModel_, this.appState_, this.below_, this.config_);
+      this.metadataModel_, this.appState_, this.below_, this.expand_,
+      this.config_);
   this.tabElements_ = allDescendantsOf(this.parent_, withClass('goog-tab'));
   this.tabView_ = this.tabPanel_.tabView_;
 };
@@ -93,6 +95,15 @@ TabPanelViewTest.prototype.testConstructorBelow = function() {
   this.below_ = true;
   this.createTabPanelView_();
   expectThat(this.parent_, withClass(cm.css.TAB_PANEL_BELOW));
+};
+
+/**
+ * Test construction with the tab panel collapsed.
+ */
+TabPanelViewTest.prototype.testConstructorCollapsed = function() {
+  this.expand_ = false;
+  this.createTabPanelView_();
+  expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
 };
 
 TabPanelViewTest.prototype.testMultipleClicksOnSelectedTab = function() {

@@ -103,3 +103,13 @@ MapTest.prototype.testTabbedBelow = function() {
   var footer = findDescendantOf(this.frame_, withClass('cm-footer'));
   expectThat(panel, stringEquals(footer.nextSibling));
 };
+
+/** Test construction with the tabbed panel collapsed. */
+MapTest.prototype.testTabbedCollapsed = function() {
+  this.setForTest_('window', {
+    setTimeout: function() {},
+    location: 'http://www.something.com/crisismap/hello?panel_closed=1'
+  });
+  map = new cm.Map(this.frame_);
+  expectNoDescendantOf(this.frame_, withClass('cm-expanded'));
+};
