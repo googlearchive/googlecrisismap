@@ -20,5 +20,5 @@ cron:
 
 - description: clean up expired crowd reports
   url: /.crowd_report_cleanup
-  schedule: every 1 hour
+  schedule: every 1 hours
 
