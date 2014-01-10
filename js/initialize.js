@@ -405,7 +405,8 @@ cm.Map.prototype.handleResize_ = function(preview, extraViewsPlugins,
     this.resizePanel_();
   }
 
-  var floating = goog.dom.classes.has(this.frameElem_, cm.css.PANEL_FLOAT);
+  var floating = goog.dom.classes.has(this.frameElem_, cm.css.PANEL_FLOAT) ||
+      this.config_['use_tab_panel'];
   if (extraViewsPlugins) {
     var panelViewPosition = {
       isPanelCollapsed: goog.dom.classes.has(this.frameElem_,
