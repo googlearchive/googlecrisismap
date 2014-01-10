@@ -394,7 +394,8 @@ cm.Map.prototype.buildUi_ = function(frame) {
    var mapHeight = this.frameElem_.offsetHeight - margins - borders -
        this.footerElem_.offsetHeight;
    if (this.config_['use_tab_panel'] &&
-       goog.dom.classes.has(this.panelElem_, cm.css.TAB_PANEL_BELOW)) {
+       this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR) {
+     // The frame is narrow, so the tab bar is positioned below the map.
      mapHeight = mapHeight - this.panelElem_.offsetHeight;
    }
    return mapHeight;
