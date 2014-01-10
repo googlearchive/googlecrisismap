@@ -209,6 +209,11 @@ cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
     this.collapsedAtLeastOnce_ = true;
     cm.events.emit(this, cm.events.TAB_PANEL_FIRST_COLLAPSED);
   }
+
+  // Recenter viewport if there is a currently selected marker.
+  if (shouldExpand && this.tabView_.selectedTabItem() === this.detailsTab_) {
+    cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+  }
 };
 
 /** @return {boolean} Whether the panel is currently expanded. */

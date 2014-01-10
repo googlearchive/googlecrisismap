@@ -14,20 +14,6 @@
 function PresenterTest() {
   cm.TestBase.call(this);
 
-  this.mapModel_ = cm.MapModel.newFromMapRoot({
-    title: 'title',
-    layers: [{
-      id: 'layer1',
-      type: 'KML',
-      title: 'one',
-      visibility: 'DEFAULT_ON'
-    }, {
-      id: 'layer2',
-      type: 'KML',
-      title: 'two',
-      visibility: 'DEFAULT_OFF'
-    }]
-  });
   this.appState_ = new cm.AppState();
   this.mapView_ = createMockInstance(cm.MapView);
   this.panelView_ = createMockInstance(cm.PanelView);
@@ -61,34 +47,135 @@ PresenterTest.prototype.filterQueryChanged = function() {
   expectEq(query, this.appState_.getFilterQuery());
 };
 
-/* Tests that the map pans under the right conditions on a feature click. */
-PresenterTest.prototype.selectFeature = function() {
+/**
+ * Helper function to mock feature selection in the tabbed UI.
+ * @param {boolean} below Whether the tab panel is positioned below the map.
+ * @param {boolean} expanded Whether the tab panel is expanded.
+ * @private
+ */
+PresenterTest.prototype.setupFeatureSelection_ = function(below, expanded) {
   this.panelView_ = createMockInstance(cm.TabPanelView);
   this.presenter_ = new cm.Presenter(
       this.appState_, this.mapView_, this.panelView_, this.panelElem_, 'map1');
+  stub(this.panelView_.isBelowMap)().is(below);
+  stub(this.panelView_.isExpanded)().is(expanded);
+};
 
+/**
+ * Tests that the map pans when a feature is clicked and the panel is
+ * below the map and collapsed.
+ */
+PresenterTest.prototype.testFeatureClickPanelBelowCollapsed = function() {
   var event = {position: new google.maps.LatLng(12, 34)};
-
-  // Should pan when panel is below map and collapsed.
-  stub(this.panelView_.isBelowMap)().is(true);
-  stub(this.panelView_.isExpanded)().is(false);
-
+  this.setupFeatureSelection_(true, false);
   expectCall(this.panelView_.selectFeature)(_);
   expectCall(this.mapView_.focusOnPoint)(event.position);
   cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+};
 
-  // Should not pan when panel is floating.
-  stub(this.panelView_.isBelowMap)().is(false);
-
+/**
+ * Tests that the map does not pan when a feature is clicked and the
+ * panel is below the map and expanded.
+ */
+PresenterTest.prototype.testFeatureClickPanelBelowExpanded = function() {
+  this.setupFeatureSelection_(true, true);
   expectCall(this.panelView_.selectFeature)(_);
   this.mapView_.focusOnPoint = function() { throw new Error('Bad call'); };
-  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, {position: null});
+};
 
-  // Should not pan when panel is below map and expanded.
-  stub(this.panelView_.isBelowMap)().is(true);
-  stub(this.panelView_.isExpanded)().is(true);
-
+/**
+ * Tests that the map does not pan when a feature is clicked and the
+ * panel is floating.
+ */
+PresenterTest.prototype.testFeatureClickPanelFloating = function() {
+  this.setupFeatureSelection_(false, true);
   expectCall(this.panelView_.selectFeature)(_);
   this.mapView_.focusOnPoint = function() { throw new Error('Bad call'); };
+  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, {position: null});
+};
+
+/**
+ * Tests that the map pans if a feature has been selected and is no longer
+ * visible when the details tab is opened, with the tab panel below the map.
+ */
+PresenterTest.prototype.testFeatureClickMarkerNotVisible = function() {
+  var event = {position: new google.maps.LatLng(12, 34)};
+  this.setupFeatureSelection_(true, true);
+
+  // Select a feature.
+  expectCall(this.panelView_.selectFeature)(_);
   cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+
+  // Set the viewport so that the clicked point is no longer visible.
+  var viewport = new cm.LatLonBox(10, 0, 10, 0);
+  expectCall(this.mapView_.get)('viewport').willOnce(returnWith(viewport));
+
+  // Should pan when the details tab is opened.
+  expectCall(this.mapView_.focusOnPoint)(event.position);
+  cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+};
+
+/**
+ * Tests that the map pans if a feature has been selected and is no longer
+ * visible when the details tab is opened, with a floating tab panel.
+ */
+PresenterTest.prototype.testFeatureClickMarkerNotVisible2 = function() {
+  var event = {position: new google.maps.LatLng(12, 34)};
+  this.setupFeatureSelection_(false, true);
+
+  // Select a feature.
+  expectCall(this.panelView_.selectFeature)(_);
+  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+
+  // Set the viewport so that the clicked point is no longer visible.
+  var viewport = new cm.LatLonBox(10, 0, 10, 0);
+  expectCall(this.mapView_.get)('viewport').willOnce(returnWith(viewport));
+
+  // Should pan when the details tab is opened.
+  expectCall(this.mapView_.focusOnPoint)(_);
+  cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+};
+
+/*
+ * Tests that on the map does not pan if a feature has been selected and is
+ * still visible when the details tab is opened, with the tab panel below the
+ * map.
+ */
+PresenterTest.prototype.testFeatureClickMarkerVisible = function() {
+  var event = {position: new google.maps.LatLng(12, 34)};
+  this.setupFeatureSelection_(true, true);
+
+  // Select a feature.
+  expectCall(this.panelView_.selectFeature)(_);
+  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+
+  // Set the viewport so that the clicked point is still visible.
+  viewport = new cm.LatLonBox(50, 0, 50, 0);
+  expectCall(this.mapView_.get)('viewport').willOnce(returnWith(viewport));
+
+  // Should not pan when the details tab is opened.
+  this.mapView_.focusOnPoint = function() { throw new Error('Bad call'); };
+  cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+};
+
+/*
+ * Tests that on the map does not pan if a feature has been selected and is
+ * still visible when the details tab is opened, with a floating tab panel.
+ */
+PresenterTest.prototype.testFeatureClickMarkerVisible2 = function() {
+  var event = {position: new google.maps.LatLng(12, 34)};
+  this.setupFeatureSelection_(false, true);
+
+  // Select a feature.
+  expectCall(this.panelView_.selectFeature)(_);
+  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+
+  // Set the viewport so that the clicked point is still visible.
+  viewport = new cm.LatLonBox(50, 0, 50, 0);
+  expectCall(this.mapView_.get)('viewport').willOnce(returnWith(viewport));
+
+  // Should not pan when the details tab is opened.
+  this.mapView_.focusOnPoint = function() { throw new Error('Bad call'); };
+  cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
 };

@@ -372,3 +372,29 @@ LatLonBoxTest.prototype.testRound = function() {
   // round() shouldn't ever round coarser than to multiples of ten degrees.
   expectThat(box.round(0), isBox(50, -40, 120, -160));
 };
+
+/** Tests the containsPoint() method. */
+LatLonBoxTest.prototype.testContainsPoint = function() {
+  var box = new cm.LatLonBox(60, -60, 100, -100);
+  expectTrue(box.contains(new google.maps.LatLng(0, 0)));
+  expectFalse(box.contains(new google.maps.LatLng(0, 120)));
+  expectFalse(box.contains(new google.maps.LatLng(-70, 0)));
+  expectFalse(box.contains(new google.maps.LatLng(60, 100)));
+
+  // A box with 360-degree longitude span (east=west and 0-valued
+  // longitude span not allowed).
+  box = new cm.LatLonBox(60, -60, 100, 100, false);
+  expectTrue(box.contains(new google.maps.LatLng(0, 0)));
+  expectTrue(box.contains(new google.maps.LatLng(0, 120)));
+  expectFalse(box.contains(new google.maps.LatLng(-70, 0)));
+  expectFalse(box.contains(new google.maps.LatLng(60, 100)));
+
+  // A box with 0-degree longitude span (east=west and 0-valued
+  // longitude span allowed).
+  box = new cm.LatLonBox(60, -60, 100, 100, true);
+  expectFalse(box.contains(new google.maps.LatLng(0, 0)));
+  expectFalse(box.contains(new google.maps.LatLng(0, 120)));
+  expectFalse(box.contains(new google.maps.LatLng(-70, 0)));
+  expectFalse(box.contains(new google.maps.LatLng(60, 100)));
+
+};

@@ -45,7 +45,7 @@ TabPanelViewTest.prototype.createTabPanelView_ = function() {
  * @param {string} tabName The expected tab name.
  * @param {number} index The expected index.
  * @param {boolean} isSelected Whether to expect that the tab is selected.
- * @return {Element} The tab contentelement.
+ * @return {Element} The tab content element.
  * @private
  */
 TabPanelViewTest.prototype.expectTab_ = function(tabName, index,
@@ -53,7 +53,7 @@ TabPanelViewTest.prototype.expectTab_ = function(tabName, index,
   expectThat(this.tabElements_[index], withText(hasSubstr(tabName)),
              isSelected ? withClass('goog-tab-selected') :
                  not(withClass('goog-tab-selected')));
-  return (findDescendantOf(this.parent_, withClass('cm-tab-content')));
+  return findDescendantOf(this.parent_, withClass('cm-tab-content'));
 };
 
 TabPanelViewTest.prototype.testCreation = function() {
@@ -169,7 +169,79 @@ TabPanelViewTest.prototype.testExpandCollapseBelow = function() {
 };
 
 /**
- * Tests that the tab panel view listens for layer filter eventsn
+ * Tests that when a feature is selected or de-selected the details
+ * tab is created or destroyed.
+ */
+TabPanelViewTest.prototype.testFeatureSelectAndDeselect = function() {
+  this.createTabPanelView_();
+  this.tabPanel_.selectFeature({layerId: 'abc', title: 'Feature', content:
+                                'Detailed information.'});
+  this.tabElements_ = allDescendantsOf(this.parent_, withClass('goog-tab'));
+
+  var detailsTab = this.expectTab_('Details', 3, true);
+  expectDescendantOf(detailsTab,
+                     withText('Detailed information.'));
+
+  this.tabPanel_.deselectFeature();
+  var selectedTab = this.tabView_.selectedTabItem().getContent();
+  expectNoDescendantOf(selectedTab, withText('Detailed information.'));
+};
+
+/**
+ * @private
+ */
+TabPanelViewTest.prototype.expectFeatureSelection_ = function() {
+  // Set up a listener that should fire when a feature is selected.
+  this.detailsOpened_ = false;
+  cm.events.listen(goog.global, cm.events.DETAILS_TAB_OPENED, function() {
+    this.detailsOpened_ = true;
+  }, this);
+  this.createTabPanelView_();
+  // Select a feature.
+  this.tabPanel_.selectFeature({layerId: 'abc', title: 'Feature', content:
+                                'Detailed information.'});
+};
+
+/** Tests the details opened event fires when a feature is selected. */
+TabPanelViewTest.prototype.testDetailsOpenedOnFeatureSelection = function() {
+  this.expectFeatureSelection_();
+  expectTrue(this.detailsOpened_);
+};
+
+/**
+ * Tests the details opened event fires when the tab is expanded and the details
+ * tab is already selected.
+ */
+TabPanelViewTest.prototype.testDetailsOpenedOnPanelExpand = function() {
+  this.expectFeatureSelection_();
+
+  // Reset this.detailsOpened_ and only expect it to become true when
+  // the tab panel is expanded.
+  this.detailsOpened_ = false;
+  var button = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
+  cm.events.emit(button, 'click');
+  expectFalse(this.detailsOpened_);
+  cm.events.emit(button, 'click');
+  expectTrue(this.detailsOpened_);
+};
+
+/** Tests the details opened event fires when the details tab is selected. */
+TabPanelViewTest.prototype.testDetailsOpenedOnDetailsSelect = function() {
+  this.expectFeatureSelection_();
+
+  // Rest this.detailsOpened_ and expect it to become true after selecting
+  // another tab and then re-selecting the details tab.
+  this.detailsOpened_ = false;
+  var aboutTab = this.tabView_.getTabItemByTitle('About');
+  this.tabView_.selectTabItem(aboutTab);
+  expectFalse(this.detailsOpened_);
+  var detailsTab = this.tabView_.getTabItemByTitle('Details');
+  this.tabView_.selectTabItem(detailsTab);
+  expectTrue(this.detailsOpened_);
+};
+
+/**
+ * Tests that the tab panel view listens for layer filter events
  * on the layers tab item.
  */
 TabPanelViewTest.prototype.testLayerFilter = function() {

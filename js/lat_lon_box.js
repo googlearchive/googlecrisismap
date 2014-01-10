@@ -372,3 +372,15 @@ cm.LatLonBox.prototype.getEastWestMeters = function() {
   var radius = cm.LatLonBox.EARTH_RADIUS_M * Math.cos(latCenter * PI / 180);
   return radius * (this.lonSpan_ * PI / 180);
 };
+
+/**
+ * Tests whether the given point is contained by the box.
+ * @param {google.maps.LatLng} point The point to test.
+ * @return {boolean} Whether this lat/lon box contains the point.
+ *
+ */
+cm.LatLonBox.prototype.contains = function(point) {
+  return point.lat() < this.north_ && point.lat() > this.south_ &&
+      ((point.lng() < this.east_ && point.lng() > this.west_) ||
+      this.lonSpan_ === 360);
+};

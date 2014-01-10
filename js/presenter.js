@@ -23,6 +23,7 @@ goog.provide('cm.Presenter');
 goog.require('cm');
 goog.require('cm.Analytics');
 goog.require('cm.AppState');
+goog.require('cm.LatLonBox');
 goog.require('cm.MapView');
 goog.require('cm.PanelView');
 goog.require('cm.TabPanelView');
@@ -61,7 +62,10 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
    */
   this.mapId_ = mapId;
 
-  /** @private {google.maps.LatLng} The currently selected feature position. */
+  /**
+   * The currently selected feature position.
+   * @private {google.maps.LatLng}
+   */
   this.focusPosition_ = null;
 
   cm.events.listen(goog.global, cm.events.RESET_VIEW, function(event) {
@@ -124,6 +128,12 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     cm.events.listen(mapView, cm.events.DESELECT_FEATURE, function() {
       panelView.deselectFeature();
       this.focusPosition_ = null;
+    }, this);
+    cm.events.listen(goog.global, cm.events.DETAILS_TAB_OPENED, function() {
+      var viewport = /** @type cm.LatLonBox */(mapView.get('viewport'));
+      if (this.focusPosition_ && !viewport.contains(this.focusPosition_)) {
+        mapView.focusOnPoint(this.focusPosition_);
+      }
     }, this);
   }
 };
