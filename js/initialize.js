@@ -325,12 +325,10 @@ cm.Map.prototype.buildUi_ = function(frame) {
   // Call the resize handler to determine the map size before setting
   // up the viewport.
   this.handleResize_(preview, extraViewsPlugins, extraViews);
-  if (!this.config_['use_tab_panel']) {
-    // We readjust the layout whenever the ViewportSizeMonitor detects that the
-    // window resized, and also when anything emits 'resize' on cm.app.
-    cm.events.forward(
-        new goog.dom.ViewportSizeMonitor(goog.global), 'resize', cm.app);
-  }
+  // We readjust the layout whenever the ViewportSizeMonitor detects that the
+  // window resized, and also when anything emits 'resize' on cm.app.
+  cm.events.forward(
+      new goog.dom.ViewportSizeMonitor(goog.global), 'resize', cm.app);
 
   // If allowed, pass the google.maps.Map element to the parent frame.
   if (window != window.parent && this.config_['allow_embed_map_callback']) {
