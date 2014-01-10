@@ -130,12 +130,15 @@ class Rss2Kml(base_handler.BaseHandler):
     kml = KML_DOCUMENT_TEMPLATE % xml_utils.Serialize(doc)
     self.RespondWithKml(kml, last_modified_header)
     memcache.set(cache_key, kml, TTL)
-    memcache.set(cache_key + 'last_mod', last_modified_header, TTL)
+    # Only set a cache key if we get a Last-Modified
+    if last_modified_header:
+      memcache.set(cache_key + 'last_mod', last_modified_header, TTL)
 
   def RespondWithKml(self, kml, last_modified_header):
     self.response.write(kml)
     self.response.headers['Content-Type'] = KML_CONTENT_TYPE
-    self.response.headers['Last-modified'] = last_modified_header
+    if last_modified_header:
+      self.response.headers['Last-Modified'] = last_modified_header
     self.response.headers['Cache-Control'] = (
         'public, max-age=180, must-revalidate')
 
