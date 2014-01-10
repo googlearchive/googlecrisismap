@@ -42,6 +42,7 @@ cm.LayerModel.Type = {
   GEORSS: 'GEORSS',
   TILE: 'TILE',
   CSV: 'CSV',
+  GOOGLE_SPREADSHEET: 'GOOGLE_SPREADSHEET',
   FUSION: 'FUSION',
   MAPS_ENGINE: 'MAPS_ENGINE',
   TRAFFIC: 'TRAFFIC',
@@ -67,6 +68,7 @@ cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
   'GOOGLE_MAP_TILES': cm.LayerModel.Type.TILE,
   'TILE': cm.LayerModel.Type.TILE,
   'CSV': cm.LayerModel.Type.CSV,
+  'GOOGLE_SPREADSHEET': cm.LayerModel.Type.GOOGLE_SPREADSHEET,
   'GOOGLE_FUSION_TABLES': cm.LayerModel.Type.FUSION,
   'GOOGLE_MAP_DATA': cm.LayerModel.Type.MAPS_ENGINE,
   'GOOGLE_MAPS_ENGINE': cm.LayerModel.Type.MAPS_ENGINE,
@@ -229,17 +231,18 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
             cm.LayerModel.TileCoordinateType.GOOGLE);
       break;
     case cm.LayerModel.Type.CSV:
-      var csv = source['csv'] || {};
-      model.set('url', csv['url'] || '');
-      model.set('title_template', csv['title_template'] || '');
+    case cm.LayerModel.Type.GOOGLE_SPREADSHEET:
+      var params = source[type.toLowerCase()] || {};
+      model.set('url', params['url'] || '');
+      model.set('title_template', params['title_template'] || '');
       model.set('description_template',
-                new cm.Html(csv['description_template'] || ''));
-      model.set('latitude_field', csv['latitude_field'] || '');
-      model.set('longitude_field', csv['longitude_field'] || '');
-      model.set('icon_url_template', csv['icon_url_template'] || '');
-      model.set('color_template', csv['color_template'] || '');
-      model.set('hotspot_template', csv['hotspot_template'] || '');
-      var conditions = csv['conditions'] || ['', '', ''];
+                new cm.Html(params['description_template'] || ''));
+      model.set('latitude_field', params['latitude_field'] || '');
+      model.set('longitude_field', params['longitude_field'] || '');
+      model.set('icon_url_template', params['icon_url_template'] || '');
+      model.set('color_template', params['color_template'] || '');
+      model.set('hotspot_template', params['hotspot_template'] || '');
+      var conditions = params['conditions'] || ['', '', ''];
       model.set('condition0', conditions[0] || '');
       model.set('condition1', conditions[1] || '');
       model.set('condition2', conditions[2] || '');
@@ -340,12 +343,13 @@ cm.LayerModel.prototype.toMapRoot = function() {
       };
       break;
     case cm.LayerModel.Type.CSV:
+    case cm.LayerModel.Type.GOOGLE_SPREADSHEET:
       var description = this.get('description_template') || cm.Html.EMPTY;
       var conditions = [];
       if (this.get('condition0')) conditions.push(this.get('condition0'));
       if (this.get('condition1')) conditions.push(this.get('condition1'));
       if (this.get('condition2')) conditions.push(this.get('condition2'));
-      source['csv'] = {
+      source[type.toLowerCase()] = {
         'url': this.get('url'),
         'title_template': this.get('title_template'),
         'description_template': description.getUnsanitizedHtml(),

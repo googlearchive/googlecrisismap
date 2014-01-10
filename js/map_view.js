@@ -28,7 +28,13 @@ goog.require('goog.Uri');
 goog.require('goog.array');
 goog.require('goog.json');
 
-/** @const string */var HIGHLIGHT_ICON = 'highlight.png';
+/** @const string */
+var HIGHLIGHT_ICON = 'highlight.png';
+
+/** @const string */
+var GOOGLE_SPREADSHEET_CSV_URL =
+    'https://docs.google.com/spreadsheet/pub?key=$key&output=csv';
+
 /**
  * @param {Element} parentElem The DOM element in which to render the map.
  * @param {cm.MapModel} mapModel The map model.
@@ -485,13 +491,22 @@ cm.MapView.prototype.addOverlay_ = function(layer) {
 };
 
 /**
- * Constructs the /.kmlify URL for a given CSV layer.
+ * Constructs the /.kmlify URL for a given CSV or GOOGLE_SPREADSHEET layer.
  * @param {cm.LayerModel} layer The layer model.
  * @return {string?} A URL to /.kmlify that generates the appropriate KML.
  * @private
  */
 cm.MapView.prototype.buildKmlifyUrl_ = function(layer) {
   var url = /** @type string */(layer.get('url'));
+  if (layer.get('type') === cm.LayerModel.Type.GOOGLE_SPREADSHEET) {
+    var match = url.match(/spreadsheet\/.*[?&]key=(\w+)/);
+    if (match) {
+      url = GOOGLE_SPREADSHEET_CSV_URL.replace('$key', match[1]);
+    } else {
+      return null;
+    }
+  }
+
   var lat = /** @type string */(layer.get('latitude_field'));
   var lon = /** @type string */(layer.get('longitude_field'));
   var result = this.config_['kmlify_url'] + '?url=' + encodeURIComponent(url);
@@ -558,6 +573,7 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       break;
 
     case cm.LayerModel.Type.CSV:
+    case cm.LayerModel.Type.GOOGLE_SPREADSHEET:
       var url = this.buildKmlifyUrl_(layer);
       if (url) {
         this.overlays_[id] = new google.maps.KmlLayer({

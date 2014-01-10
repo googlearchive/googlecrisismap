@@ -23,6 +23,8 @@ class LayerType(object):
   KML = 'KML'
   GEORSS = 'GEORSS'
   GOOGLE_MAP_TILES = 'GOOGLE_MAP_TILES'
+  CSV = 'CSV'
+  GOOGLE_SPREADSHEET = 'GOOGLE_SPREADSHEET'
   GOOGLE_FUSION_TABLES = 'GOOGLE_FUSION_TABLES'
   GOOGLE_MAP_DATA = 'GOOGLE_MAP_DATA'
   GOOGLE_TRAFFIC = 'GOOGLE_TRAFFIC'
@@ -65,6 +67,7 @@ def GetSourceAddress(layer):
   layer_type = layer.get('type', '')
   source = layer.get('source', {}).get(layer_type.lower(), {})
   if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS,
+                    LayerType.CSV, LayerType.GOOGLE_SPREADSHEET,
                     LayerType.GOOGLE_MAPS_ENGINE_LITE_OR_PRO]:
     return layer_type + ':' + source.get('url', '')
 
@@ -80,6 +83,7 @@ def GetHostnameForSource(source):
   """
   layer_type, url = source.split(':', 1)
   if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS,
+                    LayerType.CSV, LayerType.GOOGLE_SPREADSHEET,
                     LayerType.GOOGLE_MAPS_ENGINE_LITE_OR_PRO]:
     netloc = urlparse.urlsplit(url).netloc
     return netloc.split(':')[0]

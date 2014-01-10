@@ -37,6 +37,7 @@ function MapViewTest() {
   this.metadataModel_ = createMockInstance(cm.MetadataModel);
   this.config_ = {
     json_proxy_url: '/root/.jsonp',
+    kmlify_url: 'http://app.com/root/.kmlify',
     wms_configure_url: '/root/.wms/configure',
     wms_tiles_url: '/root/.wms/tiles'
   };
@@ -392,6 +393,82 @@ MapViewTest.prototype.addOverlayFusionTables = function() {
   stub(overlay.getMap)().is(null);
   expectCall(overlay.setMap)(this.map_);
   this.newMapView_(false);
+};
+
+/** Tests adding a CSV layer. */
+MapViewTest.prototype.addOverlayCsv = function() {
+  var layer = {
+    id: 'foo', type: cm.LayerModel.Type.CSV, url: 'http://example.com/foo.csv',
+    latitude_field: 'lat', longitude_field: 'lon',
+    title_template: '$title', description_template: new cm.Html('$description')
+  };
+  this.addLayer_(layer);
+  this.stubVisibleLayerIds_(['foo']);
+
+  var overlay = this.expectNew_('google.maps.KmlLayer', {
+      url: 'http://app.com/root/.kmlify' +
+          '?url=' + encodeURIComponent(layer.url) +
+          '&type=csv' +
+          '&loc=' + encodeURIComponent('lat,lon') +
+          '&name=' + encodeURIComponent('$title') +
+          '&desc=' + encodeURIComponent('$description'),
+      preserveViewport: true,
+      suppressInfoWindows: true
+  });
+  stub(overlay.getMap)().is(null);
+  expectCall(overlay.setMap)(this.map_);
+  this.newMapView_(false, this.config_);
+};
+
+/** Tests adding a Google Spreadsheet layer. */
+MapViewTest.prototype.addOverlayGoogleSpreadsheet = function() {
+  // URL to the spreadsheet editor page should work.
+  var layer1 = {
+    id: 'layer1', type: cm.LayerModel.Type.GOOGLE_SPREADSHEET,
+    url: 'https://docs.google.com/spreadsheet/ccc?key=abcd#gid=0',
+    latitude_field: 'lat', longitude_field: 'lon',
+    title_template: '$title', description_template: new cm.Html('$description')
+  };
+  // URL to a published version of the spreadsheet should also work.
+  var layer2 = {
+    id: 'layer2', type: cm.LayerModel.Type.GOOGLE_SPREADSHEET,
+    url: 'https://docs.google.com/spreadsheet/pub?otuput=html&key=ghij#gid=0',
+    latitude_field: 'lat', longitude_field: 'lon',
+    title_template: '$title', description_template: new cm.Html('$description')
+  };
+  this.addLayer_(layer1);
+  this.addLayer_(layer2);
+  this.stubVisibleLayerIds_(['layer1', 'layer2']);
+
+  var overlay1 = this.expectNew_('google.maps.KmlLayer', {
+      url: 'http://app.com/root/.kmlify' +
+          '?url=' + encodeURIComponent(
+              'https://docs.google.com/spreadsheet/pub?key=abcd&output=csv') +
+          '&type=csv' +
+          '&loc=' + encodeURIComponent('lat,lon') +
+          '&name=' + encodeURIComponent('$title') +
+          '&desc=' + encodeURIComponent('$description'),
+      preserveViewport: true,
+      suppressInfoWindows: true
+  });
+  stub(overlay1.getMap)().is(null);
+  expectCall(overlay1.setMap)(this.map_);
+
+  var overlay2 = this.expectNew_('google.maps.KmlLayer', {
+      url: 'http://app.com/root/.kmlify' +
+          '?url=' + encodeURIComponent(
+              'https://docs.google.com/spreadsheet/pub?key=ghij&output=csv') +
+          '&type=csv' +
+          '&loc=' + encodeURIComponent('lat,lon') +
+          '&name=' + encodeURIComponent('$title') +
+          '&desc=' + encodeURIComponent('$description'),
+      preserveViewport: true,
+      suppressInfoWindows: true
+  });
+  stub(overlay2.getMap)().is(null);
+  expectCall(overlay2.setMap)(this.map_);
+
+  this.newMapView_(false, this.config_);
 };
 
 /** Tests adding a Tile overlay. */

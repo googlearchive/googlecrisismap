@@ -75,13 +75,21 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
         type === cm.LayerModel.Type.GEORSS ||
         type === cm.LayerModel.Type.TILE ||
         type === cm.LayerModel.Type.WMS ||
-        type === cm.LayerModel.Type.CSV;
+        type === cm.LayerModel.Type.CSV ||
+        type === cm.LayerModel.Type.GOOGLE_SPREADSHEET;
   }
 
   function downloadable(type) {
     return type === cm.LayerModel.Type.KML ||
         type === cm.LayerModel.Type.GEORSS ||
-        type === cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO;
+        type === cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO ||
+        type === cm.LayerModel.Type.CSV ||
+        type === cm.LayerModel.Type.GOOGLE_SPREADSHEET;
+  }
+
+  function usesKmlifyFields(type) {
+    return type === cm.LayerModel.Type.CSV ||
+        type === cm.LayerModel.Type.GOOGLE_SPREADSHEET;
   }
 
   function isType(type) {
@@ -99,6 +107,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      label: cm.MSG_LAYER_TYPE_TILE_SERVICE},
     {value: cm.LayerModel.Type.WMS, label: 'WMS'},
     {value: cm.LayerModel.Type.CSV, label: 'CSV'},
+    {value: cm.LayerModel.Type.GOOGLE_SPREADSHEET,
+     label: cm.MSG_LAYER_TYPE_GOOGLE_SPREADSHEET},
     {value: cm.LayerModel.Type.FUSION, label: cm.MSG_LAYER_TYPE_FUSION_TABLES},
     {value: cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO,
      label: cm.MSG_LAYER_TYPE_MAPS_ENGINE_LITE_OR_PRO},
@@ -143,24 +153,33 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
       cm.ui.SEPARATOR_DOT, cm.ui.createLink(cm.MSG_HELP),
       cm.ui.SEPARATOR_DOT, cm.ui.createLink(cm.MSG_REPORT_ABUSE));
 
+  // Fields that are editable in the map inspector.  Items in this array
+  // must have distinct 'key' strings.
   var mapFields = [
-   {key: 'title', label: cm.MSG_TITLE, type: cm.editors.Type.TEXT},
-   {key: 'description', label: cm.MSG_DESCRIPTION, type: cm.editors.Type.HTML,
-    preview_class: cm.css.MAP_DESCRIPTION},
-   {key: 'footer', label: cm.MSG_FOOTER, type: cm.editors.Type.HTML,
-    preview_class: cm.css.FOOTER, preview_postfix: footerPreviewPostfix},
-   {key: 'viewport', label: cm.MSG_DEFAULT_VIEWPORT,
-    type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
-   {key: 'map_type', label: cm.MSG_DEFAULT_BASE_MAP,
-    type: cm.editors.Type.MENU, choices: mapTypeChoices},
-   {key: 'base_map_style', label: cm.MSG_CUSTOM_BASE_MAP_STYLE,
-    type: cm.editors.Type.TEXT,
-    conditions: {'map_type': isType(cm.MapModel.Type.CUSTOM)}},
-   {key: 'base_map_style_name', label: cm.MSG_CUSTOM_STYLE_NAME,
-    type: cm.editors.Type.TEXT,
-    conditions: {'map_type': isType(cm.MapModel.Type.CUSTOM)}}
+    {key: 'title', label: cm.MSG_TITLE, type: cm.editors.Type.TEXT},
+    {key: 'description', label: cm.MSG_DESCRIPTION, type: cm.editors.Type.HTML,
+     preview_class: cm.css.MAP_DESCRIPTION},
+    {key: 'footer', label: cm.MSG_FOOTER, type: cm.editors.Type.HTML,
+     preview_class: cm.css.FOOTER, preview_postfix: footerPreviewPostfix},
+    {key: 'viewport', label: cm.MSG_DEFAULT_VIEWPORT,
+     type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
+    {key: 'map_type', label: cm.MSG_DEFAULT_BASE_MAP,
+     type: cm.editors.Type.MENU, choices: mapTypeChoices},
+    {key: 'base_map_style', label: cm.MSG_CUSTOM_BASE_MAP_STYLE,
+     type: cm.editors.Type.TEXT,
+     conditions: {'map_type': isType(cm.MapModel.Type.CUSTOM)}},
+    {key: 'base_map_style_name', label: cm.MSG_CUSTOM_STYLE_NAME,
+     type: cm.editors.Type.TEXT,
+     conditions: {'map_type': isType(cm.MapModel.Type.CUSTOM)}}
  ];
 
+  // TODO(kpy): Fix up InspectorView so that it's okay for multiple editors to
+  // use the same .key as long as they're not simultaneously active.  This
+  // would let us show different tooltips for the 'url' field depending on
+  // the layer type, for example.
+
+  // Fields that are editable in the layer inspector.  Items in this array
+  // must have distinct 'key' strings.
   var layerFields = [
     // Settings that don't depend on the layer type
     {key: 'title', label: cm.MSG_TITLE, type: cm.editors.Type.TEXT,
@@ -205,44 +224,44 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      tooltip: cm.MSG_TILE_INDEX_TOOLTIP},
     {key: 'title_template', label: cm.MSG_PLACEMARK_TITLE,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
+     conditions: {'type': usesKmlifyFields},
      tooltip: cm.MSG_PLACEMARK_TITLE_TOOLTIP},
     {key: 'description_template', label: cm.MSG_PLACEMARK_DESCRIPTION,
      type: cm.editors.Type.HTML,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
+     conditions: {'type': usesKmlifyFields},
      tooltip: cm.MSG_PLACEMARK_DESCRIPTION_TOOLTIP},
     {key: 'latitude_field', label: cm.MSG_LATITUDE_FIELD,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
+     conditions: {'type': usesKmlifyFields},
      tooltip: cm.MSG_LATITUDE_FIELD_TOOLTIP},
     {key: 'longitude_field', label: cm.MSG_LONGITUDE_FIELD,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
+     conditions: {'type': usesKmlifyFields},
      tooltip: cm.MSG_LONGITUDE_FIELD_TOOLTIP},
     {key: 'icon_url_template', label: cm.MSG_ICON_URL,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
+     conditions: {'type': usesKmlifyFields},
      tooltip: cm.MSG_ICON_URL_TOOLTIP},
     {key: 'color_template', label: cm.MSG_ICON_COLOR_TINT,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
+     conditions: {'type': usesKmlifyFields},
      tooltip: cm.MSG_ICON_COLOR_TINT_TOOLTIP},
     {key: 'hotspot_template', label: cm.MSG_ICON_HOTSPOT,
      type: cm.editors.Type.MENU, choices: hotspotChoices,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
+     conditions: {'type': usesKmlifyFields},
      tooltip: cm.MSG_ICON_HOTSPOT_TOOLTIP},
-    {key: 'condition0', label: cm.MSG_CSV_FILTER_CONDITION,
+    {key: 'condition0', label: cm.MSG_FILTER_CONDITION,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
-     tooltip: cm.MSG_CSV_FILTER_CONDITION_TOOLTIP},
-    {key: 'condition1', label: cm.MSG_CSV_FILTER_CONDITION,
+     conditions: {'type': usesKmlifyFields},
+     tooltip: cm.MSG_FILTER_CONDITION_TOOLTIP},
+    {key: 'condition1', label: cm.MSG_FILTER_CONDITION,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
-     tooltip: cm.MSG_CSV_FILTER_CONDITION_TOOLTIP},
-    {key: 'condition2', label: cm.MSG_CSV_FILTER_CONDITION,
+     conditions: {'type': usesKmlifyFields},
+     tooltip: cm.MSG_FILTER_CONDITION_TOOLTIP},
+    {key: 'condition2', label: cm.MSG_FILTER_CONDITION,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': isType(cm.LayerModel.Type.CSV)},
-     tooltip: cm.MSG_CSV_FILTER_CONDITION_TOOLTIP},
+     conditions: {'type': usesKmlifyFields},
+     tooltip: cm.MSG_FILTER_CONDITION_TOOLTIP},
     {key: 'ft_from', label: cm.MSG_GFT_TABLE_ID,
      type: cm.editors.Type.TEXT,
      conditions: {'type': isType(cm.LayerModel.Type.FUSION)},

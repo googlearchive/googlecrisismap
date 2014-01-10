@@ -507,6 +507,9 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
         case cm.LayerModel.Type.CSV:
           linkText = cm.MSG_DOWNLOAD_CSV_LINK;
           break;
+        case cm.LayerModel.Type.GOOGLE_SPREADSHEET:
+          linkText = cm.MSG_VIEW_GOOGLE_SPREADSHEET;
+          break;
         case cm.LayerModel.Type.FUSION:
           var value = this.model_.get('ft_from') + '';
           if (value) {

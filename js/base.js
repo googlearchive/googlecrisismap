@@ -271,6 +271,9 @@ cm.MSG_DOWNLOAD_GEORSS_LINK = goog.getMsg('Download GeoRSS');
 /** @desc Label for a link to download a CSV file. */
 cm.MSG_DOWNLOAD_CSV_LINK = goog.getMsg('Download CSV');
 
+/** @desc Label for a link to view data in a Google Spreadsheet. */
+cm.MSG_VIEW_GOOGLE_SPREADSHEET = goog.getMsg('View Google Spreadsheet');
+
 /** @desc Label for a link to view the layer in Google Maps Engine. */
 cm.MSG_VIEW_IN_GOOGLE_MAPS_ENGINE = goog.getMsg('View in Google Maps Engine');
 
@@ -603,6 +606,9 @@ cm.MSG_LAYER_TYPE = goog.getMsg('Layer type');
 /** @desc Menu option for a service that delivers layer tiles. */
 cm.MSG_LAYER_TYPE_TILE_SERVICE = goog.getMsg('Tile service');
 
+/** @desc Menu option for a Google Spreadsheet layer. */
+cm.MSG_LAYER_TYPE_GOOGLE_SPREADSHEET = goog.getMsg('Google Spreadsheet');
+
 /** @desc Menu option for a layer from the Google Fusion Tables product. */
 cm.MSG_LAYER_TYPE_FUSION_TABLES = goog.getMsg('Google Fusion Tables');
 
@@ -682,10 +688,10 @@ cm.MSG_ICON_HOTSPOT = goog.getMsg('Icon hotspot');
 
 /**
  * @desc Label for a text field for entering a condition that is used to filter
- *     the data from a CSV file to be shown on the map.  An example of a
- *     condition would be "speed > 60".
+ *     a set of records to be shown on the map.  An example of a condition
+ *     would be "speed > 60".
  */
-cm.MSG_CSV_FILTER_CONDITION = goog.getMsg('Filter condition');
+cm.MSG_FILTER_CONDITION = goog.getMsg('Filter condition');
 
 /** @desc Refers to the point at the center of an image. */
 cm.MSG_HOTSPOT_CENTER = goog.getMsg('Center');
@@ -874,10 +880,12 @@ cm.MSG_LAYER_TYPE_TOOLTIP = goog.getMsg(
  *     URL, "http://example.com/{X}_{Y}_{Z}.png".
  */
 cm.MSG_SOURCE_URL_TOOLTIP = goog.getMsg(
-    'The public URL of the layer data.  (For Google Maps tiles and TMS ' +
-    'tiles, this is a URL template like http://example.com/{X}_{Y}_{Z}.png ' +
-    'with placeholders for X, Y, and Z values.  For Bing Maps tiles, this is ' +
-    'the tile URL without the quadkey at the end.)');
+    'The URL of the file, feed, spreadsheet, or map with the layer data. ' +
+    'For a Google Spreadsheet, be sure to "Publish to the Web". ' +
+    'For Google Maps tiles and TMS tiles, this is a URL template like ' +
+    'http://example.com/{X}_{Y}_{Z}.png with placeholders for X, Y, and Z ' +
+    'values.  For Bing Maps tiles, this is the tile URL without the quadkey ' +
+    'at the end.');
 
 /**
  * @desc Tooltip for the text field for a Maps EngineLite layer's source URL.
@@ -951,12 +959,12 @@ cm.MSG_ICON_HOTSPOT_TOOLTIP = goog.getMsg(
 
 /**
  * @desc Tooltip for a text field for entering a condition that is used to
- *     filter the data from a CSV file to be shown on the map.  An example
- *     of a condition would be "speed > 60".
+ *     filter a set of records to be shown on the map.  An example of a
+ *     condition would be "speed > 60".
  */
-cm.MSG_CSV_FILTER_CONDITION_TOOLTIP = goog.getMsg(
+cm.MSG_FILTER_CONDITION_TOOLTIP = goog.getMsg(
     'Optional.  Enter a condition like "xyz < 5" or "title = foo" ' +
-    'to select a subset of the records in the CSV file to show on the map.'
+    'to select a subset of the data records to show on the map.'
 );
 
 /**
