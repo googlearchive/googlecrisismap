@@ -117,6 +117,27 @@ ArrangeViewTest.prototype.testArrangePopup = function() {
 };
 
 /**
+ * Tests isOpen()
+ */
+ArrangeViewTest.prototype.testIsOpen = function() {
+  // Create arranger in untabbed UI.
+  this.createView_();
+  expectFalse(this.arrangeView_.isOpen());
+  this.arrangeView_.open();
+  expectTrue(this.arrangeView_.isOpen());
+  this.arrangeView_.close_();
+  expectFalse(this.arrangeView_.isOpen());
+
+  // Create arranger in tabbed UI.
+  this.createView_(true);
+  expectFalse(this.arrangeView_.isOpen());
+  this.arrangeView_.open();
+  expectTrue(this.arrangeView_.isOpen());
+  this.arrangeView_.close_();
+  expectFalse(this.arrangeView_.isOpen());
+};
+
+/**
  * Tests the OK button handler.
  */
 ArrangeViewTest.prototype.testOKHandler = function() {

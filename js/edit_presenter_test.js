@@ -119,6 +119,7 @@ EditPresenterTest.prototype.testArrangerEvent = function() {
   var presenter = new cm.EditPresenter(null, null, arranger);
 
   // Emitting an ARRANGE event should open the layer arranger.
+  expectCall(arranger.isOpen)();
   expectCall(arranger.open)();
   cm.events.emit(goog.global, cm.events.ARRANGE, {});
 };

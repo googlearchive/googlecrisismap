@@ -276,7 +276,9 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
 
   // The user has requested to arrange the layers in the panel.
   cm.events.listen(goog.global, cm.events.ARRANGE, function(e) {
-    arranger.open();
+    if (!arranger.isOpen()) {
+      arranger.open();
+    }
   });
 
   // The user has requested to add layers.

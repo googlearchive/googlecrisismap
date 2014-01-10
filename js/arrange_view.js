@@ -168,6 +168,18 @@ cm.ArrangeView.prototype.open = function() {
 };
 
 /**
+ * Checks whether the arranger is currently open.
+ * @return {boolean} True iff the arranger is open.
+ */
+cm.ArrangeView.prototype.isOpen = function() {
+  if (this.useTabPanel_) {
+    return !!this.arrangerElem_.parentNode;
+  } else {
+    return !goog.dom.classes.has(this.arrangerElem_, cm.css.HIDDEN);
+  }
+};
+
+/**
  * Stops displaying the arranger element.
  * @private
  */
