@@ -35,7 +35,7 @@ cm.UrlEditor.prototype.validate = function(value) {
   // Allow whitespace-only entry to validate to avoid harassing the user
   // too much.  The TextEditor parent class throws away white-space so the
   // effect is to save an empty string.
-  if (value && !value.match('^\\s*(http://|https://|$)')) {
+  if (value && !value.toLowerCase().match('^\\s*(http://|https://|$)')) {
     this.setInvalid(cm.MSG_INVALID_URL);
   } else {
     cm.TextEditor.prototype.validate.call(this, value);

@@ -27,6 +27,7 @@ UrlEditorTest.prototype.testValidate = function() {
   this.assertValid_(true, 'http://foo.com');
   this.assertValid_(true, ' http://foo.com ');
   this.assertValid_(true, 'https://foo.com');
+  this.assertValid_(true, 'HtTpS://foo.com');
 
   // Don't harrass a user about entering just whitespace.
   this.assertValid_(true, '');
