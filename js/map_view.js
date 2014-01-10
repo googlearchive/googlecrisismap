@@ -615,6 +615,9 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
         }
       }
       this.infoWindowLayerId_ = featureData ? id : null;
+      if (featureData) {
+        cm.Analytics.logAction(cm.Analytics.MapAction.FEATURE_CLICKED, id);
+      }
     }, this);
   }
 };
