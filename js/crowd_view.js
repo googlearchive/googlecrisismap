@@ -186,7 +186,8 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
   var form = cm.ui.create('div', cm.css.CROWD_REPORT_FORM, closeBtn);
   goog.array.forEach(topics, function(topic) {
     var topicId = mapId + '.' + topic.get('id');
-    topic.get('questions').forEach(function(question) {
+    var questions = /** @type Array.<Object> */(topic.get('questions'));
+    goog.array.forEach(questions, function(question) {
       cm.ui.append(form,
           cm.ui.create('div', cm.css.QUESTION,
               cm.ui.create('h3', {}, question.text),
@@ -234,7 +235,11 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
     self.textInput_.value = '';
     self.submitBtn_.disabled = true;
 
-    event && event.stopPropagation();  // so click-to-expand doesn't kick in
+    // so click-to-expand doesn't kick in
+    if (event) {
+      event.stopPropagation && event.stopPropagation();
+      event.cancelBubble = true;  // for IE 8
+    }
   }
 
   cm.events.listen(bubble, 'click', openForm);
