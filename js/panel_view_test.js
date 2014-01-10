@@ -323,3 +323,17 @@ PanelViewTest.prototype.testSetDefaultView = function() {
   expectThat(event.oldDefault, not(isUndefined));
   expectThat(event.newDefault, not(isUndefined));
 };
+
+/** Tests that the map picker is enabled. */
+PanelViewTest.prototype.testMapPickerEnabled = function() {
+  this.config_ = {'map_picker_items': ['Another Map']};
+  var parent = this.createView_();
+  expectDescendantOf(parent, withClass('cm-map-title-picker'));
+};
+
+/** Tests that the map picker is disabled. */
+PanelViewTest.prototype.testMapPickerDisabled = function() {
+  this.config_['map_picker_items'] = [];
+  var parent = this.createView_();
+  expectNoDescendantOf(parent, withClass('cm-map-picker'));
+};

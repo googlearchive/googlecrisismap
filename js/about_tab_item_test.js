@@ -132,3 +132,18 @@ AboutTabItemTest.prototype.testPublisherIsDisplayed = function() {
       expectDescendantOf(about.getContent(), withClass(cm.css.MAP_PUBLISHER));
   expectThat(publisher, withText(hasSubstr(publisherString)));
 };
+
+/** Tests that the map picker is enabled. */
+AboutTabItemTest.prototype.testMapPickerEnabled = function() {
+  var about = this.createAboutTabItem_(
+      'testEnabledMapPicker', null,
+      {'map_picker_items': ['Another Map']});
+  expectDescendantOf(about.getContent(), withClass('cm-map-title-picker'));
+};
+
+/** Tests that the map picker is disabled. */
+AboutTabItemTest.prototype.testMapPickerDisabled = function() {
+  var about = this.createAboutTabItem_(
+      'testEnabledMapPicker', null, {'map_picker_items': []});
+  expectNoDescendantOf(about.getContent(), withClass('cm-map-picker'));
+};

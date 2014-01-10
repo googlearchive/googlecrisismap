@@ -13,6 +13,7 @@ goog.provide('cm.AboutTabItem');
 
 goog.require('cm');
 goog.require('cm.MapModel');
+goog.require('cm.MapPicker');
 goog.require('cm.MapTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.ui');
@@ -39,6 +40,18 @@ cm.AboutTabItem = function(mapModel, appState, config) {
    * @private
    */
   this.descElem_;
+
+  /**
+   * @type Array.<string>
+   * @private
+   */
+  this.menuItems_ = null;
+
+  var menuItems = config['map_picker_items'];
+  if (menuItems && menuItems.length && !config['draft_mode'] &&
+      !config['enable_editing'] && !config['hide_panel_header']) {
+    this.menuItems_ = menuItems;
+  }
 };
 goog.inherits(cm.AboutTabItem, cm.MapTabItem);
 
@@ -51,12 +64,29 @@ cm.AboutTabItem.prototype.addHeader = function(headerElem) {
         cm.MSG_DRAFT_LABEL));
   }
   cm.ui.append(headerElem, this.createTitle_());
+  this.enableMapPicker_(headerElem);
 
   var publisher = this.config['publisher_name'];
   if (publisher) {
     cm.ui.append(headerElem, cm.ui.create(
         'div', {'class': cm.css.MAP_PUBLISHER},
         cm.getMsgPublisherAttribution(publisher)));
+  }
+};
+
+/**
+ * Makes the title text a clickable target to bring up the map picker.
+ * @param {Element} header The header element.
+ * @private
+ */
+cm.AboutTabItem.prototype.enableMapPicker_ = function(header) {
+  if (this.menuItems_) {
+    goog.dom.classes.add(this.mapTitleElem_, cm.css.MAP_TITLE_PICKER);
+    var picker = new cm.MapPicker(header, this.menuItems_);
+    cm.events.listen(this.mapTitleElem_, 'click', goog.bind(function(e) {
+      picker.showMenu(true);
+      e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
+    }, picker));
   }
 };
 

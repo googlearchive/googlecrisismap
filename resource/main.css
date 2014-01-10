@@ -796,7 +796,7 @@ input[type=checkbox]:checked::after {
   display: inline-block;
   background: url('//maps.gstatic.com/mapfiles/hpimgs28.png') -123px 4px;
   position: absolute;
-  top: 6px;
+  top: 12px;
   right: 0;
   opacity: 0.5;
 }
@@ -805,6 +805,10 @@ input[type=checkbox]:checked::after {
 }
 .cm-embedded .cm-map-picker-button {
   right: 36px;
+}
+.cm-tab-content .cm-map-picker-button {
+  right: auto;
+  margin-left: 6px;
 }
 
 /* Login */

@@ -21,6 +21,7 @@ goog.require('cm.AppState');
 goog.require('cm.Html');
 goog.require('cm.LayerEntryView');
 goog.require('cm.MapModel');
+goog.require('cm.MapPicker');
 goog.require('cm.MetadataModel');
 goog.require('cm.css');
 goog.require('cm.events');
@@ -259,6 +260,8 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
       cm.events.emit(me.panelInner_, goog.events.EventType.RESIZE);
     });
   }
+
+  // Set up the layer filter.
   if (this.layerFilterBox_) {
     // Enable the layer filter.
     cm.events.listen(this.layerFilterBox_,
@@ -277,7 +280,6 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
       }, this);
     // Show or hide the layer filter as appropriate.
     this.updateLayerFilterVisibility_();
-
     // TODO(romano): There should be UX decison made about how the editor and
     // layer filter interact, since this listener could result in a layer
     // disappearing after being edited.
@@ -287,6 +289,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
 
   // Populate the title and description and listen for changes.
   this.updateTitle_();
+  this.enableMapPicker_();
   this.updateDescription_();
   cm.events.onChange(model, 'title', this.updateTitle_, this);
   cm.events.onChange(model, 'description', this.updateDescription_, this);
@@ -372,14 +375,19 @@ cm.PanelView.prototype.getHeader = function() {
 
 /**
  * Makes the title text a clickable target to bring up the MapPicker.
- * @param {cm.MapPicker} picker The MapPicker to trigger.
+ * @private
  */
-cm.PanelView.prototype.enableMapPicker = function(picker) {
-  goog.dom.classes.add(this.titleElem_, cm.css.MAP_TITLE_PICKER);
-  cm.events.listen(this.titleElem_, 'click', goog.bind(function(e) {
+cm.PanelView.prototype.enableMapPicker_ = function() {
+  var menuItems = this.config_['map_picker_items'];
+  if (menuItems && menuItems.length && !this.config_['draft_mode'] &&
+      !this.config_['enable_editing'] && !this.config_['hide_panel_header']) {
+    goog.dom.classes.add(this.titleElem_, cm.css.MAP_TITLE_PICKER);
+    var picker = new cm.MapPicker(this.panelHeader_, menuItems);
+    cm.events.listen(this.titleElem_, 'click', goog.bind(function(e) {
       picker.showMenu(true);
       e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
-  }, picker));
+    }, picker));
+  }
 };
 
 /**

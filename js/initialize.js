@@ -25,7 +25,6 @@ goog.require('cm.FooterView');
 goog.require('cm.LayersButton');
 goog.require('cm.LoginView');
 goog.require('cm.MapModel');
-goog.require('cm.MapPicker');
 goog.require('cm.MapView');
 goog.require('cm.MetadataModel');
 goog.require('cm.MyLocationButton');
@@ -660,14 +659,6 @@ cm.Map.prototype.constructPanelView_ = function(appState, mapModel,
     this.panelView_ = new cm.PanelView(
         this.frameElem_, this.panelElem_, this.mapElem_, mapModel,
         metadataModel, appState, this.config_);
-  }
-
-  var menuItems = this.config_['map_picker_items'];
-  if (menuItems && menuItems.length &&
-      !this.config_['draft_mode'] && !this.config_['enable_editing'] &&
-          this.panelView_.getHeader()) {
-    this.panelView_.enableMapPicker(
-        new cm.MapPicker(this.panelView_.getHeader(), menuItems));
   }
 };
 
