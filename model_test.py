@@ -484,14 +484,13 @@ class CrowdReportTests(test_utils.BaseTest):
   """Tests the CrowdReport class."""
 
   def NewCrowdReport(
-      self, report_id, source='http://source.com/', author='author@example.com',
+      self, source='http://source.com/', author='author@example.com',
       text='Crowd report text',
       topic_ids=('VB5ItphmLJ8tLPax.gas', 'VB5ItphmLJ8tLPax.water'),
       answer_ids=('VB5ltphmLJ8tLPax.gas.1.1',), location=None):
     effective = datetime.datetime.utcnow()
-    return model.CrowdReport.Put(source+str(report_id), source, author,
-                                 effective, text, topic_ids, answer_ids,
-                                 location)
+    return model.CrowdReport.Put(source, author, effective, text,
+                                 topic_ids, answer_ids, location)
 
   def testGetWithoutLocation(self):
     """Tests CrowdReport.GetWithoutLocation."""
@@ -500,17 +499,16 @@ class CrowdReportTests(test_utils.BaseTest):
       return now - datetime.timedelta(hours=hours, minutes=minutes)
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=1)))
-    self.NewCrowdReport(report_id=1, topic_ids=['foo'],
-                        location=ndb.GeoPt(37, -74))
+    self.NewCrowdReport(topic_ids=['foo'], location=ndb.GeoPt(37, -74))
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=2)))
-    self.NewCrowdReport(report_id=2, topic_ids=['bar', 'baz'])
+    self.NewCrowdReport(topic_ids=['bar', 'baz'])
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=3)))
-    cr3 = self.NewCrowdReport(report_id=3, topic_ids=['foo', 'bar'])
+    cr3 = self.NewCrowdReport(topic_ids=['foo', 'bar'])
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=4)))
-    cr4 = self.NewCrowdReport(report_id=4, topic_ids=['foo', 'bar'])
+    cr4 = self.NewCrowdReport(topic_ids=['foo', 'bar'])
 
     self.SetTime(utils.UtcToTimestamp(now))
 
@@ -550,22 +548,22 @@ class CrowdReportTests(test_utils.BaseTest):
       return now - datetime.timedelta(hours=hours, minutes=minutes)
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=1)))
-    self.NewCrowdReport(report_id=1, topic_ids=['foo'])
+    self.NewCrowdReport(topic_ids=['foo'])
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=2)))
-    cr2 = self.NewCrowdReport(report_id=2, topic_ids=['bar', 'baz'],
+    cr2 = self.NewCrowdReport(topic_ids=['bar', 'baz'],
                               location=ndb.GeoPt(37, -74))
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=3)))
-    cr3 = self.NewCrowdReport(report_id=3, topic_ids=['foo', 'bar'],
+    cr3 = self.NewCrowdReport(topic_ids=['foo', 'bar'],
                               location=ndb.GeoPt(37, -74))
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=4)))
-    cr4 = self.NewCrowdReport(report_id=4, topic_ids=['foo', 'bar'],
+    cr4 = self.NewCrowdReport(topic_ids=['foo', 'bar'],
                               location=ndb.GeoPt(37.001, -74))  # 0.001 ~= 111m
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=5)))
-    cr5 = self.NewCrowdReport(report_id=5, topic_ids=['foo', 'bez'],
+    cr5 = self.NewCrowdReport(topic_ids=['foo', 'bez'],
                               location=ndb.GeoPt(37.1, -74))  # 0.1 ~= 11km
 
     self.SetTime(utils.UtcToTimestamp(now))

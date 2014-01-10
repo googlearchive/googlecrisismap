@@ -37,7 +37,7 @@ class Struct(object):
     # ._properties is actually a public API; it's just named with "_" in order
     # to avoid collision with property names (see http://goo.gl/xAcU4).
     properties = model._properties  # pylint: disable=protected-access
-    return cls(id=model.key.id(),
+    return cls(id=model.key.id(), key=model.key,
                **dict((name, getattr(model, name)) for name in properties))
 
 
@@ -61,30 +61,6 @@ def StructFromModel(model):
     return Struct(key=model.key(), id=model.key().id(), name=model.key().name(),
                   **dict((name, prop.get_value_for_datastore(model))
                          for (name, prop) in model.properties().iteritems()))
-
-
-def StructFromNdbModel(model):
-  """Copies the properties of the given db.Model into a Struct.
-
-    Note that we use Property.get_value_for_datastore to prevent fetching
-    of referenced objects into the Struct.  The other effect of using
-    get_value_for_datastore is that all date/time methods return
-    datetime.datetime values.
-
-  Args:
-    model: An ndb.Model entity, or None.
-
-  Returns:
-    A Struct containing the properties of the given ndb.Model, with additional
-    'key', 'name', and 'id' properties for the entity's key, key.string_id(),
-    and key.integer_id().  Returns None if 'model' is None.
-  """
-  if model:
-    return Struct(key=model.key, id=model.key.integer_id(),
-                  name=model.key.string_id(),
-                  **dict((name, prop)
-                         # pylint: disable=protected-access
-                         for (name, prop) in model._properties.iteritems()))
 
 
 def ResultIterator(query):

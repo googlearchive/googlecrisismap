@@ -772,7 +772,7 @@ class EmptyCatalogEntry(CatalogEntry):
   Put = ReadOnlyError
 
 
-class CrowdReportModel(ndb.Model):
+class _CrowdReportModel(ndb.Model):
   """A crowd report.  Entity id: a unique URL with source as a prefix."""
 
   # A URL identifying the original repository in which the report was created.
@@ -816,6 +816,10 @@ class CrowdReportModel(ndb.Model):
   # Aggregate score for this report.
   score = ndb.FloatProperty()
 
+  @classmethod
+  def _get_kind(cls):  # pylint: disable=g-bad-name
+    return 'CrowdReportModel'  # so we can name the Python class with a _
+
 
 class CrowdReport(utils.Struct):
   """Application-level object representing a crowd report."""
@@ -825,6 +829,19 @@ class CrowdReport(utils.Struct):
   LOCATION_FIELD_NAME = 'location'
   TOPIC_ID_FIELD_NAME = 'topic_id'
   UPDATED_FIELD_NAME = 'updated'
+
+  @staticmethod
+  def GenerateReportId(source):
+    """Generates a new, unique report ID.
+
+    Args:
+      source: The source URL of this repository.
+
+    Returns:
+      A new unique URL under the given URL, suitable for use as a report ID.
+    """
+    unique_int_id, _ = _CrowdReportModel.allocate_ids(1)
+    return source.rstrip('/') + '/.reports/' + str(unique_int_id)
 
   @staticmethod
   def GetWithoutLocation(topic_ids, count, max_updated=None):
@@ -843,15 +860,15 @@ class CrowdReport(utils.Struct):
         - Has no location
         - Has an update time equal to or before 'max_updated'
     """
-    query = CrowdReportModel.query().order(-CrowdReportModel.updated)
-    query = query.filter(CrowdReportModel.location == NOWHERE)
+    query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
+    query = query.filter(_CrowdReportModel.location == NOWHERE)
     if topic_ids:
-      query = query.filter(CrowdReportModel.topic_ids.IN(topic_ids))
+      query = query.filter(_CrowdReportModel.topic_ids.IN(topic_ids))
     if max_updated:
-      query = query.filter(CrowdReportModel.updated <= max_updated)
+      query = query.filter(_CrowdReportModel.updated <= max_updated)
 
     for report in query.fetch(count):
-      yield utils.StructFromNdbModel(report)
+      yield utils.Struct.FromModel(report)
 
   @staticmethod
   def GetByLocation(center, topic_radii, count=1000, max_updated=None):
@@ -887,22 +904,22 @@ class CrowdReport(utils.Struct):
     results = index.search(
         search.Query(' OR '.join(query),
                      options=search.QueryOptions(limit=count, ids_only=True)))
-    ids = [ndb.Key(CrowdReportModel, result.doc_id) for result in results]
+    ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
     entities = ndb.get_multi(ids)
     for entity in entities:
       if entity:
-        yield utils.StructFromNdbModel(entity)
+        yield utils.Struct.FromModel(entity)
 
   @staticmethod
-  def Put(report_id, source, author, effective, text, topic_ids, answer_ids,
-          location):
+  def Put(source, author, effective, text, topic_ids, answer_ids, location):
     """Stores one crowd report."""
     updated = datetime.datetime.utcnow()
     updated_seconds = utils.UtcToTimestamp(updated)
-    report = CrowdReportModel(id=report_id, source=source, author=author,
-                              effective=effective, updated=updated, text=text,
-                              topic_ids=topic_ids, answer_ids=answer_ids,
-                              location=location or NOWHERE)
+    report_id = CrowdReport.GenerateReportId(source)
+    report = _CrowdReportModel(id=report_id, source=source, author=author,
+                               effective=effective, updated=updated, text=text,
+                               topic_ids=topic_ids, answer_ids=answer_ids,
+                               location=location or NOWHERE)
     report.put()
     if location:
       fields = [search.GeoField(name=CrowdReport.LOCATION_FIELD_NAME,
@@ -919,10 +936,8 @@ class CrowdReport(utils.Struct):
                      for topic_id in topic_ids])
       index = search.Index(name=CrowdReport.SEARCH_INDEX_NAME)
       index.put(search.Document(
-          doc_id=str(report.key.id()),
-          fields=fields,
-          rank=int(updated_seconds)))
-    return utils.StructFromNdbModel(report)
+          doc_id=report_id, fields=fields, rank=int(updated_seconds)))
+    return utils.Struct.FromModel(report)
 
 
 # Possible types of votes.  Each vote type is associated with a particular
@@ -930,7 +945,7 @@ class CrowdReport(utils.Struct):
 VOTE_TYPES = ['anonymous_positive', 'anonymous_negative']
 
 
-class CrowdVoteModel(ndb.Model):
+class _CrowdVoteModel(ndb.Model):
   """A vote on a crowd report.  Entity id: report_id + '\x00' + voter."""
 
   # The entity ID of the report.
@@ -941,3 +956,7 @@ class CrowdVoteModel(ndb.Model):
 
   # The type of vote, which determines its weight.
   vote_type = ndb.StringProperty(choices=VOTE_TYPES)
+
+  @classmethod
+  def _get_kind(cls):  # pylint: disable=g-bad-name
+    return 'CrowdVoteModel'  # so the Python class can start with an underscore
