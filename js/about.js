@@ -39,10 +39,9 @@ cm.AboutPopup = function(container, opt_aboutContainer) {
 
     // Creates a close button for the about popup.
     cm.ui.createCloseButton(this.popup_, goog.bind(function() {
-      this.popup_.parentNode.removeChild(this.popup_);
+      cm.ui.remove(this.popup_);
     }, this));
   }
-
 };
 
 /**

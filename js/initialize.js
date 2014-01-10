@@ -472,19 +472,15 @@ cm.Map.prototype.resizeTabPanel_ = function() {
     // If panel is in the frame element, move it into the map wrapper.
     if (cm.ui.getByClass(cm.css.TAB_PANEL, this.frameElem_) ===
         this.panelElem_) {
-      cm.ui.remove(this.arrangerElem_);
       cm.ui.remove(this.panelElem_);
-      goog.dom.insertSiblingAfter(this.arrangerElem_, this.mapElem_);
-      goog.dom.insertSiblingAfter(this.panelElem_, this.arrangerElem_);
+      goog.dom.insertSiblingAfter(this.panelElem_, this.mapElem_);
     }
   } else {
     // If panel is in the map wrapper, move it into the frame element.
     if (cm.ui.getByClass(cm.css.TAB_PANEL, this.mapWrapperElem_) ===
         this.panelElem_) {
-      cm.ui.remove(this.arrangerElem_);
       cm.ui.remove(this.panelElem_);
-      goog.dom.insertChildAt(this.frameElem_, this.arrangerElem_, 0);
-      goog.dom.insertSiblingAfter(this.panelElem_, this.arrangerElem_);
+      goog.dom.insertChildAt(this.frameElem_, this.panelElem_, 0);
     }
   }
   goog.dom.classes.enable(this.frameElem_, cm.css.PANEL_BELOW, narrow);
@@ -547,8 +543,8 @@ cm.Map.prototype.createElements_ = function(frame) {
   this.footerElem_ = cm.ui.create('div', {'class': cm.css.FOOTER});
   this.mapWrapperElem_ = cm.ui.create('div', {'class': cm.css.MAP_WRAPPER},
       this.mapElem_);
-  this.arrangerElem_ = cm.ui.create(
-      'div', {'class': [cm.css.PANEL, cm.css.ARRANGER, cm.css.HIDDEN]});
+  this.arrangerElem_ = cm.ui.create('div',
+      {'class': [cm.css.PANEL, cm.css.ARRANGER]});
   this.aboutElem_ = cm.ui.create(
       'div', {'class': cm.css.ABOUT_TEXT, 'id': 'cm-aboutText'});
   if (!!this.config_['use_tab_panel']) {
@@ -565,9 +561,9 @@ cm.Map.prototype.layoutTabbedPanelUi_ = function() {
   var narrow = this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
   if (narrow) {
     goog.dom.classes.add(this.panelElem_, cm.css.TAB_PANEL_BELOW);
-    cm.ui.append(this.mapWrapperElem_, this.panelElem_, this.arrangerElem_);
+    cm.ui.append(this.mapWrapperElem_, this.panelElem_);
   } else {
-    cm.ui.append(this.frameElem_, this.panelElem_, this.arrangerElem_);
+    cm.ui.append(this.frameElem_, this.panelElem_);
   }
   cm.ui.append(this.mapWrapperElem_, this.footerElem_);
   cm.ui.append(this.frameElem_, this.mapWrapperElem_, this.aboutElem_);
@@ -583,6 +579,11 @@ cm.Map.prototype.layoutUntabbedPanelUi_ = function() {
   if (this.config_['panel_float']) {
     goog.dom.classes.add(this.frameElem_, cm.css.PANEL_FLOAT);
   }
+  // Hide the arranger now, even though the ArrangeView constructor
+  // also hides if this is an editable draft. Otherwise it can interfere
+  // with the layout of other elements while waiting for the
+  // ArrangeView to be instantiated when the editor module loads.
+  goog.dom.classes.add(this.arrangerElem_, cm.css.HIDDEN);
 };
 
 
@@ -702,7 +703,8 @@ cm.Map.prototype.constructEditor_ = function(appState, mapModel) {
   var arranger;
   goog.module.require('edit', 'cm.ArrangeView', function(ArrangeView) {
     arranger = new ArrangeView(self.arrangerElem_, self.panelElem_,
-                               appState, mapModel);
+                               appState, mapModel,
+                               self.config_['use_tab_panel']);
   });
   // Mark the body as editable so other styles can adjust accordingly.
   goog.dom.classes.add(this.frameElem_, cm.css.EDIT);

@@ -1452,13 +1452,22 @@ textarea.cm-legend-text {
 .cm-arranger {
   opacity: 1.0 !important;
   cursor: move;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
+
 .cm-arranger .cm-button-area {
   margin: 21px 0 5px 20px;
 }
+
 .cm-panel-float > .cm-arranger {
   height: inherit !important;
 }
+
 .cm-arranger-inner {
   padding: 10px 20px 10px 20px;
   position: absolute;
@@ -1468,6 +1477,17 @@ textarea.cm-legend-text {
   bottom: 0;
   top: 54px;
 }
+
+.cm-arranger.cm-arranger-popup {
+  width: 100%;
+  height: auto;
+  overflow-y: auto;
+}
+
+.cm-arranger-popup > .cm-arranger-inner {
+  position: static;
+}
+
 .cm-draggable-layer {
   cursor: move;
   margin: 0 2px 0 0;

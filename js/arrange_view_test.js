@@ -16,6 +16,7 @@ goog.require('cm.css');
 function ArrangeViewTest() {
   cm.TestBase.call(this);
 
+  this.arrangerElem_ = new FakeElement('div');
   this.panelElem_ = new FakeElement('div', {'class': cm.css.PANEL});
   this.mapModel_ = new google.maps.MVCObject();
   this.mapModel_.set('layers', new google.maps.MVCArray());
@@ -25,17 +26,15 @@ ArrangeViewTest.prototype = new cm.TestBase();
 registerTestSuite(ArrangeViewTest);
 
 /**
- * Constructs the ArrangeView and returns its parent.
- * @return {Element} An element containing the new ArrangeView.
+ * Constructs the ArrangeView and returns the arranger element.
+ * @param {boolean=} opt_useTabPanel If true, apply tab panel layout
+ *     rules to the arranger.
  * @private
  */
-ArrangeViewTest.prototype.createView_ = function() {
-  var parent = new FakeElement('div',
-                               {'class': [cm.css.ARRANGER,
-                                          cm.css.HIDDEN].join(' ')});
+ArrangeViewTest.prototype.createView_ = function(opt_useTabPanel) {
   this.arrangeView_ = new cm.ArrangeView(
-      parent, this.panelElem_, this.appState_, this.mapModel_);
-  return parent;
+      this.arrangerElem_, this.panelElem_, this.appState_, this.mapModel_,
+      !!opt_useTabPanel);
 };
 
 /**
@@ -58,19 +57,19 @@ ArrangeViewTest.prototype.testConstructor = function() {
   var layers = new google.maps.MVCArray([layerModel1, layerModel2]);
   this.mapModel_.set('layers', layers);
 
-  var parent = this.createView_();
-  expectDescendantOf(parent, withClass(cm.css.BUTTON),
+  this.createView_();
+  expectDescendantOf(this.arrangerElem_, withClass(cm.css.BUTTON),
       withText(cm.MSG_OK));
-  expectDescendantOf(parent, withClass(cm.css.BUTTON),
+  expectDescendantOf(this.arrangerElem_, withClass(cm.css.BUTTON),
       withText(cm.MSG_CANCEL));
-  expectDescendantOf(parent, 'div', withClass(cm.css.ARRANGER_INNER));
+  expectDescendantOf(this.arrangerElem_, withClass(cm.css.ARRANGER_INNER));
 
   // The arranger element should be empty until the ARRANGE event is fired.
-  expectNoDescendantOf(parent, 'div', withClass(cm.css.DRAGGABLE_LAYER));
+  expectNoDescendantOf(this.arrangerElem_, withClass(cm.css.DRAGGABLE_LAYER));
 };
 
 /**
- * Tests that open() creates the draggable layers.
+ * Tests that open() creates the draggable layers (untabbed UI).
  */
 ArrangeViewTest.prototype.testArrangeEvent = function() {
   // Add layers to the model.
@@ -79,21 +78,42 @@ ArrangeViewTest.prototype.testArrangeEvent = function() {
   var layers = new google.maps.MVCArray([layerModel1, layerModel2]);
   this.mapModel_.set('layers', layers);
 
-  var parent = this.createView_();
-  var layerListElem = expectDescendantOf(parent, 'div',
+  this.createView_();
+  var layerListElem = expectDescendantOf(this.arrangerElem_,
                                          withClass(cm.css.ARRANGER_INNER));
-  this.layerDragHandler_ = this.expectNew_(
-      'cm.LayerDragHandler', layerListElem, _);
+  this.layerDragHandler_ = this.expectNew_('cm.LayerDragHandler',
+                                           layerListElem, _);
 
   // When arranger is opened, draggable layers are created and the arranger
   // replaces the layers panel.
+  expectThat(this.arrangerElem_, withClass(cm.css.HIDDEN));
+  expectThat(this.panelElem_, not(withClass(cm.css.HIDDEN)));
   this.arrangeView_.open();
-  expectThat(parent, isElement('div', not(withClass(cm.css.HIDDEN))));
-  expectThat(this.panelElem_, isElement('div', withClass(cm.css.HIDDEN)));
-  expectDescendantOf(layerListElem, 'div', withClass(cm.css.DRAGGABLE_LAYER),
+  expectThat(this.arrangerElem_, not(withClass(cm.css.HIDDEN)));
+  expectThat(this.panelElem_, withClass(cm.css.HIDDEN));
+  expectDescendantOf(layerListElem, withClass(cm.css.DRAGGABLE_LAYER),
                      withId('layer1'));
-  expectDescendantOf(layerListElem, 'div', withClass(cm.css.DRAGGABLE_LAYER),
+  expectDescendantOf(layerListElem, withClass(cm.css.DRAGGABLE_LAYER),
                      withId('layer2'));
+};
+
+/**
+ * Tests that open() creates a popup in the tabbed UI.
+ */
+ArrangeViewTest.prototype.testArrangePopup = function() {
+  // Add layers to the model.
+  this.createView_(true);
+
+  // When arranger is opened, the arranger popup should be added to the DOM.
+  expectNoDescendantOf(cm.ui.document.body, withClass(cm.css.ARRANGER_POPUP));
+  this.arrangeView_.open();
+  expectDescendantOf(cm.ui.document.body, withClass(cm.css.ARRANGER_POPUP));
+
+  // When the arranger is closed, the arranger popup should be removed.
+  var button = expectDescendantOf(this.arrangerElem_, withClass(cm.css.BUTTON),
+                                  withText(cm.MSG_CANCEL));
+  cm.events.emit(button, 'click');
+  expectNoDescendantOf(cm.ui.document.body, withClass(cm.css.ARRANGER_POPUP));
 };
 
 /**
@@ -106,8 +126,8 @@ ArrangeViewTest.prototype.testOKHandler = function() {
   var layers = new google.maps.MVCArray([layerModel1, layerModel2]);
   this.mapModel_.set('layers', layers);
 
-  var parent = this.createView_();
-  var layerListElem = expectDescendantOf(parent, 'div',
+  this.createView_();
+  var layerListElem = expectDescendantOf(this.arrangerElem_,
                                          withClass(cm.css.ARRANGER_INNER));
   this.layerDragHandler_ = this.expectNew_(
       'cm.LayerDragHandler', layerListElem, _);
@@ -115,10 +135,8 @@ ArrangeViewTest.prototype.testOKHandler = function() {
 
   // Open the arranger and then switch the layer order.
   this.arrangeView_.open();
-  var draggableLayer1 = expectDescendantOf(layerListElem, 'div',
-                                           withId('layer1'));
-  var draggableLayer2 = expectDescendantOf(layerListElem, 'div',
-                                           withId('layer2'));
+  var draggableLayer1 = expectDescendantOf(layerListElem, withId('layer1'));
+  var draggableLayer2 = expectDescendantOf(layerListElem, withId('layer2'));
   layerListElem.removeChild(draggableLayer1);
   layerListElem.appendChild(draggableLayer1);
 
@@ -132,12 +150,12 @@ ArrangeViewTest.prototype.testOKHandler = function() {
 
   // When OK is clicked, the draggable layers are destroyed and the layers panel
   // replaces arranger.
-  var button = expectDescendantOf(parent, withClass(cm.css.BUTTON),
+  var button = expectDescendantOf(this.arrangerElem_, withClass(cm.css.BUTTON),
                                   withText(cm.MSG_OK));
   cm.events.emit(button, 'click');
-  expectThat(parent, isElement('div', withClass(cm.css.HIDDEN)));
-  expectThat(this.panelElem_, isElement('div', not(withClass(cm.css.HIDDEN))));
-  expectNoDescendantOf(layerListElem, 'div', withClass(cm.css.DRAGGABLE_LAYER));
+  expectThat(this.arrangerElem_, withClass(cm.css.HIDDEN));
+  expectThat(this.panelElem_, not(withClass(cm.css.HIDDEN)));
+  expectNoDescendantOf(layerListElem, withClass(cm.css.DRAGGABLE_LAYER));
 
   // Verify the event fired properly.
   expectEq([{id: 'layer1', sublayerIds: []}, {id: 'layer2', sublayerIds: []}],
@@ -156,19 +174,17 @@ ArrangeViewTest.prototype.testCancelHandler = function() {
   var layers = new google.maps.MVCArray([layerModel1, layerModel2]);
   this.mapModel_.set('layers', layers);
 
-  var parent = this.createView_();
-  var layerListElem = expectDescendantOf(
-      parent, 'div', withClass(cm.css.ARRANGER_INNER));
-  this.layerDragHandler_ = this.expectNew_(
-      'cm.LayerDragHandler', layerListElem, _);
+  this.createView_();
+  var layerListElem = expectDescendantOf(this.arrangerElem_,
+                                         withClass(cm.css.ARRANGER_INNER));
+  this.layerDragHandler_ = this.expectNew_('cm.LayerDragHandler',
+                                           layerListElem, _);
   expectCall(this.layerDragHandler_.dispose)();
 
   // Open the arranger and then switch the layer order.
   this.arrangeView_.open();
-  var draggableLayer1 = expectDescendantOf(layerListElem, 'div',
-                                           withId('layer1'));
-  var draggableLayer2 = expectDescendantOf(layerListElem, 'div',
-                                           withId('layer2'));
+  var draggableLayer1 = expectDescendantOf(layerListElem, withId('layer1'));
+  var draggableLayer2 = expectDescendantOf(layerListElem, withId('layer2'));
   layerListElem.removeChild(draggableLayer1);
   layerListElem.appendChild(draggableLayer1);
 
@@ -181,12 +197,12 @@ ArrangeViewTest.prototype.testCancelHandler = function() {
 
   // When Cancel is clicked, the draggable layers are destroyed and the layers
   // panel replaces arranger, but the layers are not rearranged.
-  var button = expectDescendantOf(parent, withClass(cm.css.BUTTON),
+  var button = expectDescendantOf(this.arrangerElem_, withClass(cm.css.BUTTON),
                                   withText(cm.MSG_CANCEL));
   cm.events.emit(button, 'click');
-  expectThat(parent, isElement('div', withClass(cm.css.HIDDEN)));
-  expectThat(this.panelElem_, isElement('div', not(withClass(cm.css.HIDDEN))));
-  expectNoDescendantOf(layerListElem, 'div', withClass(cm.css.DRAGGABLE_LAYER));
+  expectThat(this.arrangerElem_, withClass(cm.css.HIDDEN));
+  expectThat(this.panelElem_, not(withClass(cm.css.HIDDEN)));
+  expectNoDescendantOf(layerListElem, withClass(cm.css.DRAGGABLE_LAYER));
   expectFalse(layersArranged);
 
   // Clean up the event listener.
@@ -205,21 +221,19 @@ ArrangeViewTest.prototype.testOKHandlerNestedFolders = function() {
   var layers = new google.maps.MVCArray([layerModel1]);
   this.mapModel_.set('layers', layers);
 
-  var parent = this.createView_();
-  var layerListElem = expectDescendantOf(parent, 'div',
+  this.createView_();
+  var layerListElem = expectDescendantOf(this.arrangerElem_,
                                          withClass(cm.css.ARRANGER_INNER));
-  this.layerDragHandler_ = this.expectNew_(
-      'cm.LayerDragHandler', layerListElem, _);
+  this.layerDragHandler_ = this.expectNew_('cm.LayerDragHandler',
+                                           layerListElem, _);
   expectCall(this.layerDragHandler_.dispose)();
 
   // Open the arranger and then rearrange the layers.
   this.arrangeView_.open();
-  var draggableLayer1 = expectDescendantOf(layerListElem, 'div',
-                                           withId('layer1'));
-  var draggableLayer2 = expectDescendantOf(draggableLayer1, 'div',
-                                           withId('layer2'));
+  var draggableLayer1 = expectDescendantOf(layerListElem, withId('layer1'));
+  var draggableLayer2 = expectDescendantOf(draggableLayer1, withId('layer2'));
   var sublayerContainer = expectDescendantOf(
-      draggableLayer1, 'div', withClass(cm.css.DRAGGABLE_SUBLAYER_CONTAINER));
+      draggableLayer1, withClass(cm.css.DRAGGABLE_SUBLAYER_CONTAINER));
   sublayerContainer.removeChild(draggableLayer2);
   layerListElem.appendChild(draggableLayer2);
 
@@ -232,7 +246,7 @@ ArrangeViewTest.prototype.testOKHandlerNestedFolders = function() {
   });
 
   // Click OK and verify the event fired properly.
-  var button = expectDescendantOf(parent, withClass(cm.css.BUTTON),
+  var button = expectDescendantOf(this.arrangerElem_, withClass(cm.css.BUTTON),
                                   withText(cm.MSG_OK));
   cm.events.emit(button, 'click');
 

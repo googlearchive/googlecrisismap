@@ -39,9 +39,11 @@ goog.require('goog.array');
  *     by the arranger element and vice versa.
  * @param {cm.AppState} appState The application state model.
  * @param {cm.MapModel} mapModel The map's model.
+ * @param {boolean} useTabPanel Whether the UI uses the tab panel.
  * @constructor
  */
-cm.ArrangeView = function(arrangerElem, panelElem, appState, mapModel) {
+cm.ArrangeView = function(arrangerElem, panelElem, appState, mapModel,
+                          useTabPanel) {
   /**
    * The parent element for the list of draggable elements.
    * @type Element
@@ -102,6 +104,12 @@ cm.ArrangeView = function(arrangerElem, panelElem, appState, mapModel) {
    */
   this.layerDragHandler_ = null;
 
+  /**
+   * @type boolean
+   * @private
+   */
+  this.useTabPanel_ = useTabPanel;
+
   // Fill the arranger element with 'OK' and 'Cancel' buttons and an empty
   // top-level layer list.
   cm.ui.append(arrangerElem,
@@ -113,6 +121,14 @@ cm.ArrangeView = function(arrangerElem, panelElem, appState, mapModel) {
               'button', {'class': cm.css.BUTTON}, cm.MSG_CANCEL)),
       this.layerListElem_ = cm.ui.create(
           'div', {'class': cm.css.ARRANGER_INNER}));
+  if (useTabPanel) {
+    // Remove the extra popup padding.
+    arrangerElem.style.padding = '0';
+    goog.dom.classes.add(this.arrangerElem_, cm.css.POPUP);
+    goog.dom.classes.add(this.arrangerElem_, cm.css.ARRANGER_POPUP);
+  } else {
+    goog.dom.classes.add(this.arrangerElem_, cm.css.HIDDEN);
+  }
   cm.events.listen(this.okBtn_, 'click', this.handleOk_, this);
   cm.events.listen(this.cancelBtn_, 'click', this.handleCancel_, this);
 
@@ -138,8 +154,30 @@ cm.ArrangeView.prototype.open = function() {
   }, this);
   this.layerDragHandler_ = new cm.LayerDragHandler(
       this.layerListElem_, this.draggableElements_);
-  goog.dom.classes.add(this.panelElem_, cm.css.HIDDEN);
-  goog.dom.classes.remove(this.arrangerElem_, cm.css.HIDDEN);
+  if (this.useTabPanel_) {
+    // Set the max height before the popup is added.
+    this.arrangerElem_.style.maxHeight = this.panelElem_.style.maxHeight ||
+        cm.ui.document.body.offsetHeight - 10;
+    cm.ui.showPopup(this.arrangerElem_);
+    // Force the popup to the top of the screen instead of the center.
+    this.arrangerElem_.style.top = '0';
+  } else {
+    goog.dom.classes.add(this.panelElem_, cm.css.HIDDEN);
+    goog.dom.classes.remove(this.arrangerElem_, cm.css.HIDDEN);
+  }
+};
+
+/**
+ * Stops displaying the arranger element.
+ * @private
+ */
+cm.ArrangeView.prototype.close_ = function() {
+  if (this.useTabPanel_) {
+    cm.ui.remove(this.arrangerElem_);
+  } else {
+    goog.dom.classes.add(this.arrangerElem_, cm.css.HIDDEN);
+    goog.dom.classes.remove(this.panelElem_, cm.css.HIDDEN);
+  }
 };
 
 /**
@@ -147,8 +185,7 @@ cm.ArrangeView.prototype.open = function() {
  * @private
  */
 cm.ArrangeView.prototype.handleOk_ = function() {
-  goog.dom.classes.add(this.arrangerElem_, cm.css.HIDDEN);
-  goog.dom.classes.remove(this.panelElem_, cm.css.HIDDEN);
+  this.close_();
   // Extract a hierarchy of layer IDs from the map's current LayerModel tree.
   var oldOrdering = goog.array.map(this.layers_.getArray(),
                                    this.layerIdTreeFromLayerModel_, this);
@@ -168,12 +205,11 @@ cm.ArrangeView.prototype.handleOk_ = function() {
  * @private
  */
 cm.ArrangeView.prototype.handleCancel_ = function() {
-  goog.dom.classes.add(this.arrangerElem_, cm.css.HIDDEN);
-  goog.dom.classes.remove(this.panelElem_, cm.css.HIDDEN);
+  this.close_();
   cm.ui.clear(this.layerListElem_);
   goog.array.clear(this.draggableElements_);
   this.layerDragHandler_.dispose();
-  cm.events.emit(goog.global, 'resize');
+  cm.events.emit(goog.global, 'resize'); // necessary?
 };
 
 /**
