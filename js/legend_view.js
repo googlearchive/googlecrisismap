@@ -21,9 +21,11 @@ goog.require('cm.MetadataModel');
  * instantiated.
  * @param {cm.LayerModel} layerModel The model for the layer whose legend is
  *   to be rendered
+ * @param {cm.AppState} appState The app state where the current state for the
+ *   layer can be found.
  * @constructor
  */
-cm.LegendView = function(layerModel) {
+cm.LegendView = function(layerModel, appState) {
   /**
    * @type cm.LayerModel
    * @private
@@ -31,10 +33,30 @@ cm.LegendView = function(layerModel) {
   this.layerModel_ = layerModel;
 
   /**
+   * @type cm.AppState
+   * @private
+   */
+  this.appState_ = appState;
+
+  /**
    * @type Element
    * @private
    */
-  this.parentElem_ = cm.ui.create('div', {'class': cm.css.LAYER_LEGEND_BOX});
+  this.parentElem_ = cm.ui.create('div');
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.titleElem_ = cm.ui.create('span', {'class': cm.css.LAYER_TITLE});
+
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.legendElem_ = cm.ui.create(
+      'div', {'class': cm.css.TABBED_LEGEND_CONTENT});
 
   /**
    * Tracks the current zoom level of the map; this is also available
@@ -64,16 +86,29 @@ cm.LegendView = function(layerModel) {
 };
 
 /**
- * Returns the DOM element for the legend, suitable for adding to the
- * larger document.
+ * Returns the element for the legend, ready to be inserted into
+ * the DOM.
  * @return {Element}
  */
 cm.LegendView.prototype.getContent = function() {
+  return this.getContentForParentType(null);
+};
+
+/**
+ * Returns the element for the legend, styled to be inserted in the
+ * parent folder's legend (if any).  getContent() calls through to this,
+ * passing null as the parentFolderType.
+ * @param {?cm.LayerModel.FolderType} parentFolderType The type of the parent
+ *     folder into which this legend is being rendered.
+ * @return {Element} A DOM element that contains the rendered legend.
+ * @protected
+ */
+cm.LegendView.prototype.getContentForParentType = function(parentFolderType) {
   if (!this.hasRendered_) {
     this.setupListeners();
-    this.render();
     this.hasRendered_ = true;
   }
+  this.render(parentFolderType);
   return this.parentElem_;
 };
 
@@ -85,26 +120,69 @@ cm.LegendView.prototype.setupListeners = function() {
   cm.events.onChange(
       this.layerModel_, ['min_zoom', 'max_zoom'], this.updateHidden_,
       this);
+
+  cm.events.onChange(
+      this.layerModel_, 'title', this.handleTitleChanged_, this);
+  this.handleTitleChanged_();
+
   cm.events.onChange(
       this.layerModel_, 'legend', this.handleLegendChanged_, this);
   this.handleLegendChanged_();
+
   cm.events.listen(
       goog.global, cm.events.ZOOM_CHANGED, this.handleZoomLevelChanged_, this);
+
+  cm.events.onChange(
+      this.appState_, 'enabled_layer_ids', this.updateHidden_, this);
+  this.updateHidden_();
 };
 
 /**
  * Renders content into this.parentElem_.
+ * @param {?cm.LayerModel.FolderType} parentFolderType For sublayers whose
+ *   legend is being rendered as part of a larger context, the folder type of
+ *   the parent layer.  Right now, we treat locked folders specially and
+ *   sublayers remove any adornments (title, box outlines, etc), but we expect
+ *   to be experimenting with different folder behaviors and renderings.
  * @protected
  */
-cm.LegendView.prototype.render = function() {};
+cm.LegendView.prototype.render = function(parentFolderType) {};
 
 /**
- * Returns whether the legend should be hidden.
+ * Whether this legend's layer is currently enabled.
+ * @return {boolean}
+ */
+cm.LegendView.prototype.isEnabled = function() {
+  return this.appState_.getLayerEnabled(
+      /** @type string */(this.layerModel_.get('id')));
+};
+
+/**
+ * Whether the map is currently zoomed within the bounds specified
+ * for this legend's layer.
+ * @return {boolean}
+ */
+cm.LegendView.prototype.isInZoomRange = function() {
+  return this.layerModel_.insideZoomBounds(this.currentZoomLevel_);
+};
+
+/**
+ * An abstract method that returns whether the legend should be hidden.
+ * Subclasses can use isEnabled(), isInZoomRange() and isEmpty() to implement
+ * the necessary logic.
  * @return {boolean}
  * @protected
  */
-cm.LegendView.prototype.shouldHide = function() {
-  return !this.layerModel_.insideZoomBounds(this.currentZoomLevel_);
+cm.LegendView.prototype.shouldHide = function() { return false; };
+
+/**
+ * Respond to changes in the layer's title.
+ * @private
+ */
+cm.LegendView.prototype.handleTitleChanged_ = function() {
+  cm.ui.clear(this.titleElem_);
+  cm.ui.append(
+      this.titleElem_, /** @type string */(this.layerModel_.get('title')));
 };
 
 /**
@@ -133,8 +211,10 @@ cm.LegendView.prototype.handleZoomLevelChanged_ = function(e) {
  * @private
  */
 cm.LegendView.prototype.handleLegendChanged_ = function() {
-  this.isEmpty = /** @type cm.Html */(
-      this.layerModel_.get('legend')).isEmpty();
+  cm.ui.clear(this.legendElem_);
+  var legendHtml = /** @type cm.Html */(this.layerModel_.get('legend'));
+  legendHtml.pasteInto(this.legendElem_);
+  this.isEmpty = legendHtml.isEmpty();
 };
 
 /**
@@ -158,18 +238,13 @@ cm.LegendView.getLegendViewForLayer =
     function(layerModel, metadataModel, appState) {
   var legendView = cm.LegendView.legendViews_[layerModel.get('id')];
   if (!legendView) {
-    // TODO(rew): Restore the if clause below when we have folder legend views.
-    // Right now we only have the simple legend view, so we always use it.
-    // if (layerModel.get('type') !== cm.LayerModel.Type.FOLDER) {
-    //   legendView = new cm.SimpleLegendView_(layerModel, metadataModel);
-    // } else if (layerModel.isSingleSelect()) {
-    //   legendView = new cm.SingleSelectLegendView_(
-    //       layerModel, metadataModel, appState);
-    // } else {
-    //   legendView = new cm.FolderLegendView_(
-    //       layerModel, metadataModel, appState);
-    // }
-    legendView = new cm.SimpleLegendView_(layerModel, metadataModel);
+    if (layerModel.get('type') === cm.LayerModel.Type.FOLDER) {
+      legendView = new cm.FolderLegendView_(
+          layerModel, metadataModel, appState);
+    } else {
+      legendView = new cm.SimpleLegendView_(
+          layerModel, metadataModel, appState);
+    }
     cm.LegendView.legendViews_[layerModel.get('id')] = legendView;
   }
   return legendView;
@@ -178,20 +253,18 @@ cm.LegendView.getLegendViewForLayer =
 /**
  * Renders the legend for a layer that is not a folder.
  * @param {cm.LayerModel} layerModel The model for the layer whose legend
- *   will be rendered
+ *   will be rendered.
  * @param {cm.MetadataModel} metadataModel The global metadata model object
  *   for tracking changes to the layer's data.
+ * @param {cm.AppState} appState The global appState object for tracking
+ *   when the layer is turned on and off.
  * @extends cm.LegendView
  * @constructor
  * @private
  */
-cm.SimpleLegendView_ = function(layerModel, metadataModel) {
-  cm.LegendView.call(this, layerModel);
+cm.SimpleLegendView_ = function(layerModel, metadataModel, appState) {
+  cm.LegendView.call(this, layerModel, appState);
   this.metadataModel_ = metadataModel;
-
-  this.titleElem_ = cm.ui.create('span', {'class': cm.css.LAYER_TITLE});
-  this.legendElem_ = cm.ui.create('div', {'class': cm.css.LAYER_LEGEND});
-  cm.ui.append(this.parentElem_, this.titleElem_, this.legendElem_);
 
   /**
    * Listener for updates on our layer's metadata
@@ -207,38 +280,25 @@ goog.inherits(cm.SimpleLegendView_, cm.LegendView);
 cm.SimpleLegendView_.prototype.setupListeners = function() {
   cm.LegendView.prototype.setupListeners.call(this);
   cm.events.onChange(
-      this.layerModel_, 'title', this.updateTitle_, this);
-  cm.events.onChange(this.layerModel_, 'legend', this.updateLegend_, this);
-  cm.events.onChange(
       this.layerModel_, ['type', 'url'], this.updateMetadataListener_, this);
   this.updateMetadataListener_();
 };
 
 /** @override */
-cm.SimpleLegendView_.prototype.render = function() {
-  this.updateTitle_();
-  this.updateLegend_();
-  this.updateHidden_();
-};
-
-/**
- * Respond to changes in the layer's title.
- * @private
- */
-cm.SimpleLegendView_.prototype.updateTitle_ = function() {
-  cm.ui.clear(this.titleElem_);
-  cm.ui.append(
-      this.titleElem_, /** @type string */(this.layerModel_.get('title')));
-};
-
-/**
- * Respond to changes in the layer's legend.
- * @private
- */
-cm.SimpleLegendView_.prototype.updateLegend_ = function() {
-  cm.ui.clear(this.legendElem_);
-  /** @type cm.Html */(this.layerModel_.get('legend')).pasteInto(
-      this.legendElem_);
+cm.SimpleLegendView_.prototype.render = function(parentFolderType) {
+  // Normally we render legends in a box, with the title of the matching
+  // layer displayed.  However, inside a locked folder, sublayers leave out
+  // their titles and their box, since the user can't see the sublayers
+  // themselves in the layer tab.
+  cm.ui.clear(this.parentElem_);
+  goog.dom.classes.enable(
+      this.parentElem_, cm.css.TABBED_LEGEND_BOX,
+      parentFolderType !== cm.LayerModel.FolderType.LOCKED);
+  if (parentFolderType === cm.LayerModel.FolderType.LOCKED) {
+    cm.ui.append(this.parentElem_, this.legendElem_);
+  } else {
+    cm.ui.append(this.parentElem_, this.titleElem_, this.legendElem_);
+  }
 };
 
 /**
@@ -271,6 +331,148 @@ cm.SimpleLegendView_.prototype.shouldHide = function() {
   // TODO(rew): This model may change when we have folder support; make sure
   // this code still works and the comment is accurate.
 
-  return (cm.LegendView.prototype.shouldHide.call(this) ||
+  return (!this.isEnabled() || !this.isInZoomRange() ||
       this.isEmpty || this.metadataModel_.isEmpty(this.layerModel_));
+};
+
+
+/**
+ * LegendView subclass for rendering unlocked or single-select folders
+ * @param {cm.LayerModel} layerModel The model for the layer whose legend
+ *   will be rendered
+ * @param {cm.MetadataModel} metadataModel The global metadata model object
+ *   for tracking changes to the layer's data.
+ * @param {cm.AppState} appState The global appState object.
+ * @extends cm.LegendView
+ * @constructor
+ * @private
+ */
+cm.FolderLegendView_ = function(layerModel, metadataModel, appState) {
+  cm.LegendView.call(this, layerModel, appState);
+
+  /**
+   * Sadly, we must store this to be able to initialize our sub-legends;
+   * otherwise it is unused.
+   * @type cm.MetadataModel
+   * @private
+   */
+  this.metadataModel_ = metadataModel;
+
+  /**
+   * The list of cm.LegendViews for the sublayers of our folder.
+   * The LegendViews are constructed immediately, but are not rendered
+   * until the FolderLegendView is asked to render.
+   * @type Array.<cm.LegendView>
+   * @private
+   */
+  this.sublayerLegendViews_ = [];
+  goog.array.forEach(layerModel.getSublayerIds(), goog.bind(function(id) {
+    this.sublayerLegendViews_.push(cm.LegendView.getLegendViewForLayer(
+        layerModel.getSublayer(id), metadataModel, appState));
+  }, this));
+};
+goog.inherits(cm.FolderLegendView_, cm.LegendView);
+
+/** @override */
+cm.FolderLegendView_.prototype.setupListeners = function() {
+  cm.LegendView.prototype.setupListeners.call(this);
+
+  // These listeners only work because the only time our layer's sublayers
+  // or folder type can change is if our parent is unlocked!  If the UI for
+  // that changes, we need to somehow recover whether one of our ancestors is
+  // locked in order to render properly.
+  var sublayers = /** @type google.maps.MVCArray */(
+      this.layerModel_.get('sublayers'));
+  cm.events.listen(sublayers, 'insert_at', function(i) {
+    var newLegendView = cm.LegendView.getLegendViewForLayer(
+        /** @type cm.LayerModel */(sublayers.getAt(i)), this.metadataModel_,
+        this.appState_);
+    goog.array.insertAt(this.sublayerLegendViews_, newLegendView, i);
+    this.render(null);
+  });
+  cm.events.listen(sublayers, 'remove_at', function(i, layer) {
+    goog.array.removeAt(this.sublayerLegendViews_, i);
+    this.render(null);
+  });
+  cm.events.onChange(this.layerModel_, ['folder_type'], function() {
+    this.render(null);
+  }, this);
+};
+
+/**
+ * Convenience function returning the type of the folder for this legend's
+ * layer.
+ * @return {?cm.LayerModel.FolderType}
+ * @private
+ */
+cm.FolderLegendView_.prototype.folderType_ = function() {
+  return /** @type cm.LayerModel.FolderType */(this.layerModel_.get(
+      'folder_type')) || null;
+};
+
+/** @override */
+cm.FolderLegendView_.prototype.render = function(parentFolderType) {
+  var parentIsLocked = (parentFolderType === cm.LayerModel.FolderType.LOCKED);
+
+  // Clear the existing UI
+  cm.ui.clear(this.parentElem_);
+  goog.dom.classes.enable(this.parentElem_, cm.css.TABBED_LEGEND_BOX, false);
+
+  // Render our legend
+  this.renderOwnLegend_(parentFolderType);
+
+  // Render the sublayers
+  goog.array.forEach(this.sublayerLegendViews_, goog.bind(function(sublayer) {
+    // If any ancestor is locked, we use the locked style for all descendants
+    cm.ui.append(this.parentElem_, sublayer.getContentForParentType(
+        (parentFolderType === cm.LayerModel.FolderType.LOCKED) ?
+            parentFolderType : this.folderType_()));
+  }, this));
+  this.updateHidden_();
+};
+
+/**
+ * Renders into this.parentElem_ any legend associated with the folder layer
+ * itself.
+ * @param {?cm.LayerModel.FolderType} parentFolderType the type of folder
+ *    (if any) into which this folder is being rendered.
+ * @private
+ */
+cm.FolderLegendView_.prototype.renderOwnLegend_ = function(parentFolderType) {
+  var legendBox;
+  if (this.folderType_() === cm.LayerModel.FolderType.LOCKED) {
+    // Locked folders can render directly in to parentElem_ because the
+    // legends of the sublayers should appear inside the box drawn for the
+    // folder itself.
+    legendBox = this.parentElem_;
+  } else {
+    // Unlocked folders must render their legend in to a separate box,
+    // then append the box to parentElem_.  This allows the sublayers to
+    // render into their own boxes, which will appear as siblings to the
+    // folder's legend.
+    legendBox = cm.ui.create('div');
+    cm.ui.append(this.parentElem_, legendBox);
+  }
+
+  // When rendering into a locked folder, omit the title and box (the
+  // locked folder already drew it).
+  if (parentFolderType !== cm.LayerModel.FolderType.LOCKED) {
+    goog.dom.classes.enable(legendBox, cm.css.TABBED_LEGEND_BOX, true);
+    cm.ui.append(legendBox, this.titleElem_);
+  }
+  cm.ui.append(legendBox, this.legendElem_);
+};
+
+
+/** @override */
+cm.FolderLegendView_.prototype.shouldHide = function() {
+  if (!this.isEnabled()) return true;
+  if (!this.isInZoomRange()) return true;
+  if (!this.isEmpty) return false;
+
+  var sublayersHaveContent = false;
+  goog.array.forEach(this.sublayerLegendViews_, function(sublayer) {
+    if (!sublayer.shouldHide()) sublayersHaveContent = true;
+  });
+  return !sublayersHaveContent;
 };

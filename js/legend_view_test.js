@@ -52,34 +52,26 @@ function SimpleLegendViewTest() {
 SimpleLegendViewTest.prototype = new cm.TestBase();
 registerTestSuite(SimpleLegendViewTest);
 
-SimpleLegendViewTest.prototype.duplicateJson_ = function(
-    json, opt_newProperties) {
-  var newJson = goog.json.parse(goog.json.serialize(json));
-  if (opt_newProperties) {
-    for (key in opt_newProperties) {
-      newJson[key] = opt_newProperties[key];
-    }
-  }
-  return newJson;
-};
-
 SimpleLegendViewTest.prototype.createLegendView_ = function(json, uniqueId) {
   // Need to modify the title to guarantee we get a fresh legend view; otherwise
   // getLegendViewForLayer() will not build a new legend view.
-  this.layerModel_ = cm.LayerModel.newFromMapRoot(
-      this.duplicateJson_(json, {id: json.id + '-' + uniqueId}));
+  var layerJson = this.duplicateJson(json, {id: json.id + '-' + uniqueId});
+  this.mapModel_ = cm.MapModel.newFromMapRoot({layers: [layerJson]});
+  this.appState_ = new cm.AppState();
+  this.appState_.setFromMapModel(this.mapModel_);
+  this.layerModel_ = this.mapModel_.get('layers').getAt(0);
   return cm.LegendView.getLegendViewForLayer(
-      this.layerModel_, this.metadataModel_, undefined);
+      this.layerModel_, this.metadataModel_, this.appState_);
 };
 
 /**
  * Verifies that the rendered DOM matches the model in this.layerModel_.
- * @param {Element} legendBox the element that contains the legend for the
- *   layer; should carry the cm.css.LAYER_LEGEND_BOX class
+ * @param {Element} legendBox The element that contains the legend for the
+ *   layer; should carry the cm.css.TABBED_LEGEND_BOX class
  * @private
  */
 SimpleLegendViewTest.prototype.validateRender_ = function(legendBox) {
-  expectThat(legendBox, withClass(cm.css.LAYER_LEGEND_BOX));
+  expectThat(legendBox, withClass(cm.css.TABBED_LEGEND_BOX));
   expectThat(legendBox, not(withClass(cm.css.HIDDEN)));
   expectDescendantOf(legendBox, withText(this.layerModel_.get('title')));
   expectDescendantOf(
@@ -155,7 +147,7 @@ SimpleLegendViewTest.prototype.testUpdatesOnLegendChange = function() {
 };
 
 SimpleLegendViewTest.prototype.testUpdatesOnMetadataChange = function() {
-  var newJson = this.duplicateJson_(
+  var newJson = this.duplicateJson(
       SIMPLE_LAYER_JSON,
       {source: {kml: {url: 'http://testUpdatesOnMetadataChange.google.com'}}});
   var legendView = this.createLegendView_(
@@ -168,7 +160,7 @@ SimpleLegendViewTest.prototype.testUpdatesOnMetadataChange = function() {
 };
 
 SimpleLegendViewTest.prototype.testUpdatesMetadataListener = function() {
-  var newJson = this.duplicateJson_(
+  var newJson = this.duplicateJson(
       SIMPLE_LAYER_JSON, {source: {kml: {url: 'http://origurl.google.com'}}});
   var legendView = this.createLegendView_(
       newJson, 'testUpdatesMetadataListener');
@@ -183,3 +175,23 @@ SimpleLegendViewTest.prototype.testUpdatesMetadataListener = function() {
                           {has_no_features: true});
   expectThat(content, withClass(cm.css.HIDDEN));
 };
+
+// TODO(rew): Ensure test case for editing a legend and verifying that
+// the edits are visible in the legend
+
+var FOLDER_LAYER_JSON = {
+  id: 'folderLayer',
+  title: 'Folder Layer',
+  legend: 'Folder Legend',
+  visibility: 'DEFAULT_ON',
+  type: 'FOLDER',
+  subtype: 'UNLOCKED'
+};
+function FolderLegendViewTest() {
+  cm.TestBase.call(this);
+  this.metadataModel_ = new cm.MetadataModel();
+}
+FolderLegendViewTest.prototype = new cm.TestBase();
+registerTestSuite(FolderLegendViewTest);
+
+// TODO(rew): Add some tests for folder legends!!!!

@@ -112,6 +112,23 @@ specific language governing permissions and limitations under the License.
   left: 5px;
 }
 
+.cm-tabbed-legend-box {
+  border: 1px solid #e0e0e0;
+  margin: 3px 3px 2px 3px;
+  width: 95%;
+}
+
+.cm-tabbed-legend-content {
+  font-size: 11px;
+  color: #222;
+  margin: 3px 3px 2px 3px;
+}
+
+.cm-tabbed-legend-content > fieldset > legend {
+  margin-left: 0;
+  padding: 0;
+}
+
 /*
  * TODO(romano,rew): Basic rules copied from 
  * https://code.google.com/p/closure-library/source/browse/closure/goog/css/tab.css

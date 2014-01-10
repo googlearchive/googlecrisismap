@@ -40,51 +40,69 @@ var NO_LEGEND_LAYER_JSON = {
 
 function LegendTabItemTest() {
   cm.TestBase.call(this);
-  this.mapModel_ = cm.MapModel.newFromMapRoot(
-      {layers: [BLUE_LAYER_JSON, RED_LAYER_JSON, NO_LEGEND_LAYER_JSON]});
   this.appState_ = new cm.AppState();
-  this.appState_.setFromMapModel(this.mapModel_);
 }
 LegendTabItemTest.prototype = new cm.TestBase();
 registerTestSuite(LegendTabItemTest);
 
-LegendTabItemTest.prototype.createLegendTabItem_ = function() {
+LegendTabItemTest.prototype.createLegendTabItem_ = function(
+    uniqueId, opt_layerJsons) {
+  if (opt_layerJsons) {
+    this.layerJsons_ = opt_layerJsons;
+  } else {
+    var blueLayer = this.duplicateJson(
+        BLUE_LAYER_JSON, {id: BLUE_LAYER_JSON.id + '_' + uniqueId});
+    var redLayer = this.duplicateJson(
+        RED_LAYER_JSON, {id: RED_LAYER_JSON.id + '_' + uniqueId});
+    var noLegendLayer = this.duplicateJson(
+        NO_LEGEND_LAYER_JSON, {id: NO_LEGEND_LAYER_JSON.id + '_' + uniqueId});
+    this.layerJsons_ = [blueLayer, redLayer, noLegendLayer];
+  }
+  this.mapModel_ = cm.MapModel.newFromMapRoot({layers: this.layerJsons_});
+  this.appState_.setFromMapModel(this.mapModel_);
   return new cm.LegendTabItem(
       this.mapModel_, this.appState_, {}, new cm.MetadataModel());
 };
 
+LegendTabItemTest.prototype.getLegendElem_ = function(content, layerJson) {
+  var titleElem = findDescendantOf(
+      content, withText(hasSubstr(layerJson.title)));
+  if (!titleElem) return null;
+  return findAncestorOf(titleElem, withClass(cm.css.TABBED_LEGEND_BOX));
+};
+
 LegendTabItemTest.prototype.assertLegendPresent_ = function(
     content, layerJson) {
-  expectDescendantOf(content, withText(hasSubstr(layerJson.title)));
+  var legendElem = this.getLegendElem_(content, layerJson);
+  expectDescendantOf(legendElem, withText(hasSubstr(layerJson.title)));
   if (layerJson.legend) {
-    expectDescendantOf(content, withInnerHtml(sanitize(layerJson.legend)));
+    expectDescendantOf(legendElem, withInnerHtml(sanitize(layerJson.legend)));
   }
+  expectThat(legendElem, isShown());
 };
 
 LegendTabItemTest.prototype.assertLegendAbsent_ = function(content, layerJson) {
-  expectNoDescendantOf(content, withText(hasSubstr(layerJson.title)));
+  var legendElem = this.getLegendElem_(content, layerJson);
+  expectThat(legendElem, anyOf([isNull, not(isShown())]));
 };
 
 LegendTabItemTest.prototype.testCreation = function() {
-  var legendTabItem = this.createLegendTabItem_();
+  var legendTabItem = this.createLegendTabItem_('testCreation');
   var content = legendTabItem.getContent();
-  this.assertLegendPresent_(content, BLUE_LAYER_JSON);
-  this.assertLegendPresent_(content, RED_LAYER_JSON);
-  // The layer is actually present, but hidden
-  // TODO(rew): Add test that checks for the cm.css.HIDDEN class
-  // which appears on one of the parents.
-  this.assertLegendPresent_(content, NO_LEGEND_LAYER_JSON);
+  this.assertLegendPresent_(content, this.layerJsons_[0]);
+  this.assertLegendPresent_(content, this.layerJsons_[1]);
+  this.assertLegendAbsent_(content, this.layerJsons_[2]);
 };
 
 LegendTabItemTest.prototype.testRemoveLayer = function() {
-  var legendTabItem = this.createLegendTabItem_();
+  var legendTabItem = this.createLegendTabItem_('testRemoveLayer');
   var content = legendTabItem.getContent();
   this.mapModel_.get('layers').removeAt(0);
-  this.assertLegendAbsent_(content, BLUE_LAYER_JSON);
+  this.assertLegendAbsent_(content, this.layerJsons_[0]);
 };
 
 LegendTabItemTest.prototype.testAddLayer = function() {
-  var legendTabItem = this.createLegendTabItem_();
+  var legendTabItem = this.createLegendTabItem_('testAddLayer');
   var content = legendTabItem.getContent();
   var newLayerJson = {
     id: 'testAddLayer',
@@ -101,16 +119,23 @@ LegendTabItemTest.prototype.testAddLayer = function() {
 };
 
 LegendTabItemTest.prototype.testEnableLayer = function() {
-  this.appState_.setLayerEnabled(RED_LAYER_JSON.id, false);
-  var legendTabItem = this.createLegendTabItem_();
+  // We need to pre-disable one of the layers, so we must construct
+  // this.layerJsons_ ourselves
+  var blueLayer = this.duplicateJson(
+        BLUE_LAYER_JSON, {id: BLUE_LAYER_JSON.id + '_testEnableLayer'});
+  var redLayer = this.duplicateJson(
+      RED_LAYER_JSON, {id: RED_LAYER_JSON.id + '_testEnableLayer',
+                       visibility: 'DEFAULT_OFF'});
+  var legendTabItem = this.createLegendTabItem_(
+      'testEnableLayer', [blueLayer, redLayer]);
   var content = legendTabItem.getContent();
-  this.assertLegendAbsent_(content, RED_LAYER_JSON);
-  this.appState_.setLayerEnabled(RED_LAYER_JSON.id, true);
-  this.assertLegendPresent_(content, RED_LAYER_JSON);
+  this.assertLegendAbsent_(content, this.layerJsons_[1]);
+  this.appState_.setLayerEnabled(redLayer.id, true);
+  this.assertLegendPresent_(content, this.layerJsons_[1]);
 };
 
 LegendTabItemTest.prototype.testDisableLayer = function() {
-  var legendTabItem = this.createLegendTabItem_();
-  this.appState_.setLayerEnabled(BLUE_LAYER_JSON.id, false);
-  this.assertLegendAbsent_(legendTabItem.getContent(), BLUE_LAYER_JSON);
+  var legendTabItem = this.createLegendTabItem_('testDisableLayer');
+  this.appState_.setLayerEnabled(this.layerJsons_[0].id, false);
+  this.assertLegendAbsent_(legendTabItem.getContent(), this.layerJsons_[0]);
 };

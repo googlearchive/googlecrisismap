@@ -57,11 +57,12 @@ goog.inherits(cm.LegendTabItem, cm.MapTabItem);
 cm.LegendTabItem.prototype.loadLegends_ = function() {
   var layers = /** @type google.maps.MVCArray */(this.mapModel.get('layers'));
 
-  cm.events.onChange(this.appState, 'enabled_layer_ids', this.update_, this);
   cm.events.listen(layers, 'insert_at', this.update_, this);
   cm.events.listen(
       layers, 'remove_at', function(i, layer) { this.update_(); }, this);
-
+  // Triggered when the Arranger rearranges the layers
+  cm.events.listen(
+      goog.global, cm.events.MODEL_CHANGED, this.update_, this);
   this.update_();
 };
 
@@ -91,9 +92,6 @@ cm.LegendTabItem.prototype.update_ = function() {
  * @private
  */
 cm.LegendTabItem.prototype.appendLegend_ = function(layer) {
-  if (!this.appState.getLayerEnabled(/** @type string */(layer.get('id')))) {
-    return;
-  }
   var legendView = cm.LegendView.getLegendViewForLayer(
       layer, this.metadataModel_, this.appState);
   cm.ui.append(this.legendContainer_, legendView.getContent());

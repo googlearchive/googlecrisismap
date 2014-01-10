@@ -594,6 +594,24 @@ cm.TestBase.expectFalse = function(actual) {
 };
 
 /**
+ * Duplicates the given JSON dictionary, updating it according to
+ * opt_newProperties.
+ * @param {Object} json A JSON dictionary to duplicate
+ * @param {?Object} opt_newProperties An optional dictionary of properties
+ *     to overwrite with new values
+ * @return {Object} the duplicated dictionary
+ */
+cm.TestBase.prototype.duplicateJson = function(json, opt_newProperties) {
+  var newJson = goog.json.parse(goog.json.serialize(json));
+  if (opt_newProperties) {
+    for (key in opt_newProperties) {
+      newJson[key] = opt_newProperties[key];
+    }
+  }
+  return newJson;
+};
+
+/**
  * Asserts that a particular event be emitted some number of times before
  *  the end of the test.
  * @param {Object} source The expected source of the event.
@@ -1119,13 +1137,32 @@ function expectNoDescendantOf(element, var_args) {
   expectThat(element, not(hasDescendant.apply(null, args)));
 }
 
+function findAncestorOf(element, matcher) {
+  while (element.parentNode) {
+    if (matcher.predicate(element.parentNode) === true) {
+      return element.parentNode;
+    }
+    element = element.parentNode;
+  }
+}
+
+function expectAncestorOf(element, var_args) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  foundElement = null;
+  expectThat(element, hasAncestor.apply(null, args));
+  return foundElement;
+}
+
 /**
- * Matcher for whether or not an element is shown, based on its 'display' style.
+ * Matcher for whether or not an element is shown, based on either its 'display'
+ * style and the absence of the cm.css.HIDDEN class.
  * @return {gjstest.Matcher} The visibility matcher.
  */
 function isShown() {
-  return new gjstest.Matcher('is shown', 'is not shown',
-                             not(withStyle('display', 'none')).predicate);
+  return new gjstest.Matcher(
+      'is shown', 'is not shown',
+      allOf([not(withStyle('display', 'none')),
+             not(withClass(cm.css.HIDDEN))]).predicate);
 }
 
 /**
