@@ -41,9 +41,9 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tab-bar-container {
-  background: #484848;
-  /* @alternate */ background-image:-webkit-linear-gradient(top, #484848, #212121);
-  /* @alternate */ background-image:linear-gradient(top, #484848, #212121);
+  background: #444;
+  /* @alternate */ background-image:-webkit-linear-gradient(top, #555, #333);
+  /* @alternate */ background-image:linear-gradient(top, #555, #333);
   color: #ddd;
   position: relative;
   z-index: 1;
@@ -69,7 +69,7 @@ specific language governing permissions and limitations under the License.
 .cm-tab-bar-buttons {
   display: inline-block;
   float: right;
-  height: 36px;
+  height: 35px;
 }
 
 .cm-tab-panel-below .cm-tab-bar-buttons, .cm-touch .cm-tab-bar-buttons {
@@ -120,32 +120,28 @@ specific language governing permissions and limitations under the License.
   /* @alternate */ background:url('chevron_down.png') center center no-repeat, linear-gradient(top, #383838, #121212);
 }
 
-.cm-chevron-up {
-  background:url('chevron_up.png') center center no-repeat;
-  width: 42px;
-  height: 42px;
+.cm-chevron-up, .cm-chevron-down {
+  width: 35px;
+  height: 35px;
   padding: 0px;
   margin: 0px;
   cursor: pointer;
   display: inline-block;
   -moz-user-select: none;
   -webkit-user-select: none;
+}
+
+.cm-chevron-up {
+  background:url('chevron_up.png') center center no-repeat;
 }
 
 .cm-chevron-down {
   background: url('chevron_down.png') center center no-repeat;
-  width: 42px;
-  height: 36px;
-  padding: 0px;
-  margin: 0px;
-  cursor: pointer;
-  display: inline-block;
-  -moz-user-select: none;
-  -webkit-user-select: none;
 }
 
 .cm-tab-panel-below .cm-chevron-up, .cm-tab-panel-below .cm-chevron-down,
 .cm-touch .cm-chevron-up, .cm-touch .cm-chevron-down {
+  width: 42px;
   height: 42px;
 }
 
@@ -231,7 +227,7 @@ specific language governing permissions and limitations under the License.
 
 .goog-tab {
   cursor: pointer;
-  padding: 12px 6px;
+  padding: 12px 9px 11px;
   font-size: 12px;
   line-height: 1.0;
   /* Transparent borders on every tab: makes room for border when selected */
@@ -247,9 +243,13 @@ specific language governing permissions and limitations under the License.
 .goog-tab-bar {
   outline: none;
   display: block;
-  margin-right: 42px;  /* Makes room for chevron button */
+  margin-right: 35px;  /* makes room for chevron button */
   border-right: 1px solid #606060;
   white-space: normal;
+}
+
+.cm-tab-panel-below .goog-tab-bar, .cm-touch .goog-tab-bar {
+  margin-right: 42px;
 }
 
 .goog-tab-bar-top .goog-tab {
