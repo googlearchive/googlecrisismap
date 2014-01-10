@@ -41,9 +41,10 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tab-bar-container {
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-  background: #f0f0f0;
+  background: #484848;
+  /* @alternate */ background-image:-webkit-linear-gradient(top, #484848, #212121);
+  /* @alternate */ background-image:linear-gradient(top, #484848, #212121);
+  color: #ddd;
   position: relative;
   z-index: 1;
   white-space: nowrap;
@@ -60,6 +61,7 @@ specific language governing permissions and limitations under the License.
 .cm-tab-bar-buttons {
   display: inline-block;
   float: right;
+  height: 41px;
 }
 
 .cm-tab-content {
@@ -70,14 +72,17 @@ specific language governing permissions and limitations under the License.
   overflow-y: auto;
 }
 
+.cm-chevron-up:hover, .cm-chevron-down:hover {
+  background-color: #444;
+}
+
 .cm-chevron-up {
   background:url('chevron_up.png') center no-repeat;
-  width:12px;
-  height:11px;
-  padding: 7px 12px 6px 11px;
-  margin: 5px 0 0 6px;
+  width:13px;
+  height:12px;
+  padding: 14px 14px 15px 14px;
   cursor: pointer;
-  border-left: 1px solid #ccc;
+  border-left: 1px solid #696969;
   display: inline-block;
   -moz-user-select: none;
   -webkit-user-select: none;
@@ -85,12 +90,11 @@ specific language governing permissions and limitations under the License.
 
 .cm-chevron-down {
   background:url('chevron_down.png') center no-repeat;
-  width:12px;
-  height:11px;
-  padding: 7px 12px 6px 11px;
-  margin: 5px 0 0 6px;
+  width:13px;
+  height:12px;
+  padding: 14px 14px 15px 14px;
   cursor: pointer;
-  border-left: 1px solid #ccc;
+  border-left: 1px solid #696969;
   display: inline-block;
   -moz-user-select: none;
   -webkit-user-select: none;
@@ -171,7 +175,7 @@ specific language governing permissions and limitations under the License.
  */
 
 .goog-tab {
-  padding: 9px 10px 6px;
+  padding: 11px 14px;
   cursor: pointer;
   font-size: 14px;
 }
@@ -179,13 +183,12 @@ specific language governing permissions and limitations under the License.
 .goog-tab-bar {
   display: inline-block;
   outline: none;
-  margin-right: 36px;  /* Makes room for chevron button */
+  margin-right: 42px;  /* Makes room for chevron button */
   white-space: normal;
 }
 
 .goog-tab-bar-top .goog-tab {
   display: inline-block;
-  float: left;
   outline: none;
 }
 
@@ -196,7 +199,6 @@ specific language governing permissions and limitations under the License.
 .goog-tab-bar-bottom .goog-tab {
   margin: 0 16px 1px 0;
   border-top: 0;
-  float: left;
   outline: none;
 }
 
@@ -212,7 +214,7 @@ specific language governing permissions and limitations under the License.
 
 /* State: Hover */
 .goog-tab-hover {
-  background: #eee;
+  background: #444;
 }
 
 /* State: Disabled */
@@ -223,7 +225,12 @@ specific language governing permissions and limitations under the License.
 /* State: Selected */
 .goog-tab-selected {
   text-decoration: none;
-  color: #dd4b39;
+  color: #ddd;
+  border-left: 1px solid #696969;
+  border-right: 1px solid #696969;
+  background: #383838;
+  /* @alternate */ background-image:-webkit-linear-gradient(top, #383838, #121212);
+  /* @alternate */ background-image:linear-gradient(top, #383838, #121212);
 }
 
 .goog-tab-bar-top {
