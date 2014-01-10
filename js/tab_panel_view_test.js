@@ -17,12 +17,16 @@ function TabPanelViewTest() {
   // TODO(rew): This should be shared setup somewhere; need to look at how
   // widespread this kind of initialization is, and extract.
   this.mapDiv_ = new FakeElement('div');
-  this.mapModel_ = cm.MapModel.newFromMapRoot({});
-  this.mapModel_.set('title', 'TabPanelViewTest map');
-  this.mapModel_.set(
-      'description',
-      cm.Html.fromSanitizedHtml('TabPanelViewTest - description for MapModel'));
-  this.metadataModel_ = new google.maps.MVCObject();
+  this.mapModel_ = cm.MapModel.newFromMapRoot({
+    id: 'map', title: 'TabPanelViewTest map', description:
+    'TabPanelViewTest - description for MapModel',
+    layers: [
+      {id: 'layerA', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON',
+       legend: 'A legend'},
+      {id: 'layerB', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+      {id: 'layerC', type: cm.LayerModel.Type.KML}
+    ]});
+  this.metadataModel_ = new cm.MetadataModel(this.mapModel_);
   this.appState_ = new cm.AppState();
   this.below_ = false;
   this.expand_ = true;
@@ -52,24 +56,35 @@ TabPanelViewTest.prototype.createTabPanelView_ = function() {
  */
 TabPanelViewTest.prototype.expectTab_ = function(tabName, index,
                                                  isSelected) {
-  expectThat(this.tabElements_[index], withText(hasSubstr(tabName)),
-             isSelected ? withClass('goog-tab-selected') :
-                 not(withClass('goog-tab-selected')));
+  expectThat(this.tabElements_[index], withText(hasSubstr(tabName)));
+  expectThat(this.tabElements_[index], isSelected ?
+      withClass('goog-tab-selected') : not(withClass('goog-tab-selected')));
   return findDescendantOf(this.parent_, withClass('cm-tab-content'));
 };
 
 TabPanelViewTest.prototype.testCreation = function() {
+  // Not interested in testing the sanitizer here, so just install
+  // a transparent one.
+  this.setForTest_('cm.Html.sanitize_', function(string) { return string; });
+
   this.createTabPanelView_();
   expectDescendantOf(this.parent_, withClass('goog-tab-bar'));
 
-  // Test that the 'About' tab is present and selected, and verify its content.
+  // Test that all tabs are present and the 'Legend' tab selected.
+  this.expectTab_('About', 0, false);
+  this.expectTab_('Layers', 1, false);
+  var legendContent = this.expectTab_('Legend', 2, true);
+  expectDescendantOf(legendContent, withText('A legend'));
+
+  // Select the 'About' tab and verify its content.
+  var aboutTab = this.tabView_.getTabItemByTitle('About');
+  this.tabView_.selectTabItem(aboutTab);
   var aboutContent = this.expectTab_('About', 0, true);
   expectDescendantOf(aboutContent,
                      withText(hasSubstr(this.mapModel_.get('title'))));
   expectDescendantOf(aboutContent,
                      withText(hasSubstr(
                          this.mapModel_.get('description').toText())));
-  this.expectTab_('Layers', 1, false);
 
   // Select the 'Layers' tab and verify its content.
   var layersTab = this.tabView_.getTabItemByTitle('Layers');

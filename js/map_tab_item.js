@@ -84,6 +84,22 @@ cm.MapTabItem = function(mapModel, appState, config) {
   this.editingEnabled = this.config['enable_editing'];
 
   /**
+   * Flag that suppresses render_ from being called more than once by
+   * different event handlers.
+   * @type {boolean}
+   * @private_
+   */
+  this.renderBegun_ = false;
+
+  /**
+   * Flag that suppresses promptRelayout from being called before
+   * rendering is complete.
+   * @type {boolean}
+   * @private_
+   */
+  this.renderEnded_ = false;
+
+  /**
    * @type Element
    * @private
    */
@@ -97,9 +113,8 @@ cm.MapTabItem = function(mapModel, appState, config) {
  * @private
  */
 cm.MapTabItem.prototype.render_ = function() {
-  if (this.rendered_) return;
-  this.rendered_ = true;
-
+  if (this.renderBegun_) return;
+  this.renderBegun_ = true;
   if (this.editingEnabled) {
     var me = this;
     goog.module.require('edit', 'cm.ToolbarView', function(ToolbarView) {
@@ -115,6 +130,7 @@ cm.MapTabItem.prototype.render_ = function() {
   cm.ui.append(this.scrollingDiv_, headerElem);
   this.addContent(this.scrollingDiv_);
   cm.ui.append(this.content_, this.scrollTop_, this.scrollingDiv_);
+  this.renderEnded_ = true;
 };
 
 /**
@@ -166,7 +182,7 @@ cm.MapTabItem.prototype.addContent = function(parentElem) {};
  * changes to any aspect of the tab (title, icon, dis/enabled status, etc.)
  */
 cm.MapTabItem.prototype.promptRelayout = function() {
-  if (this.isSelected) {
+  if (this.renderEnded_ && this.isSelected) {
     this.tabView.updateTabItem(this);
   }
 };

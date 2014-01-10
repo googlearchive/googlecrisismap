@@ -15,6 +15,7 @@ goog.require('cm.AboutTabItem');
 goog.require('cm.DetailsTabItem');
 goog.require('cm.LayersTabItem');
 goog.require('cm.LegendTabItem');
+goog.require('cm.MetadataModel');
 goog.require('cm.TabItem');
 goog.require('cm.TabView');
 goog.require('cm.events');
@@ -308,12 +309,11 @@ cm.TabPanelView.prototype.createTabs_ = function() {
       this.mapModel_, this.appState_, this.config_, this.metadataModel_);
   this.tabView_.appendTabItem(legendTab);
 
-  // TODO(romano): We currently select the 'About' tab by default. If instead
-  // we want to select the 'Legend' tab, we should add something like
-  // this.tabView_.selectTabItem(
-  //     legendTab.getIsEnabled() && lagendTab || aboutTab);
-  // once we handle disabling the legend tab when there are no enabled layers
-  // with legends.
+  // Initially load the 'Legend' tab. If it is disabled, TabView.updateTabItem()
+  // will select the first available tab in the order that they were added to
+  // the TabView, so we will fall back to the 'About' tab if it exists, and
+  // otherwise the 'Layers' tab.
+  this.tabView_.selectTabItem(legendTab);
 };
 
 /**
