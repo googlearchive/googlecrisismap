@@ -149,6 +149,12 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
     'scrollwheel': !opt_embedded
   });
 
+  // Update the 'tilt' map option to zero based on:
+  // https://developers.google.com/
+  // maps/documentation/javascript/maptypes#Enabling45DegreeImagery
+  // 45 degree causes significant centroid rendering issues in GME
+  mapOptions['tilt'] = 0;
+
   // The MapView has its own "mapTypeId", "center", and "zoom" properties so we
   // can set them while the google.maps.Map is still loading.  During loading,
   // google.maps.Map ignores setMapTypeId, setCenter, and setZoom, but if its

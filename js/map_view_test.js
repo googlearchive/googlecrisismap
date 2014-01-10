@@ -66,7 +66,8 @@ function MapViewTest() {
      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
     },
     mapTypeControl: true,
-    scrollwheel: true
+    scrollwheel: true,
+    tilt: 0
   };
   // Tests can adjust expectedMapTypeControlOptions_ for different expectations.
   this.expectedMapTypeControlOptions_ = {
