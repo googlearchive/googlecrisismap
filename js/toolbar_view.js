@@ -92,14 +92,14 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
 
     // Handle clicks on the "Save" link.
     cm.events.listen(saveLink, 'click', function() {
-      if (!goog.dom.classes.has(saveLink, cm.css.DISABLED)) {
-        cm.ui.setText(saveLink, cm.MSG_SAVING);
-        goog.dom.classes.remove(saveLink, cm.css.ERROR);
-        goog.dom.classes.add(saveLink, cm.css.DISABLED);
-        cm.events.emit(goog.global, cm.events.SAVE, {model: mapModel});
-      }
-    });
-
+      this.disableSaveLink_(saveLink);
+      cm.events.emit(goog.global, cm.events.SAVE, {model: mapModel});
+    }, this);
+    // In the tabbed UI, this needs to listen for whether another tab has fired
+    // a save event and update this tabs links as well.
+    cm.events.listen(goog.global, cm.events.SAVE, function() {
+      this.disableSaveLink_(saveLink);
+    }, this);
     // Handle completion of the Save operation.
     cm.events.listen(goog.global, cm.events.SAVE_DONE, function() {
       cm.ui.setText(saveLink, cm.MSG_SAVED);
@@ -153,6 +153,19 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
 
   toolbarElem.appendChild(editToolbarElem);
   parentElem.appendChild(toolbarElem);
+};
+
+/**
+ * Disable the save link.
+ * @param {Element} saveLink The link element.
+ * @private
+ */
+cm.ToolbarView.prototype.disableSaveLink_ = function(saveLink) {
+  if (!goog.dom.classes.has(saveLink, cm.css.DISABLED)) {
+    cm.ui.setText(saveLink, cm.MSG_SAVING);
+    goog.dom.classes.remove(saveLink, cm.css.ERROR);
+    goog.dom.classes.add(saveLink, cm.css.DISABLED);
+  }
 };
 
 /**

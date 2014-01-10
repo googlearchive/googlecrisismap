@@ -17,7 +17,7 @@ function ToolbarViewTest() {
   cm.TestBase.call(this);
   this.parent_ = cm.ui.create('div');
   this.mapModel_ = createMockInstance(cm.MapModel);
-  this.toolbar_ = new cm.ToolbarView(
+  new cm.ToolbarView(
       this.parent_, this.mapModel_, true, true, '/root/.maps', false);
 }
 ToolbarViewTest.prototype = new cm.TestBase();
@@ -86,8 +86,8 @@ ToolbarViewTest.prototype.testAddFolderLink = function() {
   expectTrue(eventEmitted);
 };
 
-/** Verifies that the 'Diff/Show JSON' link works properly. */
-ToolbarViewTest.prototype.testDiffJsonLink = function() {
+/** Verifies that the 'Show JSON' link works properly. */
+ToolbarViewTest.prototype.testShowJsonLink = function() {
   var mapRoot = {'foo': 'bar'};
   stub(this.mapModel_.toMapRoot)().is(mapRoot);
   var diffPopup = null;
@@ -96,11 +96,15 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
   });
 
   // Test the toolbar view with no map ID; should only offer JSON.
+  expectNoDescendantOf(this.parent_, withText('Diff'));
   var showJsonLink = expectDescendantOf(this.parent_, withText('Show JSON'));
   cm.events.emit(showJsonLink, 'click');
   expectEq(mapRoot, goog.json.parse(
       cm.ui.getText(diffPopup.lastChild).replace(/&nbsp;/g, '')));
+};
 
+/** Verifies that the 'Diff/Show JSON' link works properly. */
+ToolbarViewTest.prototype.testDiffJsonLink = function() {
   // Test the toolbar view with a map ID; should offer diffs and JSON.
   this.setForTest_('goog.net.XhrIo.send', createMockFunction());
   expectCall(goog.net.XhrIo.send)('/root/.diff/xyz',
@@ -116,6 +120,13 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
           }
         }});
       });
+
+  var mapRoot = {'foo': 'bar'};
+  stub(this.mapModel_.toMapRoot)().is(mapRoot);
+  var diffPopup = null;
+  this.setForTest_('cm.ui.showPopup', function(popup) {
+    diffPopup = popup;
+  });
   new cm.ToolbarView(
       this.parent_, this.mapModel_, true, true, '/root/.maps', false,
       '/root/.diff/xyz');
@@ -155,4 +166,48 @@ ToolbarViewTest.prototype.testBeforeUnloadSave = function() {
   cm.events.emit(goog.global, cm.events.MODEL_CHANGED);
   var str = window.onbeforeunload();
   expectEq(cm.MSG_UNSAVED_CHANGES, str);
+};
+
+/** Tests the 'Save' link is updated when clicked. */
+ToolbarViewTest.prototype.testSaveLink = function() {
+  // The save link should be unavailable until the model changes.
+  expectDescendantOf(this.parent_, withText('Saved'), withClass('cm-disabled'));
+  expectNoDescendantOf(this.parent_, withText('Save'));
+  cm.events.emit(goog.global, cm.events.MODEL_CHANGED);
+
+  // The 'Save' link should be available. On 'click' it should be disabled.
+  expectNoDescendantOf(this.parent_, withText('Saved'));
+  var saveLink = findDescendantOf(this.parent_, withText('Save'));
+  cm.events.emit(saveLink, 'click');
+  expectThat(saveLink, withClass('cm-disabled'));
+
+  // When saving is complete, the text should change.
+  cm.events.emit(goog.global, cm.events.SAVE_DONE);
+  expectDescendantOf(this.parent_, withText('Saved'));
+  expectNoDescendantOf(this.parent_, withText('Save'));
+};
+
+/** Tests the extra 'Save' link click listeners in the tabbed UI. */
+ToolbarViewTest.prototype.testTabbedUiSaveLink = function() {
+  // Instantiate a second ToolbarView and simulate a model change.
+  var otherParent = cm.ui.create('div');
+  new cm.ToolbarView(
+      otherParent, this.mapModel_, true, true, '/root/.maps', false,
+      undefined, true);
+  cm.events.emit(goog.global, cm.events.MODEL_CHANGED);
+
+  // Clicking on the 'Save' in one toolbar should disable all the
+  // 'Save' links.
+  var saveLink = findDescendantOf(this.parent_, withText('Save'));
+  var otherSaveLink = expectDescendantOf(otherParent, withText('Save'));
+  cm.events.emit(saveLink, 'click');
+  expectThat(saveLink, withClass('cm-disabled'));
+  expectThat(otherSaveLink, withClass('cm-disabled'));
+
+  // When saving is complete, the text of all 'Save' links should change.
+  cm.events.emit(goog.global, cm.events.SAVE_DONE);
+  expectDescendantOf(this.parent_, withText('Saved'));
+  expectDescendantOf(otherParent, withText('Saved'));
+  expectNoDescendantOf(this.parent_, withText('Save'));
+  expectNoDescendantOf(otherParent, withText('Save'));
 };
