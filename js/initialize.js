@@ -493,11 +493,21 @@ cm.Map.prototype.resizeTabPanel_ = function() {
 
   goog.dom.classes.enable(this.frameElem_, cm.css.EMBEDDED, narrow);
 
-  var maxPanelHeight = narrow ? Math.min(
-      BOTTOM_TAB_PANEL_HEIGHT_FRACTION * this.frameElem_.offsetHeight,
-      this.frameElem_.offsetHeight - this.footerElem_.offsetHeight) :
-      this.getMapHeight_() - 10;
-    this.panelView_.resize(maxPanelHeight, narrow);
+  var maxPanelHeight;
+  if (narrow) {
+    maxPanelHeight = Math.min(
+        BOTTOM_TAB_PANEL_HEIGHT_FRACTION * this.frameElem_.offsetHeight,
+        this.frameElem_.offsetHeight - this.footerElem_.offsetHeight);
+  } else {
+    // When panel is on left or right, leave 5px top and bottom margins.
+    // When panel is on right, lave an additional 15px bottom margin for
+    // the map copyright text.
+    maxPanelHeight = this.getMapHeight_() - 10;
+    if (this.config_['panel_side'] !== 'left') {
+      maxPanelHeight = maxPanelHeight - 15;
+    }
+  }
+  this.panelView_.resize(maxPanelHeight, narrow);
   this.mapWrapperElem_.style.height = this.getMapHeight_() + 'px';
 };
 
