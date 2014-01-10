@@ -9,6 +9,8 @@ uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
 OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 specific language governing permissions and limitations under the License. */
 
+@import url(http://fonts.googleapis.com/css?family=Roboto:300,400,700);
+
 html, body {
   width: 100%;
   height: 100%;
@@ -51,6 +53,9 @@ html, body {
   font-size: 13px;
   font-family: roboto, arial, sans-serif;
   color: #222;
+}
+.cm-body {
+  font-family: helvetica, arial, sans-serif;
 }
 .cm-embedded {
   overflow: auto;
@@ -133,9 +138,6 @@ html, body {
 }
 
 /* Panel */
-.cm-panel a, .cm-tab-panel a {
-  font-size: 11px;
-}
 .cm-panel .cm-layer-description,
 .cm-tab-panel .cm-layer-description,
 .cm-importer .cm-layer-description,
@@ -251,9 +253,9 @@ html, body {
   right: inherit !important;
   height: auto !important;
   max-height: 98%;
+  opacity: 0.9;
   overflow-y: hidden;
   z-index: 2;
-  opacity: 0.90;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   -moz-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
@@ -290,7 +292,8 @@ html, body {
 /* Panel contents */
 .cm-panel-header {
   position: relative;
-  margin: 12px 0 6px;
+  padding: 6px 12px;
+  margin: 12px 0 0;
 }
 
 /* Make the map title and description appear editable. */
@@ -323,24 +326,15 @@ html, body {
 .cm-map-publisher {
   color: #999;
   font-size: 11px;
-  margin: 0 0 6px;
 }
 .cm-map-description, .cm-preview.cm-map-description {
   font-size: 12px;
   color: #222;
-  width: 260px;
+  margin: 0 12px 12px;
 }
-.cm-embedded .cm-map-description {
-  width: 450px !important;
-}
-.cm-panel .cm-panel-links,
-.cm-tab-panel .cm-panel-links {
-  margin: 4px 0 4px 0;
-}
-.cm-panel .cm-map-description {
-}
-.cm-map-description a {
-  font-size: 12px;
+.cm-panel-links {
+  font-size: 11px;
+  margin: 12px;
 }
 .cm-panel {
   background: #fff;
@@ -358,7 +352,6 @@ html, body {
 .cm-panel-inner {
   overflow-x: visible;
   overflow-y: hidden;
-  padding: 6px 0 10px 10px;
   position: absolute;
   top: 0;
   bottom: 0;
@@ -378,7 +371,7 @@ html, body {
 }
 .cm-panel-outer-header {
   overflow-x: visible;
-  margin-right: 10px;
+  margin-right: 6px;
 }
 .cm-panel-scroll {
   overflow: auto;
@@ -388,7 +381,6 @@ html, body {
   bottom: 0;
   right: 0;
   left: 0;
-  margin-left: 10px;
 }
 .cm-sublayers {
   position: relative;
@@ -396,7 +388,10 @@ html, body {
 }
 .cm-layer-entry {
   position: relative;
-  margin: 10px 0 20px 2px;
+  margin: 0 0 18px;
+}
+.cm-layer-entry .cm-panel-links {
+  margin: 0;
 }
 .cm-layer-entry.cm-contains-promoted-sublayer > * > .cm-layer-entry {
   display: none;
@@ -415,7 +410,6 @@ html, body {
   width: 100%;
   z-index: 1;
   max-width: 500px;
-  opacity: 0.90;
   filter: alpha(opacity=90);
   border: none;
 }
@@ -424,9 +418,6 @@ html, body {
 .cm-panel .cm-close-button,
 .cm-embedded .cm-panel {
   display: none;
-}
-.cm-embedded .cm-panel-outer-header {
-  margin-top: 20px;
 }
 .cm-panel.cm-open,
 .cm-embedded .cm-panel-button,
@@ -442,10 +433,13 @@ html, body {
   color: #999;
 }
 .cm-layer-filter {
-  margin: 10px 0;
+  margin: 12px;
 }
-/* We need [type=] to be more specific than the input declaration above */
-.cm-layer-filter[type=text]:hover, .cm-layer-filter[type=text]:focus {
+.cm-frame.cm-panel-below .cm-layer-filter {
+  display: none;
+}
+.cm-frame .cm-layer-filter input:hover,
+.cm-frame .cm-layer-filter input:focus {
   box-shadow: none;
   -webkit-box-shadow: none;
   -moz-box-shadow: none;
@@ -872,6 +866,7 @@ input[type=checkbox]:checked::after {
 /* Toolbar */
 .cm-toolbar {
   font-size: 11px;
+  margin: 6px;
 }
 .cm-toolbar a {
   white-space: nowrap;
@@ -1327,6 +1322,8 @@ textarea.cm-legend-text {
   margin-right: 14px;
 }
 .cm-button, .cm-body .cm-button {
+  box-sizing: border-box;
+  cursor: default;
   display: inline-block;
   min-width: 72px;
   height: 29px;
@@ -1345,7 +1342,7 @@ textarea.cm-legend-text {
   /* @alternate */ background-image:-webkit-linear-gradient(top, #f5f5f5, #f1f1f1);
   /* @alternate */ background-image:linear-gradient(top, #f5f5f5, #f1f1f1);
 }
-.cm-frame .cm-button {
+.cm-frame .cm-button, .cm-inspector .cm-button {
   font-size: 12px;
   font-family: roboto, arial, sans-serif;
   font-weight: 500;

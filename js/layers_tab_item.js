@@ -84,10 +84,16 @@ goog.inherits(cm.LayersTabItem, cm.MapTabItem);
 cm.LayersTabItem.LAYER_FILTER_VISIBILITY_THRESHOLD = 8;
 
 /** @override */
+cm.LayersTabItem.prototype.addHeader = function(headerElem) {
+  // There's nothing to put in the header, so hide it.
+  headerElem.style.display = 'none';
+};
+
+/** @override */
 cm.LayersTabItem.prototype.addScrollingContent = function(parentElem) {
   if (this.layerFilterBox_) {
-    parentElem.appendChild(this.layerFilterBox_);
-    parentElem.appendChild(this.matchingLayersMessage_);
+    parentElem.appendChild(cm.ui.create('div', {'class': cm.css.LAYER_FILTER},
+        this.layerFilterBox_, this.matchingLayersMessage_));
   }
   parentElem.appendChild(this.panelLayers_);
 };
@@ -151,7 +157,7 @@ cm.LayersTabItem.prototype.removeLayer_ = function(layer) {
  */
 cm.LayersTabItem.prototype.configureLayerFilter_ = function() {
   this.layerFilterBox_ = cm.ui.create(
-      'input', {'type': 'text', 'class': cm.css.LAYER_FILTER,
+      'input', {'type': 'text',
                 'placeholder': cm.MSG_LAYER_FILTER_PLACEHOLDER});
   this.matchingLayersMessage_ = cm.ui.create(
       'span', {'class': cm.css.LAYER_FILTER_INFO});

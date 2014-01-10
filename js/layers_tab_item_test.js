@@ -159,8 +159,9 @@ LayersTabItemTest.prototype.testFilterLayers = function() {
   var layersTab = this.createLayersTabItem_();
   var query = 'some query';
   var newQuery = 'something else';
-  var layerFilterInput = findDescendantOf(layersTab.getContent(),
-    withClass(cm.css.LAYER_FILTER));
+  var layerFilterDiv = findDescendantOf(
+      layersTab.getContent(), withClass(cm.css.LAYER_FILTER));
+  var layerFilterInput = findDescendantOf(layerFilterDiv, isElement('input'));
 
   // Test two-way binding: when appState changes, input box value changes.
   this.appState_.setFilterQuery(query);

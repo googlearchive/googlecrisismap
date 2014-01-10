@@ -263,8 +263,8 @@ PanelViewTest.prototype.testFilterLayers = function() {
   var parent = this.createView_();
   var query = 'some query';
   var newQuery = 'something else';
-  var layerFilterInput = findDescendantOf(parent,
-    withClass(cm.css.LAYER_FILTER));
+  var layerFilterDiv = findDescendantOf(parent, withClass(cm.css.LAYER_FILTER));
+  var layerFilterInput = findDescendantOf(layerFilterDiv, isElement('input'));
 
   // Test two-way binding: when appState changes, input box value changes.
   this.appState_.setFilterQuery(query);

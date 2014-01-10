@@ -277,7 +277,7 @@ cm.LayerEntryView = function(
       this.contentElem_ = cm.ui.create('div', {'class': cm.css.CONTENT},
           this.sliderDiv_ = cm.ui.create('div',
               {'title': cm.MSG_OPACITY_TOOLTIP, 'class': cm.css.SLIDER}),
-          cm.ui.create('div', {}, layerLinks),
+          cm.ui.create('div', {'class': 'cm-panel-links'}, layerLinks),
           this.warningElem_ = cm.ui.create('div', {'class': cm.css.WARNING}),
           this.legendBoxElem_,
           this.descriptionElem_ = cm.ui.create('div',

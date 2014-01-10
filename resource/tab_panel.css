@@ -20,7 +20,7 @@ specific language governing permissions and limitations under the License.
   max-height: 98%;
   overflow-y: hidden;
   z-index: 1;
-  opacity: 0.90;
+  opacity: 1 !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   -moz-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
@@ -49,7 +49,6 @@ specific language governing permissions and limitations under the License.
 
 .cm-tab-content {
   overflow-x: visible;
-  padding: 5px 0 0 5px;
 }
 
 .cm-scrolling-tab-content {
@@ -116,20 +115,28 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tabbed-legend-box {
-  border: 1px solid #e0e0e0;
-  margin: 3px 3px 2px 3px;
-  width: 95%;
+  margin: 12px;
+  overflow: hidden; /* fully enclose any floating children */
 }
 
 .cm-tabbed-legend-content {
   font-size: 11px;
   color: #222;
-  margin: 3px 3px 2px 3px;
+  margin: 6px 0;
 }
 
 .cm-tabbed-legend-content > fieldset > legend {
   margin-left: 0;
   padding: 0;
+}
+
+.cm-tab-panel .cm-panel-header {
+  margin-top: 6px;
+  padding: 6px 12px;
+}
+
+.cm-panel-layers {
+  margin: 12px;
 }
 
 /*
