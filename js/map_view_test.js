@@ -94,7 +94,7 @@ function MapViewTest() {
   this.map_.mapTypes = createMockInstance(google.maps.MapTypeRegistry);
 
   this.infoWindow_ = this.expectNew_('google.maps.InfoWindow');
-  this.hoop_ = this.expectNew_('google.maps.Marker', _);
+  this.highlight_ = this.expectNew_('google.maps.Marker', _);
 
   // Individual tests should modify this.layers_ to set up their expectations.
   this.layers_ = new google.maps.MVCArray();
@@ -170,9 +170,9 @@ MapViewTest.prototype.expectDetailsTab_ = function(
   // TODO(romano): test that details tab is added to tab bar
   // and selected.
 
-  expectCall(this.hoop_.setIcon)(_);
-  expectCall(this.hoop_.setPosition)(position);
-  expectCall(this.hoop_.setMap)(this.map_);
+  expectCall(this.highlight_.setIcon)(_);
+  expectCall(this.highlight_.setPosition)(position);
+  expectCall(this.highlight_.setMap)(this.map_);
 };
 
 /**
@@ -195,6 +195,19 @@ MapViewTest.prototype.addLayer_ = function(properties) {
   this.layers_.push(layerModel);
   stub(this.mapModel_.getLayer)(properties['id']).is(layerModel);
   return layerModel;
+};
+
+/**
+ * Performs setup for a test that uses the tab panel and details tab.
+ * @private
+ */
+MapViewTest.prototype.enableTabPanel_ = function() {
+  this.config_['use_tab_panel'] = true;
+  this.config_['use_details_tab'] = true;
+  this.expectedMapOptions_.scaleControl = false;
+  this.expectedMapOptions_.streetViewControl = false;
+  this.expectedMapOptions_.zoomControlOptions.style =
+      google.maps.ZoomControlStyle.SMALL;
 };
 
 /**
@@ -266,24 +279,6 @@ MapViewTest.prototype.previewView = function() {
       google.maps.ZoomControlStyle.SMALL;
   this.expectedMapOptions_.mapTypeControl = false;
   this.newMapView_(false, undefined, true);
-};
-
-/** Tests that clicking on the map closes the open InfoWindow. */
-MapViewTest.prototype.mapClickClosesInfoWindow = function() {
-  this.newMapView_(false);
-  expectCall(this.infoWindow_.close)();
-  cm.events.emit(this.map_, 'click');
-};
-
-/** Tests that clicking on the map removes the hoop marker. */
-MapViewTest.prototype.mapClickRemovesHoop = function() {
-  this.expectedMapOptions_.scaleControl = false;
-  this.expectedMapOptions_.streetViewControl = false;
-  this.expectedMapOptions_.zoomControlOptions.style =
-      google.maps.ZoomControlStyle.SMALL;
-  this.newMapView_(false, {'use_tab_panel': true, 'use_details_tab': true});
-  expectCall(this.hoop_.setMap)(null);
-  cm.events.emit(this.map_, 'click');
 };
 
 /**
@@ -691,6 +686,13 @@ MapViewTest.prototype.layersRemovedEvent = function() {
                  {ids: ['banana', 'mango']});
 };
 
+/** Tests that clicking on the map closes the open InfoWindow. */
+MapViewTest.prototype.mapClickClosesInfoWindow = function() {
+  this.newMapView_(false);
+  expectCall(this.infoWindow_.close)();
+  cm.events.emit(this.map_, 'click');
+};
+
 /** Tests that clicking on an overlay opens its InfoWindow. */
 MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
   this.addLayer_({id: 'bubble-gum', type: cm.LayerModel.Type.KML, url: 'url'});
@@ -757,19 +759,26 @@ MapViewTest.prototype.clickingEmptyOverlayDoesNotOpenInfoWindow = function() {
   cm.events.emit(overlay, 'click', kmlEvent);
 };
 
-/** Tests that clicking on an overlay places the hoop marker. */
+/** Tests that clicking on the map removes the highlight marker. */
+MapViewTest.prototype.mapClickRemovesHighlight = function() {
+  this.enableTabPanel_();
+
+  this.newMapView_(false, this.config_);
+  expectCall(this.highlight_.setMap)(null);
+  cm.events.emit(this.map_, 'click');
+};
+
+/** Tests that clicking on an overlay places the highlight marker. */
 MapViewTest.prototype.clickingOverlayDisplaysDetailsTab = function() {
-  this.expectedMapOptions_.scaleControl = false;
-  this.expectedMapOptions_.streetViewControl = false;
-  this.expectedMapOptions_.zoomControlOptions.style =
-      google.maps.ZoomControlStyle.SMALL;
+  this.enableTabPanel_();
+
   this.addLayer_({id: 'bubble-gum', type: cm.LayerModel.Type.KML, url: 'url'});
   this.stubVisibleLayerIds_(['bubble-gum']);
 
   var overlay = this.expectNew_('google.maps.KmlLayer', _);
   stub(overlay.getMap)().is(null);
   expectCall(overlay.setMap)(this.map_);
-  this.newMapView_(false, {'use_tab_panel': true, 'use_details_tab': true});
+  this.newMapView_(false, this.config_);
   // The featureData is ob defined in KML events.
   var kmlEvent = {
     featureData: {infoWindowHtml: 'grossest ice cream ever'},

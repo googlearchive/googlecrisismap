@@ -60,3 +60,35 @@ PresenterTest.prototype.filterQueryChanged = function() {
     {query: query});
   expectEq(query, this.appState_.getFilterQuery());
 };
+
+/* Tests that the map pans under the right conditions on a feature click. */
+PresenterTest.prototype.selectFeature = function() {
+  this.panelView_ = createMockInstance(cm.TabPanelView);
+  this.presenter_ = new cm.Presenter(
+      this.appState_, this.mapView_, this.panelView_, this.panelElem_, 'map1');
+
+  var event = {position: new google.maps.LatLng(12, 34)};
+
+  // Should pan when panel is below map and collapsed.
+  stub(this.panelView_.isBelowMap)().is(true);
+  stub(this.panelView_.isExpanded)().is(false);
+
+  expectCall(this.panelView_.selectFeature)(_);
+  expectCall(this.mapView_.focusOnPoint)(event.position);
+  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+
+  // Should not pan when panel is floating.
+  stub(this.panelView_.isBelowMap)().is(false);
+
+  expectCall(this.panelView_.selectFeature)(_);
+  this.mapView_.focusOnPoint = function() { throw new Error('Bad call'); };
+  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+
+  // Should not pan when panel is below map and expanded.
+  stub(this.panelView_.isBelowMap)().is(true);
+  stub(this.panelView_.isExpanded)().is(true);
+
+  expectCall(this.panelView_.selectFeature)(_);
+  this.mapView_.focusOnPoint = function() { throw new Error('Bad call'); };
+  cm.events.emit(this.mapView_, cm.events.SELECT_FEATURE, event);
+};

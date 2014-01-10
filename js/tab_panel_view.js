@@ -82,6 +82,9 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
   /** @private {cm.DetailsTabItem} The tab item for feature details. */
   this.detailsTab_ = null;
 
+  /** @private {boolean} Whether the panel is placed below the map. */
+  this.below_ = below;
+
   /**
    * Where the tab bar is positioned relative to the map.
    * @type cm.TabPanelView.TabPosition
@@ -153,6 +156,8 @@ cm.TabPanelView.prototype.render_ = function() {
  *     the map.
  */
 cm.TabPanelView.prototype.resize = function(maxPanelHeight, below) {
+  this.below_ = below;
+
   // Placement below the map overrides left or right side placement.
   this.tabPosition_ = below ? cm.TabPanelView.TabPosition.BELOW :
       (this.config_['panel_side'] === 'left') ?
@@ -192,6 +197,16 @@ cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
     this.collapsedAtLeastOnce_ = true;
     cm.events.emit(this, cm.events.TAB_PANEL_FIRST_COLLAPSED);
   }
+};
+
+/** @return {boolean} Whether the panel is currently expanded. */
+cm.TabPanelView.prototype.isExpanded = function() {
+  return this.expanded_;
+};
+
+/** @return {boolean} Whether the panel is positioned below the map. */
+cm.TabPanelView.prototype.isBelowMap = function() {
+  return this.below_;
 };
 
 /**

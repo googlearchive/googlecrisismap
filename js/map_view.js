@@ -28,7 +28,7 @@ goog.require('goog.Uri');
 goog.require('goog.array');
 goog.require('goog.json');
 
-/** @const string */var HOOP_URL = '/mapviewer/.static/hoop.png';
+/** @const string */var HIGHLIGHT_ICON_URL = '/mapviewer/.static/highlight.png';
 /**
  * @param {Element} parentElem The DOM element in which to render the map.
  * @param {cm.MapModel} mapModel The map model.
@@ -113,7 +113,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
   this.osmEnabled_ = this.config_['enable_osm_map_type'];
 
   /** @private {google.maps.Marker} Visual cue to highlight selected feature. */
-  this.hoop_ = new google.maps.Marker({'clickable': false});
+  this.highlight_ = new google.maps.Marker({'clickable': false});
 
   // The navigation controls must be moved (on non-touch devices) from TOP_LEFT
   // or the searchbox will be positioned to the left or right of it instead of
@@ -218,7 +218,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
     // events that trigger UI changes in the TabPanelView.
     if (this.config_['use_details_tab']) {
       cm.events.emit(this, cm.events.DESELECT_FEATURE);
-      this.hoop_.setMap(null);
+      this.highlight_.setMap(null);
     } else {
       // The infowindow may not be open, but it's not a problem to call close()
       // on it multiple times.
@@ -591,18 +591,14 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       if (this.config_['use_details_tab']) {
         if (featureData) {
           cm.events.emit(this, cm.events.SELECT_FEATURE, featureData);
-          // Adjust the hoop marker position according to the half the hoop icon
-          // width (67px). Also apply half the mouse event's in an attempt to
-          // center the hoop at the icon's center, rather than at its hotspot.
-          var anchor = new google.maps.Point(
-              Math.floor(.5 * (67 - featureData.pixelOffset.width)),
-              Math.floor(.5 * (67 - featureData.pixelOffset.height)));
-          this.hoop_.setIcon({url: HOOP_URL, anchor: anchor});
-          this.hoop_.setPosition(featureData.position);
-          this.hoop_.setMap(this.map_);
+          // 33, 33 is the center of the highlight icon.
+          var anchor = new google.maps.Point(33, 33);
+          this.highlight_.setIcon({url: HIGHLIGHT_ICON_URL, anchor: anchor});
+          this.highlight_.setPosition(featureData.position);
+          this.highlight_.setMap(this.map_);
         } else {
           cm.events.emit(this, cm.events.DESELECT_FEATURE);
-          this.hoop_.setMap(null);
+          this.highlight_.setMap(null);
         }
       } else {
         this.infoWindow_.close();
@@ -621,6 +617,16 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       this.infoWindowLayerId_ = featureData ? id : null;
     }, this);
   }
+};
+
+/**
+ * Adjusts the map viewport to make the given point visible.
+ * @param {google.maps.LatLng} point The point on which to focus the map.
+ */
+cm.MapView.prototype.focusOnPoint = function(point) {
+  // For now, we always just center on the point.  In future we might move
+  // the map less, or not at all if the point is already visible.
+  this.map_.panTo(point);
 };
 
 /**
@@ -725,7 +731,7 @@ cm.MapView.prototype.updateVisibility_ = function() {
     if (!become_visible && this.infoWindowLayerId_ == id) {
       if (this.config_['use_details_tab']) {
         cm.events.emit(this, cm.events.DESELECT_FEATURE);
-        this.hoop_.setMap(null);
+        this.highlight_.setMap(null);
       } else {
         this.infoWindow_.close();
         this.infoWindowLayerId_ = null;

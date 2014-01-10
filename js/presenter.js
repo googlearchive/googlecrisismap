@@ -61,6 +61,9 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
    */
   this.mapId_ = mapId;
 
+  /** @private {google.maps.LatLng} The currently selected feature position. */
+  this.focusPosition_ = null;
+
   cm.events.listen(goog.global, cm.events.RESET_VIEW, function(event) {
     this.resetView(event.model);
   }, this);
@@ -111,11 +114,17 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
 
   if (panelView instanceof cm.TabPanelView) {
     cm.events.listen(mapView, cm.events.SELECT_FEATURE, function(event) {
+      var mapShouldPan = panelView.isBelowMap() && !panelView.isExpanded();
       panelView.selectFeature(event);
-    });
-    cm.events.listen(mapView, cm.events.DESELECT_FEATURE, function(event) {
+      if (mapShouldPan) {
+        mapView.focusOnPoint(event.position);
+      }
+      this.focusPosition_ = event.position;
+    }, this);
+    cm.events.listen(mapView, cm.events.DESELECT_FEATURE, function() {
       panelView.deselectFeature();
-    });
+      this.focusPosition_ = null;
+    }, this);
   }
 };
 
