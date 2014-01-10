@@ -677,8 +677,9 @@ span.cm-g-flag {
 
 
 /* Standard Google checkbox styles */
-input[type=checkbox] {
+input[type=checkbox], input[type=checkbox]:checked {
   -webkit-appearance: none;
+  background: inherit;
   width: 15px;
   height: 15px;
   border: 1px solid #dcdcdc;
