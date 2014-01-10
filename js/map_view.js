@@ -28,7 +28,7 @@ goog.require('goog.Uri');
 goog.require('goog.array');
 goog.require('goog.json');
 
-/** @const string */var HIGHLIGHT_ICON_URL = '/mapviewer/.static/highlight.png';
+/** @const string */var HIGHLIGHT_ICON = 'highlight.png';
 /**
  * @param {Element} parentElem The DOM element in which to render the map.
  * @param {cm.MapModel} mapModel The map model.
@@ -42,11 +42,9 @@ goog.require('goog.json');
  *         which dictates placement of the map controls.
  *     enable_osm_map_type: Show OSM as an option in the base map menu.  If the
  *         map's 'map_type' is OSM, we show OSM regardless of this setting.
- *     json_proxy_url: URL to the JSON proxy service.
+ *     static_content_url: URL where static content is served.
  *     use_details_tab: Show feature details in the tabbed panel instead of an
  *         infowindow balloon on the map.
- *     wms_configure_url: URL to the WMS tileset configuration service.
- *     wms_tiles_url: URL to the WMS tile cache.
  * @param {boolean=} opt_preview True if this is a preview display of the map.
  * @param {boolean=} opt_embedded True if the map is being embedded in a page.
  * @constructor
@@ -640,7 +638,9 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
           cm.events.emit(this, cm.events.SELECT_FEATURE, featureData);
           // (34, 34) is the center of the highlight icon.
           var anchor = new google.maps.Point(34, 34);
-          this.highlight_.setIcon({url: HIGHLIGHT_ICON_URL, anchor: anchor});
+          this.highlight_.setIcon({
+            url: this.config_['static_content_url'] + '/' + HIGHLIGHT_ICON,
+            anchor: anchor});
           this.highlight_.setPosition(featureData.position);
           this.highlight_.setMap(this.map_);
         } else {
