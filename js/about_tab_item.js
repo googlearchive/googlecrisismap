@@ -68,9 +68,10 @@ cm.AboutTabItem.prototype.addHeader = function(headerElem) {
 
   var publisher = this.config['publisher_name'];
   if (publisher) {
-    cm.ui.append(headerElem, cm.ui.create(
-        'div', {'class': cm.css.MAP_PUBLISHER},
-        cm.getMsgPublisherAttribution(publisher)));
+    var publisherElem = cm.ui.create('div', {'class': cm.css.MAP_PUBLISHER});
+    new cm.Html(
+        cm.getMsgPublisherAttribution(publisher)).pasteInto(publisherElem);
+    cm.ui.append(headerElem, publisherElem);
   }
 };
 

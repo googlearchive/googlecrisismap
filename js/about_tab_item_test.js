@@ -125,12 +125,23 @@ AboutTabItemTest.prototype.testSetDefaultView = function() {
 
 /** Tests that if a publisher is present, it is properly displayed. */
 AboutTabItemTest.prototype.testPublisherIsDisplayed = function() {
+  // We wish to ensure the sanitizer has been invoked (as opposed to other
+  // methods that insert potentially unsafe HTML directly in to the DOM), so we
+  // insert a mock that will capture sanitized strings.
+  var sanitized = [];
+  this.setForTest_('cm.Html.sanitize_', function(x) {
+    sanitized.push(x);
+    // copied from other tests; we add the asterisks so that sanitized strings
+    // are readily identifiable in test output, etc.
+    return '*' + x + '*';
+  });
   var publisherString = 'Spiffy the TestBot';
   var about = this.createAboutTabItem_(
       'testPublisherIsDisplayed', null, {'publisher_name': publisherString});
   var publisher =
       expectDescendantOf(about.getContent(), withClass(cm.css.MAP_PUBLISHER));
-  expectThat(publisher, withText(hasSubstr(publisherString)));
+  expectThat(publisher.innerHTML, hasSubstr(publisherString));
+  expectThat(sanitized, contains(hasSubstr(publisherString)));
 };
 
 /** Tests that the map picker is enabled. */

@@ -39,11 +39,24 @@ FooterViewTest.prototype.createView_ = function(enable_editing) {
 
 /** Tests the constructor. */
 FooterViewTest.prototype.testConstructor = function() {
+  this.setForTest_('cm.Html.sanitize_', function(x) { return x; });
   var parent = this.createView_();
   expectDescendantOf(parent, 'span', withText('Published by Descartes'));
   expectDescendantOf(parent, 'a', withText(cm.MSG_HELP));
   expectDescendantOf(parent, 'select', withValue(''));
 };
+
+/** Tests that the sanitizer is invoked for the publisher. */
+FooterViewTest.prototype.testPublisherIsSanitized = function() {
+  var sanitized = [];
+  this.setForTest_('cm.Html.sanitize_', function(x) {
+    sanitized.push(x);
+    return x;
+  });
+  var parent = this.createView_();
+  expectThat(sanitized, contains(hasSubstr(this.footerParams_.publisher_name)));
+};
+
 
 /* Tests language selector */
 FooterViewTest.prototype.changeUrlHlParamOnLangSelect = function() {

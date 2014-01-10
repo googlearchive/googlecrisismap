@@ -57,11 +57,7 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
    */
   this.langContainer_;
 
-  var publisherName = footerParams['publisher_name'];
-  if (publisherName) {
-    cm.ui.append(parentElem, cm.ui.create('span', {},
-        cm.getMsgPublisherAttribution(publisherName), cm.ui.SEPARATOR_DOT));
-  }
+  this.appendPublisher_(parentElem, footerParams);
   cm.ui.append(parentElem, this.footerSpan_);
 
   var uri = new goog.Uri(goog.global.location);
@@ -119,4 +115,20 @@ cm.FooterView.prototype.updateFooter_ = function() {
   if (!footer.isEmpty()) {
     cm.ui.append(this.footerSpan_, cm.ui.SEPARATOR_DOT);
   }
+};
+
+/**
+ * Renders the publisher into parentElem.
+ * @param {Element} parentElem The element receiving the rendered publisher.
+ * @param {Object} footerParams The parameters for the footer as received at
+ *   initialization.
+ * @private
+ */
+cm.FooterView.prototype.appendPublisher_ = function(parentElem, footerParams) {
+  var publisherName = footerParams['publisher_name'];
+  if (!publisherName) return;
+  var span = cm.ui.create('span');
+  new cm.Html(cm.getMsgPublisherAttribution(publisherName)).pasteInto(span);
+  cm.ui.append(span, cm.ui.SEPARATOR_DOT);
+  cm.ui.append(parentElem, span);
 };
