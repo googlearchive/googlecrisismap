@@ -78,7 +78,8 @@ cm.AboutTabItem.prototype.handleDescriptionChanged_ = function() {
  * @private
  */
 cm.AboutTabItem.prototype.handleSetDefaultView_ = function() {
-  var oldDefault = cm.AppState.clone(this.appState, this.mapModel);
+  var oldDefault = cm.AppState.clone(this.appState);
+  oldDefault.setFromMapModel(this.mapModel);
   var newDefault = cm.AppState.clone(this.appState);
   cm.events.emit(cm.app, cm.events.DEFAULT_VIEW_SET,
                  {oldDefault: oldDefault, newDefault: newDefault});

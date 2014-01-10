@@ -85,10 +85,7 @@ AboutTabItemTest.prototype.testSetDefaultViewHidden = function() {
       about.getContent(), withText(cm.MSG_SET_DEFAULT_VIEW_LINK));
 };
 
-/**
- * Test that the set default view link is shown when enable_editing is true, and
- * fires the appropriate event.
- */
+/** Tests the set default view. */
 AboutTabItemTest.prototype.testSetDefaultView = function() {
   // Avoids the async load of the toolbar.
   goog.module.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
@@ -101,9 +98,16 @@ AboutTabItemTest.prototype.testSetDefaultView = function() {
   cm.events.listen(cm.app, cm.events.DEFAULT_VIEW_SET, function(e) {
     event = e;
   });
+
+  // Modify the app state and set a new default view.
+  this.appState_.set('map_type', 'HYBRID');
   cm.events.emit(link, 'click', {});
+
+  // Verify that the old and new app state snapshots are captured.
   expectThat(event.oldDefault, not(isUndefined));
   expectThat(event.newDefault, not(isUndefined));
+  expectEq('ROADMAP', event.oldDefault.get('map_type'));
+  expectEq('HYBRID', event.newDefault.get('map_type'));
 };
 
 AboutTabItemTest.prototype.testAnalyticsSelectionEvent = function() {

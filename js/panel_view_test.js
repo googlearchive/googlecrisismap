@@ -305,10 +305,7 @@ PanelViewTest.prototype.testSetDefaultViewHidden = function() {
       withText('Set current view as default'));
 };
 
-/**
- * Test that the set default view link is shown when enable_editing is true, and
- * fires the appropriate event.
- */
+/** Tests the set default view link. */
 PanelViewTest.prototype.testSetDefaultView = function() {
   this.config_['enable_editing'] = true;
   var parent = this.createView_();
@@ -319,9 +316,16 @@ PanelViewTest.prototype.testSetDefaultView = function() {
   cm.events.listen(cm.app, cm.events.DEFAULT_VIEW_SET, function(e) {
     event = e;
   });
+
+  // Modify the app state and set a new default view.
+  this.appState_.set('map_type', 'HYBRID');
   cm.events.emit(link, 'click', {});
+
+  // Verify that the old and new app state snapshots are captured.
   expectThat(event.oldDefault, not(isUndefined));
   expectThat(event.newDefault, not(isUndefined));
+  expectEq('ROADMAP', event.oldDefault.get('map_type'));
+  expectEq('HYBRID', event.newDefault.get('map_type'));
 };
 
 /** Tests that the map picker is enabled. */
