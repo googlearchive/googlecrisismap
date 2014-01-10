@@ -15,15 +15,17 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import copy
-
+import datetime
 import domains
 import logs
 import model
 import perms
 import test_utils
 import users
+import utils
 
 from google.appengine.api import memcache
+from google.appengine.ext import ndb
 
 JSON1 = '{"title": "One", "description": "description1"}'
 JSON2 = '{"title": "Two", "description": "description2"}'
@@ -476,6 +478,149 @@ class CatalogEntryTests(test_utils.BaseTest):
     self.assertEquals(None, model.Map.Get(map_id))
     with test_utils.RootLogin():
       self.assertEquals(None, model.Map.GetDeleted(map_id))
+
+
+class CrowdReportTests(test_utils.BaseTest):
+  """Tests the CrowdReport class."""
+
+  def NewCrowdReport(
+      self, report_id, source='http://source.com/', author='author@example.com',
+      text='Crowd report text',
+      topic_ids=('VB5ItphmLJ8tLPax.gas', 'VB5ItphmLJ8tLPax.water'),
+      answer_ids=('VB5ltphmLJ8tLPax.gas.1.1',), location=None):
+    effective = datetime.datetime.utcnow()
+    return model.CrowdReport.Put(source+str(report_id), source, author,
+                                 effective, text, topic_ids, answer_ids,
+                                 location)
+
+  def testGetWithoutLocation(self):
+    """Tests CrowdReport.GetWithoutLocation."""
+    now = datetime.datetime.utcnow()
+    def TimeAgo(hours=0, minutes=0):
+      return now - datetime.timedelta(hours=hours, minutes=minutes)
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=1)))
+    self.NewCrowdReport(report_id=1, topic_ids=['foo'],
+                        location=ndb.GeoPt(37, -74))
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=2)))
+    self.NewCrowdReport(report_id=2, topic_ids=['bar', 'baz'])
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=3)))
+    cr3 = self.NewCrowdReport(report_id=3, topic_ids=['foo', 'bar'])
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=4)))
+    cr4 = self.NewCrowdReport(report_id=4, topic_ids=['foo', 'bar'])
+
+    self.SetTime(utils.UtcToTimestamp(now))
+
+    # No topic_id match
+    self.assertEquals(
+        [],
+        [x.effective for x in model.CrowdReport.GetWithoutLocation(
+            topic_ids=['bez'], count=1, max_updated=None)])
+    # No match before max_updated
+    self.assertEquals(
+        [],
+        [x.effective for x in model.CrowdReport.GetWithoutLocation(
+            topic_ids=['foo'], count=1,
+            max_updated=TimeAgo(hours=5))])
+
+    # 2 matches, ignore report with location, return count=1
+    self.assertEquals(
+        [cr3.effective],
+        [x.effective for x in model.CrowdReport.GetWithoutLocation(
+            topic_ids=['foo'], count=1, max_updated=None)])
+    # 2 matches
+    self.assertEquals(
+        [cr3.effective, cr4.effective],
+        [x.effective for x in model.CrowdReport.GetWithoutLocation(
+            topic_ids=['foo'], count=10, max_updated=None)])
+    # 2 matches, one updated too late
+    self.assertEquals(
+        [cr4.effective],
+        [x.effective for x in model.CrowdReport.GetWithoutLocation(
+            topic_ids=['foo'], count=10,
+            max_updated=TimeAgo(hours=3, minutes=30))])
+
+  def testGetByLocation(self):
+    """Tests CrowdReport.GetByLocation."""
+    now = datetime.datetime.utcnow()
+    def TimeAgo(hours=0, minutes=0):
+      return now - datetime.timedelta(hours=hours, minutes=minutes)
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=1)))
+    self.NewCrowdReport(report_id=1, topic_ids=['foo'])
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=2)))
+    cr2 = self.NewCrowdReport(report_id=2, topic_ids=['bar', 'baz'],
+                              location=ndb.GeoPt(37, -74))
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=3)))
+    cr3 = self.NewCrowdReport(report_id=3, topic_ids=['foo', 'bar'],
+                              location=ndb.GeoPt(37, -74))
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=4)))
+    cr4 = self.NewCrowdReport(report_id=4, topic_ids=['foo', 'bar'],
+                              location=ndb.GeoPt(37.001, -74))  # 0.001 ~= 111m
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=5)))
+    cr5 = self.NewCrowdReport(report_id=5, topic_ids=['foo', 'bez'],
+                              location=ndb.GeoPt(37.1, -74))  # 0.1 ~= 11km
+
+    self.SetTime(utils.UtcToTimestamp(now))
+
+    # No topic_id match
+    self.assertEquals(
+        [],
+        [x.effective for x in model.CrowdReport.GetByLocation(
+            center=ndb.GeoPt(37, -74), topic_radii={'unk': 1000}, count=1,
+            max_updated=None)])
+    # No location match
+    self.assertEquals(
+        [],
+        [x.effective for x in model.CrowdReport.GetByLocation(
+            center=ndb.GeoPt(37.2, -74), topic_radii={'bez': 1000}, count=1,
+            max_updated=None)])
+    # No match before max_updated
+    self.assertEquals(
+        [],
+        [x.effective for x in model.CrowdReport.GetByLocation(
+            center=ndb.GeoPt(37, -74), topic_radii={'bez': 1000}, count=1,
+            max_updated=TimeAgo(hours=6))])
+
+    # 2 matches, ignore report with no location, return count=1
+    self.assertEquals(
+        [cr2.effective],
+        [x.effective for x in model.CrowdReport.GetByLocation(
+            center=ndb.GeoPt(37, -74), topic_radii={'bar': 10}, count=1,
+            max_updated=None)])
+    # 2 matches with small search radius
+    self.assertEquals(
+        [cr2.effective, cr3.effective],
+        [x.effective for x in model.CrowdReport.GetByLocation(
+            center=ndb.GeoPt(37, -74), topic_radii={'bar': 10},
+            max_updated=None)])
+    # 3 matches with expanded search radius
+    self.assertEquals(
+        [cr2.effective, cr3.effective, cr4.effective],
+        [x.effective for x in model.CrowdReport.GetByLocation(
+            center=ndb.GeoPt(37, -74), topic_radii={'bar': 200},
+            max_updated=None)])
+    # 3 matches with multiple topics
+    self.assertEquals(
+        [cr3.effective, cr4.effective, cr5.effective],
+        [x.effective for x in model.CrowdReport.GetByLocation(
+            center=ndb.GeoPt(37, -74),
+            topic_radii={'foo': 200, 'bez': 12000},
+            max_updated=None)])
+    # Limit to oldest 2 with max_updated
+    self.assertEquals(
+        [cr4.effective, cr5.effective],
+        [x.effective for x in model.CrowdReport.GetByLocation(
+            center=ndb.GeoPt(37, -74),
+            topic_radii={'bar': 200, 'bez': 12000},
+            max_updated=TimeAgo(hours=3, minutes=30))])
 
 
 if __name__ == '__main__':

@@ -12,6 +12,7 @@
 
 """Utilities used throughout crisismap."""
 
+import calendar
 from HTMLParser import HTMLParseError
 from HTMLParser import HTMLParser
 import re
@@ -60,6 +61,30 @@ def StructFromModel(model):
     return Struct(key=model.key(), id=model.key().id(), name=model.key().name(),
                   **dict((name, prop.get_value_for_datastore(model))
                          for (name, prop) in model.properties().iteritems()))
+
+
+def StructFromNdbModel(model):
+  """Copies the properties of the given db.Model into a Struct.
+
+    Note that we use Property.get_value_for_datastore to prevent fetching
+    of referenced objects into the Struct.  The other effect of using
+    get_value_for_datastore is that all date/time methods return
+    datetime.datetime values.
+
+  Args:
+    model: An ndb.Model entity, or None.
+
+  Returns:
+    A Struct containing the properties of the given ndb.Model, with additional
+    'key', 'name', and 'id' properties for the entity's key, key.string_id(),
+    and key.integer_id().  Returns None if 'model' is None.
+  """
+  if model:
+    return Struct(key=model.key, id=model.key.integer_id(),
+                  name=model.key.string_id(),
+                  **dict((name, prop)
+                         # pylint: disable=protected-access
+                         for (name, prop) in model._properties.iteritems()))
 
 
 def ResultIterator(query):
@@ -133,3 +158,8 @@ def StripHtmlTags(value):
     return value
   else:
     return s.GetData()
+
+
+def UtcToTimestamp(dt):
+  """Returns a POSIX timestamp to fractions of a second for the UTC datetime."""
+  return calendar.timegm(dt.utctimetuple()) + dt.microsecond / 1e6

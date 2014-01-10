@@ -157,6 +157,7 @@ class BaseTest(unittest.TestCase):
     self.testbed.init_taskqueue_stub(root_path=root)
     self.testbed.init_urlfetch_stub()
     self.testbed.init_user_stub()
+    self.testbed.init_search_stub()
     self.original_datetime = datetime.datetime
     os.environ.pop('USER_EMAIL', None)
     os.environ.pop('USER_ID', None)

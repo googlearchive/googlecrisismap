@@ -70,6 +70,13 @@ indexes:
   - name: updated
     direction: desc
 
+- kind: CrowdReportModel
+  properties:
+  - name: location
+  - name: topic_ids
+  - name: updated
+    direction: desc
+
 - kind: MapModel
   properties:
   - name: deleted

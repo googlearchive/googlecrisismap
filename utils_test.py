@@ -12,6 +12,7 @@
 
 """Unit tests for utils.py."""
 
+import datetime
 import time
 
 import test_utils
@@ -87,6 +88,17 @@ class UtilsSetAndTestTests(test_utils.BaseTest):
     self.assertEqual('foo &amp; bar', utils.StripHtmlTags('foo &amp; bar'))
     self.assertEqual('foo &#123; bar', utils.StripHtmlTags('foo &#123; bar'))
     self.assertEqual('foo &#xf8; bar', utils.StripHtmlTags('foo &#xf8; bar'))
+
+  def testUtcToTimestamp(self):
+    dt = datetime.datetime(2013, 11, 19, 12, 58, 24)
+    self.assertEqual(
+        dt,
+        datetime.datetime.utcfromtimestamp(utils.UtcToTimestamp(dt)))
+
+    dt = datetime.datetime(2013, 11, 19, 12, 58, 24, 123)
+    self.assertEqual(
+        dt,
+        datetime.datetime.utcfromtimestamp(utils.UtcToTimestamp(dt)))
 
 if __name__ == '__main__':
   test_utils.main()
