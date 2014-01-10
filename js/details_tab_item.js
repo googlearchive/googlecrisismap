@@ -64,6 +64,12 @@ cm.DetailsTabItem = function(mapModel, appState, config) {
 goog.inherits(cm.DetailsTabItem, cm.MapTabItem);
 
 /** @override */
+cm.DetailsTabItem.prototype.addHeader = function(headerElem) {
+  // There's nothing to put in the header, so hide it.
+  headerElem.style.display = 'none';
+};
+
+/** @override */
 cm.DetailsTabItem.prototype.addScrollingContent = function(parentElem) {
   cm.ui.append(parentElem, this.featureContentElem_);
 };
@@ -76,6 +82,7 @@ cm.DetailsTabItem.prototype.loadFeatureData = function(featureData) {
   // Currently we just dump the content into the tab.  We aren't using the
   // rest of the fields yet, but we'll probably want them soon.
   this.featureContentElem_ = featureData.content;
+  goog.dom.classes.add(this.featureContentElem_, cm.css.DETAILS_CONTENT);
 
   this.layerId_ = featureData.layerId;
   this.featureTitle_ = featureData.title;

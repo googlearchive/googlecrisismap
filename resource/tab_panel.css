@@ -80,6 +80,10 @@ specific language governing permissions and limitations under the License.
   overflow-y: auto;
 }
 
+.cm-details-content {
+  margin: 12px;
+}
+
 .cm-chevron-up:hover {
   background-color: #121212;
   /* @alternate */ background:url('chevron_up.png') center center no-repeat, -webkit-linear-gradient(top, #383838, #121212);
@@ -201,13 +205,17 @@ specific language governing permissions and limitations under the License.
   cursor: pointer;
 
   /* General-case height of a tab should be 14 * 3 = 42px */
-  padding: 14px;
+  padding: 14px 6px 14px 6px;
   font-size: 14px;
   line-height: 1.0;
 
   /* Transparent borders on every tab: makes room for border when selected */
   border-left: 1px solid transparent;
   border-right: 1px solid transparent;
+}
+
+.cm-tab-panel-below .goog-tab {
+  padding: 14px;
 }
 
 .goog-tab-bar {
