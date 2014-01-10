@@ -55,7 +55,7 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
    * @type Element
    * @private
    */
-  this.langSelect_;
+  this.langContainer_;
 
   var publisherName = footerParams['publisher_name'];
   if (publisherName) {
@@ -84,29 +84,29 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
 
   // Show the language selector only on published maps.
   var langs = footerParams['langs'];
-  this.langSelect_ = cm.ui.create('select');
+  var langSelect = cm.ui.create('select');
   // Add default as the first item.
   var langChoices = [{'value': '',
-      'label': cm.MSG_LANGUAGE_DEFAULT}];
+                      'label': cm.MSG_LANGUAGE_DEFAULT}];
   langChoices = goog.array.concat(langChoices,
-      cm.util.createLanguageChoices(langs));
+                                  cm.util.createLanguageChoices(langs));
   goog.array.forEach(langChoices, function(langChoice) {
-      cm.ui.append(this.langSelect_, cm.ui.create('option',
-          {'value': langChoice.value}, langChoice.label));
+    cm.ui.append(langSelect, cm.ui.create('option',
+        {'value': langChoice.value}, langChoice.label));
   }, this);
   var hlParam = uri.getParameterValue('hl');
-  this.langSelect_.value = hlParam || '';
-  cm.ui.append(parentElem, cm.ui.SEPARATOR_DOT, cm.ui.create('div',
-     {'class': cm.css.LANGUAGE_PICKER_ICON}),
-    this.langSelect_);
-
+  langSelect.value = hlParam || '';
+  cm.ui.append(parentElem, this.langContainer_ =
+      cm.ui.create('div', {'class': cm.css.LANGUAGE_PICKER_CONTAINER},
+          cm.ui.SEPARATOR_DOT,
+          cm.ui.create('div', {'class': cm.css.LANGUAGE_PICKER_ICON}),
+          langSelect));
   // Change URL parameter and reload when another language is selected.
-  cm.events.listen(this.langSelect_, 'change', function(e) {
-      var newUri = (this.value === '') ? uri.removeParameter('hl') :
-          uri.setParameterValue('hl', this.value);
-      goog.global.location.replace(newUri.toString());
-  }, this.langSelect_);
-
+  cm.events.listen(langSelect, 'change', function(e) {
+    var newUri = (this.value === '') ? uri.removeParameter('hl') :
+        uri.setParameterValue('hl', this.value);
+    goog.global.location.replace(newUri.toString());
+  }, langSelect);
   cm.events.onChange(mapModel, 'footer', this.updateFooter_, this);
   this.updateFooter_();
 };

@@ -472,7 +472,7 @@ cm.Map.prototype.resizeTabPanel_ = function() {
     if (cm.ui.getByClass(cm.css.TAB_PANEL, this.frameElem_) ===
         this.panelElem_) {
       cm.ui.remove(this.panelElem_);
-      goog.dom.insertSiblingAfter(this.panelElem_, this.mapElem_);
+      goog.dom.insertSiblingAfter(this.panelElem_, this.footerElem_);
     }
   } else {
     // If panel is in the map wrapper, move it into the frame element.
@@ -566,6 +566,7 @@ cm.Map.prototype.layoutTabbedPanelUi_ = function() {
   }
   cm.ui.append(this.mapWrapperElem_, this.footerElem_);
   cm.ui.append(this.frameElem_, this.mapWrapperElem_, this.aboutElem_);
+  goog.dom.classes.add(this.frameElem_, cm.css.FOOTER_SHADOW);
 };
 
 /**

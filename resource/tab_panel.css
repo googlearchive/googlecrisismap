@@ -27,10 +27,8 @@ specific language governing permissions and limitations under the License.
 
 .cm-embedded .cm-tab-panel {
   float: none;
-  position: absolute;
   width: 100%;
   z-index: 1;
-  max-width: 500px;
   border: none;
 }
 
@@ -51,6 +49,14 @@ specific language governing permissions and limitations under the License.
   white-space: nowrap;
 }
 
+.cm-footer-shadow .cm-tab-panel {
+  box-shadow: 0 0 6px rgba(0,0,0,0.4);
+}
+
+.cm-footer-shadow .cm-tab-bar-container {
+  border-top: none;
+}
+
 .cm-tab-bar-buttons {
   display: inline-block;
   float: right;
@@ -60,8 +66,8 @@ specific language governing permissions and limitations under the License.
   overflow-x: visible;
 }
 
-.cm-scrolling-tab-content{
-  overflow-y:auto;
+.cm-scrolling-tab-content {
+  overflow-y: auto;
 }
 
 .cm-chevron-up {

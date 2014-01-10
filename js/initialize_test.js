@@ -68,5 +68,38 @@ registerTestSuite(MapTest);
 
 /** Test the Map constructor with no configuration object. */
 MapTest.prototype.testConstruction = function() {
-  var map = new cm.Map(this.frame_);
+  new cm.Map(this.frame_);
+};
+
+/** Test construction with the tabbed UI */
+MapTest.prototype.testTabbed = function() {
+  var config = {
+    'use_tab_panel': true
+  };
+  new cm.Map(this.frame_, config);
+
+  // Panel is a child of the frame.
+  expectThat(this.frame_, withClass('cm-tabbed'));
+  var panel = findDescendantOf(this.frame_, withClass('cm-tab-panel'));
+  var parent = panel.parentNode;
+  expectThat(parent, stringEquals(this.frame_));
+};
+
+/** Test construction with the tabbed UI in narrow frame. */
+MapTest.prototype.testTabbedBelow = function() {
+  this.frame_.offsetWidth = MIN_DOCUMENT_WIDTH_FOR_SIDEBAR - 1;
+  var config = {
+    'use_tab_panel': true
+  };
+  map = new cm.Map(this.frame_, config);
+
+  // Panel is a child of the map wrapper.
+  var panel = findDescendantOf(this.frame_, withClass('cm-tab-panel'));
+  expectThat(panel, withClass('cm-tab-panel-below'));
+  var parent = panel.parentNode;
+  expectThat(parent, withClass('cm-map-wrapper'));
+
+  // Panel follows the footer.
+  var footer = findDescendantOf(this.frame_, withClass('cm-footer'));
+  expectThat(panel, stringEquals(footer.nextSibling));
 };

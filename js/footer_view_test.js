@@ -47,8 +47,8 @@ FooterViewTest.prototype.testConstructor = function() {
 
 /* Tests language selector */
 FooterViewTest.prototype.changeUrlHlParamOnLangSelect = function() {
-  this.createView_();
-  var langSelect = this.footerView_.langSelect_;
+  var parent = this.createView_();
+  var langSelect = findDescendantOf(parent, withNodeName('select'));
   // Override location.replace to just set a 'url' instance variable with
   // the value it was given, since it's not defined in tests by default.
   this.setForTest_('goog.global.location', {

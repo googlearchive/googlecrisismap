@@ -638,6 +638,10 @@ span.cm-g-flag {
   color: #666;
   font-size: 12px;
 }
+.cm-embedded.cm-footer-shadow .cm-footer {
+  padding: 0 6px 2px;
+  border: none;
+}
 .cm-embedded .cm-footer {
   padding: 4px 6px;
   text-align: left;
@@ -646,6 +650,12 @@ span.cm-g-flag {
 .cm-html-editor .cm-preview.cm-footer {
   padding: 6px;
   min-height: 0;
+}
+.cm-language-picker-container {
+  display: inline-block;
+}
+.cm-tabbed.cm-embedded .cm-language-picker-container {
+  display: none;
 }
 .cm-language-picker-icon {
   display: inline-block;
@@ -1460,15 +1470,12 @@ textarea.cm-legend-text {
   -ms-user-select: none;
   user-select: none;
 }
-
 .cm-arranger .cm-button-area {
   margin: 21px 0 5px 20px;
 }
-
 .cm-panel-float > .cm-arranger {
   height: inherit !important;
 }
-
 .cm-arranger-inner {
   padding: 10px 20px 10px 20px;
   position: absolute;
@@ -1478,13 +1485,11 @@ textarea.cm-legend-text {
   bottom: 0;
   top: 54px;
 }
-
 .cm-arranger.cm-arranger-popup {
   width: 100%;
   height: auto;
   overflow-y: auto;
 }
-
 .cm-arranger-popup > .cm-arranger-inner {
   position: static;
 }
