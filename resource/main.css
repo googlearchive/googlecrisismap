@@ -386,6 +386,9 @@ html, body {
   position: relative;
   margin-left: 20px;
 }
+.cm-panel-layers {
+  margin: 12px;
+}
 .cm-layer-entry {
   position: relative;
   margin: 0 0 18px;
