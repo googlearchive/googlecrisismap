@@ -69,6 +69,10 @@ specific language governing permissions and limitations under the License.
 .cm-tab-bar-buttons {
   display: inline-block;
   float: right;
+  height: 36px;
+}
+
+.cm-tab-panel-below .cm-tab-bar-buttons, .cm-touch .cm-tab-bar-buttons {
   height: 42px;
 }
 
@@ -129,15 +133,20 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-chevron-down {
-  background:url('chevron_down.png') center center no-repeat;
-  width:42px;
-  height:42px;
+  background: url('chevron_down.png') center center no-repeat;
+  width: 42px;
+  height: 36px;
   padding: 0px;
   margin: 0px;
   cursor: pointer;
   display: inline-block;
   -moz-user-select: none;
   -webkit-user-select: none;
+}
+
+.cm-tab-panel-below .cm-chevron-up, .cm-tab-panel-below .cm-chevron-down,
+.cm-touch .cm-chevron-up, .cm-touch .cm-chevron-down {
+  height: 42px;
 }
 
 .cm-tab-content-collapsed {
@@ -174,7 +183,7 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tab-content .cm-panel-header {
-  margin:0;
+  margin: 0;
 }
 
 .cm-tab-content .cm-map-picker-button {
@@ -185,15 +194,15 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tabbed-legend-box {
-  border-top:1px solid #f0f0f0;
+  border-top: 1px solid #f0f0f0;
   margin: 12px 0;
   padding: 12px 12px 0 12px;
   overflow: hidden; /* fully enclose any floating children */
 }
 
 .cm-tabbed-legend-box.cm-first-tabbed-legend-box {
-  border-top:0px;
-  padding:0 12px 0 12px;
+  border-top: 0px;
+  padding: 0 12px 0 12px;
 }
 
 .cm-tabbed-legend-content {
@@ -203,7 +212,7 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tab-content .cm-legend-item {
-  font-size:12px;
+  font-size: 12px;
 }
 
 .cm-tab-panel .cm-panel-header {
@@ -211,7 +220,7 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tab-content .cm-legend-graphic {
-  margin:2px 4px 4px 2px;
+  margin: 2px 4px 4px 2px;
 }
 
 /*
@@ -222,19 +231,17 @@ specific language governing permissions and limitations under the License.
 
 .goog-tab {
   cursor: pointer;
-
-  /* General-case height of a tab should be 14 * 3 = 42px */
-  padding: 14px 6px 14px 6px;
-  font-size: 14px;
+  padding: 12px 6px;
+  font-size: 12px;
   line-height: 1.0;
-
   /* Transparent borders on every tab: makes room for border when selected */
   border-left: 1px solid transparent;
   border-right: 1px solid transparent;
 }
 
-.cm-tab-panel-below .goog-tab {
+.cm-tab-panel-below .goog-tab, .cm-touch .goog-tab {
   padding: 14px;
+  font-size: 14px;
 }
 
 .goog-tab-bar {
