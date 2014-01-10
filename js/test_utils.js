@@ -370,6 +370,9 @@ FakeUi.createChildHelper_ = function(newElement, newChild) {
  */
 FakeUi.create = function(tag, opt_attrs, var_args) {
   var args = Array.prototype.slice.call(arguments, 2);
+  if (typeof opt_attrs === 'string' || goog.isArray(opt_attrs)) {
+    opt_attrs = {'class': opt_attrs};
+  }
   if (opt_attrs && opt_attrs['class'] && goog.isArray(opt_attrs['class'])) {
     opt_attrs['class'] = opt_attrs['class'].join(' ');
   }
@@ -399,6 +402,8 @@ FakeUi.getText = function(element) {
         element.innerHTML.replace(/<[^>]*>/g, ''));
     goog.global['document'] = document;
     return text;
+  } else if (element.textContent) {
+    return element.textContent;
   } else if (element.childNodes.length > 0 &&
              element.childNodes[0].nodeName === '#text') {
     return element.childNodes[0].textContent || '';
