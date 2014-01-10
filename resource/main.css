@@ -1110,7 +1110,7 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 div.cm-help-icon {
   width: 15px;
   height: 15px;
-  background: url('question.gif') no-repeat 0 1px;
+  background: url('question.png') no-repeat 0 1px;
   background-size: 14px;
   display: none;
 }
