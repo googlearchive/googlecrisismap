@@ -13,7 +13,7 @@
 function AppStateTest() {
   cm.TestBase.call(this);
   this.viewport_ = cm.LatLonBox.ENTIRE_MAP;
-  this.appState_ = new cm.AppState('fr');
+  this.appState_ = new cm.AppState(undefined, undefined, 'fr');
 }
 AppStateTest.prototype = new cm.TestBase();
 registerTestSuite(AppStateTest);
@@ -27,8 +27,8 @@ AppStateTest.prototype.testConstruction = function() {
   expectEq(cm.MapModel.Type.ROADMAP, this.appState_.get('map_type'));
 };
 
-/** Test the AppState fromAppState copy method. */
-AppStateTest.prototype.testFromAppState = function() {
+/** Test cloning the app state. */
+AppStateTest.prototype.testClone = function() {
   this.appState_.set('language', 'es');
   this.appState_.get('enabled_layer_ids').add('x');
   this.appState_.get('matched_layer_ids').push('y');
@@ -37,7 +37,7 @@ AppStateTest.prototype.testFromAppState = function() {
   this.appState_.set('map_type', cm.MapModel.Type.SATELLITE);
 
   // Check that all the properties are equal.
-  var newAppState = cm.AppState.fromAppState(this.appState_);
+  var newAppState = cm.AppState.clone(this.appState_);
   expectEq(this.appState_.get('language'), newAppState.get('language'));
   expectEq(this.appState_.get('enabled_layer_ids'),
            newAppState.get('enabled_layer_ids'));

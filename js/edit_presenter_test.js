@@ -22,18 +22,18 @@ registerTestSuite(EditPresenterTest);
 
 /** Tests that the EditPresenter responds correctly to IMPORT events. */
 EditPresenterTest.prototype.testImportEvent = function() {
-  var map = new cm.MapModel();
+  var model = new cm.MapModel();
   var importer = this.expectNew_('cm.ImporterView', '/root/.api/maps');
-  var presenter = new cm.EditPresenter(null, map, null, this.config_);
+  var presenter = new cm.EditPresenter(null, model, null, this.config_);
   expectCall(importer.openImporter)();
   cm.events.emit(cm.app, cm.events.IMPORT, {});
 };
 
 /** Tests that the EditPresenter responds correctly to INSPECT events. */
 EditPresenterTest.prototype.testInspectEvent = function() {
-  var map = new cm.MapModel();
+  var model = new cm.MapModel();
   var inspector = this.expectNew_('cm.InspectorView');
-  var presenter = new cm.EditPresenter(null, map, null, this.config_);
+  var presenter = new cm.EditPresenter(null, model, null, this.config_);
 
   // Emitting an INSPECT event on a map should open an inspector on the map.
   expectCall(inspector.inspect)('Edit map details', allOf([
@@ -43,8 +43,8 @@ EditPresenterTest.prototype.testInspectEvent = function() {
               preview_class: cm.css.MAP_DESCRIPTION}),
     contains({key: 'viewport', label: 'Default viewport',
               type: cm.editors.Type.LAT_LON_BOX, app_state: null})
-  ]), null, map);
-  cm.events.emit(cm.app, cm.events.INSPECT, {object: map});
+  ]), null, model);
+  cm.events.emit(cm.app, cm.events.INSPECT, {object: model});
 
   // Emitting an INSPECT event on a layer should open an inspector on the layer.
   var layer = new cm.LayerModel();
@@ -89,7 +89,7 @@ function findEditorSpec(key, editorSpecs) {
 /** Tests that 'enable_osm_map_type_editing' enables the OSM base map option. */
 EditPresenterTest.prototype.testEnableOsmMapTypeEditing = function() {
   var OSM_CHOICE = {value: 'OSM', label: 'OpenStreetMap'};
-  var map = new cm.MapModel();
+  var model = new cm.MapModel();
   var inspector = this.expectNew_('cm.InspectorView'), specs;
   inspector.inspect = function(title, editorSpecs, object) {
     specs = editorSpecs;
@@ -97,7 +97,7 @@ EditPresenterTest.prototype.testEnableOsmMapTypeEditing = function() {
 
   // This should call inspector.inspect, which captures the 'editorSpecs' arg.
   var presenter = new cm.EditPresenter(null, null, null, {});
-  cm.events.emit(cm.app, cm.events.INSPECT, {object: map});
+  cm.events.emit(cm.app, cm.events.INSPECT, {object: model});
   // The OSM option should not be present.
   var spec = findEditorSpec('map_type', specs);
   expectThat(spec.choices, not(contains(OSM_CHOICE)));
@@ -105,7 +105,7 @@ EditPresenterTest.prototype.testEnableOsmMapTypeEditing = function() {
   // Try again, this time with the enable_osm_map_type_editing flag set.
   presenter = new cm.EditPresenter(null, null, null,
                                    {enable_osm_map_type_editing: true});
-  cm.events.emit(cm.app, cm.events.INSPECT, {object: map});
+  cm.events.emit(cm.app, cm.events.INSPECT, {object: model});
   // The OSM option should be present this time.
   var spec = findEditorSpec('map_type', specs);
   expectThat(spec.choices, contains(OSM_CHOICE));
@@ -250,8 +250,8 @@ EditPresenterTest.prototype.testShareEmailView = function() {
  * when the DEFAULT_VIEW_SET event is fired.
  */
 EditPresenterTest.prototype.testSetDefaultView = function() {
-  var oldDefault = new cm.AppState('fr');
-  var newDefault = new cm.AppState('es');
+  var oldDefault = new cm.AppState(undefined, undefined, 'fr');
+  var newDefault = new cm.AppState(undefined, undefined, 'es');
   var command = this.expectNew_(
       'cm.SetDefaultViewCommand', oldDefault, newDefault);
   expectCall(command.execute)(_, _);

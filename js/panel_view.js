@@ -296,9 +296,8 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
   if (setDefaultViewLink) {
     // Set the current view as default.
     cm.events.listen(setDefaultViewLink, 'click', function() {
-      var oldDefault = cm.AppState.fromAppState(this.appState_);
-      oldDefault.setFromMapModel(this.model_);
-      var newDefault = cm.AppState.fromAppState(this.appState_);
+      var oldDefault = cm.AppState.clone(this.appState_, this.model_);
+      var newDefault = cm.AppState.clone(this.appState_);
       cm.events.emit(cm.app, cm.events.DEFAULT_VIEW_SET,
           {oldDefault: oldDefault, newDefault: newDefault});
     }, this);

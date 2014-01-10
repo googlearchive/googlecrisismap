@@ -22,13 +22,13 @@ function SetDefaultViewCommandTest() {
 
   // Use distinct old default instead of setting from default map model to
   // ensure the command is respecting this parameter, and not the map model.
-  this.oldDefault_ = new cm.AppState('fr');
+  this.oldDefault_ = new cm.AppState(undefined, undefined, 'fr');
   this.oldDefault_.set('enabled_layer_ids', new goog.structs.Set(['a', 'b']));
   this.oldDefault_.set('layer_opacities', {a: 25, b: 75, c: 1});
   this.oldDefault_.set('viewport', new cm.LatLonBox(20, -20, 10, 10));
   this.oldDefault_.set('map_type', cm.MapModel.Type.ROADMAP);
 
-  this.newDefault_ = new cm.AppState('es');
+  this.newDefault_ = new cm.AppState(undefined, undefined, 'es');
   this.newDefault_.set('enabled_layer_ids', new goog.structs.Set(['a', 'c']));
   this.newDefault_.set('layer_opacities', {a: 0, b: 50, c: 100});
   this.newDefault_.set('viewport', new cm.LatLonBox(10, -10, 20, 20));

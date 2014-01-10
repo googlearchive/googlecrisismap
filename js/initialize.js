@@ -263,13 +263,15 @@ cm.Map.prototype.buildUi_ = function(frame) {
   var mapRoot = this.config_['map_root'] || {};
   var language = this.config_['lang'];
 
-  // Create the AppState and models.
-  var appState = new cm.AppState(language);
+  // Create the models and application state.
   var mapModel = cm.MapModel.newFromMapRoot(mapRoot);
   var metadataModel = new cm.MetadataModel(
       mapModel, this.config_['metadata'], this.config_['metadata_url']);
-  appState.setFromMapModel(mapModel);
-  appState.setFromUri(window.location);
+
+  // After construction, the app state is not finalized because it must wait for
+  // construction of the MapView, which waits for the Maps API 'bounds' to
+  // be initialized and then exposes the viewport to the app state.
+  var appState = new cm.AppState(mapModel, window.location, language);
 
   // Forward model changes to global scope.
   cm.events.forward(mapModel, cm.events.MODEL_CHANGED, cm.app);
@@ -695,10 +697,8 @@ cm.Map.prototype.constructPresenter_ = function(appState, mapModel, mapView) {
   var presenter = new cm.Presenter(
       appState, mapView, this.panelView_, this.panelElem_,
       this.config_['map_id'] || '');
-  // TODO(romano): figure out why we need to reset the AppState here, given
-  // that it's already done in buildUi_()
-  appState.setFromUri(window.location);
-  presenter.resetMapView(mapModel, window.location);
+  presenter.resetView(mapModel, window.location);
+
   // If "#gz=..." is specified, get the user's geolocation and zoom to it.
   var match = cm.ui.document.location.hash.match('gz=([0-9]+)');
   if (match) {

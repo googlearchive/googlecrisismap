@@ -69,8 +69,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
   this.focusPosition_ = null;
 
   cm.events.listen(cm.app, cm.events.RESET_VIEW, function(event) {
-    this.appState_.setFromMapModel(event.model);
-    this.resetMapView(event.model);
+    this.resetView(event.model);
   }, this);
 
   cm.events.listen(panelView, cm.events.TOGGLE_LAYER, function(event) {
@@ -140,20 +139,21 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
   }
 };
 
-
 /**
- * Resets the MapView to respect the map model.  If a URI is given, apply
- * adjustments according to the query parameters.
+ * Resets the AppState and MapView according to the given MapModel. If a URI
+ * is given, applies adjustments according to the query parameters.
  * @param {cm.MapModel} mapModel A map model.
  * @param {!goog.Uri|!Location|string} opt_uri An optional URI whose query
  *     parameters are used to adjust the view settings.
  */
-cm.Presenter.prototype.resetMapView = function(mapModel, opt_uri) {
+cm.Presenter.prototype.resetView = function(mapModel, opt_uri) {
+  this.appState_.setFromMapModel(mapModel);
   this.mapView_.matchViewport(
       /** @type cm.LatLonBox */(mapModel.get('viewport')) ||
       cm.LatLonBox.ENTIRE_MAP);
   if (opt_uri) {
     this.mapView_.adjustViewportFromUri(opt_uri);
+    this.appState_.setFromUri(opt_uri);
   }
 };
 

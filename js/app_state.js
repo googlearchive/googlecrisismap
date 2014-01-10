@@ -33,11 +33,15 @@ goog.require('goog.structs.Set');
  * A model for all the non-persistent application state.  This includes the
  * set of layers currently enabled in the panel, the current map viewport,
  * and the currently selected base map type.
+ * @param {cm.MapModel=} opt_mapModel Optionally update certain properties
+ *   of the app state according to the given map model.
+ * @param {!goog.Uri|!Location|string} opt_uri An optional URI whose query
+ *   parameters are used to adjust the app state.
  * @param {string=} opt_language The language code for the user's language.
  * @constructor
  * @extends google.maps.MVCObject
  */
-cm.AppState = function(opt_language) {
+cm.AppState = function(opt_mapModel, opt_uri, opt_language) {
   google.maps.MVCObject.call(this);
   /**
    * The BCP 47 language code for the current UI language.
@@ -80,6 +84,9 @@ cm.AppState = function(opt_language) {
   /** The currently selected base map type, as a cm.MapModel.Type. */
   this.set('map_type', cm.MapModel.Type.ROADMAP);
 
+  opt_mapModel && this.setFromMapModel(opt_mapModel);
+  opt_uri && this.setFromUri(opt_uri);
+
   cm.events.listen(cm.app, [cm.events.MODEL_CHANGED], function(e) {
     e.model && this.updateSingleSelectFolders(e.model);
   }, this);
@@ -87,12 +94,14 @@ cm.AppState = function(opt_language) {
 goog.inherits(cm.AppState, google.maps.MVCObject);
 
 /**
- * Creates a new AppState from a given app state, copying its properties.
- * @param {cm.AppState} appState AppState to copy from.
+ * Clones the given app state.
+ * @param {cm.AppState} appState The app state object to clone.
+ * @param {cm.MapModel=} opt_mapModel Optionally pass a map model to the
+ *   app state constructor.
  * @return {cm.AppState} The new app state.
  */
-cm.AppState.fromAppState = function(appState) {
-  var newAppState = new cm.AppState(
+cm.AppState.clone = function(appState, opt_mapModel) {
+  var newAppState = new cm.AppState(opt_mapModel, undefined,
       /** @type {string} */ (appState.get('language')));
   newAppState.set('enabled_layer_ids',
       appState.get('enabled_layer_ids').clone());
@@ -320,10 +329,10 @@ cm.AppState.prototype.getUri = function() {
 };
 
 /**
- * Adjusts the app state based on query parameters as encoded by getUri().
- * Note that parameters for adjusting the viewport aren't handled here; the
- * MapView adjusts its own viewport based on the URI and the AppState picks up
- * the viewport because its 'viewport' property is bound to the MapView.
+ * Adjusts the app state based on query parameters in the uri. Note that the
+ * parameters for adjusting the viewport aren't handled here; the MapView
+ * determines the viewport after initialization of the Maps API map 'bounds'.
+ * and then exposes it to the app state.
  * @param {!goog.Uri|!Location|string} uri A URI that encodes the app state.
  */
 cm.AppState.prototype.setFromUri = function(uri) {
