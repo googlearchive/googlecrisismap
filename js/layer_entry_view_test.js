@@ -137,32 +137,47 @@ LayerEntryViewTest.prototype.testConstructorIndex = function() {
 };
 
 /**
+ * Prepare a mock of the opacity slider.  It should be possible to use a real
+ * goog.ui.Slider in the tests, except that FakeElement doesn't support enough
+ * of the DOM (it needs an implementation of el.classList).
+ * @private
+ */
+LayerEntryViewTest.prototype.mockOpacitySlider_ = function() {
+  this.sliderMock_ = this.expectNew_('goog.ui.Slider');
+  this.sliderThumb_ = cm.ui.create('div');
+  stub(this.sliderMock_.getValueThumb)().is(this.sliderThumb_);
+  this.sliderMock_.valueStack = [];
+  this.sliderMock_.setValue = function(val) {
+    this.valueStack.push(val);
+  };
+  this.sliderMock_.getValue = function() {
+    return this.valueStack.length ?
+        this.valueStack[this.valueStack.length - 1] : 0;
+  };
+  stub(this.sliderMock_.setMoveToPointEnabled)(_).is(null);
+  stub(this.sliderMock_.render)(_).is(null);
+};
+
+/**
  * Tests that the opacity slider is toggled on and off appropriately for TILE
  * layers and non-TILE layers, respectively. Also tests that the value is
  * initialized correctly for TILE layers.
  */
 LayerEntryViewTest.prototype.testOpacitySlider = function() {
   // Create view with non-TILE layer.
-  this.createView_();
+  var parent = this.createView_();
 
-  // Change the layer to TILE, and verify the slider is created.
-  var slider = this.expectNew_('goog.ui.Slider');
-  this.fakeThumb_ = cm.ui.create('div');
-  stub(slider.getValueThumb)().is(this.fakeThumb_);
+  this.mockOpacitySlider_();
 
-  expectCall(slider.setMoveToPointEnabled)(true);
-  expectCall(slider.render)(_);
-  expectCall(slider.setValue)(100);
+  // Change the layer to TILE, and verify the slider is created.  It should
   this.layerModel_.set('type', cm.LayerModel.Type.TILE);
 
-  var sliderDot = expectDescendantOf(
-      this.fakeThumb_, withClass(cm.css.SLIDER_DOT));
+  var sliderDot = expectDescendantOf(this.sliderThumb_,
+                                     withClass(cm.css.SLIDER_DOT));
   expectEq(1, sliderDot.style.opacity);
 
   // Test that the slider's 'change' event fires a CHANGE_OPACITY event with the
-  // correct opacity.
-  stub(slider.getValue)().is(50);
-  // Also expect the corresponding analytics log
+  // correct opacity.  Also expect the corresponding analytics log
   this.expectLogAction(cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
                        this.layerModel_.get('id'));
   var changeOpacityEmitted = false;
@@ -171,22 +186,60 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
     changeOpacityEmitted = true;
     opacity = e.opacity;
   });
-  cm.events.emit(slider, 'change');
+
+  // Simulate the user sliding the slider
+  this.sliderMock_.setValue(50);
+  cm.events.emit(this.sliderMock_, goog.ui.Component.EventType.CHANGE);
+  cm.events.emit(this.sliderMock_, goog.ui.SliderBase.EventType.DRAG_VALUE_END);
   expectTrue(changeOpacityEmitted);
   expectEq(50, opacity);
 
   // Test whether changes in the app state are reflected upon the slider.
-  expectCall(slider.setValue)(40);
   this.appState_.setLayerOpacity('layer0', 40);
   expectEq(0.4, sliderDot.style.opacity);
 
   // The slider thumb should contain circle and dot divs.
-  var circle = expectDescendantOf(
-      this.fakeThumb_, withClass(cm.css.SLIDER_CIRCLE));
+  var circle = expectDescendantOf(this.sliderThumb_,
+                                  withClass(cm.css.SLIDER_CIRCLE));
   expectDescendantOf(circle, withClass(cm.css.SLIDER_DOT));
 
   // Change the layer to non-TILE to verify that the slider is destroyed.
   this.layerModel_.set('type', cm.LayerModel.Type.KML);
+};
+
+/**
+ * Tests that the workaround for goog.ui.Slider not properly initializing
+ * is in place.  See discussion in LayerEntryView.wasRevealed.
+ */
+LayerEntryViewTest.prototype.testOpacitySliderInitializedOnReveal = function() {
+  var childModel = cm.LayerModel.newFromMapRoot({
+    id: 'childWithOpacity',
+    title: 'Child Layer with Opacity',
+    type: 'GOOGLE_MAP_TILES'
+  });
+  this.appState_.setLayerOpacity('childWithOpacity', 25);
+
+  this.mockOpacitySlider_();
+
+  this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
+  this.layerModel_.get('sublayers').push(childModel);
+  this.appState_.setLayerEnabled('layer0', false);
+  this.appState_.setLayerEnabled('childWithOpacity', true);
+
+  this.createView_();
+
+  // Enable the folder layer
+  var valueStackLength = this.sliderMock_.valueStack.length;
+  this.appState_.setLayerEnabled('layer0', true);
+
+  // The slider's value should have been set since being enabled
+  expectTrue(this.sliderMock_.valueStack.length > valueStackLength);
+  // Its value should match the one in the appState
+  expectEq(25, this.sliderMock_.getValue());
+  // And it should have been temporarily set to a different value to
+  // force a redraw.
+  expectNe(this.sliderMock_.valueStack[this.sliderMock_.valueStack.length - 1],
+           this.sliderMock_.valueStack[this.sliderMock_.valueStack.length - 2]);
 };
 
 /** Tests that a single-select folder get a sublayer picker. */

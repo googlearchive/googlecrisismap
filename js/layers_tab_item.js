@@ -66,6 +66,17 @@ cm.LayersTabItem = function(mapModel, appState, config, metadataModel) {
    */
   this.matchingLayersMessage_ = null;
 
+  /**
+   * Listens to the containing tab view to determine when the layers tab has
+   * been displayed.  setSelected() isn't enough because that happens before
+   * the displayed content has changed, and the layer entry views need to know
+   * when they have actually been revealed in the DOM before they can update
+   * their opacity sliders (thank you, goog.ui.slider).
+   * @type ?cm.events.ListenerToken
+   * @private
+   */
+  this.tabViewListener_ = null;
+
   if (config['enable_layer_filter']) {
     this.configureLayerFilter_();
   }
@@ -222,3 +233,40 @@ cm.LayersTabItem.prototype.getTitle = function() {
 
 /** @override */
 cm.LayersTabItem.prototype.getIcon = function() { return null; };
+
+/** @override */
+cm.LayersTabItem.prototype.setTabView = function(tabView) {
+  if (tabView != this.tabView) {
+    if (this.tabViewListener_) {
+      cm.events.unlisten(this.tabViewListener_, this);
+    }
+    this.tabViewListener_ = /** @type cm.events.ListenerToken */(
+        cm.events.listen(tabView, cm.events.TAB_SELECTION_CHANGED,
+                         this.handleTabSelectionChanged_, this));
+  }
+  cm.MapTabItem.prototype.setTabView.call(this, tabView);
+};
+
+/**
+ * Sigh.  Thanks to a bug in goog.ui.Slider, updates to a slider while hidden
+ * may not be properly drawn, such that the thumb appears in the wrong place
+ * when it is revealed.  That can happen when the AppState is first being
+ * initialized - it loads and determines the opacities of all layers from the
+ * maproot and URL parameters - and the layers tab isn't selected, so it isn't
+ * in the DOM.
+ *
+ * That all means the slider must be updated *after* being
+ * added to the DOM, which happens after we receive setSelected().  So instead
+ * we must listen to TAB_SELECTION_CHANGED, which is sent after the DOM has been
+ * updated.
+ * @private
+ */
+cm.LayersTabItem.prototype.handleTabSelectionChanged_ = function() {
+  if (this.tabView.selectedTabItem() !== this) return;
+  for (var layerId in this.layerEntryViews_) {
+    var layer = this.layerEntryViews_[layerId];
+    if (layer.isEnabled()) {
+      layer.wasRevealed();
+    }
+  }
+};

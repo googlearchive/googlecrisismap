@@ -202,3 +202,40 @@ LayersTabItemTest.prototype.testNoLegends = function() {
   var layersTab = this.createLayersTabItem_();
   expectNoDescendantOf(layersTab.getContent(), withClass(cm.css.LAYER_LEGEND));
 };
+
+/**
+ * Tests that LayerEntryViews receive wasRevealed() after they have been
+ * placed in the DOM on tab selection.  See the comment for
+ * cm.LayersTabItem.handleTabSelectionChanged_() for the full details, but
+ * it works around a bug in goog.ui.Slider not being updated properly while
+ * not in the DOM.
+ */
+LayersTabItemTest.prototype.testWasRevealedSent = function() {
+  var revealedIds = {};
+  var mockWasRevealed = function() {
+    revealedIds[this.model_.get('id')] = true;
+  };
+  this.setForTest_('cm.LayerEntryView.prototype.wasRevealed', mockWasRevealed);
+  var revealedLayer = this.addLayer_(
+      'testWasRevealedSent_reveal', 'Should Reveal');
+  this.appState_.setLayerEnabled(revealedLayer.get('id'), true);
+  var unrevealedLayer = this.addLayer_(
+      'testWasRevealedSent_noReveal', 'No Reveal');
+  this.appState_.setLayerEnabled(unrevealedLayer.get('id'), false);
+
+  var layersTab = this.createLayersTabItem_();
+  // Need another tab to be selected, so we create the about tab too.
+  var aboutTab = new cm.AboutTabItem(
+      this.mapModel_, this.appState_, this.config_);
+  var tabView = new cm.TabView();
+  tabView.appendTabItem(aboutTab);
+  tabView.selectTabItem(aboutTab);
+  tabView.appendTabItem(layersTab);
+
+  for (key in revealedIds) {
+    revealedIds[key] = false;
+  }
+  tabView.selectTabItem(layersTab);
+  expectTrue(revealedIds[revealedLayer.get('id')]);
+  expectFalse(revealedIds[unrevealedLayer.get('id')]);
+};

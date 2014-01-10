@@ -676,6 +676,7 @@ cm.LayerEntryView.prototype.updateFolderDecorator_ = function() {
  */
 cm.LayerEntryView.prototype.updateEnabled_ = function() {
   var enabled = this.isEnabled();
+  var wasEnabled = !goog.dom.classes.has(this.contentElem_, cm.css.HIDDEN);
   this.checkboxElem_.checked = enabled;
   var selectedId = this.model_.isSingleSelect() &&
       this.appState_.getFirstEnabledSublayerId(this.model_) || null;
@@ -719,14 +720,38 @@ cm.LayerEntryView.prototype.updateEnabled_ = function() {
   goog.dom.classes.enable(this.sublayersElem_, cm.css.HIDDEN, !enabled ||
       this.model_.get('folder_type') === cm.LayerModel.FolderType.LOCKED);
 
-  // The opacity slider does not update properly when it's hidden, so we need
-  // update it when it becomes visible.
-  if (enabled && this.slider_) {
-    this.slider_.handleRangeModelChange(null);  // force UI update
+  if (!wasEnabled && enabled) {
+    this.wasRevealed();
   }
 
-
   this.updateSingleSelect_();
+};
+
+/**
+ * Called when a previously hidden layer becomes visible; when called on a
+ * folder, this function is called recursively on any enabled children.
+ * The recursion typically starts when the layers tab is selected
+ * or when a layer is enabled.
+ *
+ * The opacity slider does not update properly when it's hidden, so we need
+ * to update it when it becomes visible. If we are a folder, our children need
+ * the same update.
+ */
+cm.LayerEntryView.prototype.wasRevealed = function() {
+  if (this.slider_) {
+    // We must perturb the value from its current setting (should match the
+    // value in appState), because setting the slider to its current value
+    // doesn't force a redraw.
+    var currentValue = this.opacityFromAppState_();
+    this.slider_.setValue(currentValue > 0 ? 0 : 1);
+    this.slider_.setValue(currentValue);
+  }
+  for (var sublayerId in this.layerEntryViews_) {
+    var sublayer = this.layerEntryViews_[sublayerId];
+    if (sublayer.isEnabled()) {
+      sublayer.wasRevealed();
+    }
+  }
 };
 
 /**
@@ -830,16 +855,22 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
           this.slider_, goog.ui.Component.EventType.CHANGE, function() {
             var layerId = /** @type string */(this.model_.get('id'));
             var level = /** @type number */(this.slider_.getValue());
-            cm.Analytics.logAction(
-                cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
-                layerId, level * 100);
             cm.events.emit(
                 cm.app, cm.events.CHANGE_OPACITY,
                 {id: layerId, opacity: level});
           }, this),
       // Keep the slider's value updated.
       cm.events.onChange(this.appState_, 'layer_opacities',
-                         this.updateSliderValue_, this)
+                         this.updateSliderValue_, this),
+      cm.events.listen(
+          this.slider_, goog.ui.SliderBase.EventType.DRAG_VALUE_END,
+          function() {
+            var layerId = /** @type string */(this.model_.get('id'));
+            var level = /** @type number */(this.slider_.getValue());
+            cm.Analytics.logAction(
+                cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
+                layerId, level * 100);
+          }, this)
     ];
   } else if (!enableOpacitySlider && this.slider_) {
     this.slider_.dispose();
@@ -850,6 +881,20 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
 };
 
 /**
+ * Returns the layer's current opacity, as reflected in the app state.
+ * Defaults to 100 if the layer's current opacity is not stored in the
+ * appState.
+ * @return {number} The current percent opacity (0 - 100).
+ * @private
+ */
+cm.LayerEntryView.prototype.opacityFromAppState_ = function() {
+  var opacities =  /** @type Object.<number> */(
+      this.appState_.get('layer_opacities') || {});
+  var id = this.model_.get('id');
+  return id in opacities ? opacities[id] : 100;
+};
+
+/**
  * Updates the opacity slider to match the application state. This will do
  * nothing if the slider control does not exist (i.e. this is not a TILES
  * layer).
@@ -857,10 +902,7 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
  */
 cm.LayerEntryView.prototype.updateSliderValue_ = function() {
   if (this.slider_) {
-    var opacities =  /** @type Object.<number> */(
-        this.appState_.get('layer_opacities') || {});
-    var id = this.model_.get('id');
-    var opacity = id in opacities ? opacities[id] : 100;
+    var opacity = this.opacityFromAppState_();
     this.slider_.setValue(opacity);
     this.sliderDot_.style.opacity = opacity / 100;
   }
