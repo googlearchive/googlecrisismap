@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.2">
+<Document>
+  <Style id="style1">
+    <IconStyle>
+      <color>ffffffff</color>
+    <Icon>
+        <href>http://mw1.google.com/crisisresponse/icons/red_dot.png</href>
+      </Icon>
+      <hotSpot x="0.5" xunits="fraction" y="0.5" yunits="fraction" />
+    </IconStyle>
+  </Style>
+  <Placemark>
+    <name />
+  <description />
+  <Point>
+      <coordinates>-108.800000,36.300000,0</coordinates>
+    </Point>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
+  <Placemark>
+    <name />
+  <description />
+  <Point>
+      <coordinates>-92.500000,46.100000,0</coordinates>
+    </Point>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
+</Document>
+</kml>
