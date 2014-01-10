@@ -265,6 +265,9 @@ cm.MSG_DOWNLOAD_KML_LINK = goog.getMsg('Download KML');
 /** @desc Label for a link to download a GeoRSS file. */
 cm.MSG_DOWNLOAD_GEORSS_LINK = goog.getMsg('Download GeoRSS');
 
+/** @desc Label for a link to download a spreadsheet file. */
+cm.MSG_DOWNLOAD_SPREADSHEET_LINK = goog.getMsg('Download spreadsheet');
+
 /** @desc Label for a link to view data from a Fusion table. */
 cm.MSG_VIEW_FUSION_TABLE_LABEL = goog.getMsg('View data');
 
@@ -594,6 +597,10 @@ cm.MSG_LAYER_TYPE = goog.getMsg('Layer type');
 /** @desc Menu option for a service that delivers layer tiles. */
 cm.MSG_LAYER_TYPE_TILE_SERVICE = goog.getMsg('Tile service');
 
+/** @desc Menu option for a spreadsheet data file in CSV format. */
+/* NOTE(kpy): When this type supports more file formats, mention them here. */
+cm.MSG_LAYER_TYPE_SPREADSHEET = goog.getMsg('Spreadsheet (CSV file)');
+
 /** @desc Menu option for a layer from the Google Fusion Tables product. */
 cm.MSG_LAYER_TYPE_FUSION_TABLES = goog.getMsg('Google Fusion Tables');
 
@@ -626,6 +633,73 @@ cm.MSG_SHOW_DOWNLOAD_LINK = goog.getMsg('Show download link?');
  *     entered should be treated as a tile index.
  */
 cm.MSG_TILE_INDEX = goog.getMsg('Tile index URL?');
+
+/** @desc Label for a text field for entering the title of a placemark. */
+cm.MSG_PLACEMARK_TITLE = goog.getMsg('Placemark title');
+
+/** @desc Label for a text field for entering the description of placemark. */
+cm.MSG_PLACEMARK_DESCRIPTION = goog.getMsg('Placemark description');
+
+/**
+ * @desc Label for a text field for entering the name of the field in a data
+ *     record that contains the latitude for that record.
+ */
+cm.MSG_LATITUDE_FIELD = goog.getMsg('Latitude field');
+
+/**
+ * @desc Label for a text field for entering the name of the field in a data
+ *     record that contains the longitude for that record.
+ */
+cm.MSG_LONGITUDE_FIELD = goog.getMsg('Longitude field');
+
+/** @desc Label for a text field for entering the URL of an icon image. */
+cm.MSG_ICON_URL = goog.getMsg('Icon URL');
+
+/** @desc Label for a field for entering a color tint to apply to icons. */
+cm.MSG_ICON_COLOR_TINT = goog.getMsg('Icon color tint');
+
+/**
+ * @desc Label for a field for specifying the hotspot position in an icon.
+ *     "Hotspot" is a term of art in KML (not related to a Wi-Fi hotspot).
+ *     The "hotspot" is the location in the image to use for alignment, e.g.
+ *     if the hotspot is in the bottom-right corner, then the image will be
+ *     placed so its bottom-right corner is aligned with the point in question.
+ */
+cm.MSG_ICON_HOTSPOT = goog.getMsg('Icon hotspot');
+
+/**
+ * @desc Label for a text field for entering a condition that is used to filter
+ *     the data from a spreadsheet to be shown on the map.  An example of a
+ *     condition would be "speed > 60".
+ */
+cm.MSG_SPREADSHEET_FILTER_CONDITION = goog.getMsg('Filter condition');
+
+/** @desc Refers to the point at the center of an image. */
+cm.MSG_HOTSPOT_CENTER = goog.getMsg('Center');
+
+/** @desc Refers to the point at the center of the bottom edge of an image. */
+cm.MSG_HOTSPOT_BOTTOM_CENTER = goog.getMsg('Center of bottom edge');
+
+/** @desc Refers to the point at the center of the top edge of an image. */
+cm.MSG_HOTSPOT_TOP_CENTER = goog.getMsg('Center of top edge');
+
+/** @desc Refers to the point at the center of the left edge of an image. */
+cm.MSG_HOTSPOT_LEFT_CENTER = goog.getMsg('Center of left edge');
+
+/** @desc Refers to the point at the center of the right edge of an image. */
+cm.MSG_HOTSPOT_RIGHT_CENTER = goog.getMsg('Center of right edge');
+
+/** @desc Refers to the point at the top-left corner of an image. */
+cm.MSG_HOTSPOT_TOP_LEFT = goog.getMsg('Top-left corner');
+
+/** @desc Refers to the point at the top-right corner of an image. */
+cm.MSG_HOTSPOT_TOP_RIGHT = goog.getMsg('Top-right corner');
+
+/** @desc Refers to the point at the bottom-left corner of an image. */
+cm.MSG_HOTSPOT_BOTTOM_LEFT = goog.getMsg('Bottom-left corner');
+
+/** @desc Refers to the point at the bottom-right corner of an image. */
+cm.MSG_HOTSPOT_BOTTOM_RIGHT = goog.getMsg('Bottom-right corner');
 
 /**
  * @desc Label for a text field for entering the Table ID of a table in
@@ -798,6 +872,73 @@ cm.MSG_SOURCE_URL_TOOLTIP = goog.getMsg(
  */
 cm.MSG_SHOW_DOWNLOAD_LINK_TOOLTIP = goog.getMsg(
     'Whether or not to display a link to the data source URL.');
+
+/**
+ * @desc Tooltip for a text field for entering the title of a placemark.
+ *     "Template" means the user can include placeholders which will be filled
+ *     in with data values containing information about each placemark.
+ */
+cm.MSG_PLACEMARK_TITLE_TOOLTIP = goog.getMsg(
+    'Optional (default is "$name").  ' +
+    'Template for the title of each placemark.  ' +
+    'Use "$xyz" to insert the contents of field "xyz".'
+);
+
+/**
+ * @desc Tooltip for a text field for entering the description of a placemark.
+ *     "Template" means the user can include placeholders which will be filled
+ *     in with data values containing information about each placemark.
+ */
+cm.MSG_PLACEMARK_DESCRIPTION_TOOLTIP = goog.getMsg(
+    'Optional (default is "$_description").  ' +
+    'HTML template for the description of each placemark.  ' +
+    'Use "$xyz" to insert the contents of field "xyz" as plain text; ' +
+    'use "$_xyz" to insert the contents of field "xyz" as HTML.'
+);
+
+/**
+ * @desc Tooltip for a text field for entering the name of the field in a data
+ *     record that contains the latitude for that record.
+ */
+cm.MSG_LATITUDE_FIELD_TOOLTIP = goog.getMsg(
+    'Name of the field for the latitude in degrees north of the equator.');
+
+/**
+ * @desc Tooltip for a text field for entering the name of the field in a data
+ *     record that contains the longitude for that record.
+ */
+cm.MSG_LONGITUDE_FIELD_TOOLTIP = goog.getMsg(
+    'Name of the field for the longitude in degrees east of Greenwich.');
+
+/** @desc Tooltip for a text field for entering the URL of an icon image. */
+cm.MSG_ICON_URL_TOOLTIP = goog.getMsg(
+    'Optional.  URL of the icon to use for each placemark. ' +
+    'The default icon is a small red dot.');
+
+/** @desc Tooltip for a field for entering a color tint to apply to icons. */
+cm.MSG_ICON_COLOR_TINT_TOOLTIP = goog.getMsg(
+    'Optional.  Color tint to apply to icons, in rrggbb (hex) format.');
+
+/**
+ * @desc Tooltip for a field for specifying the hotspot position in an icon.
+ *     "Hotspot" is a term of art in KML (not related to a Wi-Fi hotspot).
+ *     The "hotspot" is the location in the image to use for alignment, e.g.
+ *     if the hotspot is in the bottom-right corner, then the image will be
+ *     placed so its bottom-right corner is aligned with the point in question.
+ */
+cm.MSG_ICON_HOTSPOT_TOOLTIP = goog.getMsg(
+    'Location of the spot in the placemark icon ' +
+    'to align with the specified latitude and longitude.');
+
+/**
+ * @desc Tooltip for a text field for entering a condition that is used to
+ *     filter the data from a spreadsheet to be shown on the map.  An example
+ *     of a condition would be "speed > 60".
+ */
+cm.MSG_SPREADSHEET_FILTER_CONDITION_TOOLTIP = goog.getMsg(
+    'Optional.  Enter a condition like "xyz < 5" or "title = foo" ' +
+    'to select a subset of the spreadsheet rows to show on the map.'
+);
 
 /**
  * @desc Tooltip for a text field for entering the ID of a table in

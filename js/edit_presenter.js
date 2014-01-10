@@ -74,7 +74,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     return type === cm.LayerModel.Type.KML ||
         type === cm.LayerModel.Type.GEORSS ||
         type === cm.LayerModel.Type.TILE ||
-        type === cm.LayerModel.Type.WMS;
+        type === cm.LayerModel.Type.WMS ||
+        type === cm.LayerModel.Type.SPREADSHEET;
   }
 
   function downloadable(type) {
@@ -96,6 +97,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.LayerModel.Type.TILE,
      label: cm.MSG_LAYER_TYPE_TILE_SERVICE},
     {value: cm.LayerModel.Type.WMS, label: 'WMS'},
+    {value: cm.LayerModel.Type.SPREADSHEET,
+     label: cm.MSG_LAYER_TYPE_SPREADSHEET},
     {value: cm.LayerModel.Type.FUSION, label: cm.MSG_LAYER_TYPE_FUSION_TABLES},
     {value: cm.LayerModel.Type.MAPS_ENGINE,
      label: cm.MSG_LAYER_TYPE_MAPS_ENGINE},
@@ -112,6 +115,18 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.MapModel.Type.HYBRID, label: cm.MSG_BASE_MAP_TYPE_HYBRID},
     {value: cm.MapModel.Type.TERRAIN, label: cm.MSG_BASE_MAP_TYPE_TERRAIN},
     {value: cm.MapModel.Type.CUSTOM, label: cm.MSG_BASE_MAP_TYPE_CUSTOM}
+  ];
+
+  var hotspotChoices = [
+    {value: '', label: cm.MSG_HOTSPOT_CENTER},
+    {value: 'b', label: cm.MSG_HOTSPOT_BOTTOM_CENTER},
+    {value: 't', label: cm.MSG_HOTSPOT_TOP_CENTER},
+    {value: 'l', label: cm.MSG_HOTSPOT_LEFT_CENTER},
+    {value: 'r', label: cm.MSG_HOTSPOT_RIGHT_CENTER},
+    {value: 'tl', label: cm.MSG_HOTSPOT_TOP_LEFT},
+    {value: 'tr', label: cm.MSG_HOTSPOT_TOP_RIGHT},
+    {value: 'bl', label: cm.MSG_HOTSPOT_BOTTOM_LEFT},
+    {value: 'br', label: cm.MSG_HOTSPOT_BOTTOM_RIGHT}
   ];
 
   if (config['enable_osm_map_type_editing']) {
@@ -181,6 +196,46 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      unchecked_value: false,
      conditions: {'type': isType(cm.LayerModel.Type.TILE)},
      tooltip: cm.MSG_TILE_INDEX_TOOLTIP},
+    {key: 'title_template', label: cm.MSG_PLACEMARK_TITLE,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_PLACEMARK_TITLE_TOOLTIP},
+    {key: 'description_template', label: cm.MSG_PLACEMARK_DESCRIPTION,
+     type: cm.editors.Type.HTML,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_PLACEMARK_DESCRIPTION_TOOLTIP},
+    {key: 'latitude_field', label: cm.MSG_LATITUDE_FIELD,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_LATITUDE_FIELD_TOOLTIP},
+    {key: 'longitude_field', label: cm.MSG_LONGITUDE_FIELD,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_LONGITUDE_FIELD_TOOLTIP},
+    {key: 'icon_url_template', label: cm.MSG_ICON_URL,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_ICON_URL_TOOLTIP},
+    {key: 'color_template', label: cm.MSG_ICON_COLOR_TINT,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_ICON_COLOR_TINT_TOOLTIP},
+    {key: 'hotspot_template', label: cm.MSG_ICON_HOTSPOT,
+     type: cm.editors.Type.MENU, choices: hotspotChoices,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_ICON_HOTSPOT_TOOLTIP},
+    {key: 'condition0', label: cm.MSG_SPREADSHEET_FILTER_CONDITION,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_SPREADSHEET_FILTER_CONDITION_TOOLTIP},
+    {key: 'condition1', label: cm.MSG_SPREADSHEET_FILTER_CONDITION,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_SPREADSHEET_FILTER_CONDITION_TOOLTIP},
+    {key: 'condition2', label: cm.MSG_SPREADSHEET_FILTER_CONDITION,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.SPREADSHEET)},
+     tooltip: cm.MSG_SPREADSHEET_FILTER_CONDITION_TOOLTIP},
     {key: 'ft_from', label: cm.MSG_GFT_TABLE_ID,
      type: cm.editors.Type.TEXT,
      conditions: {'type': isType(cm.LayerModel.Type.FUSION)},

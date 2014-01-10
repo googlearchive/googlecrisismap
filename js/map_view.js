@@ -470,8 +470,12 @@ cm.MapView.prototype.removeOverlay_ = function(id) {
  */
 cm.MapView.prototype.addOverlay_ = function(layer) {
   this.updateOverlay_(layer);
-  var properties = ['type', 'url', 'url_is_tile_index', 'ft_select', 'ft_from',
-                    'ft_where', 'maps_engine_map_id', 'maps_engine_layer_key',
+  var properties = ['type', 'url', 'url_is_tile_index', 'latitude_field',
+                    'longitude_field', 'title_template', 'description_template',
+                    'icon_url_template', 'color_template', 'hotspot_template',
+                    'condition0', 'condition1', 'condition2',
+                    'ft_select', 'ft_from', 'ft_where',
+                    'maps_engine_map_id', 'maps_engine_layer_key',
                     'layer_id', 'temperature_unit', 'wind_speed_unit',
                     'label_color', 'wms_layers'];
   this.listenerTokens_[layer.get('id')] =
@@ -480,6 +484,37 @@ cm.MapView.prototype.addOverlay_ = function(layer) {
             this.updateOverlay_(layer);
             this.updateVisibility_();
           }, this));
+};
+
+/**
+ * Constructs the /.kmlify URL for a given SPREADSHEET layer.
+ * @param {cm.LayerModel} layer The layer model.
+ * @return {string?} A URL to /.kmlify that generates the appropriate KML.
+ * @private
+ */
+cm.MapView.prototype.buildKmlifyUrl_ = function(layer) {
+  var url = /** @type string */(layer.get('url'));
+  var lat = /** @type string */(layer.get('latitude_field'));
+  var lon = /** @type string */(layer.get('longitude_field'));
+  var result = this.config_['kmlify_url'] + '?url=' + encodeURIComponent(url);
+  function addParam(name, value) {
+    if (value) result += '&' + name + '=' + encodeURIComponent(value);
+  }
+  if (url.match(/\S/) && lat && lon) {
+    addParam('type', 'csv');
+    addParam('loc', (lat === lon) ? lat : lat + ',' + lon);
+    addParam('name', /** @type string */(layer.get('title_template')));
+    addParam('desc', /** @type string */(
+        layer.get('description_template').getUnsanitizedHtml()));
+    addParam('icon', /** @type string */(layer.get('icon_url_template')));
+    addParam('color', /** @type string */(layer.get('color_template')));
+    addParam('hotspot', /** @type string */(layer.get('hotspot_template')));
+    addParam('cond', /** @type string */(layer.get('condition0')));
+    addParam('cond', /** @type string */(layer.get('condition1')));
+    addParam('cond', /** @type string */(layer.get('condition2')));
+    return result;
+  }
+  return null;
 };
 
 /**
@@ -521,6 +556,17 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
     case cm.LayerModel.Type.WMS:
       this.overlays_[id] = new cm.TileOverlay(
         layer, this.map_, this.appState_, this.metadataModel_, this.config_);
+      break;
+
+    case cm.LayerModel.Type.SPREADSHEET:
+      var url = this.buildKmlifyUrl_(layer);
+      if (url) {
+        this.overlays_[id] = new google.maps.KmlLayer({
+          'url': url,
+          'preserveViewport': true,
+          'suppressInfoWindows': true  // we handle InfoWindows, not Maps API
+        });
+      }
       break;
 
     case cm.LayerModel.Type.FUSION:

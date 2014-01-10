@@ -225,6 +225,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
       # Each endpoint that the JS client code uses gets an entry in config.
       'js_root': root + '/.js',
       'json_proxy_url': root + '/.jsonp',
+      'kmlify_url': request.host_url + root + '/.kmlify',
       'login_url': users.GetLoginUrl(request.url),
       'logout_url': users.GetLogoutUrl(request.url),
       'map_picker_items': map_picker_items,
