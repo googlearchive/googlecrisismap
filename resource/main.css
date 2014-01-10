@@ -31,6 +31,7 @@ html, body {
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
   -webkit-border-radius: 1px;
+  -webkit-appearance: none;
 }
 .cm-frame input[type=text]:hover {
   border: 1px solid #b9b9b9;
@@ -1361,10 +1362,11 @@ textarea.cm-legend-text {
   /* @alternate */ background-image:-webkit-linear-gradient(top, #f5f5f5, #f1f1f1);
   /* @alternate */ background-image:linear-gradient(top, #f5f5f5, #f1f1f1);
 }
-.cm-frame .cm-button, .cm-inspector .cm-button {
+.cm-frame .cm-button, .cm-popup .cm-button {
   font-size: 12px;
   font-family: arial, sans-serif;
   font-weight: 500;
+  -webkit-appearance: none;
 }
 .cm-button:hover {
   border: 1px solid #c6c6c6;
