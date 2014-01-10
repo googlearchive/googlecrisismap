@@ -17,6 +17,7 @@
 goog.provide('cm.Analytics');
 
 goog.require('cm');
+goog.require('goog.dom');
 
 // The default Crisis Maps Analytics account
 // TODO(kpy): Move this to the datastore and pass it in via cm_config.
@@ -154,13 +155,16 @@ cm.Analytics.initialize = function(analyticsId, mapId) {
   _gaq.push(['_setAccount', analyticsId]);
   _gaq.push(['_trackPageview']);
 
-  var ga = document.createElement('script');
+  var ga = cm.ui.document.createElement('script');
   ga.type = 'text/javascript';
   ga.async = true;
-  ga.src = ('https:' == document.location.protocol ?
+  ga.src = ('https:' == cm.ui.document.location.protocol ?
       'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-  var s = document.getElementsByTagName('script')[0];
-  s.parentNode.insertBefore(ga, s);
+  var scripts = cm.ui.getAllByTag('script');
+  if (scripts.length) {
+    var s = scripts[0];
+    s.parentNode.insertBefore(ga, s);
+  }
 };
 
 /**

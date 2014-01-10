@@ -157,7 +157,7 @@ FakeElement.prototype.getAttributeNode = function(name) {
 };
 
 /**
- * Fake implementaiton of getElementsByTagName, used by goog.ui.TabBar.
+ * Fake implementation of getElementsByTagName, used by goog.ui.TabBar.
  * @param {string} name The name of the tag being sought.
  * @return {Array.<FakeElement>}
  */
@@ -333,6 +333,16 @@ FakeUi.getAllByClass = function(className, opt_parent) {
 };
 
 /**
+ * Fake implementation of cm.ui.getAllByTag.
+ * @param {string} tagName A tag name.
+ * @param {?FakeElement} opt_parent A DOM element to look in.
+ * @return {Array.<FakeElement>} The elements with the given tag name.
+ */
+FakeUi.getAllByTag = function(tagName, opt_parent) {
+  return allDescendantsOf(opt_parent || cm.ui.document, withNodeName(tagName));
+};
+
+/**
  * Creates a new child for a newly created FakeElement
  * @param {FakeElement} newElement The newly created element.
  * @param {string|Element|cm.Html} newChild The new child to append.
@@ -441,6 +451,7 @@ cm.TestBase = function() {
   this.setForTest_('cm.ui.get', FakeUi.get);
   this.setForTest_('cm.ui.getByClass', FakeUi.getByClass);
   this.setForTest_('cm.ui.getAllByClass', FakeUi.getAllByClass);
+  this.setForTest_('cm.ui.getAllByTag', FakeUi.getAllByTag);
   this.setForTest_('cm.ui.getText', FakeUi.getText);
   this.setForTest_('cm.ui.setText', FakeUi.setText);
 
@@ -458,6 +469,11 @@ cm.TestBase = function() {
       return textNode;
     },
     'documentElement': fakeHtml,
+    'childNodes': [fakeHtml],
+    'location': {
+      'protocol': 'http',
+      'hash': ''
+    },
     'nodeType': goog.dom.NodeType.DOCUMENT
   };
 
@@ -465,10 +481,12 @@ cm.TestBase = function() {
   // event listeners don't linger from test to test.  We need to include
   // 'cm' and' goog' so they remain visible to tests in the global namespace.
   var fakeWindow = {
+    addEventListener: function() {},
     cm: cm,
     cm_config: {},
     document: fakeDocument,
     goog: goog,
+    removeEventListener: function() {},
     setTimeout: function(callback, delay) { callback(); },
     setInterval: function() { },
     clearInterval: function() { }
@@ -1073,7 +1091,7 @@ function findDescendantOf(element, matcher) {
  * @return {Array.<FakeElement>} The descendants that satisfy the matcher.
  */
 function allDescendantsOf(element, matcher) {
-  expectThat(element, isElement());
+  element !== cm.ui.document && expectThat(element, isElement());
   var results = [];
   for (var i = 0; i < element.childNodes.length; i++) {
     var child = element.childNodes[i];

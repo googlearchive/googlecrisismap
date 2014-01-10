@@ -190,6 +190,17 @@ cm.ui.getAllByClass = function(className, opt_parent) {
 };
 
 /**
+ * Returns all elements in the document with the given tag name.
+ * If opt_parent is given, limit search to its descendants.
+ * @param {string} tagName A tag name.
+ * @param {Element=} opt_parent A DOM element to look in.
+ * @return { {length: number} }} The elements with the given tag name.
+ */
+cm.ui.getAllByTag = function(tagName, opt_parent) {
+  return goog.dom.getElementsByTagNameAndClass(tagName, undefined, opt_parent);
+};
+
+/**
  * Gets the text content of an element.
  * @param {Element} element A DOM element.
  * @return {string} The text content of the element.

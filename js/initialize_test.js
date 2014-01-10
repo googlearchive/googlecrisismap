@@ -11,6 +11,9 @@
 
 // Author: kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.Html');
+goog.require('goog.module');
+
 function InitializeTest() {
   cm.TestBase.call(this);
 }
@@ -48,4 +51,22 @@ InitializeTest.prototype.htmlSanitizer = function() {
            cm.Html.sanitize_('<a href="http://x.y/" target="_blank">z</a>'));
   expectEq('<a href="http://x.y/">z</a>',
            cm.Html.sanitize_('<a href="http://x.y/" target="_top">z</a>'));
+};
+
+function MapTest() {
+  cm.TestBase.call(this);
+  var html = {'sanitizeWithPolicy': function() {}};
+  goog.module.provide('sanitizer', 'html', html);
+  this.frame_ = new FakeElement('div');
+
+  // Used by the AboutPopup.
+  this.setForTest_('goog.dom.htmlToDocumentFragment', createMockFunction());
+  stub(goog.dom.htmlToDocumentFragment)(_).is(new FakeElement('fragment'));
+}
+MapTest.prototype = new cm.TestBase();
+registerTestSuite(MapTest);
+
+/** Test the Map constructor with no configuration object. */
+MapTest.prototype.testConstruction = function() {
+  var map = new cm.Map(this.frame_);
 };

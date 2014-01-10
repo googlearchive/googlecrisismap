@@ -142,7 +142,8 @@ function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
  * @constructor
  * @param {string|Element} frame The DOM element in which to render the UI,
  *     or the ID of such a DOM element.
- * @param {Object=} opt_config The configuration settings.
+ * @param {Object=} opt_config The configuration settings. If not given,
+ *     the map is initialized with an empty MapRoot object.
  */
 cm.Map = function(frame, opt_config) {
   /**
@@ -157,7 +158,7 @@ cm.Map = function(frame, opt_config) {
    * @type Object
    * @private
    */
-  this.config_ = opt_config || {};
+  this.config_ = opt_config || {'map_root': {}};
 
   /**
    * @type boolean
