@@ -637,8 +637,8 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       if (this.config_['use_details_tab']) {
         if (featureData) {
           cm.events.emit(this, cm.events.SELECT_FEATURE, featureData);
-          // 33, 33 is the center of the highlight icon.
-          var anchor = new google.maps.Point(33, 33);
+          // (34, 34) is the center of the highlight icon.
+          var anchor = new google.maps.Point(34, 34);
           this.highlight_.setIcon({url: HIGHLIGHT_ICON_URL, anchor: anchor});
           this.highlight_.setPosition(featureData.position);
           this.highlight_.setMap(this.map_);
