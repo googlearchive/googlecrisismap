@@ -48,8 +48,13 @@ cm.CrowdView = function(parentElem, mapModel, config) {
   /** @private {Element} The area for collecting a report from the user. */
   this.reportCollectionDiv_ = cm.ui.create('div', cm.css.REPORT_COLLECTION);
 
+  /** @private {Element} Loading message. TODO(kpy): Use a spinner icon? */
+  this.loadingDiv_ = cm.ui.create('p', {}, cm.MSG_LOADING);
+  this.loadingDiv_.style.display = 'none';
+
   /** @private {Element} The area for displaying the list of reports. */
-  this.reportDisplayDiv_ = cm.ui.create('div', cm.css.REPORTS);
+  this.reportDisplayDiv_ = cm.ui.create(
+      'div', cm.css.REPORTS, this.loadingDiv_);
 
   /** @private {Element} The text field for entering a comment with a report. */
   this.textInput_;
@@ -101,9 +106,6 @@ cm.CrowdView.prototype.open = function(featureData) {
   });
 
   if (topics.length) {
-    // TODO(kpy): Replace "Loading..." text with a spinner icon.
-    cm.ui.append(this.reportDisplayDiv_, cm.ui.create('p', {}, cm.MSG_LOADING));
-
     this.renderCollectionArea_(this.reportCollectionDiv_);
     this.loadReports_(this.reportDisplayDiv_);  // kicks off an async request
   }
@@ -281,6 +283,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
     cm.Analytics.logAction(
         cm.Analytics.CrowdReportFormAction.POST_CLICKED, self.layerId_);
     closeForm(event);
+    self.loadingDiv_.style.display = '';
   }
   cm.events.listen(self.submitBtn_, 'click', submitForm);
   cm.events.listen(self.textInput_, 'keypress', function(event) {
@@ -299,6 +302,7 @@ cm.CrowdView.prototype.loadReports_ = function(parentElem) {
   var topics = self.mapModel_.getCrowdTopicsForLayer(self.layerId_);
   var mapId = self.mapModel_.get('id');
 
+  self.loadingDiv_.style.display = '';
   new goog.net.Jsonp(self.reportQueryUrl_).send({
     'll': self.position_.lat() + ',' + self.position_.lng(),
     'topic_ids': goog.array.map(
@@ -306,7 +310,11 @@ cm.CrowdView.prototype.loadReports_ = function(parentElem) {
     'radii': goog.array.map(
         topics, function(t) { return t.get('cluster_radius'); }).join(',')
   }, function(reports) {
+    self.loadingDiv_.style.display = 'none';
     cm.ui.clear(parentElem);
+    // We keep the loadingDiv_ present at the top of the list and turn it on
+    // and off by setting its style.display property.
+    cm.ui.append(parentElem, self.loadingDiv_);
     cm.ui.append(parentElem, cm.ui.create('div', {},
         goog.array.map(reports, goog.bind(self.renderReport_, self))));
     parentElem.style.display = reports.length ? '' : 'none';

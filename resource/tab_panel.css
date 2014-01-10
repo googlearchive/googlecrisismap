@@ -340,7 +340,8 @@ specific language governing permissions and limitations under the License.
 
 .cm-crowd .cm-notice {
   font-size: 11px;
-  margin: 12px 6px;
+  margin: 12px 0;
+  color: #777;
 }
 
 .cm-crowd-report-form .cm-notice {
@@ -353,7 +354,7 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-crowd h2 {
-  font-size: 11px;
+  font-size: 12px;
   padding-top: 12px;
   margin: 0;
   color: #888;
@@ -363,7 +364,7 @@ specific language governing permissions and limitations under the License.
 .cm-crowd-bubble {
   background: #ddd;
   padding: 6px 12px;
-  margin: 6px 0 12px;
+  margin: 12px 0 18px;
   border-radius: 4px 4px 4px 0;
   position: relative;
 }
@@ -413,7 +414,7 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-question {
-  margin: 12px 0 6px;
+  margin: 6px 0;
 }
 
 .cm-question:first-child {
@@ -431,7 +432,7 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-report-text {
-  margin-top: 18px;
+  margin-top: 12px;
 }
 
 .cm-report-text input[type="text"] {
@@ -441,8 +442,7 @@ specific language governing permissions and limitations under the License.
 /* Report display area */
 .cm-reports {
   margin: 6px 0;
-  border-top: 1px solid #e0e0e0;
-  padding: 0 6px;
+  padding: 0 12px;
 }
 
 .cm-reports p {  /* Loading... message */
@@ -453,15 +453,16 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-crowd .cm-reports .cm-crowd-abuse, .cm-vote {
-  color: #666;
+  color: #777;
   font-size: 11px;
-  padding: 0 6px 6px;
+  padding: 0 0 6px;
   cursor: pointer;
 }
 
 .cm-report {
   margin: 12px 0 3px;
   padding: 9px 6px;
+  min-height: 16px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
