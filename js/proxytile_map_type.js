@@ -119,8 +119,9 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     // data to be valid unless the tile has already been released.
     var tileData = tileDiv.tileData;
     if (!tileData) return;
-    // Only log a succesful fetch if the loaded image is not a transparent tile.
-    if (!TRANSPARENT_TILE_REGEXP.test(tileImg.src)) {
+    // For WMS tiles, log a successful fetch when the loaded image is
+    // not a transparent tile.
+    if (tileData.tilesetId && !TRANSPARENT_TILE_REGEXP.test(tileImg.src)) {
       cm.Analytics.logTime('wms_tile_fetch', 'retry_' + tileData.retries,
                            new Date().getTime() - tileData.startTime,
                            tileData.tilesetId);
