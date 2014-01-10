@@ -1258,7 +1258,8 @@ cm.TestBase.verifyCallCount_ = function(record, errString) {
 };
 
 // TODO(rew): This doesn't really belong here; the fake DOM and mocks for
-// cm.ui should be kept isolated so they can be re-used elsewhere. b/10566080
+// cm.ui should be kept isolated so they can be re-used elsewhere.
+// b/10566080, b/11168769
 
 /**
  * Creates a fake folder with an empty sublayer list.
@@ -1277,6 +1278,7 @@ cm.TestBase.prototype.createFakeLayer = function(id, opt_folder,
   }
   layer.set('sublayers', new google.maps.MVCArray());
   layer.isSingleSelect = function() { return (opt_singleSelect || false); };
+  layer.insideZoomBounds = cm.LayerModel.prototype.insideZoomBounds;
   layer.getSourceAddress = function() { return (opt_source || 'XYZ:xyz'); };
   layer.getSublayerIds = function() { return []; };
   return layer;

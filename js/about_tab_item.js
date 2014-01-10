@@ -149,7 +149,7 @@ cm.AboutTabItem.prototype.handleResetView_ = function() {
 
 /** @override */
 cm.AboutTabItem.prototype.getTitle = function() {
-  return cm.MSG_ABOUT_TAB_lABEL;
+  return cm.MSG_ABOUT_TAB_LABEL;
 };
 
 /** @override */

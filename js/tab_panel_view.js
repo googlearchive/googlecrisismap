@@ -14,6 +14,7 @@ goog.provide('cm.TabPanelView');
 goog.require('cm.AboutTabItem');
 goog.require('cm.DetailsTabItem');
 goog.require('cm.LayersTabItem');
+goog.require('cm.LegendTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.TabView');
 goog.require('cm.events');
@@ -245,6 +246,9 @@ cm.TabPanelView.prototype.createTabs_ = function() {
                     cm.events.ZOOM_TO_LAYER],
                    this);
   this.tabView_.appendTabItem(layersTab);
+  this.tabView_.appendTabItem(
+      new cm.LegendTabItem(
+          this.mapModel_, this.appState_, this.config_, this.metadataModel_));
 };
 
 /**

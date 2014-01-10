@@ -846,7 +846,32 @@ LayerEntryViewTest.prototype.dispose = function() {
 
 /** Tests that the legend is omitted when requested. */
 LayerEntryViewTest.prototype.testNoLegend = function() {
-  var parent = this.createView_(undefined, undefined, undefined, false);
+  var folderModel = cm.LayerModel.newFromMapRoot(
+      {
+        id: 'folder',
+        type: 'FOLDER',
+        folder_type: 'CHECK',
+        legend: '<b>Folder</b> Legend',
+        sublayers: [
+          {id: 'sublayer1', type: 'KML', legend: 'sublayer 1 legend'},
+          {id: 'sublayer2', type: 'KML', legend: 'sublayer 2 legend'}
+          ]
+      });
+  var simpleModel = cm.LayerModel.newFromMapRoot(
+      {
+        id: 'simple',
+        type: 'KML',
+        legend: 'Simple Legend'
+      });
+  var parent = new FakeElement('div');
+  stub(this.appState_.getLayerEnabled)('folder').is(true);
+  stub(this.appState_.getLayerEnabled)('simple').is(true);
+  stub(this.appState_.getLayerEnabled)('sublayer1').is(true);
+  stub(this.appState_.getLayerEnabled)('sublayer2').is(true);
+  var folderView = new cm.LayerEntryView(
+      parent, folderModel, this.metadataModel_, this.appState_, {}, 0, false);
+  var simpleView = new cm.LayerEntryView(
+      parent, simpleModel, this.metadataModel_, this.appState_, {}, 1, false);
   expectNoDescendantOf(parent, withClass(cm.css.LAYER_LEGEND));
   expectNoDescendantOf(parent, withClass(cm.css.LAYER_LEGEND_BOX));
 };

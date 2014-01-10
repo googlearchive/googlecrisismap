@@ -580,12 +580,8 @@ cm.LayerEntryView.prototype.updateFade_ = function() {
   if (this.metadataModel_.isEmpty(this.model_)) {
     this.setFade_(true, cm.MSG_NO_DATA_WARNING);
   } else if (this.zoomLevel_ !== null) {
-    // If min_zoom or max_zoom are undefined, assume no lower or upper bound.
-    var minZoom = this.model_.get('min_zoom');
-    var maxZoom = this.model_.get('max_zoom');
-    var outOfRange = goog.isNumber(minZoom) && this.zoomLevel_ < minZoom ||
-                     goog.isNumber(maxZoom) && this.zoomLevel_ > maxZoom;
-    this.setFade_(outOfRange, cm.MSG_OUT_OF_ZOOM_RANGE_TOOLTIP);
+    this.setFade_(!this.model_.insideZoomBounds(this.zoomLevel_),
+                  cm.MSG_OUT_OF_ZOOM_RANGE_TOOLTIP);
   }
 };
 
@@ -877,8 +873,9 @@ cm.LayerEntryView.prototype.updateSliderValue_ = function() {
  */
 cm.LayerEntryView.prototype.insertSublayer_ = function(sublayer, index) {
   var id = /** @type string */(sublayer.get('id'));
-  this.layerEntryViews_[id] = new cm.LayerEntryView(this.sublayersElem_,
-      sublayer, this.metadataModel_, this.appState_, this.config_, index);
+  this.layerEntryViews_[id] = new cm.LayerEntryView(
+      this.sublayersElem_, sublayer, this.metadataModel_, this.appState_,
+      this.config_, index, !!this.legendElem_);
   cm.events.onChange(sublayer, 'title', this.updateSingleSelect_, this);
   cm.events.forward(this.layerEntryViews_[id],
                     [cm.events.DELETE_LAYER,

@@ -442,3 +442,23 @@ cm.LayerModel.prototype.getSublayer = function(layerId) {
 cm.LayerModel.prototype.isSingleSelect = function() {
   return this.get('folder_type') === cm.LayerModel.FolderType.SINGLE_SELECT;
 };
+
+/**
+ * Convenience for figuring out if a given zoom level is inside the min/max zoom
+ * levels for the layer.
+ * @param {?number} zoomLevel The current zoom level; null or undefined is
+ *   considered "unknown zoom level", and this function will return true.
+ * @return {boolean} True if the zoom level is within the layer's acceptable
+     zoom range; false otherwise.
+ */
+cm.LayerModel.prototype.insideZoomBounds = function(zoomLevel) {
+  if (!goog.isNumber(zoomLevel)) return true;
+
+  var minZoom = this.get('min_zoom');
+  if (goog.isNumber(minZoom) && zoomLevel < minZoom) return false;
+
+  var maxZoom = this.get('max_zoom');
+  if (goog.isNumber(maxZoom) && zoomLevel > maxZoom) return false;
+
+  return true;
+};

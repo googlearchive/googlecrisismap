@@ -101,7 +101,7 @@ cm.MapTabItem.prototype.render_ = function() {
 };
 
 /**
- * Called during rendering to fill the non-scrolling heaader region of the tab.
+ * Called during rendering to fill the non-scrolling header region of the tab.
  * Subclasses should override to fill parentElem with content.
  * @param {Element} headerElem The node into which header content should be
  *   placed.

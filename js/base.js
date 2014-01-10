@@ -81,7 +81,7 @@ cm.MSG_HELP = goog.getMsg('Help');
  * @desc Label for the tab that holds the map's title, description,
  *   and publisher.
  */
-cm.MSG_ABOUT_TAB_lABEL = goog.getMsg('About');
+cm.MSG_ABOUT_TAB_LABEL = goog.getMsg('About');
 
 /** @desc Label for the tab that shows details for a selected feature. */
 cm.MSG_DETAILS_TAB_LABEL = goog.getMsg('Details');
@@ -91,6 +91,11 @@ cm.MSG_DETAILS_TAB_LABEL = goog.getMsg('Details');
  *   on the map.
  */
 cm.MSG_LAYERS_TAB_LABEL = goog.getMsg('Layers');
+
+/**
+ * @desc Label for the tab that holds the legend to the map.
+ */
+cm.MSG_LEGEND_TAB_LABEL = goog.getMsg('Legend');
 
 // About
 
