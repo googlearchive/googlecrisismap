@@ -20,10 +20,18 @@ specific language governing permissions and limitations under the License.
   max-height: 98%;
   overflow-y: hidden;
   z-index: 1;
-  opacity: 1 !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   -moz-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.cm-embedded .cm-tab-panel {
+  float: none;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+  max-width: 500px;
+  border: none;
 }
 
 .cm-tabbed .cm-map-wrapper {
@@ -51,8 +59,8 @@ specific language governing permissions and limitations under the License.
   overflow-x: visible;
 }
 
-.cm-scrolling-tab-content {
-  overflow-y: auto;
+.cm-scrolling-tab-content{
+  overflow-y:auto;
 }
 
 .cm-chevron-up {
@@ -114,20 +122,30 @@ specific language governing permissions and limitations under the License.
   left: 5px;
 }
 
+.cm-tab-content .cm-panel-header {
+  margin:0;
+}
+
 .cm-tabbed-legend-box {
-  margin: 12px;
+  border-top:1px solid #f0f0f0;
+  margin: 12px 0;
+  padding:12px 12px 0 12px;
   overflow: hidden; /* fully enclose any floating children */
+}
+
+.cm-tabbed-legend-box.cm-first-tabbed-legend-box {
+    border-top:0px;
+    padding:0 12px 0 12px;
 }
 
 .cm-tabbed-legend-content {
   font-size: 11px;
   color: #222;
-  margin: 6px 0;
+  margin: 6px 0 0;
 }
 
-.cm-tabbed-legend-content > fieldset > legend {
-  margin-left: 0;
-  padding: 0;
+.cm-tab-content .cm-legend-item {
+  font-size:12px;
 }
 
 .cm-tab-panel .cm-panel-header {
@@ -139,8 +157,12 @@ specific language governing permissions and limitations under the License.
   margin: 12px;
 }
 
+.cm-tab-content .cm-legend-graphic {
+  margin:2px 4px 4px 2px;
+}
+
 /*
- * TODO(romano,rew): Basic rules copied from 
+ * TODO(romano,rew): Basic rules copied from
  * https://code.google.com/p/closure-library/source/browse/closure/goog/css/tab.css
  * to be replaced with our own rules and merged into main.css.
  */

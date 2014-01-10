@@ -14,6 +14,8 @@ goog.provide('cm.LegendView');
 goog.require('cm');
 goog.require('cm.LayerModel');
 goog.require('cm.MetadataModel');
+goog.require('goog.array');
+goog.require('goog.string');
 
 /**
  * A LegendView displays the legend for a single layer.  Abstract superclass;
@@ -181,8 +183,16 @@ cm.LegendView.prototype.shouldHide = function() { return false; };
  */
 cm.LegendView.prototype.handleTitleChanged_ = function() {
   cm.ui.clear(this.titleElem_);
-  cm.ui.append(
-      this.titleElem_, /** @type string */(this.layerModel_.get('title')));
+  cm.ui.append(this.titleElem_, this.titleString());
+};
+
+/**
+ * Returns the string to be used as the title of the legend; by default,
+ * the title of the layer from the model.
+ * @return {string} The title for the legend.
+ */
+cm.LegendView.prototype.titleString = function() {
+  return /** @type string */(this.layerModel_.get('title'));
 };
 
 /**
@@ -251,6 +261,20 @@ cm.LegendView.getLegendViewForLayer =
 };
 
 /**
+ * Convenience method for determining whether a particular parent folder
+ * type implies that sublayers should add or suppress their own box/visual
+ * adornment.  Sublayers of unlocked folders should; other folder types
+ * should not.
+ * @param {?cm.LayerModel.FolderType} parentFolderType The type of the parent
+ *   folder, if any.
+ * @return {boolean}
+ */
+cm.LegendView.sublayersShouldDrawBox = function(parentFolderType) {
+  return (!parentFolderType ||
+      parentFolderType === cm.LayerModel.FolderType.UNLOCKED);
+};
+
+/**
  * Renders the legend for a layer that is not a folder.
  * @param {cm.LayerModel} layerModel The model for the layer whose legend
  *   will be rendered.
@@ -286,18 +310,17 @@ cm.SimpleLegendView_.prototype.setupListeners = function() {
 
 /** @override */
 cm.SimpleLegendView_.prototype.render = function(parentFolderType) {
-  // Normally we render legends in a box, with the title of the matching
-  // layer displayed.  However, inside a locked folder, sublayers leave out
-  // their titles and their box, since the user can't see the sublayers
-  // themselves in the layer tab.
+  // Sometimes a legend renders its comments with a box and title; other times
+  // it relies on its parent to render the box and title.
+  // sublayersShouldDrawBox() tells us which behavior we want.
+  var drawBox = cm.LegendView.sublayersShouldDrawBox(parentFolderType);
   cm.ui.clear(this.parentElem_);
-  goog.dom.classes.enable(
-      this.parentElem_, cm.css.TABBED_LEGEND_BOX,
-      parentFolderType !== cm.LayerModel.FolderType.LOCKED);
-  if (parentFolderType === cm.LayerModel.FolderType.LOCKED) {
-    cm.ui.append(this.parentElem_, this.legendElem_);
-  } else {
+  goog.dom.classes.enable(this.parentElem_, cm.css.TABBED_LEGEND_BOX, drawBox);
+
+  if (drawBox) {
     cm.ui.append(this.parentElem_, this.titleElem_, this.legendElem_);
+  } else {
+    cm.ui.append(this.parentElem_, this.legendElem_);
   }
 };
 
@@ -396,7 +419,14 @@ cm.FolderLegendView_.prototype.setupListeners = function() {
   }, this);
   cm.events.onChange(this.layerModel_, ['folder_type'], function() {
     this.render(null);
+    this.handleTitleChanged_();
   }, this);
+  cm.events.onChange(
+      this.appState_, 'enabled_layer_ids', function() {
+        if (this.folderType_() === cm.LayerModel.FolderType.SINGLE_SELECT) {
+          this.handleTitleChanged_();
+        }
+      }, this);
 };
 
 /**
@@ -412,8 +442,6 @@ cm.FolderLegendView_.prototype.folderType_ = function() {
 
 /** @override */
 cm.FolderLegendView_.prototype.render = function(parentFolderType) {
-  var parentIsLocked = (parentFolderType === cm.LayerModel.FolderType.LOCKED);
-
   // Clear the existing UI
   cm.ui.clear(this.parentElem_);
   goog.dom.classes.enable(this.parentElem_, cm.css.TABBED_LEGEND_BOX, false);
@@ -440,29 +468,28 @@ cm.FolderLegendView_.prototype.render = function(parentFolderType) {
  */
 cm.FolderLegendView_.prototype.renderOwnLegend_ = function(parentFolderType) {
   var legendBox;
-  if (this.folderType_() === cm.LayerModel.FolderType.LOCKED) {
-    // Locked folders can render directly in to parentElem_ because the
-    // legends of the sublayers should appear inside the box drawn for the
-    // folder itself.
+  if (!cm.LegendView.sublayersShouldDrawBox(this.folderType_())) {
+    // If the sublayers are not drawing their own boxes,the folder can render
+    // directly in to parentElem_ because the legends of the sublayers should
+    // appear inside the box drawn for the folder itself.
     legendBox = this.parentElem_;
   } else {
-    // Unlocked folders must render their legend in to a separate box,
-    // then append the box to parentElem_.  This allows the sublayers to
-    // render into their own boxes, which will appear as siblings to the
-    // folder's legend.
+    // When sublayers will add their own box, the folder must render its legend
+    // in to a separate box, then append the box to parentElem_.  This allows
+    // the sublayers to render into their own boxes, which will appear as
+    // siblings to the folder's legend.
     legendBox = cm.ui.create('div');
     cm.ui.append(this.parentElem_, legendBox);
+    goog.dom.classes.enable(legendBox, cm.css.HIDDEN, this.isEmpty);
   }
 
-  // When rendering into a locked folder, omit the title and box (the
-  // locked folder already drew it).
-  if (parentFolderType !== cm.LayerModel.FolderType.LOCKED) {
+  if (cm.LegendView.sublayersShouldDrawBox(parentFolderType)) {
     goog.dom.classes.enable(legendBox, cm.css.TABBED_LEGEND_BOX, true);
     cm.ui.append(legendBox, this.titleElem_);
+
   }
   cm.ui.append(legendBox, this.legendElem_);
 };
-
 
 /** @override */
 cm.FolderLegendView_.prototype.shouldHide = function() {
@@ -475,4 +502,36 @@ cm.FolderLegendView_.prototype.shouldHide = function() {
     if (!sublayer.shouldHide()) sublayersHaveContent = true;
   });
   return !sublayersHaveContent;
+};
+
+/** @override */
+cm.FolderLegendView_.prototype.titleString = function() {
+  if (this.folderType_() === cm.LayerModel.FolderType.SINGLE_SELECT &&
+      this.sublayerLegendViews_.length) {
+    return this.layerModel_.get('title') +
+        goog.string.unescapeEntities(' &ndash; ') +
+        this.selectedLegendView_().titleString();
+  } else {
+    return cm.LegendView.prototype.titleString.call(this);
+  }
+};
+
+/**
+ * Helper function to locate and return the sublayer of a single-select
+ * folder that's currently selected. The caller needs to ensure that
+ * this.sublayerLegendViews_ is non-empty.
+ * @return {cm.LegendView} The legend view for the currently selected sublayer.
+ * @private
+ */
+cm.FolderLegendView_.prototype.selectedLegendView_ = function() {
+  var selectedId = this.appState_.getFirstEnabledSublayerId(this.layerModel_);
+  if (!selectedId) return this.sublayerLegendViews_[0];
+
+  var sublayers = this.layerModel_.get('sublayers');
+  for (var i = 0; i < sublayers.getLength(); i++) {
+    if (this.appState_.getLayerEnabled(sublayers.getAt(i).get('id'))) {
+      return this.sublayerLegendViews_[i];
+    }
+  }
+  return this.sublayerLegendViews_[0];
 };

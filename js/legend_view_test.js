@@ -228,6 +228,9 @@ function FolderLegendViewTest() {
   this.metadataModel_ = new cm.MetadataModel();
   this.folderTypeToMaprootType = goog.object.transpose(
       cm.LayerModel.MAPROOT_TO_MODEL_FOLDER_TYPES);
+  // unescapeEntities is used to render an en-dash for the title of
+  // single-select folders; unfortunately, it relies on the DOM to do so.
+  this.setForTest_('goog.string.unescapeEntities', function(s) { return s; });
 }
 FolderLegendViewTest.prototype = new cm.TestBase();
 registerTestSuite(FolderLegendViewTest);
@@ -284,18 +287,28 @@ FolderLegendViewTest.prototype.createLegendView_ = function(
  * @param {boolean} titleIsVisible Whether the title of the layer should
  *   be visible (this varies based on any containing folders)
  * @param {boolean} isVisible Whether the legend itself should be visible.
+ * @param {Array.<string>=} opt_titleComponents A list of title components
+ *   to test against, rather than the layer's title.  Useful if the display
+ *   title was constructed, rather than derived directly from the layer.
  * @private
  */
 FolderLegendViewTest.prototype.validateRender_ = function(
-    contentElem, layer, titleIsVisible, isVisible) {
+    contentElem, layer, titleIsVisible, isVisible, opt_titleComponents) {
   expectThat(contentElem, withInnerHtml(layer.get('legend').getHtml()));
   expectThat(contentElem, isVisible ? isShown() : not(isShown()));
 
   var box = expectAncestorOf(contentElem, withClass(cm.css.TABBED_LEGEND_BOX));
   if (titleIsVisible) {
     var title = expectDescendantOf(box, withClass(cm.css.LAYER_TITLE));
-    expectThat(title, withText(layer.get('title')));
+    if (opt_titleComponents) {
+      goog.array.forEach(opt_titleComponents, function(comp) {
+        expectThat(title, withText(hasSubstr(comp)));
+      });
+    } else {
+      expectThat(title, withText(layer.get('title')));
+    }
     expectThat(title, isShown());
+
   } else {
     var title = findDescendantOf(box, withText(layer.get('title')));
     if (title) {
@@ -451,14 +464,15 @@ FolderLegendViewTest.prototype.testSingleSelectFolderRendering = function() {
       'testSingleSelectFolderRendering');
   var legendElem = legendView.getContent();
   this.findLayersAndLegends_(legendElem, 'testSingleSelectFolderRendering');
+  var titleComponents = [this.layerModel_.get('title'),
+                         this.layerForId_(RED_LAYER_JSON.id).get('title')];
 
-  // Single-select folders behave exactly as unlocked folders with only a
-  // single enabled sublayer.
   this.validateRender_(this.legendForId_(FOLDER_LAYER_JSON.id),
-                       this.layerModel_, true, true);
+                       this.layerModel_, true, true, titleComponents);
 
   this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
-                       this.layerForId_(RED_LAYER_JSON.id), true, true);
+                       this.layerForId_(RED_LAYER_JSON.id), true, true,
+                       titleComponents);
 
   this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
                        this.layerForId_(BLUE_LAYER_JSON.id), false, false);
@@ -472,8 +486,11 @@ FolderLegendViewTest.prototype.testSelectNewLayerInSingleSelect = function() {
   this.findLayersAndLegends_(legendElem, 'testSelectNewLayerInSingleSelect');
   this.appState_.selectSublayer(
       this.layerModel_, this.layerForId_(BLUE_LAYER_JSON.id).id);
+  var titleComponents = [this.layerModel_.get('title'),
+                         this.layerForId_(BLUE_LAYER_JSON.id).get('title')];
   this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
-                       this.layerForId_(BLUE_LAYER_JSON.id), true, true);
+                       this.layerForId_(BLUE_LAYER_JSON.id), true, true,
+                       titleComponents);
 
   this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
                        this.layerForId_(RED_LAYER_JSON.id), false, false);
