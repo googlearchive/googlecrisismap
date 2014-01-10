@@ -298,7 +298,7 @@ cm.MSG_REVERT = goog.getMsg('Revert');
 
 /** @desc HTML for a copyright notice for map data from OpenStreetMap. */
 cm.MSG_OSM_COPYRIGHT_HTML = goog.getMsg(
-    'Map data \u00a9 ' +
+    '\u00a9 ' +
     '<a href="http://www.openstreetmap.org/copyright" target="_blank">' +
     'OpenStreetMap</a> contributors');
 
