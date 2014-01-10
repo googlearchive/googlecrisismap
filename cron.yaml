@@ -10,15 +10,18 @@
 # specific language governing permissions and limitations under the License.
 
 cron:
+# NOTE to new Crisis Map deployments: the following URLs must be edited to
+# reflect the base path of the deployment environment.  In these examples, the
+# base path is "/crisismap".
 - description: clean up after any crashed tileworkers
-  url: /.wms/cleanup
+  url: /crisismap/.wms/cleanup
   schedule: every 5 minutes
 
 - description: clean up old MetadataFetchLog entries
-  url: /.metadata_fetch_log_cleaner
+  url: /crisismap/.metadata_fetch_log_cleaner
   schedule: every 5 minutes
 
 - description: clean up expired crowd reports
-  url: /.crowd_report_cleanup
+  url: /crisismap/.crowd_report_cleanup
   schedule: every 1 hours
 
