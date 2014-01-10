@@ -48,6 +48,14 @@ specific language governing permissions and limitations under the License.
   position: relative;
   z-index: 1;
   white-space: nowrap;
+  overflow: hidden;
+}
+
+.cm-tab-bar-container * {
+  /* Prevent entire tab bar from becoming selected on mobile devices */
+  -webkit-tap-highlight-color: transparent;
+  -moz-user-select: none;
+  -webkit-user-select: none;
 }
 
 .cm-footer-shadow .cm-tab-panel {
@@ -61,7 +69,7 @@ specific language governing permissions and limitations under the License.
 .cm-tab-bar-buttons {
   display: inline-block;
   float: right;
-  height: 41px;
+  height: 42px;
 }
 
 .cm-tab-content {
@@ -72,29 +80,37 @@ specific language governing permissions and limitations under the License.
   overflow-y: auto;
 }
 
-.cm-chevron-up:hover, .cm-chevron-down:hover {
-  background-color: #444;
+.cm-chevron-up:hover {
+  background-color: #121212;
+  /* @alternate */ background:url('chevron_up.png') center center no-repeat, -webkit-linear-gradient(top, #383838, #121212);
+  /* @alternate */ background:url('chevron_up.png') center center no-repeat, linear-gradient(top, #383838, #121212);
+}
+
+.cm-chevron-down:hover {
+  background-color: #121212;
+  /* @alternate */ background:url('chevron_down.png') center center no-repeat, -webkit-linear-gradient(top, #383838, #121212);
+  /* @alternate */ background:url('chevron_down.png') center center no-repeat, linear-gradient(top, #383838, #121212);
 }
 
 .cm-chevron-up {
-  background:url('chevron_up.png') center no-repeat;
-  width:13px;
-  height:12px;
-  padding: 14px 14px 15px 14px;
+  background:url('chevron_up.png') center center no-repeat;
+  width: 42px;
+  height: 42px;
+  padding: 0px;
+  margin: 0px;
   cursor: pointer;
-  border-left: 1px solid #696969;
   display: inline-block;
   -moz-user-select: none;
   -webkit-user-select: none;
 }
 
 .cm-chevron-down {
-  background:url('chevron_down.png') center no-repeat;
-  width:13px;
-  height:12px;
-  padding: 14px 14px 15px 14px;
+  background:url('chevron_down.png') center center no-repeat;
+  width:42px;
+  height:42px;
+  padding: 0px;
+  margin: 0px;
   cursor: pointer;
-  border-left: 1px solid #696969;
   display: inline-block;
   -moz-user-select: none;
   -webkit-user-select: none;
@@ -181,15 +197,23 @@ specific language governing permissions and limitations under the License.
  */
 
 .goog-tab {
-  padding: 11px 14px;
   cursor: pointer;
+
+  /* General-case height of a tab should be 14 * 3 = 42px */
+  padding: 14px;
   font-size: 14px;
+  line-height: 1.0;
+
+  /* Transparent borders on every tab: makes room for border when selected */
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
 }
 
 .goog-tab-bar {
-  display: inline-block;
   outline: none;
+  display: block;
   margin-right: 42px;  /* Makes room for chevron button */
+  border-right: 1px solid #606060;
   white-space: normal;
 }
 
@@ -218,25 +242,28 @@ specific language governing permissions and limitations under the License.
   border-left: 0;
 }
 
-/* State: Hover */
-.goog-tab-hover {
-  background: #444;
+.goog-tab-hover, .goog-tab-selected {
+  background: #121212;
+  /* @alternate */ background-image:-webkit-linear-gradient(top, #383838, #121212);
+  /* @alternate */ background-image:linear-gradient(top, #383838, #121212);
 }
 
 /* State: Disabled */
 .goog-tab-disabled {
-  color: #aaa;
+  color: #666;
 }
 
 /* State: Selected */
 .goog-tab-selected {
   text-decoration: none;
   color: #ddd;
-  border-left: 1px solid #696969;
-  border-right: 1px solid #696969;
-  background: #383838;
-  /* @alternate */ background-image:-webkit-linear-gradient(top, #383838, #121212);
-  /* @alternate */ background-image:linear-gradient(top, #383838, #121212);
+  border-left: 1px solid #606060;
+  border-right: 1px solid #606060;
+}
+
+.goog-tab-selected:first-child {
+  /* No left-border on first selected tab. */
+  border-left: 1px solid transparent;
 }
 
 .goog-tab-bar-top {
