@@ -47,6 +47,8 @@ goog.require('goog.ui.Component');
 
 /** @const */var MIN_DOCUMENT_WIDTH_FOR_SIDEBAR = 690;
 
+/** @const */var MIN_DOCUMENT_HEIGHT_FOR_SEARCHBOX = 400;
+
 // TODO(kpy): This value should probably be tuned since it was originally tuned
 // to handle a Maps API bug (b/5194073) that has since been fixed.
 /** @const */var MIN_MAP_WIDTH_FOR_SEARCHBOX = 450;
@@ -420,7 +422,11 @@ cm.Map.prototype.handleResize_ = function(preview, extraViewsPlugins,
   if (this.searchbox_) {
     var uncoveredMapWidth = this.mapWrapperElem_.offsetWidth -
         (floating ? this.panelElem_.offsetWidth : 0);
-    if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX || preview) {
+    var smallTabbedUi = this.config_['use_tab_panel'] &&
+        this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR &&
+        this.frameElem_.offsetHeight < MIN_DOCUMENT_HEIGHT_FOR_SEARCHBOX;
+    if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX || preview ||
+        smallTabbedUi) {
       this.searchbox_.hide();
     } else {
       this.searchbox_.show();
