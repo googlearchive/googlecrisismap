@@ -92,6 +92,9 @@ FakeElement.prototype.toString = function() {
   if (this.src) {
     this.attrs_['src'] = this.src;
   }
+  if (this.type) {
+    this.attrs_['type'] = this.type;
+  }
 
   var parts = [this.nodeName];
   for (var name in this.attrs_) {
@@ -183,7 +186,8 @@ FakeElement.prototype.setAttribute = function(name, value) {
   if (name === 'class') {
     this.className = value;
   }
-  if (name === 'id' || name === 'href' || name === 'src' || name === 'value') {
+  if (name === 'id' || name === 'href' || name === 'src' || name === 'value' ||
+      name === 'type') {
     this[name] = value;
   }
 };
@@ -197,7 +201,8 @@ FakeElement.prototype.removeAttribute = function(name) {
   if (name === 'class') {
     this.className = '';
   }
-  if (name === 'id' || name === 'href' || name === 'src' || name === 'value') {
+  if (name === 'id' || name === 'href' || name === 'src' || name === 'value' ||
+      name === 'type') {
     this[name] = '';
   }
 };
@@ -917,7 +922,8 @@ function withAttr(name, value) {
       'has a "' + name + '" attribute equal to "' + value + '"',
       'doesn\'t have a "' + name + '" attribute equal to "' + value + '"',
       function(x) {
-        if (name === 'href' || name === 'src' || name === 'value') {
+        if (name === 'href' || name === 'src' || name === 'value' ||
+            name === 'type') {
           x.attrs_[name] = x[name];
         }
         return x.attrs_[name] === value;
