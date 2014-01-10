@@ -82,6 +82,7 @@ specific language governing permissions and limitations under the License.
 
 .cm-scrolling-tab-content {
   overflow-y: auto;
+  -webkit-overflow-scrolling:touch;
 }
 
 .cm-details-content {
