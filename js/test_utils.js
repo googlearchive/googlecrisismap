@@ -465,26 +465,27 @@ cm.TestBase = function() {
   this.setForTest_('cm.ui.getText', FakeUi.getText);
   this.setForTest_('cm.ui.setText', FakeUi.setText);
 
-  // Set up a document body that emulates templates/index.html.
-  var fakeBody = cm.ui.create('body', {'id': 'body'},
-                              cm.ui.create('div', {'id': 'aboutText'}));
+  // Set up a fake document object.
+  var fakeBody = cm.ui.create('body', {'id': 'body'});
   var fakeHtml = cm.ui.create('html', {}, fakeBody);
   var fakeDocument = {
-    'addEventListener': function() {},
-    'body': fakeBody,
-    'createElement': FakeUi.create,
-    'createTextNode': function(text) {
+    addEventListener: function() {},
+    body: fakeBody,
+    childNodes: [fakeHtml],
+    createElement: FakeUi.create,
+    createTextNode: function(text) {
       var textNode = new FakeElement('#text');
       textNode.textContent = text;
       return textNode;
     },
-    'documentElement': fakeHtml,
-    'childNodes': [fakeHtml],
-    'location': {
-      'protocol': 'http',
-      'hash': ''
+    // See below for defaultView (which points at the containing window)
+    documentElement: fakeHtml,
+    location: {
+      protocol: 'http:',
+      hash: ''
     },
-    'nodeType': goog.dom.NodeType.DOCUMENT
+    nodeType: goog.dom.NodeType.DOCUMENT,
+    toString: function() { return '[object HTMLDocument]'; }
   };
 
   // Create a fresh goog.global object, ensuring that global variables and
@@ -499,7 +500,8 @@ cm.TestBase = function() {
     removeEventListener: function() {},
     setTimeout: function(callback, delay) { callback(); },
     setInterval: function() { },
-    clearInterval: function() { }
+    clearInterval: function() { },
+    toString: function() { return '[object Window]'; }
   };
 
   fakeDocument.defaultView = fakeWindow;
@@ -511,6 +513,19 @@ cm.TestBase = function() {
 
   // Ensure that no previously attached cm.app listeners will affect the test.
   this.setForTest_('cm.app', {});
+
+  // Ensure that application classes have toString methods, to prevent
+  // gjstest.stringify from recursing deeply when it tries to produce readable
+  // descriptions of matcher outcomes and test failures.
+  for (var key in cm) {
+    if (typeof key === 'function' && key.match(/^[A-Z][a-z][A-Za-z]*$/)) {
+      if (cm[key].prototype.toString() === '[object Object]') {
+        this.setForTest_('cm.' + key + '.prototype.toString', (function(key) {
+          return function() { return '<cm.' + key + '>'; }
+        })(key));
+      }
+    }
+  }
 };
 
 /**

@@ -193,9 +193,7 @@ TabViewTest.prototype.testSetTabEnabled = function() {
   expectThat(allDescendantsOf(this.tabBarElem_, withClass(TAB_CLASS))[tabIndex],
              withClass(DISABLED_TAB_CLASS));
   expectTrue(this.tabView_.selectedTabItem());
-  // Do not use expectNe() here; it will force the tabs to stringify, which
-  // takes long enough to provoke a timeout
-  expectTrue(tab !== this.tabView_.selectedTabItem());
+  expectNe(tab, this.tabView_.selectedTabItem());
   tab.setIsEnabled(true);
   expectNoDescendantOf(this.tabBarElem_, withClass(DISABLED_TAB_CLASS));
 };
@@ -204,9 +202,7 @@ TabViewTest.prototype.testSelectedTabItem = function() {
   this.initializeTabView_();
   var tab = this.chooseRandomTabItem_();
   this.tabView_.selectTabItem(tab);
-  // Do not use expectEq() here; it will force the tabs to stringify, which
-  // takes long enough to provoke a timeout.
-  expectTrue(tab === this.tabView_.selectedTabItem());
+  expectEq(tab, this.tabView_.selectedTabItem());
 };
 
 TabViewTest.prototype.testGetTabItemByTitle = function() {
