@@ -29,13 +29,15 @@ class MaprootTest(test_utils.BaseTest):
              {'type': 'FOLDER',
               'sublayers': [
                   {'type': 'GEORSS'},
-                  {'type': 'MAP_DATA'}
+                  {'type': 'MAP_DATA'},
+                  {'type': 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO'}
                   ]},
              {'type': 'FUSION'}]
         },
         {'type': 'TILE'},
         {'type': 'FOLDER'}]}
-    expected = ['FUSION', 'GEORSS', 'KML', 'MAP_DATA', 'TILE']
+    expected = ['FUSION', 'GEORSS', 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO', 'KML',
+                'MAP_DATA', 'TILE']
     self.assertEquals(expected, sorted(
         [x['type'] for x in maproot.GetAllLayers(maproot_object)]))
     self.assertEquals([], maproot.GetAllLayers({'nolayers': {'type': 'KML'}}))
@@ -51,6 +53,12 @@ class MaprootTest(test_utils.BaseTest):
         {'type': 'WMS',
          'source': {'wms': {'url': 'tuv'}}}
     ))
+    self.assertEquals(
+        'GOOGLE_MAPS_ENGINE_LITE_OR_PRO:def',
+        maproot.GetSourceAddress(
+            {'type': 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO',
+             'source': {'google_maps_engine_lite_or_pro': {'url': 'def'}}}
+        ))
     self.assertEquals(None, maproot.GetSourceAddress(
         {'type': 'GOOGLE_MAP_DATA', 'source': {'google_map_data': 'ab'}}
     ))

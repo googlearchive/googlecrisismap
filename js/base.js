@@ -271,6 +271,9 @@ cm.MSG_DOWNLOAD_GEORSS_LINK = goog.getMsg('Download GeoRSS');
 /** @desc Label for a link to download a spreadsheet file. */
 cm.MSG_DOWNLOAD_SPREADSHEET_LINK = goog.getMsg('Download spreadsheet');
 
+/** @desc Label for a link to view the layer in Google Maps Engine. */
+cm.MSG_VIEW_IN_GOOGLE_MAPS_ENGINE = goog.getMsg('View in Google Maps Engine');
+
 /** @desc Label for a link to view data from a Fusion table. */
 cm.MSG_VIEW_FUSION_TABLE_LABEL = goog.getMsg('View data');
 
@@ -622,6 +625,10 @@ cm.MSG_LAYER_TYPE_WEATHER = goog.getMsg('Weather (from Google Maps)');
 /** @desc Menu option for the clouds layer from Google Maps. */
 cm.MSG_LAYER_TYPE_CLOUDS = goog.getMsg('Clouds (from Google Maps)');
 
+/** @desc Menu option for a layer from Google Maps Engine Lite or Pro. */
+cm.MSG_LAYER_TYPE_MAPS_ENGINE_LITE_OR_PRO = goog.getMsg(
+    'Google Maps Engine Lite/Pro');
+
 /** @desc Label for a text field for the URL of a data source. */
 cm.MSG_SOURCE_URL = goog.getMsg('Source URL');
 
@@ -868,6 +875,12 @@ cm.MSG_SOURCE_URL_TOOLTIP = goog.getMsg(
     'tiles, this is a URL template like http://example.com/{X}_{Y}_{Z}.png ' +
     'with placeholders for X, Y, and Z values.  For Bing Maps tiles, this is ' +
     'the tile URL without the quadkey at the end.)');
+
+/**
+ * @desc Tooltip for the text field for a Maps EngineLite layer's source URL.
+ */
+cm.MSG_MAPS_ENGINE_LITE_OR_PRO_URL_TOOLTIP = goog.getMsg(
+    'The public URL of the Maps Engine Lite/Pro layer data.');
 
 /**
  * @desc Tooltip for a checkbox that sets whether to show a download link.

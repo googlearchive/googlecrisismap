@@ -356,6 +356,27 @@ MapViewTest.prototype.addOverlayGeoRss = function() {
   this.newMapView_(false);
 };
 
+/** Tests adding a Maps Engine Lite or Pro overlay. */
+MapViewTest.prototype.addOverlayMELMEP = function() {
+  var url =
+      'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY';
+  this.addLayer_({
+    id: 'vanilla',
+    type: cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO,
+    url: url
+  });
+  this.stubVisibleLayerIds_(['vanilla']);
+
+  var overlay = this.expectNew_('google.maps.KmlLayer', {
+      url: url,
+      preserveViewport: true,
+      suppressInfoWindows: true
+  });
+  stub(overlay.getMap)().is(null);
+  expectCall(overlay.setMap)(this.map_);
+  this.newMapView_(false);
+};
+
 /** Tests adding a Fusion Tables overlay. */
 MapViewTest.prototype.addOverlayFusionTables = function() {
   this.addLayer_({

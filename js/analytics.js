@@ -96,6 +96,7 @@ cm.Analytics.prependUiElement_ = function(uiElement, uiEvents) {
 cm.Analytics.LayersPanelAction = cm.Analytics.prependUiElement_(
     'Layers panel', {
       DOWNLOAD_DATA_LINK_CLICKED: 'Layer download data link clicked',
+      VIEW_IN_MAPS_ENGINE_LINK_CLICKED: 'View in maps engine link clicked',
       EMBEDDED_LINK_CLICKED: 'Link embedded in layer description clicked',
       MAP_PICKER_ITEM_SELECTED: 'Map picker menu item selected',
       OPACITY_SLIDER_MOVED: 'Layer opacity slider moved',

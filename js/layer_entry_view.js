@@ -495,6 +495,8 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
     if (!hideLink) {
       var url = /** @type string */(this.model_.get('url'));
       var linkText = null;
+      var secondaryUrl = null;
+      var secondaryLinkText = null;
       switch (type) {
         case cm.LayerModel.Type.KML:
           linkText = cm.MSG_DOWNLOAD_KML_LINK;
@@ -513,6 +515,12 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
             linkText = cm.MSG_VIEW_FUSION_TABLE_LABEL;
           }
           break;
+        case cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO:
+          linkText = cm.MSG_DOWNLOAD_KML_LINK;
+          secondaryUrl = /** @type string */(
+              this.model_.get('maps_engine_url'));
+          secondaryLinkText = cm.MSG_VIEW_IN_GOOGLE_MAPS_ENGINE;
+          break;
       }
       if (linkText && url) {
         var link = cm.ui.createLink(linkText, url);
@@ -520,6 +528,17 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
         cm.events.listen(link, 'click', function() {
           cm.Analytics.logAction(
               cm.Analytics.LayersPanelAction.DOWNLOAD_DATA_LINK_CLICKED,
+              this.model_.get('id'));
+        }, this);
+      }
+      if (secondaryLinkText && secondaryUrl) {
+        // Use non-breaking spaces so the link doesn't wrap in the middle
+        secondaryLinkText = secondaryLinkText.replace(/ /g, '\xa0');
+        var secondaryLink = cm.ui.createLink(secondaryLinkText, secondaryUrl);
+        cm.ui.append(this.downloadElem_, cm.ui.SEPARATOR_DOT, secondaryLink);
+        cm.events.listen(secondaryLink, 'click', function() {
+          cm.Analytics.logAction(
+              cm.Analytics.LayersPanelAction.VIEW_IN_MAPS_ENGINE_LINK_CLICKED,
               this.model_.get('id'));
         }, this);
       }

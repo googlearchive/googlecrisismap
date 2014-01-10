@@ -427,7 +427,8 @@ MapModelSystemTest.prototype.verifyTestMapRoot = function() {
   var mapModel = cm.MapModel.newFromMapRoot(json);
   var expectedTypes =
       ['MAPS_ENGINE', 'TILE', 'FUSION', 'GEORSS', 'KML', 'KML', 'FOLDER',
-       'FOLDER', 'TRAFFIC', 'TRANSIT', 'WEATHER', 'CLOUD', 'WMS'];
+       'FOLDER', 'TRAFFIC', 'TRANSIT', 'WEATHER', 'CLOUD', 'WMS',
+       'GOOGLE_MAPS_ENGINE_LITE_OR_PRO'];
   var expectedLayers = [];
   goog.array.forEach(json.layers, function(layerMapRoot) {
     expectedLayers.push(cm.LayerModel.newFromMapRoot(layerMapRoot));

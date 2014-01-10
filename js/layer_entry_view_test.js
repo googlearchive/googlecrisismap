@@ -473,6 +473,60 @@ LayerEntryViewTest.prototype.updateUrlFusion = function() {
 };
 
 /**
+ * Tests download links are updated when a MEL/MEP LayerModel's URL changes.
+ */
+LayerEntryViewTest.prototype.updateUrlMelMep = function() {
+  var melUrl =
+      'http://mapsengine.google.com/map/viewer?mid=zYYdhADI7PvQ.kzJSidMtEIqY';
+  var kmlUrl =
+      'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY';
+  this.layerModel_.set('type',
+      cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO);
+  this.layerModel_.set('maps_engine_url', melUrl);
+  this.layerModel_.set('url', kmlUrl);
+
+  var parent = this.createView_();
+  expectDescendantOf(parent,
+      'a', withText('Download KML'), withHref(kmlUrl));
+  expectDescendantOf(parent,
+      'a', withText('View\xa0in\xa0Google\xa0Maps\xa0Engine'),
+      withHref(melUrl));
+
+  var melUrl2 =
+      'http://mapsengine.google.com/map/viewer?mid=somethingelse';
+  var kmlUrl2 =
+      'http://mapsengine.google.com/map/kml?mid=somethingelse';
+
+  this.layerModel_.set('maps_engine_url', melUrl2);
+  this.layerModel_.set('url', kmlUrl2);
+  expectNoDescendantOf(parent, 'a', withHref(kmlUrl));
+  expectNoDescendantOf(parent, 'a', withHref(melUrl));
+  expectDescendantOf(parent,
+      'a', withText('Download KML'), withHref(kmlUrl2));
+  expectDescendantOf(parent,
+      'a', withText('View\xa0in\xa0Google\xa0Maps\xa0Engine'),
+      withHref(melUrl2));
+};
+
+/**
+ * Tests that the download links are not created when a MEL/MEP LayerModel's
+ * URL changes, as specified by a true value for suppress_download_link.
+ */
+LayerEntryViewTest.prototype.updateUrlMelMepNoLink = function() {
+  this.layerModel_.set('type',
+      cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO);
+  this.layerModel_.set('maps_engine_url',
+      'http://mapsengine.google.com/map/viewer?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
+  this.layerModel_.set('url',
+      'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
+  this.layerModel_.set('suppress_download_link', true);
+
+  var parent = this.createView_();
+  expectNoDescendantOf(parent, 'a', withText('Download KML'));
+  expectNoDescendantOf(parent, 'a', withText('View in Google Maps Engine'));
+};
+
+/**
  * Tests that the download links are NOT updated when a non-GeoRSS/non-KML
  * LayerModel's URL changes.
  */

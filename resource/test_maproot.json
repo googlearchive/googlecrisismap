@@ -315,6 +315,19 @@
                           "13560186249300745898-02664411750483227641-4"]
         }
       }
+    },
+    {
+      "id": "google-maps-engine-lite-or-pro",
+      "title": "Maps Engine Lite Layer",
+      "visibility": "DEFAULT_OFF",
+      "description": "MEL Boulder Emergency Flooding Information",
+      "type": "GOOGLE_MAPS_ENGINE_LITE_OR_PRO",
+      "source": {
+        "google_maps_engine_lite_or_pro": {
+          "maps_engine_url": "https://mapsengine.google.com/map/edit?mid=zYYdhADI7PvQ.kzJSidMtEIqY",
+          "url": "https://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY"
+        }
+      }
     }
   ]
 }

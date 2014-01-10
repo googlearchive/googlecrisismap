@@ -146,6 +146,11 @@ LayerModelTest.prototype.newFromMapRootLayerTypes = function() {
   layerModel = cm.LayerModel.newFromMapRoot({type: 'GEORSS'});
   expectEq(cm.LayerModel.Type.GEORSS, layerModel.get('type'));
 
+  layerModel = cm.LayerModel.newFromMapRoot(
+      {type: 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO'});
+  expectEq(cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO,
+      layerModel.get('type'));
+
   layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_MAP_TILES'});
   expectEq(cm.LayerModel.Type.TILE, layerModel.get('type'));
 
@@ -223,6 +228,69 @@ LayerModelTest.prototype.newExternalMapsEngineLayerFromMapRoot = function() {
   expectEq('map_id', layerModel.get('maps_engine_map_id'));
   expectEq('layer_id', layerModel.get('maps_engine_layer_id'));
   expectEq('layer_key', layerModel.get('maps_engine_layer_key'));
+};
+
+LayerModelTest.prototype.runNewMapsEngineLiteOrProLayerFromMapRoot_ =
+    function(melUrl, kmlUrl) {
+  var maproot = {
+    'title': 'A map',
+    'layers': [{
+      'id': 'maproot_id',
+      'title': 'layer_title',
+      'description': 'layer_description',
+      'visibility': 'DEFAULT_ON',
+      'viewport': {
+        'lat_lon_alt_box': {
+          'north': 1.0,
+          'south': 2.0,
+          'east': -3.0,
+          'west': -4.0
+        }
+      },
+      'type': 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO',
+      'source': {
+        'google_maps_engine_lite_or_pro': {
+          'maps_engine_url': melUrl,
+          'url': kmlUrl
+        }
+      }
+    }]
+  };
+
+  var layerModel = cm.LayerModel.newFromMapRoot(maproot.layers[0]);
+
+  expectEq(cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO,
+      layerModel.get('type'));
+  expectEq('layer_title', layerModel.get('title'));
+  expectEq(melUrl, layerModel.get('maps_engine_url'));
+  expectEq(kmlUrl, layerModel.get('url'));
+
+  var newMelUrl = melUrl + 'new';
+  var newKmlUrl = kmlUrl + 'new';
+  layerModel.set('maps_engine_url', newMelUrl);
+  expectEq(newMelUrl, layerModel.get('maps_engine_url'));
+  expectEq(newKmlUrl, layerModel.get('url'));
+};
+
+/** Tests URL substitution for MELMEP layers with viewer path. */
+LayerModelTest.prototype.addOverlayMELMEP = function(url) {
+  this.runNewMapsEngineLiteOrProLayerFromMapRoot_(
+      'http://mapsengine.google.com/map/viewer?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
+      'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
+};
+
+/** Tests URL substitution for MELMEP layers with editor path. */
+LayerModelTest.prototype.addOverlayMELMEP2 = function(url) {
+  this.runNewMapsEngineLiteOrProLayerFromMapRoot_(
+      'http://mapsengine.google.com/map/edit?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
+      'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
+};
+
+/** Tests URL substitution for MELMEP layers with unknown path. */
+LayerModelTest.prototype.addOverlayMELMEP3 = function(url) {
+  this.runNewMapsEngineLiteOrProLayerFromMapRoot_(
+      'http://mapsengine.google.com/map/a-b.c?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
+      'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
 };
 
 /**

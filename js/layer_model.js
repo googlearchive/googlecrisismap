@@ -48,7 +48,8 @@ cm.LayerModel.Type = {
   TRANSIT: 'TRANSIT',
   WEATHER: 'WEATHER',
   CLOUD: 'CLOUD',
-  WMS: 'WMS'
+  WMS: 'WMS',
+  GOOGLE_MAPS_ENGINE_LITE_OR_PRO: 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO'
 };
 
 /** @enum {string} */
@@ -73,7 +74,9 @@ cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
   'GOOGLE_TRANSIT': cm.LayerModel.Type.TRANSIT,
   'GOOGLE_WEATHER': cm.LayerModel.Type.WEATHER,
   'GOOGLE_CLOUD_IMAGERY': cm.LayerModel.Type.CLOUD,
-  'WMS': cm.LayerModel.Type.WMS
+  'WMS': cm.LayerModel.Type.WMS,
+  'GOOGLE_MAPS_ENGINE_LITE_OR_PRO':
+      cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO
 };
 
 /** @enum {string} */
@@ -209,6 +212,13 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       var georss = source['georss'] || {};
       model.set('url', georss['url']);
       break;
+    case cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO:
+      var mapsEngine = source['google_maps_engine_lite_or_pro'] || {};
+      var mapsEngineUrl = mapsEngine['maps_engine_url'];
+      model.set('maps_engine_url', mapsEngineUrl);
+      model.set('url', mapsEngine['url'] ||
+          cm.LayerModel.getKmlUrlFromMapsEngineLiteOrProUrl_(mapsEngineUrl));
+      break;
     case cm.LayerModel.Type.TILE:
       var tile = source['tile'] || source['google_map_tiles'] || {};
       model.set('url', tile['url']);
@@ -290,6 +300,14 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       model.set('folder_type', null);
     }
   });
+  cm.events.onChange(model, 'maps_engine_url', function() {
+    if (model.get('type') ===
+        cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO) {
+      var url = /** @type string */(model.get('maps_engine_url'));
+      model.set('maps_engine_url', url);
+      model.set('url', cm.LayerModel.getKmlUrlFromMapsEngineLiteOrProUrl_(url));
+    }
+  });
 
   return model;
 };
@@ -305,6 +323,12 @@ cm.LayerModel.prototype.toMapRoot = function() {
       break;
     case cm.LayerModel.Type.GEORSS:
       source['georss'] = {'url': this.get('url')};
+      break;
+    case cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO:
+      source['google_maps_engine_lite_or_pro'] = {
+        'maps_engine_url': this.get('maps_engine_url'),
+        'url': this.get('url')
+      };
       break;
     case cm.LayerModel.Type.TILE:
       source['tile'] = {
@@ -401,6 +425,17 @@ cm.LayerModel.prototype.toMapRoot = function() {
     maproot['source'] = source;
   }
   return /** @type Object */(cm.util.removeNulls(maproot));
+};
+
+/**
+ * Transforms a Maps Engine Lite/Pro URL into a URL where we can fetch KML.
+ * @param {string} url the MEL/MEP URL to transform.
+ * @return {string} A URL to fetch KML for the MEL/MEP layer, or empty string
+ *     if the given URL was empty or null.
+ * @private
+ */
+cm.LayerModel.getKmlUrlFromMapsEngineLiteOrProUrl_ = function(url) {
+  return url ? url.replace(new RegExp('/map/.*?\\?'), '/map/kml?') : '';
 };
 
 /** @override */

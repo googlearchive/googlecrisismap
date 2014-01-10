@@ -537,6 +537,7 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
   switch (layer.get('type')) {
     case cm.LayerModel.Type.KML:
     case cm.LayerModel.Type.GEORSS:
+    case cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO:
       var url = /** @type string */(layer.get('url'));
       if (url) {
         url = this.maybeAddCacheBuster_(url);

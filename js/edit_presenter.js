@@ -80,7 +80,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
 
   function downloadable(type) {
     return type === cm.LayerModel.Type.KML ||
-        type === cm.LayerModel.Type.GEORSS;
+        type === cm.LayerModel.Type.GEORSS ||
+        type === cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO;
   }
 
   function isType(type) {
@@ -100,6 +101,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.LayerModel.Type.SPREADSHEET,
      label: cm.MSG_LAYER_TYPE_SPREADSHEET},
     {value: cm.LayerModel.Type.FUSION, label: cm.MSG_LAYER_TYPE_FUSION_TABLES},
+    {value: cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO,
+     label: cm.MSG_LAYER_TYPE_MAPS_ENGINE_LITE_OR_PRO},
     {value: cm.LayerModel.Type.MAPS_ENGINE,
      label: cm.MSG_LAYER_TYPE_MAPS_ENGINE},
     {value: cm.LayerModel.Type.TRAFFIC, label: cm.MSG_LAYER_TYPE_TRAFFIC},
@@ -186,6 +189,11 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'url', label: cm.MSG_SOURCE_URL, type: cm.editors.Type.TEXT,
      conditions: {'type': usesUrlField},
      tooltip: cm.MSG_SOURCE_URL_TOOLTIP},
+    {key: 'maps_engine_url', label: cm.MSG_SOURCE_URL,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type':
+                  isType(cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO)},
+     tooltip: cm.MSG_MAPS_ENGINE_LITE_OR_PRO_URL_TOOLTIP},
     {key: 'suppress_download_link', label: cm.MSG_SHOW_DOWNLOAD_LINK,
      type: cm.editors.Type.CHECKBOX, checked_value: null,
       unchecked_value: true, conditions: {'type': downloadable},

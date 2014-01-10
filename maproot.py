@@ -30,6 +30,7 @@ class LayerType(object):
   GOOGLE_WEATHER = 'GOOGLE_WEATHER'
   GOOGLE_CLOUD_IMAGERY = 'GOOGLE_CLOUD_IMAGERY'
   WMS = 'WMS'
+  GOOGLE_MAPS_ENGINE_LITE_OR_PRO = 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO'
 
 
 def GetAllLayers(maproot):
@@ -63,7 +64,8 @@ def GetSourceAddress(layer):
   """
   layer_type = layer.get('type', '')
   source = layer.get('source', {}).get(layer_type.lower(), {})
-  if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS]:
+  if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS,
+                    LayerType.GOOGLE_MAPS_ENGINE_LITE_OR_PRO]:
     return layer_type + ':' + source.get('url', '')
 
 
@@ -77,6 +79,7 @@ def GetHostnameForSource(source):
     A hostname, or None if no hostname can be determined.
   """
   layer_type, url = source.split(':', 1)
-  if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS]:
+  if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS,
+                    LayerType.GOOGLE_MAPS_ENGINE_LITE_OR_PRO]:
     netloc = urlparse.urlsplit(url).netloc
     return netloc.split(':')[0]
