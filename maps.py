@@ -218,6 +218,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
 
   # Fill the cm_config dictionary.
   root = request.root_path
+  xsrf_qs = '?xsrf_token=' + xsrf_token  # needed for all POST URLs
   result = {
       'dev_mode': dev_mode,
       'langs': base_handler.ALL_LANGUAGES,
@@ -229,7 +230,9 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
       'map_picker_items': map_picker_items,
       'user_email': users.GetCurrent() and users.GetCurrent().email,
       'wms_configure_url': root + '/.wms/configure',
-      'wms_tiles_url': root + '/.wms/tiles'
+      'wms_tiles_url': root + '/.wms/tiles',
+      'report_query_url': root + '/.api/reports',
+      'report_post_url': root + '/.api/reports' + xsrf_qs
   }
 
   # Add settings from the selected client config, if any.
@@ -245,7 +248,6 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
     result['publisher_name'] = catalog_entry.publisher_name
     key = catalog_entry.map_version_key
   elif map_object:  # draft map
-    xsrf_qs = '?xsrf_token=' + xsrf_token  # needed for all POST URLs
     maproot_json = json.loads(map_object.GetCurrentJson())
     maproot_json['id'] = map_object.id
     result['map_root'] = maproot_json
@@ -314,7 +316,8 @@ class MapByLabel(base_handler.BaseHandler):
         return self.redirect('.maps')
       raise base_handler.Error(404, 'Label %s/%s not found.' % (domain, label))
 
-    cm_config = GetConfig(self.request, catalog_entry=entry)
+    cm_config = GetConfig(self.request, catalog_entry=entry,
+                          xsrf_token=self.xsrf_token)
     map_root = cm_config.get('map_root', {})
     # SECURITY NOTE: cm_config_json is assumed to be safe JSON, and head_html
     # is assumed to be safe HTML; all other template variables are autoescaped.

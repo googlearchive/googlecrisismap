@@ -82,14 +82,13 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
   var langs = footerParams['langs'];
   var langSelect = cm.ui.create('select');
   // Add default as the first item.
-  var langChoices = [{'value': '',
-                      'label': cm.MSG_LANGUAGE_DEFAULT}];
-  langChoices = goog.array.concat(langChoices,
-                                  cm.util.createLanguageChoices(langs));
+  var langChoices = goog.array.concat(
+      [{'value': '', 'label': cm.MSG_LANGUAGE_DEFAULT}],
+      cm.util.createLanguageChoices(langs));
   goog.array.forEach(langChoices, function(langChoice) {
     cm.ui.append(langSelect, cm.ui.create('option',
         {'value': langChoice.value}, langChoice.label));
-  }, this);
+  });
   var hlParam = uri.getParameterValue('hl');
   langSelect.value = hlParam || '';
   cm.ui.append(parentElem, this.langContainer_ =

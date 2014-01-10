@@ -252,3 +252,12 @@ UtilTest.prototype.testCreateLanguageChoices = function() {
   expectEq('zh-cn', langChoices[i++].value);
 };
 
+UtilTest.prototype.testShortAge = function() {
+  var now = (new Date).getTime() / 1000;
+  expectEq('just now', cm.util.shortAge(now + 100));
+  expectEq('just now', cm.util.shortAge(now));
+  expectEq('just now', cm.util.shortAge(now - 58));
+  expectEq('2m ago', cm.util.shortAge(now - 115));
+  expectEq('1.5h ago', cm.util.shortAge(now - 90 * 60));
+  expectEq('4d ago', cm.util.shortAge(now - 4 * 24 * 3600));
+};

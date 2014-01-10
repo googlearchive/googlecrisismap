@@ -9,13 +9,9 @@
 // OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 // specific language governing permissions and limitations under the License.
 
-/**
- * @fileoverview Definition of the 'cm' namespace that contains everything else.
- *     Also holds all translated messages.
- * @author arb@google.com (Anthony Baxter)
- */
-
 goog.provide('cm');
+
+goog.require('goog.i18n.MessageFormat');
 
 cm = {};
 
@@ -74,6 +70,54 @@ cm.MSG_SIGN_OUT = goog.getMsg('Sign out');
 
 /** @desc Link or button text that shows documentation or help instructions. */
 cm.MSG_HELP = goog.getMsg('Help');
+
+// Short time indicators
+
+/** @desc Time label for an item posted less than a minute ago (very short). */
+cm.MSG_JUST_NOW = goog.getMsg('just now');
+
+/**
+ * @param {number} minutes Number of minutes.
+ * @return {string} The localized message.
+ */
+cm.getMsgShortMinutesAgo = function(minutes) {
+  /** @desc Time label for an item posted some minutes ago (very short). */
+  var MSG_SHORT_MINUTES_AGO = goog.getMsg('{minutes, plural, ' +
+      '=1 {1m ago}' +
+      '=2 {2m ago}' +
+      'other {#m ago}}');
+  return new goog.i18n.MessageFormat(MSG_SHORT_MINUTES_AGO).format(
+      {'minutes': minutes});  // Closure forces this silly circumlocution
+};
+
+/**
+ * @param {number} hours Number of hours.
+ * @return {string} The localized message.
+ */
+cm.getMsgShortHoursAgo = function(hours) {
+  /** @desc Time label for an item posted some hours ago (very short). */
+  var MSG_SHORT_HOURS_AGO = goog.getMsg('{hours, plural, ' +
+      '=1 {1h ago}' +
+      '=2 {2h ago}' +
+      'other {#h ago}}');
+  return new goog.i18n.MessageFormat(MSG_SHORT_HOURS_AGO).format(
+      {'hours': hours});  // Closure forces this silly circumlocution
+};
+
+/**
+ * @param {number} days Number of days.
+ * @return {string} The localized message.
+ */
+cm.getMsgShortDaysAgo = function(days) {
+  /** @desc Time label for an item posted some days ago (very short). */
+  var MSG_SHORT_DAYS_AGO = goog.getMsg('{days, plural, ' +
+      '=1 {1d ago}' +
+      '=2 {2d ago}' +
+      'other {#d ago}}');
+  return new goog.i18n.MessageFormat(MSG_SHORT_DAYS_AGO).format(
+      {'days': days});  // Closure forces this silly circumlocution
+};
+
 
 // Labels for the tabs in the panel.
 
@@ -332,6 +376,28 @@ cm.MSG_NUMBER_MATCHING_LAYERS = goog.getMsg('{NUM_LAYERS, plural, ' +
   '=0 {No layers or folders match the filter query}' +
   '=1 {1 layer or folder matches the filter query}' +
   'other {# layers and folders match the filter query}}');
+
+
+// Crowd view
+
+/** @desc An invitation to users to contribute a report about a location. */
+cm.MSG_CROWD_REPORT_PROMPT = goog.getMsg('Know something about this location?');
+
+/** @desc Label for an answer to a multiple-choice question. */
+cm.MSG_NOT_SURE = goog.getMsg('Not sure');
+
+/** @desc Heading for a section containing reports from citizens. */
+cm.MSG_CITIZEN_REPORTS = goog.getMsg('Citizen reports');
+
+/** @desc Label for the comment entry box. */
+cm.MSG_ENTER_COMMENT = goog.getMsg('Enter a comment');
+
+/** @desc A button for posting the user's comment. */
+cm.MSG_POST = goog.getMsg('Post');
+
+/** @desc A notice to let users know their reports will be public. */
+cm.MSG_CROWD_PRIVACY_DISCLAIMER = goog.getMsg(
+    'Please note: All data entered will be public.');
 
 
 // Share popup

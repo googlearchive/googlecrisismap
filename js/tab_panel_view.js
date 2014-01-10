@@ -19,6 +19,9 @@ goog.require('cm.TabItem');
 goog.require('cm.TabView');
 goog.require('cm.events');
 
+/** If panel height is too small, the crowd report form will open in a popup. */
+var MIN_PANEL_HEIGHT_FOR_EMBEDDED_FORM = 450;
+
 /**
  * Panel view, containing the map information and layers list.
  * @param {Element} frameElem The frame element surrounding the entire UI.
@@ -84,6 +87,9 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
 
   /** @private {boolean} Whether the panel is placed below the map. */
   this.below_ = below;
+
+  /** @private {boolean} Whether the crowd report form opens in a popup. */
+  this.formPopupEnabled_ = false;
 
   /**
    * Where the tab bar is positioned relative to the map.
@@ -173,6 +179,12 @@ cm.TabPanelView.prototype.resize = function(maxPanelHeight, below) {
   }
   this.tabView_.resize(maxPanelHeight, below);
   this.updateExpandCollapseButton_(this.expanded_);
+
+  this.formPopupEnabled_ =
+      below || maxPanelHeight < MIN_PANEL_HEIGHT_FOR_EMBEDDED_FORM;
+  if (this.detailsTab_) {
+    this.detailsTab_.enableFormPopup(this.formPopupEnabled_);
+  }
 };
 
 /**
@@ -299,6 +311,7 @@ cm.TabPanelView.prototype.selectFeature = function(featureData) {
   }
   this.detailsTab_ = new cm.DetailsTabItem(
       this.mapModel_, this.appState_, this.config_);
+  this.detailsTab_.enableFormPopup(this.formPopupEnabled_);
   this.detailsTab_.loadFeatureData(featureData);
   this.tabView_.appendTabItem(this.detailsTab_);
   this.tabView_.selectTabItem(this.detailsTab_);

@@ -35,7 +35,8 @@ LIST=$(OUT_DIR)/list.$(DEP_SUM)
 AUX=aux/build_info.js \
     aux/css.js \
     aux/google_maps_api_v3_11.js \
-    aux/html-css-sanitizer.js \
+    aux/html4-defs.js \
+    aux/html-sanitizer.js \
     aux/json_files.js \
     aux/maps_api.js \
     aux/uri.js
@@ -80,26 +81,22 @@ run: dbg
 optrun: opt
 	tools/run
 
-# Delete all the output except html-css-sanitizer.js (which takes forever to
-# generate).
+# Delete all the output except html4-defs.js (which takes forever to generate).
 clean:
-	rm -rf $$(ls -1 aux/* 2>/dev/null | grep -v aux/html-css-sanitizer.js)
+	rm -rf $$(ls -1 aux/* 2>/dev/null | grep -v aux/html4-defs.js)
 	rm -rf languages.py *.pyc static/mapviewer.css $(OUT_DIR)
 	find static -type l -exec rm '{}' ';'  # remove all symbolic links
 	@echo
-	@echo "Everything cleaned except aux/html-css-sanitizer.js; if you're "
-	@echo "sure you want to regenerate it (may take 2 to 6 minutes), you "
-	@echo "can run 'rm aux/*'"
+	@echo "Everything cleaned except aux/html4-defs.js; if you're sure you"
+	@echo "want to regenerate it (takes 2 to 6 minutes), you can rm aux/*"
 
 # Run all the JS and Python tests (we need languages.py for Python tests).
 test: languages.py aux/json_files.js $(LIST)
 	@gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),$$(echo js/*_test.js | tr ' ' ',') | \
 	    python tools/format_gjstest_output.py && \
-	    echo "All JS tests passed." && \
-	    echo && \
+	    echo "All JS tests passed.\n" && \
 	    tools/pytests && \
-	    echo && \
-	    echo "All JS and Python tests passed."
+	    echo "\nAll JS and Python tests passed."
 
 # Run a single JS test using gjstest.
 %_test: aux/json_files.js $(LIST)
@@ -118,9 +115,10 @@ test: languages.py aux/json_files.js $(LIST)
 languages.py: js/language_defs
 	cp $< $@
 
-# Concatenate all the CSS files.
+# Concatenate all the CSS files, putting all the @import lines first.
 static/mapviewer.css: resource/*.css
-	cat $^ > $@
+	cat $^ | grep '@import' > $@ || true
+	cat $^ | grep -v '@import' >> $@ || true
 
 
 # AUXILIARY JS INPUTS ---------------------------------------------------------
@@ -142,12 +140,17 @@ aux/google_maps_api_v3_11.js:
 	@mkdir -p aux
 	curl -o $@ http://closure-compiler.googlecode.com/svn/trunk/contrib/externs/maps/google_maps_api_v3_11.js
 
-# Build html-css-sanitizer.js from google-caja; requires ant.
-aux/html-css-sanitizer.js:
+# Build html4-defs.js from google-caja.  Slow (2-6 min); requires svn and ant.
+aux/html4-defs.js:
 	@mkdir -p aux
-	cd /tmp; if ! test -d google-caja; then svn co http://google-caja.googlecode.com/svn/trunk/ google-caja; fi;
-	cd /tmp/google-caja; ant jars-no-src
-	cp /tmp/google-caja/ant-lib/com/google/caja/plugin/html-css-sanitizer-minified.js $@
+	cd /tmp; svn co http://google-caja.googlecode.com/svn/trunk/ google-caja
+	cd /tmp/google-caja; ant
+	cp /tmp/google-caja/ant-lib/com/google/caja/plugin/html4-defs.js $@
+
+# Download html-sanitizer.js from the google-caja project.
+aux/html-sanitizer.js:
+	@mkdir -p aux
+	curl -o $@ http://google-caja.googlecode.com/svn/trunk/src/com/google/caja/plugin/html-sanitizer.js
 
 # Concatenate all the JSON files.
 aux/json_files.js: resource/*.json
@@ -187,7 +190,8 @@ $(LIST):
 	@mkdir -p $(OUT_DIR)
 	@> $@  # creates the file or truncates it to zero length
 	@echo aux/uri.js >> $@
-	@echo aux/html-css-sanitizer.js >> $@
+	@echo aux/html4-defs.js >> $@
+	@echo aux/html-sanitizer.js >> $@
 	@# Because OUT_DIR is under js/, the compiler will try to compile
 	@# *.js files in OUT_DIR unless we remove them first.
 	@rm -f $(OUT_DIR)/*.js
@@ -207,7 +211,8 @@ $(OUT_OPT): $(AUX) js/*.js
 	python $(CLOSURE_DIR)/closure/bin/calcdeps.py \
 	    $(SOURCE_DIR_OPTIONS) \
 	    -i aux/uri.js \
-	    -i aux/html-css-sanitizer.js \
+	    -i aux/html4-defs.js \
+	    -i aux/html-sanitizer.js \
 	    $(TARGET_OPTIONS) \
 	    -i aux/build_info.js \
 	    -o compiled \

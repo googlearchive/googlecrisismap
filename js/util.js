@@ -271,3 +271,22 @@ cm.util.createLanguageChoices = function(langCodes) {
   }
   return languageChoices;
 };
+
+
+/**
+ * Constructs a short string describing a relative time in the past.
+ * @param {number} time A number of seconds since 1970-01-01 00:00:00 UTC.
+ * @return {string} A short string like "5.1d" (5.1 days) or "32m" (32 minutes).
+ */
+cm.util.shortAge = function(time) {
+  var age = (new Date).getTime() / 1000 - time;
+  if (age < 60) {
+    return cm.MSG_JUST_NOW;
+  } else if (age / 60 < 60) {
+    return cm.getMsgShortMinutesAgo(Math.round(age / 60));
+  } else if (age / 3600 < 24) {
+    return cm.getMsgShortHoursAgo(Math.round(age / 360) / 10);
+  } else {
+    return cm.getMsgShortDaysAgo(Math.round(age / 8640) / 10);
+  }
+};

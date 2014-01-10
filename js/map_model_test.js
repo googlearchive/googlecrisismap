@@ -170,6 +170,14 @@ MapModelTest.prototype.newFromEmptyMapRoot = function() {
   expectEq(0, mapModel.get('layers').getLength());
 };
 
+/** Verifies that newFromMapRoot doesn't crash when handed an empty object. */
+MapModelTest.prototype.newFromEmptyMapRoot = function() {
+  var mapModel = cm.MapModel.newFromMapRoot({});
+  expectEq('', mapModel.get('title'));
+  expectEq('', mapModel.get('description').getUnsanitizedHtml());
+  expectEq(0, mapModel.get('layers').getLength());
+};
+
 /** Tests that the MapModel enforces uniqueness of layer IDs on construction. */
 MapModelTest.prototype.newFromMapRootWithInvalidIds = function() {
   var mapModel = this.mapModelFromMapRoot_({

@@ -23,13 +23,17 @@ var TOPIC_MAP_ROOT_JSON = {
   'questions': [{
     'id': '1',
     'text': 'Is there space available at this shelter?',
-    'answers': [{'id': '1', 'title': 'Yes', 'color': '#00c000'},
-                {'id': '2', 'title': 'No', 'color': '#c00000'}]
+    'answers': [
+      {'id': '1', 'title': 'Yes', 'label': 'space', 'color': '#00c000'},
+      {'id': '2', 'title': 'No', 'label': 'no space', 'color': '#c00000'}
+    ]
   }, {
     'id': '2',
     'text': 'Does this shelter allow overnight stays?',
-    'answers': [{'id': '1', 'title': 'Yes', 'color': '#00c080'},
-                {'id': '2', 'title': 'No', 'color': '#c00080'}]
+    'answers': [
+      {'id': '1', 'title': 'Yes', 'label': 'overnight', 'color': '#00c080'},
+      {'id': '2', 'title': 'No', 'label': 'day only', 'color': '#c00080'}
+    ]
   }]
 };
 

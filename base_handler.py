@@ -189,8 +189,8 @@ class BaseHandler(webapp2.RequestHandler):
 
   def GetUrlForAnonymousUser(self):
     """Gets a semi-stable user URL using a randomly-generated cookie."""
-    user_token = self.request.cookies.get('cm_user_token') or MakeRandomId()
-    self.response.set_cookie('cm_user_token', user_token, max_age=365*24*3600)
+    user_token = self.request.cookies.get('CR_USER') or MakeRandomId()
+    self.response.set_cookie('CR_USER', user_token, max_age=14*24*3600)
     return self.request.root_url + '/.users/anonymous.' + user_token
 
   def GetUrlForUser(self, user):

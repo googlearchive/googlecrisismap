@@ -19,6 +19,7 @@ goog.require('cm');
 goog.require('cm.Html');
 goog.require('cm.css');
 goog.require('cm.events');
+goog.require('goog.color');
 goog.require('goog.dom');
 goog.require('goog.format');
 goog.require('goog.string');
@@ -74,9 +75,10 @@ cm.ui.showPopup = function(popup, opt_container) {
  * Creates a DOM element.  This works just like goog.dom.createDom but also
  * fixes some of IE's bad behaviour.
  * @param {string} tag The tag name of the element to create.
- * @param {Object=} opt_attributes Attributes to set on the new element. 'style'
+ * @param {string|Object=} opt_attributes Attributes on the new element. 'style'
  *     attributes may be strings or objects; the former will be applied as a DOM
  *     attribute, while the latter will be applied as JavaScript properties.
+ *     If a plain string is supplied, it becomes the 'class' attribute.
  * @param {...(cm.Html|string|Node|Array.<string|Node>)} var_args Text strings,
  *     Html objects, or DOM nodes to add as children of the new element.
  * @return {!Element} The newly created element.
@@ -277,4 +279,15 @@ cm.ui.idCounter_ = 0;
  */
 cm.ui.generateId = function(prefix) {
   return prefix + '' + (++cm.ui.idCounter_);
+};
+
+/**
+ * Decides whether black or white is more legible on a given background color.
+ * @param {string} bgColor A background color, in #rgb or #rrggbb format.
+ * @return {string} A text color (black or white), in #rgb format.
+ */
+cm.ui.legibleTextColor = function(bgColor) {
+  var rgb = goog.color.hexToRgb(bgColor);
+  var luminance = rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114;
+  return luminance > 128 ? '#000' : '#fff';
 };

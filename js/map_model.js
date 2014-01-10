@@ -181,6 +181,21 @@ cm.MapModel.prototype.getLayerIds = function() {
 };
 
 /**
+ * Gets a topic by its ID.
+ * @param {string} id A topic ID.
+ * @return {cm.TopicModel?} A topic model, or null if the ID is not found.
+ */
+cm.MapModel.prototype.getTopic = function(id) {
+  var topics = this.get('topics').getArray();
+  for (var i = 0; i < topics.length; i++) {
+    if (topics[i].get('id') === id) {
+      return topics[i];
+    }
+  }
+  return null;
+};
+
+/**
  * @param {string} id A layer ID.
  * @return {Array.<cm.TopicModel>} The topics that are crowd-enabled and
  *     associated with the given layer.

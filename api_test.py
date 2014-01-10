@@ -115,6 +115,8 @@ class CrowdReportsTest(test_utils.BaseTest):
 
     reports = json.loads(response.body)
     self.assertEquals(1, len(reports))
+    id0 = reports[0].pop('id')
+    self.assertTrue(id0.startswith('http://app.com/root/.reports/'))
     self.assertDictEqual(
         {u'answer_ids': [u'foo.1.1', u'bar.1.1'],
          u'author': u'http://app.com/root/.users/1',
@@ -145,6 +147,10 @@ class CrowdReportsTest(test_utils.BaseTest):
 
     reports = json.loads(response.body)
     self.assertEquals(2, len(reports))
+    ids = [reports[0].pop('id'), reports[1].pop('id')]
+    self.assertTrue(ids[0].startswith('http://app.com/root/.reports/'))
+    self.assertTrue(ids[1].startswith('http://app.com/root/.reports/'))
+    self.assertNotEqual(ids[0], ids[1])
     self.assertDictEqual(
         {u'answer_ids': [u'foo.1.2'],
          u'author': u'http://app.com/root/.users/anonymous.%s' %

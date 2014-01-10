@@ -66,6 +66,14 @@ specific language governing permissions and limitations under the License.
   border-top: none;
 }
 
+.cm-footer-shadow .cm-tab-panel {
+  box-shadow: 0 0 6px rgba(0,0,0,0.4);
+}
+
+.cm-footer-shadow .cm-tab-bar-container {
+  border-top: none;
+}
+
 .cm-tab-bar-buttons {
   display: inline-block;
   float: right;
@@ -85,8 +93,23 @@ specific language governing permissions and limitations under the License.
   -webkit-overflow-scrolling:touch;
 }
 
-.cm-details-content {
+.cm-scrolling-tab-content::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+
+.cm-scrolling-tab-content::-webkit-scrollbar:vertical {
+  width: 12px;
+}
+
+.cm-scrolling-tab-content::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  border: 2px solid #fff;
+  background-color: #777;
+}
+
+.cm-feature-info-content {
   margin: 12px;
+  font-family: arial !important;  /* override Roboto specified by Maps API */
 }
 
 .cm-chevron-up:hover {
@@ -172,13 +195,13 @@ specific language governing permissions and limitations under the License.
 .cm-tabbed-legend-box {
   border-top:1px solid #f0f0f0;
   margin: 12px 0;
-  padding:12px 12px 0 12px;
+  padding: 12px 12px 0 12px;
   overflow: hidden; /* fully enclose any floating children */
 }
 
 .cm-tabbed-legend-box.cm-first-tabbed-legend-box {
-    border-top:0px;
-    padding:0 12px 0 12px;
+  border-top:0px;
+  padding:0 12px 0 12px;
 }
 
 .cm-tabbed-legend-content {
@@ -308,3 +331,175 @@ specific language governing permissions and limitations under the License.
   margin-right: 0;
   padding-left: 9px;
 }
+
+.cm-tab-panel .cm-panel-header {
+  margin-top: 6px;
+}
+
+.cm-panel-header {
+  padding: 6px 12px;
+}
+
+/* Crowd reports */
+.cm-crowd {
+  margin-top: 12px;
+  border-top: 1px solid #c0c0c0;
+  background: #f0f0f0;
+  overflow: hidden;
+}
+
+.cm-crowd .cm-notice {
+  font-size: 11px;
+  margin: 12px 6px;
+}
+
+.cm-crowd-report-form .cm-notice {
+  margin: 6px 0;
+}
+
+/* Report collection area */
+.cm-report-collection {
+  padding: 0 12px;
+}
+
+.cm-crowd h2 {
+  font-size: 11px;
+  padding-top: 12px;
+  margin: 0;
+  color: #888;
+  letter-spacing: -0.2px;
+}
+
+.cm-crowd-bubble {
+  background: #ddd;
+  padding: 6px 12px;
+  margin: 6px 0 12px;
+  border-radius: 4px 4px 4px 0;
+  position: relative;
+}
+
+.cm-crowd-bubble.cm-collapsed .cm-close-button {
+  display: none;
+}
+
+.cm-crowd-more {
+  border-color: transparent transparent transparent #666;
+  border-width: 4px 0 4px 5px;
+  border-style: solid;
+  position: absolute;
+  right: 9px;
+  top: 49%;
+  margin-top: -4px;
+}
+
+.cm-crowd-bubble:hover .cm-crowd-more {
+  border-color: transparent transparent transparent #000;
+}
+
+.cm-crowd-bubble.cm-collapsed:hover {
+  cursor: pointer;
+  background: #ccc;
+}
+
+.cm-crowd-bubble-tail {
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  border-width: 3px;
+  border-color: #ddd transparent transparent #ddd;
+  border-style: solid;
+}
+
+.cm-crowd-bubble.cm-collapsed:hover .cm-crowd-bubble-tail {
+  border-color: #ccc transparent transparent #ccc;
+}
+
+.cm-crowd-bubble.cm-expanded .cm-crowd-report-prompt {
+  display: none;
+}
+
+.cm-crowd-bubble.cm-collapsed .cm-crowd-report-form {
+  display: none;
+}
+
+.cm-question {
+  margin: 12px 0 6px;
+}
+
+.cm-question:first-child {
+  margin-top: 0;
+}
+
+.cm-question h3 {
+  margin: 6px 0;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.cm-answers, .cm-report-text {
+  margin: 6px 0 12px;
+}
+
+.cm-report-text {
+  margin-top: 18px;
+}
+
+.cm-report-text input[type="text"] {
+  width: 100%;
+}
+
+/* Report display area */
+.cm-reports {
+  margin: 6px 0;
+  border-top: 1px solid #e0e0e0;
+  padding: 0 6px;
+}
+
+.cm-reports p {  /* Loading... message */
+  margin: 12px 6px;
+  color: #666;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.cm-crowd .cm-reports .cm-crowd-abuse, .cm-vote {
+  color: #666;
+  font-size: 11px;
+  padding: 0 6px 6px;
+  cursor: pointer;
+}
+
+.cm-report {
+  margin: 12px 0 3px;
+  padding: 9px 6px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.cm-answer {
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 1px 3px;
+  margin-right: 4px;
+  display: inline-block;
+  color: #fff;
+  background: #0a0;
+}
+
+.cm-report .cm-time {
+  font-size: 11px;
+  float: right;
+  color: #999;
+  padding: 2px 0 0 6px;
+}
+
+.cm-reports .cm-vote {
+  float: right;
+}
+
+.cm-crowd .cm-button-area {
+  margin: 12px 0 6px;
+}
+

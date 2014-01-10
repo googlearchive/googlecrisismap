@@ -66,8 +66,8 @@ InspectorViewTest.prototype.testInspect = function() {
   expectDescendantOf(this.popup_, 'table', withClass(cm.css.EDITORS));
   var buttonArea = expectDescendantOf(this.popup_,
                                       withClass(cm.css.BUTTON_AREA));
-  expectDescendantOf(buttonArea, 'button', withText('OK'));
-  expectDescendantOf(buttonArea, 'button', withText('Cancel'));
+  expectDescendantOf(buttonArea, 'div', withText('OK'));
+  expectDescendantOf(buttonArea, 'div', withText('Cancel'));
 
   // Confirm that there are two properly labelled input fields.
   var rows = allDescendantsOf(this.popup_, isElement('tr'));
@@ -104,7 +104,7 @@ InspectorViewTest.prototype.testOk = function() {
   expectDescendantOf(cm.ui.document.body, this.popup_);
 
   // Click the OK button.
-  var button = expectDescendantOf(this.popup_, 'button', withText('OK'));
+  var button = expectDescendantOf(this.popup_, 'div', withText('OK'));
   cm.events.emit(button, 'click');
 
   // Confirm that the OBJECT_EDITED event was emitted with the right parameters.
@@ -134,7 +134,7 @@ InspectorViewTest.prototype.testOkForNew = function() {
   }, this);
 
   // Click the OK button.
-  var button = expectDescendantOf(this.popup_, 'button', withText('OK'));
+  var button = expectDescendantOf(this.popup_, 'div', withText('OK'));
   cm.events.emit(button, 'click');
 
   // Confirm that the NEW_LAYER event was emitted with the right maproot
@@ -165,7 +165,7 @@ InspectorViewTest.prototype.testConditionalsForNew = function() {
   }, this);
 
   // Click OK and verify the correct values have been set.
-  button = expectDescendantOf(this.popup_, 'button', withText('OK'));
+  button = expectDescendantOf(this.popup_, 'div', withText('OK'));
   cm.events.emit(button, 'click');
   expectTrue(layersCreated);
   expectEq({a: 'yes', b: 5}, properties);
@@ -177,7 +177,7 @@ InspectorViewTest.prototype.testCancel = function() {
   expectDescendantOf(cm.ui.document.body, this.popup_);
 
   // Click the Cancel button.
-  var button = expectDescendantOf(this.popup_, 'button', withText('Cancel'));
+  var button = expectDescendantOf(this.popup_, 'div', withText('Cancel'));
   cm.events.emit(button, 'click');
 
   // Confirm that the OBJECT_EDITED event was not emitted.
@@ -226,7 +226,7 @@ InspectorViewTest.prototype.testConditionalHidden = function() {
   expectEq('none', rows[1].style.display);
 
   // Click the OK button.
-  var button = expectDescendantOf(this.popup_, 'button', withText('OK'));
+  var button = expectDescendantOf(this.popup_, 'div', withText('OK'));
   cm.events.emit(button, 'click');
 
   // Confirm that an OBJECT_EDITED event was emitted with the right parameters.
@@ -261,7 +261,7 @@ InspectorViewTest.prototype.testConditionalShown = function() {
   cm.events.emit(bInput, 'keyup');
 
   // Click the OK button.
-  var button = expectDescendantOf(this.popup_, 'button', withText('OK'));
+  var button = expectDescendantOf(this.popup_, 'div', withText('OK'));
   cm.events.emit(button, 'click');
 
   // Confirm that the OBJECT_EDITED event was emitted with the right parameters.

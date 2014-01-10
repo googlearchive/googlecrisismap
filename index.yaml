@@ -73,6 +73,37 @@ indexes:
 - kind: CrowdReportModel
   properties:
   - name: location
+  - name: effective
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
+  - name: location
+  - name: topic_ids
+  - name: effective
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
+  - name: location
+  - name: topic_ids
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
+  - name: location
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
+  - name: topic_ids
+  - name: effective
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
   - name: topic_ids
   - name: updated
     direction: desc
@@ -130,18 +161,6 @@ indexes:
 
 - kind: MetadataFetchLog
   properties:
-  - name: fetch_status
-  - name: fetch_time
-    direction: desc
-
-- kind: MetadataFetchLog
-  properties:
-  - name: address
-  - name: fetch_time
-    direction: desc
-
-- kind: MetadataFetchLog
-  properties:
   - name: address
   - name: fetch_length
   - name: fetch_time
@@ -157,7 +176,13 @@ indexes:
 
 - kind: MetadataFetchLog
   properties:
-  - name: hostname
+  - name: address
+  - name: fetch_time
+    direction: desc
+
+- kind: MetadataFetchLog
+  properties:
+  - name: fetch_status
   - name: fetch_time
     direction: desc
 
@@ -176,3 +201,8 @@ indexes:
   - name: fetch_time
     direction: desc
 
+- kind: MetadataFetchLog
+  properties:
+  - name: hostname
+  - name: fetch_time
+    direction: desc

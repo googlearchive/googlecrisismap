@@ -72,6 +72,7 @@ cm.TopicModel.newFromMapRoot = function(maproot, valid_layer_ids) {
    *           text: string,
    *           answers: Array.<{id: string,
    *                            title: string,
+   *                            label: string,
    *                            color: string}>
    *          }>} Definitions of the survey questions for this topic.
    *              Each question has an ID unique among questions in this topic,
@@ -88,6 +89,7 @@ cm.TopicModel.newFromMapRoot = function(maproot, valid_layer_ids) {
             if (!answer['id']) return null;
             return {id: answer['id'],
                     title: answer['title'] || '',
+                    label: answer['label'] || '',
                     color: answer['color'] || ''};
           })
         };
@@ -117,6 +119,7 @@ cm.TopicModel.prototype.toMapRoot = function() {
         'answers': goog.array.map(question.answers, function(answer) {
           return {'id': answer.id,
                   'title': answer.title,
+                  'label': answer.label,
                   'color': answer.color};
         })
       };

@@ -143,6 +143,7 @@ class CrowdReports(base_handler.BaseHandler):
     """Converts a model.CrowdReport to a dictionary for JSON serialization."""
     user = self.GetUserForUrl(report.author)
     return {
+        'id': report.key.id(),
         'author': report.author,
         'author_email': user and user.email,
         'effective': utils.UtcToTimestamp(report.effective),

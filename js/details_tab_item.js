@@ -12,7 +12,7 @@
 goog.provide('cm.DetailsTabItem');
 
 goog.require('cm');
-goog.require('cm.MapModel');
+goog.require('cm.CrowdView');
 goog.require('cm.MapTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.ui');
@@ -29,39 +29,25 @@ goog.require('cm.ui');
 cm.DetailsTabItem = function(mapModel, appState, config) {
   cm.MapTabItem.call(this, mapModel, appState, config);
 
-  /**
-   * @type string
-   * @private
-   */
-  this.layerId_;
+  /** @private {Element} Details about the selected feature, as provided by
+   *      the original data source, rendered as a DOM element. */
+  this.featureInfoElem_ = cm.ui.create('div');
 
-  /**
-   * @type string
-   * @private
-   */
-  this.featureTitle_;
+  /** @private {Element} The element containing the crowd view. */
+  this.crowdElem_ = cm.ui.create('div');
 
-  /**
-   * @type string
-   * @private
-   */
-  this.featureSnippet_;
-
-  /**
-   * @type google.maps.LatLng
-   * @private
-   */
-  this.featurePosition_;
-
-  /**
-   * Details about the selected placemark, as provided by the original data
-   * source, rendered as a DOM element.
-   * @type Element
-   * @private
-   */
-  this.featureContentElem_;
+  /** @private {cm.CrowdView} */
+  this.crowdView_ = new cm.CrowdView(this.crowdElem_, mapModel, config);
 };
 goog.inherits(cm.DetailsTabItem, cm.MapTabItem);
+
+/**
+ * @param {boolean} enabled If true, the crowd report form will open in a popup.
+ *     Otherwise, it will open embedded within the tab.
+ */
+cm.DetailsTabItem.prototype.enableFormPopup = function(enabled) {
+  this.crowdView_.enableFormPopup(enabled);
+};
 
 /** @override */
 cm.DetailsTabItem.prototype.addHeader = function(headerElem) {
@@ -71,7 +57,7 @@ cm.DetailsTabItem.prototype.addHeader = function(headerElem) {
 
 /** @override */
 cm.DetailsTabItem.prototype.addScrollingContent = function(parentElem) {
-  cm.ui.append(parentElem, this.featureContentElem_);
+  cm.ui.append(parentElem, this.featureInfoElem_, this.crowdElem_);
 };
 
 /**
@@ -79,15 +65,19 @@ cm.DetailsTabItem.prototype.addScrollingContent = function(parentElem) {
  * @param {cm.events.FeatureData} featureData
  */
 cm.DetailsTabItem.prototype.loadFeatureData = function(featureData) {
-  // Currently we just dump the content into the tab.  We aren't using the
-  // rest of the fields yet, but we'll probably want them soon.
-  this.featureContentElem_ = featureData.content;
-  goog.dom.classes.add(this.featureContentElem_, cm.css.DETAILS_CONTENT);
+  // Information from the original data source
+  cm.ui.clear(this.featureInfoElem_);
+  cm.ui.append(this.featureInfoElem_, featureData.content);
+  goog.dom.classes.add(featureData.content, cm.css.FEATURE_INFO_CONTENT);
 
-  this.layerId_ = featureData.layerId;
-  this.featureTitle_ = featureData.title;
-  this.featureSnippet_ = featureData.snippet;
-  this.featurePosition_ = featureData.position;
+  // Information from the crowd
+  if (this.mapModel.getCrowdTopicsForLayer(featureData.layerId).length) {
+    this.crowdElem_.style.display = '';
+    this.crowdView_.open(featureData);
+  } else {
+    this.crowdElem_.style.display = 'none';
+    this.crowdView_.close();
+  }
 };
 
 /** @override */

@@ -49,6 +49,7 @@ var MAPTILE_MAP_ROOT_JSON = {
   id: 'foo',
   title: 'bar',
   type: 'TILE',
+  opacity: 0,
   source: {
     tile: {
       url: 'http://mw1.google.com/mw-weather/radar/maptiles/index.js',
