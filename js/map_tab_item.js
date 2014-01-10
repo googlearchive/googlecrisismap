@@ -52,14 +52,22 @@ cm.MapTabItem = function(mapModel, appState, config) {
    * @type Element
    * @private
    */
-  this.content_ = cm.ui.create('div');
+  this.content_ = cm.ui.create('div', {'class': cm.css.INNER_TAB_CONTENT});
 
   /**
    * The div containing the scrolling region of the tab item's content.
    * @type Element
    * @private
    */
-  this.scrollbarDiv_ = cm.ui.create('div');
+  this.scrollingDiv_ = cm.ui.create('div',
+                                    {'class': cm.css.SCROLLING_TAB_CONTENT});
+
+  /**
+   * An empty div for measuring the top of scrolling content.
+   * @type Element
+   * @private
+   */
+  this.scrollTop_ = cm.ui.create('div');
 
   /**
    * @type ?Element
@@ -77,7 +85,7 @@ cm.MapTabItem = function(mapModel, appState, config) {
 /**
  * Renders the contents of the tab item in to this.content_.  By default
  * adds the toolbar (if editing), then addHeader(), then addScrollingContent(),
- * then adds both the header and scroll region to the content.
+ * then adds both the header and scrolling region to the content.
  * @private
  */
 cm.MapTabItem.prototype.render_ = function() {
@@ -96,8 +104,8 @@ cm.MapTabItem.prototype.render_ = function() {
 
   var headerElem = cm.ui.create('div', {'class': cm.css.PANEL_HEADER});
   this.addHeader(headerElem);
-  this.addScrollingContent(this.scrollbarDiv_);
-  cm.ui.append(this.content_, headerElem, this.scrollbarDiv_);
+  this.addScrollingContent(this.scrollingDiv_);
+  cm.ui.append(this.content_, headerElem, this.scrollTop_, this.scrollingDiv_);
 };
 
 /**
@@ -152,4 +160,25 @@ cm.MapTabItem.prototype.setSelected = function(isSelected) {
 /** @override */
 cm.MapTabItem.prototype.setTabView = function(tabView) {
   this.tabView = tabView;
+};
+
+/** @override */
+cm.MapTabItem.prototype.resize = function(panelHeight, setMaxHeight) {
+  if (setMaxHeight) {
+    // Set the maxHeight and top attributes and clear the height attribute of
+    // the scrolling div.
+    this.scrollingDiv_.style.height = '';
+    this.scrollingDiv_.style.maxHeight =
+        panelHeight - this.scrollTop_.offsetTop + 'px';
+    this.scrollingDiv_.style.top = this.scrollTop_.offsetTop + 'px';
+  } else {
+    // Set the height style attribute and clear the maxHeight and top attributes
+    // of the scrolling div.
+    // The tab panel is the nearest relatively positioned parent, so the scroll
+    // top is the total height taken by elements above the scrolling div.
+    var scrollingHeight = panelHeight - this.scrollTop_.offsetTop;
+    this.scrollingDiv_.style.height = Math.max(scrollingHeight, 0) + 'px';
+    this.scrollingDiv_.style.maxHeight = '';
+    this.scrollingDiv_.style.top = '';
+  }
 };

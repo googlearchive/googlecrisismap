@@ -83,11 +83,14 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
   this.detailsTab_ = null;
 
   /**
-   * Where the tab is positioned relative to the map.
+   * Where the tab bar is positioned relative to the map.
    * @type cm.TabPanelView.TabPosition
    * @private
    */
-  this.tabPosition_;
+  this.tabPosition_ = below ? cm.TabPanelView.TabPosition.BELOW :
+      (this.config_['panel_side'] === 'left') ?
+      cm.TabPanelView.TabPosition.LEFT : cm.TabPanelView.TabPosition.RIGHT;
+  goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_BELOW, below);
 
   /**
    * Whether the panel is currently expanded.
@@ -106,7 +109,6 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
 
   this.createTabs_();
   this.createButtons_();
-  this.resize(below);
   this.render_();
 };
 
@@ -127,9 +129,8 @@ cm.TabPanelView.TabPosition = {
 cm.TabPanelView.prototype.render_ = function() {
   this.tabView_.render(this.parentElem_);
 
-  // For now, the tab is expanded on load only when the panel is on
-  // the right or left. This will change for mobile, when the  panel
-  // should be expanded by default but still be positioned below the map.
+  // When the panel is on the right or left, the tab panel is expanded on load;
+  // otherwise it is collapsed on load.
   this.setExpanded_(this.tabPosition_ !== cm.TabPanelView.TabPosition.BELOW);
 
   cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED, function() {
@@ -139,20 +140,25 @@ cm.TabPanelView.prototype.render_ = function() {
 
 /**
  * Update the tab panel UI; called by initialize.js on window resize.
+ * @param {number} maxPanelHeight The panel's maximum height.
  * @param {boolean} below Whether the tab panel should be placed below
  *     the map.
  */
-cm.TabPanelView.prototype.resize = function(below) {
+cm.TabPanelView.prototype.resize = function(maxPanelHeight, below) {
   // Placement below the map overrides left or right side placement.
   this.tabPosition_ = below ? cm.TabPanelView.TabPosition.BELOW :
       (this.config_['panel_side'] === 'left') ?
-          cm.TabPanelView.TabPosition.LEFT : cm.TabPanelView.TabPosition.RIGHT;
+      cm.TabPanelView.TabPosition.LEFT : cm.TabPanelView.TabPosition.RIGHT;
   goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_BELOW, below);
 
-  // This relies on the panel element's height being set by the resizeTabPanel()
-  // function in initialize.js.
-  this.tabView_.setHeight(this.parentElem_.offsetHeight);
-
+  if (below && this.expanded_) {
+    this.parentElem_.style.height = maxPanelHeight + 'px';
+    this.parentElem_.style.maxHeight = '';
+  } else {
+    this.parentElem_.style.height = '';
+    this.parentElem_.style.maxHeight = maxPanelHeight + 'px';
+  }
+  this.tabView_.resize(maxPanelHeight, below);
   this.updateExpandCollapseButton_(this.expanded_);
 };
 
@@ -163,9 +169,6 @@ cm.TabPanelView.prototype.resize = function(below) {
  * @private
  */
 cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
-  if (shouldExpand === this.expanded_) {
-    return;
-  }
   this.tabView_.setExpanded(shouldExpand);
   goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_EXPANDED,
                           shouldExpand);
@@ -175,11 +178,6 @@ cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
 
   // Trigger adjustments to the tab panel height in initialize.js
   cm.events.emit(goog.global, 'resize');
-
-  // Resize the content in case the window changed size while the
-  // panel was collapsed. This relies on the panel element's height
-  // being set by the resizeTabPanel() function in initialize.js.
-  this.tabView_.setHeight(this.parentElem_.offsetHeight);
 };
 
 /**
@@ -203,7 +201,8 @@ cm.TabPanelView.prototype.updateExpandCollapseButton_ = function(expand) {
 
 /**
  * Sets the maximum height of the panel; currently a no-op.  Carried forward
- * from cm.PanelView to ensure API compatibility.
+ * from cm.PanelView to ensure API compatibility. Remove this and use only
+ * resize() once we delete panel_view.js
  * @param {number?} height The maximum height of the panel, in pixels.
  */
 cm.TabPanelView.prototype.setMaxHeight = function(height) {

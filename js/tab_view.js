@@ -83,6 +83,16 @@ cm.TabView.prototype.addButton = function(button) {
 };
 
 /**
+ * Resize tab content to not exceed the given maximum height.
+ * @param {number} maxPanelHeight The maximum height the panel can reach.
+ * @param {boolean} below Whether or not the tab bar is below the map.
+ */
+cm.TabView.prototype.resize = function(maxPanelHeight, below) {
+  var selectedTabItem = this.tabItems_[this.selectedTabIndex_];
+  selectedTabItem.resize(maxPanelHeight, !below);
+};
+
+/**
  * Fix the preferred height of the panel content so that it does not change on
  * tab selection but does change on window resize.
  * @param {number} height The new content panel height.

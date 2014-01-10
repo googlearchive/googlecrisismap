@@ -52,7 +52,7 @@ goog.require('goog.ui.Component');
 // to handle a Maps API bug (b/5194073) that has since been fixed.
 /** @const */var MIN_MAP_WIDTH_FOR_SEARCHBOX = 450;
 
-/** @const */var BOTTOM_TAB_PANEL_FRAME_HEIGHT_FRACTION = 0.5;
+/** @const */var BOTTOM_TAB_PANEL_HEIGHT_FRACTION = 0.5;
 
 /**
  * Installs the HTML sanitizer on all cm.Html objects.
@@ -163,6 +163,12 @@ cm.Map = function(frame, opt_config) {
    * @type boolean
    * @private
    */
+  this.touch_ = cm.util.browserSupportsTouch();
+
+  /**
+   * @type boolean
+   * @private
+   */
   this.embedded_;
 
   /**
@@ -243,7 +249,7 @@ cm.Map = function(frame, opt_config) {
  * @private
  */
 cm.Map.prototype.buildUi_ = function(frame) {
-  var mapRoot = this.config_['map_root'];
+  var mapRoot = this.config_['map_root'] || {};
   var language = this.config_['lang'];
 
   // Create the AppState and models.
@@ -262,7 +268,6 @@ cm.Map.prototype.buildUi_ = function(frame) {
 
   var uri = new goog.Uri(window.location);
   var preview = !!uri.getParameterValue('preview');
-  var touch = cm.util.browserSupportsTouch();
   this.embedded_ = !!uri.getParameterValue('embedded');
 
   // Set up the DOM structure.
@@ -272,7 +277,8 @@ cm.Map.prototype.buildUi_ = function(frame) {
   // The MapView must be created first because it replaces the contents of the
   // map <div> element, and other views add stuff within that <div> element.
   var mapView = new cm.MapView(this.mapElem_, mapModel, appState, metadataModel,
-                               touch, this.config_, preview, this.embedded_);
+                               this.touch_, this.config_, preview,
+                               this.embedded_);
   this.map_ = mapView.getMap();
   var self = this;
   goog.array.forEach(this.getMapCallbacks_, function(callback) {
@@ -300,17 +306,17 @@ cm.Map.prototype.buildUi_ = function(frame) {
       cm.ExtraViewsPlugin.initAll(this.frameElem_, this.config_,
                                   extraViewsPlugins);
   cm.events.listen(goog.global, 'resize', function() {
-    self.handleResize_(touch, preview, extraViewsPlugins, extraViews);
+    self.handleResize_(preview, extraViewsPlugins, extraViews);
   });
   new cm.BuildInfoView(this.mapElem_);
 
   // Call the resize handler to determine the map size before setting
   // up the viewport.
-  this.handleResize_(touch, preview, extraViewsPlugins, extraViews);
+  this.handleResize_(preview, extraViewsPlugins, extraViews);
   if (!this.config_['use_tab_panel']) {
     // We readjust the layout whenever the ViewportSizeMonitor detects that the
     // window resized, and also when anything emits 'resize' on goog.global.
-    cm.events.forward(new goog.dom.ViewportSizeMonitor(), 'resize',
+    cm.events.forward(new goog.dom.ViewportSizeMonitor(goog.global), 'resize',
                       goog.global);
   }
 
@@ -382,7 +388,6 @@ cm.Map.prototype.buildUi_ = function(frame) {
 
 /**
  * Sizes the map and panel elements to fit the window.
- * @param {boolean} touch True if the map is displayed on a touch device.
  * @param {boolean} preview True if the map is being displayed as a preview.
  * @param {Array.<cm.ExtraViewsPlugin>} extraViewsPlugins An array of
  *     cm.ExtraViewsPlugin instances to be set up by this method.
@@ -390,52 +395,31 @@ cm.Map.prototype.buildUi_ = function(frame) {
  *     short names to ExtraView instances. This can be empty but not null.
  * @private_
  */
-cm.Map.prototype.handleResize_ = function(touch, preview, extraViewsPlugins,
+cm.Map.prototype.handleResize_ = function(preview, extraViewsPlugins,
                                           extraViews) {
-  var useTabPanel = this.config_['use_tab_panel'];
-  goog.dom.classes.enable(this.frameElem_, cm.css.TOUCH, touch);
-  var floating = goog.dom.classes.has(this.frameElem_, cm.css.PANEL_FLOAT);
-  var narrow = this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
-  var narrowOrEmbedded = narrow || this.embedded_;
-  if (useTabPanel) {
+  if (this.config_['use_tab_panel']) {
     this.resizeTabPanel_();
-    goog.dom.classes.enable(this.frameElem_, cm.css.EMBEDDED, narrow);
   } else {
-    if (!narrowOrEmbedded) {
-      cm.events.emit(this.panelElem_, 'panelclose');
-    }
-    goog.dom.classes.enable(this.frameElem_, cm.css.EMBEDDED, narrowOrEmbedded);
-    goog.dom.classes.enable(this.frameElem_, cm.css.PANEL_DOCK,
-                            !narrowOrEmbedded && !floating);
-   }
+    this.resizePanel_();
+  }
 
-
-  // In floating or embedded mode, the panel has variable height based on its
-  // content, but we need to limit its maximum height to fit over the map.
-  this.mapWrapperElem_.style.height = this.getMapHeight_() + 'px';
-  // Allow 5px top and bottom margin
-  var floatMaxHeight = this.getMapHeight_() - 10;
-  this.panelView_.setMaxHeight(narrowOrEmbedded || floating ?
-      floatMaxHeight : null);
-
+  var floating = goog.dom.classes.has(this.frameElem_, cm.css.PANEL_FLOAT);
   if (extraViewsPlugins) {
     var panelViewPosition = {
       isPanelCollapsed: goog.dom.classes.has(this.frameElem_,
                                              cm.css.PANEL_COLLAPSED),
       isPanelFloating: floating,
       isPanelPopup: this.embedded_,
-      floatMaxHeight: floatMaxHeight
+      floatMaxHeight: this.getMapHeight_() - 10
     };
     goog.array.forEach(extraViewsPlugins, goog.bind(function(plugin) {
       plugin.sizeComponentsWithExtraViews(this.frameElem_, this.panelView_,
                                           panelViewPosition, extraViews);
     }, this));
   }
-
   if (this.searchbox_) {
-    var uncoveredMapWidth =
-        this.mapWrapperElem_.offsetWidth -
-            (floating ? this.panelElem_.offsetWidth : 0);
+    var uncoveredMapWidth = this.mapWrapperElem_.offsetWidth -
+        (floating ? this.panelElem_.offsetWidth : 0);
     if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX || preview) {
       this.searchbox_.hide();
     } else {
@@ -443,11 +427,34 @@ cm.Map.prototype.handleResize_ = function(touch, preview, extraViewsPlugins,
     }
   }
 
-  if (!useTabPanel) {
-    // Though the API checks the window resize itself, it's good practice to
-    // trigger the resize event any time we change the map container's size.
-    cm.events.emit(this.map_, 'resize');
+  // Though the API checks the window resize itself, it's good practice to
+  // trigger the resize event any time we change the map container's size.
+  cm.events.emit(this.map_, 'resize');
+};
+
+/**
+ * @private
+ */
+cm.Map.prototype.resizePanel_ = function() {
+  var narrowOrEmbedded = this.embedded_ ||
+      this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
+  var floating = goog.dom.classes.has(this.frameElem_, cm.css.PANEL_FLOAT);
+  if (!narrowOrEmbedded) {
+    cm.events.emit(this.panelElem_, 'panelclose');
   }
+  goog.dom.classes.enable(this.frameElem_, cm.css.EMBEDDED, narrowOrEmbedded);
+  goog.dom.classes.enable(this.frameElem_, cm.css.PANEL_DOCK,
+                          !narrowOrEmbedded && !floating);
+
+  // When the panel has variable height based on its content, its maximum
+  // height should be limited to fit within the map. This happens when either
+  //   1) the panel is explicitly configured to be floating, or
+  //   2) the map is narrow or embedded, so the panel is a dismissable
+  //      pop-up on top of the map
+  this.mapWrapperElem_.style.height = this.getMapHeight_() + 'px';
+  var maxPanelHeight = this.getMapHeight_() - 10;  // 5px top and bottom margin
+  this.panelView_.setMaxHeight(narrowOrEmbedded || floating ?
+      maxPanelHeight : null);
 };
 
 /**
@@ -484,16 +491,14 @@ cm.Map.prototype.resizeTabPanel_ = function() {
     goog.dom.classes.enable(this.frameElem_, cm.css.PANEL_LEFT, !narrow);
   }
 
-  // For now, the left/right-side tab panel are nearly full-height. This should
-  // later change so that the panel height depends on its content.
-  var fraction = narrow ? BOTTOM_TAB_PANEL_FRAME_HEIGHT_FRACTION : 0.9;
+  goog.dom.classes.enable(this.frameElem_, cm.css.EMBEDDED, narrow);
 
-  // Compute the target map height as a percentage of frame element height.
-  var targetPanelHeight = fraction * this.frameElem_.offsetHeight;
-  this.panelElem_.style.height = expanded ? Math.min(targetPanelHeight,
-      this.frameElem_.offsetHeight - this.footerElem_.offsetHeight) + 'px' : '';
-
-  this.panelView_.resize(narrow);
+  var maxPanelHeight = narrow ? Math.min(
+      BOTTOM_TAB_PANEL_HEIGHT_FRACTION * this.frameElem_.offsetHeight,
+      this.frameElem_.offsetHeight - this.footerElem_.offsetHeight) :
+      this.getMapHeight_() - 10;
+    this.panelView_.resize(maxPanelHeight, narrow);
+  this.mapWrapperElem_.style.height = this.getMapHeight_() + 'px';
 };
 
 /**
@@ -590,6 +595,8 @@ cm.Map.prototype.constructDom_ = function(frame) {
     goog.dom.classes.add(this.frameElem_, cm.css.PANEL_RIGHT);
   }
 
+  goog.dom.classes.enable(this.frameElem_, cm.css.TOUCH, this.touch_);
+
   if (goog.i18n.bidi.IS_RTL) {
     goog.ui.Component.setDefaultRightToLeft(true);
     goog.dom.classes.add(this.frameElem_, cm.css.LAYOUT_RTL);
@@ -664,7 +671,7 @@ cm.Map.prototype.constructPresenter_ = function(appState, mapModel, mapView) {
       this.config_['map_id'] || '');
   presenter.resetView(mapModel, window.location);
   // If "#gz=..." is specified, get the user's geolocation and zoom to it.
-  var match = window.location.hash.match('gz=([0-9]+)');
+  var match = cm.ui.document.location.hash.match('gz=([0-9]+)');
   if (match) {
     presenter.zoomToUserLocation(match[1] - 0);
   }

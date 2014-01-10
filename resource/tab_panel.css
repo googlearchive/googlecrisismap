@@ -49,8 +49,11 @@ specific language governing permissions and limitations under the License.
 
 .cm-tab-content {
   overflow-x: visible;
-  overflow-y: auto;
   padding: 5px 0 0 5px;
+}
+
+.cm-scrolling-tab-content {
+  overflow-y: auto;
 }
 
 .cm-chevron-up {
