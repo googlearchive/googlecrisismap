@@ -137,31 +137,40 @@ cm.util.round = function(value, decimals) {
 };
 
 /**
- * If the argument is a primitive Object or Array, returns a new copy of
- * it with all the null or undefined properties and array elements removed,
- * and recurses into primitive Objects or Arrays.  All other primitive values
- * and non-primitive Objects are left untouched.
+ * If the argument is a primitive Object or Array, returns a new copy of it
+ * with all the null, undefined, '', [], or {} properties and array elements
+ * removed, recursively cleaning all primitive Objects or Arrays.
  * @param {*} thing Any JavaScript value.  The argument will not be mutated.
- * @return {*} The value with null or undefined properties and elements removed.
+ * @return {*} The value with all properties or elements that are null,
+ *     undefined, '', [], or {} removed from it.
  */
 cm.util.removeNulls = function(thing) {
+  if (thing === null || thing === undefined || thing === '') {
+    return null;
+  }
   switch (thing.constructor) {
     case Array:
-      var result = [];
+      var result = [], length = 0;
       for (var i = 0; i < thing.length; i++) {
-        if (goog.isDefAndNotNull(thing[i])) {
-          result.push(cm.util.removeNulls(thing[i]));
+        var cleaned = cm.util.removeNulls(thing[i]);
+        if (cleaned !== null) {
+          result.push(cleaned);
+          length++;
         }
       }
-      return result;
+      return length ? result : null;
     case Object:
-      var result = {};
+      var result = {}, length = 0;
       for (var key in thing) {
-        if (thing.hasOwnProperty(key) && goog.isDefAndNotNull(thing[key])) {
-          result[key] = cm.util.removeNulls(thing[key]);
+        if (thing.hasOwnProperty(key)) {
+          var cleaned = cm.util.removeNulls(thing[key]);
+          if (cleaned !== null) {
+            result[key] = cleaned;
+            length++;
+          }
         }
       }
-      return result;
+      return length ? result : null;
   }
   return thing;
 };

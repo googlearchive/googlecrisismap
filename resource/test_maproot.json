@@ -74,8 +74,7 @@
     "source": {
       "google_fusion_tables": {
         "from": "1339588",
-        "select": "geometry",
-        "where": ""
+        "select": "geometry"
       }
     }
   }, {
@@ -194,9 +193,7 @@
               "type": "GOOGLE_FUSION_TABLES",
               "source": {
                 "google_fusion_tables": {
-                  "from": "1842877",
-                  "select": "",
-                  "where": ""
+                  "from": "1842877"
                 }
               }
             }, {
@@ -275,18 +272,14 @@
       "title": "Google Traffic Layer",
       "description": "Traffic",
       "visibility": "DEFAULT_OFF",
-      "type": "GOOGLE_TRAFFIC",
-      "source": {
-      }
+      "type": "GOOGLE_TRAFFIC"
     },
     {
       "id": "transit",
       "title": "Google Transit Layer",
       "description": "Transit",
       "visibility": "DEFAULT_OFF",
-      "type": "GOOGLE_TRANSIT",
-      "source": {
-      }
+      "type": "GOOGLE_TRANSIT"
     },
     {
       "id": "weather",
@@ -307,9 +300,7 @@
       "title": "Google Cloud Layer",
       "visibility": "DEFAULT_OFF",
       "description": "Clouds",
-      "type": "GOOGLE_CLOUD_IMAGERY",
-      "source": {
-      }
+      "type": "GOOGLE_CLOUD_IMAGERY"
     },
     {
       "id": "wms",

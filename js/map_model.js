@@ -19,6 +19,7 @@ goog.require('cm');
 goog.require('cm.Html');
 goog.require('cm.LatLonBox');
 goog.require('cm.LayerModel');
+goog.require('cm.TopicModel');
 goog.require('cm.events');
 goog.require('cm.util');
 goog.require('goog.array');
@@ -98,20 +99,44 @@ cm.MapModel.newFromMapRoot = function(maproot) {
             cm.MapModel.MAPROOT_TO_MODEL_MAP_TYPES[
                 maproot['base_map_type']] || cm.MapModel.Type.ROADMAP);
 
-  var layers = new google.maps.MVCArray();
-  model.set('layers', layers);
-  cm.events.listen(layers, 'insert_at', function(i) {
-    this.handleInsertLayer_(layers.getAt(i));
-  }, model);
-  cm.events.listen(layers, 'remove_at', function(i, layer) {
-    this.handleRemoveLayer_(layer);
-  }, model);
-  goog.array.forEach(maproot['layers'] || [], function(layerMapRoot) {
-    var layer = cm.LayerModel.newFromMapRoot(layerMapRoot);
-    layer && layers.push(layer);
-  });
-
+  initLayersFromMapRoot(model, maproot);
+  initTopicsFromMapRoot(model, maproot, model.getAllLayerIds());
   return model;
+
+  /**
+   * Fills in the 'layers' property of the given model.
+   * @param {cm.MapModel} model A MapModel whose 'layers' property will be set.
+   * @param {Object} maproot A MapRoot JS object.
+   */
+  function initLayersFromMapRoot(model, maproot) {
+    var layers = new google.maps.MVCArray();
+    model.set('layers', layers);
+    cm.events.listen(layers, 'insert_at', function(i) {
+      model.handleInsertLayer_(/** @type cm.LayerModel */(layers.getAt(i)));
+    });
+    cm.events.listen(layers, 'remove_at', function(i, layer) {
+      model.handleRemoveLayer_(layer);
+    });
+    goog.array.forEach(maproot['layers'] || [], function(layerMapRoot) {
+      var layer = cm.LayerModel.newFromMapRoot(layerMapRoot);
+      layer && layers.push(layer);
+    });
+  }
+
+  /**
+   * Fills in the 'topics' property of the given model.
+   * @param {cm.MapModel} model A MapModel whose 'layers' property will be set.
+   * @param {Object} maproot A MapRoot JS object.
+   * @param {Array.<string>} layerIds The layer IDs to be allowed in topics.
+   */
+  function initTopicsFromMapRoot(model, maproot, layerIds) {
+    var topics = new google.maps.MVCArray();
+    model.set('topics', topics);
+    goog.array.forEach(maproot['topics'] || [], function(topicMapRoot) {
+      var topic = cm.TopicModel.newFromMapRoot(topicMapRoot, layerIds);
+      topic && topics.push(topic);
+    });
+  }
 };
 
 /** @override */
@@ -153,6 +178,21 @@ cm.MapModel.prototype.getLayerIds = function() {
   return goog.array.map(this.get('layers').getArray(), function(layer) {
     return layer.get('id');
   });
+};
+
+/**
+ * @param {string} id A layer ID.
+ * @return {Array.<cm.TopicModel>} The topics that are crowd-enabled and
+ *     associated with the given layer.
+ */
+cm.MapModel.prototype.getCrowdTopicsForLayer = function(id) {
+  var topics = [];
+  this.get('topics').forEach(function(topic) {
+    if (topic.get('layer_ids').contains(id) && topic.get('crowd_enabled')) {
+      topics.push(topic);
+    }
+  });
+  return topics;
 };
 
 /**
@@ -233,7 +273,6 @@ cm.MapModel.prototype.unregisterLayer_ = function(id) {
 
 /** @return {Object} This map as a MapRoot JS object. */
 cm.MapModel.prototype.toMapRoot = function() {
-  var languages = /** @type Array.<string> */(this.get('languages'));
   var baseMapStyleName = this.get('base_map_style_name');
   // MapRoot doesn't have a CUSTOM map type; the presence or absence of
   // base_map_style determines whether the base map is in CUSTOM mode.
@@ -241,26 +280,25 @@ cm.MapModel.prototype.toMapRoot = function() {
       this.get('base_map_style') : null;
   var mapType = this.get('map_type');
   mapType = mapType && mapType !== cm.MapModel.Type.CUSTOM ? mapType : null;
-  var box = /** @type cm.LatLonBox */(this.get('viewport'));
-  var viewport = box ? {'lat_lon_alt_box': box.round(4).toMapRoot()} : null;
-  box = /** @type cm.LatLonBox */(this.get('full_extent'));
-  var fullExtent = box ? {'lat_lon_alt_box': box.round(4).toMapRoot()} : null;
+  var viewport = /** @type cm.LatLonBox */(this.get('viewport'));
+  var extent = /** @type cm.LatLonBox */(this.get('full_extent'));
   return /** @type Object */(cm.util.removeNulls({
     'id': this.get('id'),
-    'title': this.get('title') || null,
-    'description': this.get('description').getUnsanitizedHtml() || null,
-    'footer': this.get('footer').getUnsanitizedHtml() || null,
-    'languages': languages && languages.length ? languages : null,
-    'region': this.get('region') || null,
-    'thumbnail_url': this.get('thumbnail_url') || null,
-    'viewport': viewport,
-    'full_extent': fullExtent,
-    'base_map_style': baseMapStyle ?
-        {'definition': baseMapStyle, 'name': baseMapStyleName} : null,
+    'title': this.get('title'),
+    'description': this.get('description').getUnsanitizedHtml(),
+    'footer': this.get('footer').getUnsanitizedHtml(),
+    'languages': this.get('languages'),
+    'region': this.get('region'),
+    'thumbnail_url': this.get('thumbnail_url'),
+    'viewport': viewport && {'lat_lon_alt_box': viewport.round(4).toMapRoot()},
+    'full_extent': extent && {'lat_lon_alt_box': extent.round(4).toMapRoot()},
+    'base_map_style': baseMapStyle &&
+        {'definition': baseMapStyle, 'name': baseMapStyleName},
     'base_map_type': goog.object.transpose(
         cm.MapModel.MAPROOT_TO_MODEL_MAP_TYPES)[mapType],
-    'layers': goog.array.map(
-        this.get('layers').getArray(),
-        function(layer) { return layer.toMapRoot(); })
+    'layers': goog.array.map(this.get('layers').getArray(),
+                             function(layer) { return layer.toMapRoot(); }),
+    'topics': goog.array.map(this.get('topics').getArray(),
+                             function(topic) { return topic.toMapRoot(); })
   }));
 };

@@ -307,28 +307,26 @@ LayerModelTest.prototype.toMapRoot = function() {
 LayerModelTest.prototype.toMapRootFolders = function() {
   var json = {
     id: 'folder0',
-    title: '',
+    title: 'title0',
     visibility: 'DEFAULT_ON',
     min_zoom: 5,
     max_zoom: 10,
     type: 'FOLDER',
     sublayers: [{
       id: 'folder1',
-      title: '',
+      title: 'title1',
       visibility: 'DEFAULT_ON',
       min_zoom: 5,
       max_zoom: 10,
       type: 'FOLDER',
       sublayers: [{
         id: 'folder2',
-        title: '',
         visibility: 'DEFAULT_ON',
         min_zoom: 5,
         max_zoom: 10,
         type: 'FOLDER',
         sublayers: [{
           id: 'kml0',
-          title: '',
           visibility: 'DEFAULT_ON',
           min_zoom: 5,
           max_zoom: 10,

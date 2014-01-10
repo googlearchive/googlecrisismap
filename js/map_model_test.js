@@ -39,7 +39,27 @@ var DRACULA_MAPROOT = {
       west: -51
     }
   },
-  layers: [{id: 'layer1'}, {id: 'layer2'}]
+  layers: [{id: 'layer1'}, {id: 'layer2'}],
+  topics: [{
+    id: 'gas',
+    title: 'Gas',
+    layer_ids: ['layer1'],
+    crowd_enabled: true,
+    cluster_radius: 50,
+    questions: [{
+      id: '1',
+      text: 'Is there gas available at this location?',
+      answers: [{id: '1', title: 'Yes', color: '#00c000'},
+                {id: '2', title: 'No', color: '#c00000'}]
+    }]
+  }, {
+    id: 'shelter',
+    layer_ids: ['layer1']
+  }, {
+    id: 'food',
+    layer_ids: ['layer2'],
+    crowd_enabled: true
+  }]
 };
 
 
@@ -78,15 +98,14 @@ MapModelTest.prototype.recursivelyExpectLayer_ = function(json, useMockLayers) {
   var model;
   if (useMockLayers) {
     model = createMockInstance(cm.LayerModel);
-    model.get = function() { return ''; };
+    model.get = function() { return json.id; };
   } else {
     model = this.createFakeLayer_(json.id);
   }
   json.sublayers && goog.array.forEach(json.sublayers, function(layerMapRoot) {
     this.recursivelyExpectLayer_(layerMapRoot, useMockLayers);
   }, this);
-  expectCall(cm.LayerModel.newFromMapRoot)(equalsRef(json))
-      .willOnce(returnWith(model));
+  stub(cm.LayerModel.newFromMapRoot)(equalsRef(json)).is(model);
   this.expectedLayers_.push(model);
 };
 
@@ -108,7 +127,13 @@ MapModelTest.prototype.mapModelFromMapRoot_ = function(json, useMockLayers) {
   for (var i = 0, layerMapRoot; layerMapRoot = (json.layers || [])[i]; ++i) {
     this.recursivelyExpectLayer_(layerMapRoot, useMockLayers);
   }
-  return cm.MapModel.newFromMapRoot(json);
+  var model = cm.MapModel.newFromMapRoot(json);
+  if (useMockLayers) {
+    goog.array.forEach(this.expectedLayers_, function(layer) {
+      model.registerLayer_(layer);
+    });
+  }
+  return model;
 };
 
 /**
@@ -134,6 +159,15 @@ MapModelTest.prototype.newFromMapRoot = function() {
   expectEq(2, mapModel.get('layers').getLength());
   expectEq(this.expectedLayers_[0], mapModel.get('layers').getAt(0));
   expectEq(this.expectedLayers_[1], mapModel.get('layers').getAt(1));
+  expectEq(DRACULA_MAPROOT.topics[0].id, mapModel.get('topics').getAt(0).id);
+};
+
+/** Verifies that newFromMapRoot doesn't crash when handed an empty object. */
+MapModelTest.prototype.newFromEmptyMapRoot = function() {
+  var mapModel = cm.MapModel.newFromMapRoot({});
+  expectEq('', mapModel.get('title'));
+  expectEq('', mapModel.get('description').getUnsanitizedHtml());
+  expectEq(0, mapModel.get('layers').getLength());
 };
 
 /** Tests that the MapModel enforces uniqueness of layer IDs on construction. */
@@ -182,13 +216,14 @@ MapModelTest.prototype.newFromEmpty = function() {
  * passed into newFromMapRoot.
  */
 MapModelTest.prototype.toMapRoot = function() {
-  var mapModel = this.mapModelFromMapRoot_(DRACULA_MAPROOT, true);
+  var mapModel = this.mapModelFromMapRoot_(DRACULA_MAPROOT, false);
 
-  expectCall(this.expectedLayers_[0].toMapRoot)()
-      .willOnce(returnWith(DRACULA_MAPROOT.layers[0]));
-  expectCall(this.expectedLayers_[1].toMapRoot)()
-      .willOnce(returnWith(DRACULA_MAPROOT.layers[1]));
-
+  mapModel.layers.getAt(0).toMapRoot = function() {
+    return DRACULA_MAPROOT.layers[0];
+  };
+  mapModel.layers.getAt(1).toMapRoot = function() {
+    return DRACULA_MAPROOT.layers[1];
+  };
   expectEq(DRACULA_MAPROOT, mapModel.toMapRoot());
 };
 
@@ -226,6 +261,20 @@ MapModelTest.prototype.getAllLayerIds = function() {
 MapModelTest.prototype.getLayerIds = function() {
   var mapModel = this.mapModelFromMapRoot_(DRACULA_MAPROOT, false);
   expectThat(mapModel.getLayerIds(), elementsAre(['layer1', 'layer2']));
+};
+
+MapModelTest.prototype.getCrowdTopicsForLayer = function() {
+  var mapModel = this.mapModelFromMapRoot_(DRACULA_MAPROOT, false);
+  var topics = mapModel.getCrowdTopicsForLayer('layer1');
+  expectEq(1, topics.length);
+  expectEq('gas', topics[0].get('id'));
+
+  topics = mapModel.getCrowdTopicsForLayer('layer2');
+  expectEq(1, topics.length);
+  expectEq('food', topics[0].get('id'));
+
+  topics = mapModel.getCrowdTopicsForLayer('nonexistent_layer');
+  expectEq(0, topics.length);
 };
 
 /** Tests layer insertion. */

@@ -333,22 +333,18 @@ cm.LayerModel.prototype.toMapRoot = function() {
       break;
   }
 
-  // In this MapRoot object, we set values to null for missing fields.
-  var box = /** @type cm.LatLonBox */(this.get('viewport'));
-  var viewport = box ? {'lat_lon_alt_box': box.round(4).toMapRoot()} : null;
-  box = /** @type cm.LatLonBox */(this.get('full_extent'));
-  var fullExtent = box ? {'lat_lon_alt_box': box.round(4).toMapRoot()} : null;
+  // Null fields will be removed from the maproot object by cm.util.removeNulls.
+  var viewport = /** @type cm.LatLonBox */(this.get('viewport'));
+  var extent = /** @type cm.LatLonBox */(this.get('full_extent'));
   var opacity = Math.round(/** @type number */(this.get('opacity')) * 100);
-  var description = /** @type cm.Html*/(this.get('description'));
-  var legend = /** @type cm.Html*/(this.get('legend'));
   var maproot = {
     'id': this.get('id'),
     'title': this.get('title'),
-    'description': description.getUnsanitizedHtml() || null,
-    'legend': legend.getUnsanitizedHtml() || null,
+    'description': this.get('description').getUnsanitizedHtml(),
+    'legend': this.get('legend').getUnsanitizedHtml(),
     'visibility': this.get('default_visibility') ? 'DEFAULT_ON' : 'DEFAULT_OFF',
-    'viewport': viewport,
-    'full_extent': fullExtent,
+    'viewport': viewport && {'lat_lon_alt_box': viewport.round(4).toMapRoot()},
+    'full_extent': extent && {'lat_lon_alt_box': extent.round(4).toMapRoot()},
     'type': goog.object.transpose(
         cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES)[type],
     'min_zoom': this.get('min_zoom'),
