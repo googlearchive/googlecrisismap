@@ -34,6 +34,7 @@ import mox
 import perms
 import users
 
+from google.appengine.api import datastore_types
 from google.appengine.api import taskqueue
 from google.appengine.ext import testbed
 
@@ -112,17 +113,30 @@ def SetupHandler(url, handler, post_data=None):
   return handler
 
 
-def DatetimeWithUtcnow(now):
-  """Creates a replacement for datetime.datetime with a stub for utcnow()."""
+class DatetimeSupertype(type):
+  """Metaclass used for constructing a fake class to replace datetime.datetime.
+
+  Yes.  Python is so dynamic you can override the behaviour of isinstance().
+  Any class S constructed using this metaclass will pretend to be a supertype
+  of datetime.datetime, i.e. isinstance(d, S) will return True when d is an
+  instance of datetime.datetime.
+  """
+  original_datetime = datetime.datetime
+
+  def __instancecheck__(cls, instance):
+    return isinstance(instance, cls.original_datetime)
+
+
+def DatetimeTypeWithFakeNow(now):
+  """Makes a replacement for datetime.datetime with a fixed value for now()."""
   # datetime.datetime is a built-in type, so we can't reassign its 'utcnow'
-  # member; we have to subclass datetime.datetime instead.  The App Engine
-  # SDK randomly uses both utcnow() and now(), so we have to patch both. :/
-  return type('datetime.datetime', (datetime.datetime,),
-              {'utcnow': staticmethod(lambda: now),
-               'now': staticmethod(lambda: now),
-               # The line below makes utcfromtimestamp return datetime.datetime
-               # instances instead of test_utils.datetime.datetime instances.
-               'utcfromtimestamp': datetime.datetime.utcfromtimestamp})
+  # member; we have to subclass datetime.datetime instead.  However, we also
+  # need isinstance(datetime.datetime.utcnow(), datetime.datetime) to remain
+  # True, so we use the DatetimeSupertype metaclass above.  Also, App Engine
+  # randomly uses both utcnow() and now(), so we have to patch both. :/
+  return DatetimeSupertype('datetime.datetime', (datetime.datetime,),
+                           {'utcnow': staticmethod(lambda: now),
+                            'now': staticmethod(lambda: now)})
 
 
 def CreateMap(maproot_json='{"title": "Foo"}', domain=DEFAULT_DOMAIN, **kwargs):
@@ -236,7 +250,11 @@ class BaseTest(unittest.TestCase):
     """Sets a fake value for the current time, for the duration of the test."""
     self.SetForTest(time, 'time', lambda: timestamp)
     now = self.original_datetime.utcfromtimestamp(timestamp)
-    self.SetForTest(datetime, 'datetime', DatetimeWithUtcnow(now))
+    self.SetForTest(datetime, 'datetime', DatetimeTypeWithFakeNow(now))
+    # Fix up datastore_types.py to accept instances of the fake datetime type.
+    validators = datastore_types._VALIDATE_PROPERTY_VALUES.copy()
+    validators[datetime.datetime] = validators[self.original_datetime]
+    self.SetForTest(datastore_types, '_VALIDATE_PROPERTY_VALUES', validators)
 
     # Task.__determine_eta_posix uses the original time.time as a default
     # argument value, so we have to monkey-patch it to make it use our fake.
