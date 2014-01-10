@@ -819,10 +819,6 @@ input[type=checkbox]:checked::after {
 .cm-embedded .cm-map-picker-button {
   right: 36px;
 }
-.cm-tab-content .cm-map-picker-button {
-  right: auto;
-  margin-left: 6px;
-}
 
 /* Login */
 .cm-panel div.cm-login {
