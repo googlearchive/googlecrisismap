@@ -13,7 +13,9 @@
 """Colorizes the output of gjstest and removes a few needless lines."""
 
 import sys
+import time
 
+start = time.time()
 passed = failed = 0
 for line in sys.stdin:
   if line.rstrip() in ['[----------]', '[  PASSED  ]', '[  FAILED  ]']:
@@ -29,5 +31,6 @@ for line in sys.stdin:
   else:
     print line.rstrip()
 
-print '%d passed, %d failed.' % (passed, failed)
+elapsed = time.time() - start
+print '%d passed, %d failed in %.1f s.' % (passed, failed, elapsed)
 sys.exit(passed == 0 or failed > 0)
