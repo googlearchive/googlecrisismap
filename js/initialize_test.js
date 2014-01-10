@@ -20,11 +20,16 @@ function InitializeTest() {
 InitializeTest.prototype = new cm.TestBase();
 registerTestSuite(InitializeTest);
 
-/** Verifies our customizations to the HTML sanitizer. */
-InitializeTest.prototype.htmlSanitizer = function() {
-  // setForTest_ ensures that cm.Html.sanitize_ is restored after the test.
+/**
+ * Verifies our customizations to the HTML sanitizer.  This test focuses on the
+ * logic in installHtmlSanitizer; we don't need to test the sanitizer itself.
+ */
+InitializeTest.prototype.installHtmlSanitizer = function() {
+  // We want to test installHtmlSanitizer, which sets cm.Html.sanitize_, but
+  // cm.Html.sanitize_ is global state.  Calling setForTest_ here causes the
+  // value of cm.Html.sanitize_ to be saved now and restored on test teardown.
   this.setForTest_('cm.Html.sanitize_', null);
-  installHtmlSanitizer(html);  // sets cm.Html.sanitize_
+  installHtmlSanitizer(html);
 
   // <script> tags and javascript URLs should be removed.  This is not a
   // complete test of the sanitizer, since it's already a tested component;
@@ -55,13 +60,19 @@ InitializeTest.prototype.htmlSanitizer = function() {
 
 function MapTest() {
   cm.TestBase.call(this);
+
+  // new cm.Map invokes installHtmlSanitizer, which sets cm.Html.sanitize_, but
+  // cm.Html.sanitize_ is global state.  Calling setForTest_ here causes the
+  // value of cm.Html.sanitize_ to be saved now and restored on test teardown.
+  this.setForTest_('cm.Html.sanitize_', null);
   var html = {'sanitizeWithPolicy': function() {}};
   goog.module.provide('sanitizer', 'html', html);
-  this.frame_ = new FakeElement('div');
 
   // Used by the AboutPopup.
   this.setForTest_('goog.dom.htmlToDocumentFragment', createMockFunction());
   stub(goog.dom.htmlToDocumentFragment)(_).is(new FakeElement('fragment'));
+
+  this.frame_ = new FakeElement('div');
 }
 MapTest.prototype = new cm.TestBase();
 registerTestSuite(MapTest);
