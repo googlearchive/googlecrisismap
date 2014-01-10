@@ -669,6 +669,7 @@ input[type=checkbox] {
   cursor: pointer;
   position: relative;
   overflow: visible;
+  outline: none;
 }
 input[type=checkbox]:active {
   border-color: #c6c6c6;
@@ -697,7 +698,7 @@ input[type=checkbox]:checked::after {
 .cm-checkbox-folder-decoration {
   background: url('folder_border.png') no-repeat;
   height: 13px;
-  margin: -18px 0 0 -2px;
+  margin: -19px 0 0 -3px;
 }
 
 /* About popup */
