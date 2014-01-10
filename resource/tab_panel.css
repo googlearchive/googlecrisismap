@@ -221,7 +221,7 @@ specific language governing permissions and limitations under the License.
 
 /* State: Disabled */
 .goog-tab-disabled {
-  color: #666;
+  color: #aaa;
 }
 
 /* State: Selected */

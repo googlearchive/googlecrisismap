@@ -45,6 +45,13 @@ cm.LegendTabItem = function(mapModel, appState, config, metadataModel) {
    */
   this.legendContainer_ = cm.ui.create('div');
 
+  /**
+   * Whether the tab item is currently enabled; set in update_()
+   * @type boolean
+   * @private
+   */
+   this.isEnabled_ = true;
+
   this.loadLegends_();
 };
 goog.inherits(cm.LegendTabItem, cm.MapTabItem);
@@ -63,6 +70,10 @@ cm.LegendTabItem.prototype.loadLegends_ = function() {
   // Triggered when the Arranger rearranges the layers
   cm.events.listen(
       goog.global, cm.events.MODEL_CHANGED, this.update_, this);
+  // Triggered when the set of enabled layers changes (which could change
+  // which legend is displayed first, hence the need to re-render).
+  cm.events.onChange(
+      this.appState, 'enabled_layer_ids', this.update_, this);
   this.update_();
 };
 
@@ -88,17 +99,25 @@ cm.LegendTabItem.prototype.getTitle = function() {
  */
 cm.LegendTabItem.prototype.update_ = function() {
   cm.ui.clear(this.legendContainer_);
-  var layers = this.mapModel.get('layers');
-  goog.array.forEach(layers.getArray(), this.appendLegend_, this);
+  var layers = this.mapModel.get('layers').getArray();
+  // isFirstLegend is used to tell the legend view whether it should render
+  // with the extra styling for the first legend in a larger list.  We set
+  // it to true at the beginning, then flip it to false as soon as a legend
+  // has rendered visible content.
+  var isFirstLegend = true;
+  for (var i = 0; i < layers.length; i++) {
+    var legendView = cm.LegendView.getLegendViewForLayer(
+        layers[i], this.metadataModel_, this.appState);
+    cm.ui.append(this.legendContainer_, legendView.getContent(isFirstLegend));
+    isFirstLegend = isFirstLegend && legendView.isHidden();
+  }
+  this.isEnabled_ = !isFirstLegend;
+  if (this.tabView) {
+    this.tabView.updateTabItem(this);
+  }
 };
 
-/**
- * Appends the legend view for the given layer to the legend container.
- * @param {cm.LayerModel} layer The layer whose legend should be appended
- * @private
- */
-cm.LegendTabItem.prototype.appendLegend_ = function(layer) {
-  var legendView = cm.LegendView.getLegendViewForLayer(
-      layer, this.metadataModel_, this.appState);
-  cm.ui.append(this.legendContainer_, legendView.getContent());
+/** @override */
+cm.LegendTabItem.prototype.getIsEnabled = function() {
+  return this.isEnabled_;
 };

@@ -198,6 +198,15 @@ SimpleLegendViewTest.prototype.testLegendChangesReflectedInView = function() {
   this.validateRenderingMatchesLayerModel_(content);
 };
 
+SimpleLegendViewTest.prototype.testGetContentRespectsIsFirstFlag = function() {
+  var legendView = this.createLegendView_(
+      SIMPLE_LAYER_JSON, 'testGetContentRespectsIsFirstFlag');
+  var content = legendView.getContent();
+  expectThat(content, not(withClass(cm.css.FIRST_TABBED_LEGEND_BOX)));
+  content = legendView.getContent(true);
+  expectThat(content, withClass(cm.css.FIRST_TABBED_LEGEND_BOX));
+};
+
 var FOLDER_LAYER_JSON = {
   id: 'folderLayer',
   title: 'Folder Layer',
@@ -297,6 +306,8 @@ FolderLegendViewTest.prototype.validateRender_ = function(
   expectThat(contentElem, withInnerHtml(layer.get('legend').getHtml()));
   expectThat(contentElem, isVisible ? isShown() : not(isShown()));
 
+  // Note box might not be the legend box belonging to layer; it may belong
+  // to a folder that layer belongs to.
   var box = expectAncestorOf(contentElem, withClass(cm.css.TABBED_LEGEND_BOX));
   if (titleIsVisible) {
     var title = expectDescendantOf(box, withClass(cm.css.LAYER_TITLE));
@@ -315,6 +326,50 @@ FolderLegendViewTest.prototype.validateRender_ = function(
       expectThat(title, not(isShown()));
     }
   }
+};
+
+/**
+ * Validates the render of a folder that should carry the styling for the
+ * first legend in a list.  Most tests below pass isFirst=true to
+ * getContent() because that's the more error-prone path.  Having done that
+ * those tests should call this.validateIsFirst_() at the end to ensure
+ * the rendering maintained the proper "first" behavior (only the first
+ * visible legend box carries the FIRST_TABBED_LEGEND_BOX class).  A few
+ * tests explicitly make sure the "first" behavior doesn't leak in to rendering
+ * if getContent(isFirst=false) is called instead; they use
+ * this.validateIsNotFirst_, below.
+ * @param {contentElem} The element containing the rendered folder legend.
+ * @private
+ */
+FolderLegendViewTest.prototype.validateIsFirst_ = function(contentElem) {
+  var boxes = allDescendantsOf(
+      contentElem, withClass(cm.css.TABBED_LEGEND_BOX));
+  var foundFirst = false;
+  for (var i = 0; i < boxes.length; i++) {
+    var box = boxes[i];
+    if (foundFirst) {
+      expectThat(box, anyOf(
+          [not(isShown()), not(withClass(cm.css.FIRST_TABBED_LEGEND_BOX))]));
+    } else if (isShown().predicate(box)) {
+      expectThat(box, withClass(cm.css.FIRST_TABBED_LEGEND_BOX));
+      foundFirst = true;
+    }
+  }
+};
+
+/**
+ * Validates the render of a folder that should NOT carry the styling for the
+ * first legend in a list.
+ * @param {contentElem} The element containing the rendered folder legend.
+ * @private
+ */
+FolderLegendViewTest.prototype.validateIsNotFirst_ = function(contentElem) {
+  var boxes = allDescendantsOf(
+      contentElem, withClass(cm.css.TABBED_LEGEND_BOX));
+  goog.array.forEach(boxes, function(box) {
+    expectThat(box, anyOf([not(isShown()),
+                           not(withClass(cm.css.FIRST_TABBED_LEGEND_BOX))]));
+  });
 };
 
 /**
@@ -407,7 +462,7 @@ FolderLegendViewTest.prototype.layerForId_ = function(layerId) {
 FolderLegendViewTest.prototype.testUnlockedFolderRendering = function() {
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.UNLOCKED, 'testUnlockedFolderRendering');
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   this.findLayersAndLegends_(legendElem, 'testUnlockedFolderRendering');
 
   // Unlocked folders render as if the the folder layer were a sibling of
@@ -434,12 +489,13 @@ FolderLegendViewTest.prototype.testUnlockedFolderRendering = function() {
   expectThat(redLegend, not(hasAncestor(folderBox)));
   expectThat(emptyLegend, not(hasAncestor(folderBox)));
   expectThat(blueLegend, not(hasAncestor(folderBox)));
+  this.validateIsFirst_(legendElem);
 };
 
 FolderLegendViewTest.prototype.testLockedFolderRendering = function() {
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.LOCKED, 'testLockedFolderRendering');
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   var idToLayerAndLegend = this.findLayersAndLegends_(
       legendElem, 'testLockedFolderRendering');
 
@@ -456,13 +512,14 @@ FolderLegendViewTest.prototype.testLockedFolderRendering = function() {
 
   this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
                        this.layerForId_(BLUE_LAYER_JSON.id), false, true);
+  this.validateIsFirst_(legendElem);
 };
 
 FolderLegendViewTest.prototype.testSingleSelectFolderRendering = function() {
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.SINGLE_SELECT,
       'testSingleSelectFolderRendering');
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   this.findLayersAndLegends_(legendElem, 'testSingleSelectFolderRendering');
   var titleComponents = [this.layerModel_.get('title'),
                          this.layerForId_(RED_LAYER_JSON.id).get('title')];
@@ -476,13 +533,14 @@ FolderLegendViewTest.prototype.testSingleSelectFolderRendering = function() {
 
   this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
                        this.layerForId_(BLUE_LAYER_JSON.id), false, false);
+  this.validateIsFirst_(legendElem);
 };
 
 FolderLegendViewTest.prototype.testSelectNewLayerInSingleSelect = function() {
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.SINGLE_SELECT,
       'testSelectNewLayerInSingleSelect');
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   this.findLayersAndLegends_(legendElem, 'testSelectNewLayerInSingleSelect');
   this.appState_.selectSublayer(
       this.layerModel_, this.layerForId_(BLUE_LAYER_JSON.id).id);
@@ -494,6 +552,7 @@ FolderLegendViewTest.prototype.testSelectNewLayerInSingleSelect = function() {
 
   this.validateRender_(this.legendForId_(RED_LAYER_JSON.id),
                        this.layerForId_(RED_LAYER_JSON.id), false, false);
+  this.validateIsFirst_(legendElem);
 };
 
 
@@ -501,7 +560,7 @@ FolderLegendViewTest.prototype.testRenderingAfterAddingSublayer = function() {
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.UNLOCKED, 'testRenderingAfterAddingSublayer');
   // Render before adding the new layer
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   var newLayerId = 'newLayer';
   var newLayerJson = {
     id: newLayerId, title: 'Newly added layer', legend: 'A non-empty legend',
@@ -512,13 +571,14 @@ FolderLegendViewTest.prototype.testRenderingAfterAddingSublayer = function() {
   this.findLayersAndLegends_(legendElem, 'testUnlockedFolderRendering');
   this.validateRender_(this.legendForId_(newLayerId),
                        this.layerForId_(newLayerId), true, true);
+  this.validateIsFirst_(legendElem);
 };
 
 FolderLegendViewTest.prototype.testRenderingAfterRemovingSublayer = function() {
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.UNLOCKED, 'testRenderingAfterRemovingSublayer');
   // Force render before manipulating the sublayer list
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   expectDescendantOf(
       legendElem, withClass(cm.css.LAYER_TITLE),
       withText(RED_LAYER_JSON.title));
@@ -527,6 +587,7 @@ FolderLegendViewTest.prototype.testRenderingAfterRemovingSublayer = function() {
   expectNoDescendantOf(
       legendElem, withClass(cm.css.LAYER_TITLE),
       withText(RED_LAYER_JSON.title));
+  this.validateIsFirst_(legendElem);
 };
 
 FolderLegendViewTest.prototype.testRenderingAfterChangingFolderType =
@@ -534,7 +595,7 @@ FolderLegendViewTest.prototype.testRenderingAfterChangingFolderType =
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.UNLOCKED,
       'testRenderingAfterChangingFolderType');
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   this.layerModel_.set('folder_type', cm.LayerModel.FolderType.LOCKED);
   this.findLayersAndLegends_(
       legendElem, 'testRenderingAfterChangingFolderType');
@@ -549,6 +610,7 @@ FolderLegendViewTest.prototype.testRenderingAfterChangingFolderType =
 
   this.validateRender_(this.legendForId_(BLUE_LAYER_JSON.id),
                        this.layerForId_(BLUE_LAYER_JSON.id), false, true);
+  this.validateIsFirst_(legendElem);
 };
 
 FolderLegendViewTest.prototype.testRenderingLockedFolderWithNestedFolders =
@@ -567,7 +629,7 @@ FolderLegendViewTest.prototype.testRenderingLockedFolderWithNestedFolders =
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.LOCKED, uniqueId,
       [subFolderJson, this.fromTemplateJson(SIMPLE_LAYER_JSON, uniqueId)]);
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   this.findLayersAndLegends_(legendElem, uniqueId);
 
   this.validateRender_(
@@ -582,16 +644,26 @@ FolderLegendViewTest.prototype.testRenderingLockedFolderWithNestedFolders =
                        this.layerForId_(subFolderJson.id), false, true);
   this.validateRender_(this.legendForId_(SIMPLE_LAYER_JSON.id),
                        this.layerForId_(SIMPLE_LAYER_JSON.id), false, true);
+  this.validateIsFirst_(legendElem);
 };
 
 FolderLegendViewTest.prototype.testFolderWithNoVisibleSublayers = function() {
   var legendView = this.createLegendView_(
       cm.LayerModel.FolderType.UNLOCKED, 'testFolderWithNoVisibleSublayers');
-  var legendElem = legendView.getContent();
+  var legendElem = legendView.getContent(true);
   this.findLayersAndLegends_(legendElem, 'testFolderWithNoVisibleSublayers');
   this.layerModel_.set('legend', new cm.Html(''));
   this.appState_.setLayerEnabled(this.layerForId_(RED_LAYER_JSON.id).id, false);
   this.appState_.setLayerEnabled(
       this.layerForId_(BLUE_LAYER_JSON.id).id, false);
   expectThat(legendElem, withClass(cm.css.HIDDEN));
+};
+
+FolderLegendViewTest.prototype.testNotFirstRendering = function() {
+  for (folderType in cm.LayerModel.FolderType) {
+    var legendView = this.createLegendView_(
+        cm.LayerModel.FolderType[folderType],
+        'testNotFirstRendering' + folderType);
+    this.validateIsNotFirst_(legendView.getContent(false));
+  }
 };

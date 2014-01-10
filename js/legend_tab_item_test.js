@@ -86,12 +86,30 @@ LegendTabItemTest.prototype.assertLegendAbsent_ = function(content, layerJson) {
   expectThat(legendElem, anyOf([isNull, not(isShown())]));
 };
 
+LegendTabItemTest.prototype.assertCorrectBoxMarkedFirst_ = function(content) {
+  var legendBoxes = allDescendantsOf(
+    content, withClass(cm.css.TABBED_LEGEND_BOX));
+  var firstBoxSeen = false;
+  for (i = 0; i < legendBoxes.length; i++) {
+    var box = legendBoxes[i];
+    if (!isShown().predicate(box)) continue;
+    if (firstBoxSeen) {
+      expectThat(box, not(withClass(cm.css.FIRST_TABBED_LEGEND_BOX)));
+    } else {
+      expectThat(box, withClass(cm.css.FIRST_TABBED_LEGEND_BOX));
+      firstBoxSeen = true;
+    }
+  }
+};
+
 LegendTabItemTest.prototype.testCreation = function() {
   var legendTabItem = this.createLegendTabItem_('testCreation');
   var content = legendTabItem.getContent();
   this.assertLegendPresent_(content, this.layerJsons_[0]);
   this.assertLegendPresent_(content, this.layerJsons_[1]);
   this.assertLegendAbsent_(content, this.layerJsons_[2]);
+  this.assertCorrectBoxMarkedFirst_(content);
+  expectTrue(legendTabItem.getIsEnabled());
 };
 
 LegendTabItemTest.prototype.testRemoveLayer = function() {
@@ -99,6 +117,7 @@ LegendTabItemTest.prototype.testRemoveLayer = function() {
   var content = legendTabItem.getContent();
   this.mapModel_.get('layers').removeAt(0);
   this.assertLegendAbsent_(content, this.layerJsons_[0]);
+  this.assertCorrectBoxMarkedFirst_(content);
 };
 
 LegendTabItemTest.prototype.testAddLayer = function() {
@@ -132,10 +151,19 @@ LegendTabItemTest.prototype.testEnableLayer = function() {
   this.assertLegendAbsent_(content, this.layerJsons_[1]);
   this.appState_.setLayerEnabled(redLayer.id, true);
   this.assertLegendPresent_(content, this.layerJsons_[1]);
+  this.assertCorrectBoxMarkedFirst_(content);
 };
 
 LegendTabItemTest.prototype.testDisableLayer = function() {
   var legendTabItem = this.createLegendTabItem_('testDisableLayer');
   this.appState_.setLayerEnabled(this.layerJsons_[0].id, false);
   this.assertLegendAbsent_(legendTabItem.getContent(), this.layerJsons_[0]);
+  this.assertCorrectBoxMarkedFirst_(legendTabItem.getContent());
+};
+
+LegendTabItemTest.prototype.testTabDisabledWhenNoContent = function() {
+  var legendTabItem = this.createLegendTabItem_('testTabDisabledWhenNoContent');
+  this.appState_.setLayerEnabled(this.layerJsons_[0].id, false);
+  this.appState_.setLayerEnabled(this.layerJsons_[1].id, false);
+  expectFalse(legendTabItem.getIsEnabled());
 };

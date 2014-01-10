@@ -90,10 +90,12 @@ cm.LegendView = function(layerModel, appState) {
 /**
  * Returns the element for the legend, ready to be inserted into
  * the DOM.
+ * @param {boolean=} opt_isFirst Whether this legend should be rendered
+ *   with the extra styling for first legend in a list.
  * @return {Element}
  */
-cm.LegendView.prototype.getContent = function() {
-  return this.getContentForParentType(null);
+cm.LegendView.prototype.getContent = function(opt_isFirst) {
+  return this.getContentForParentType(null, !!opt_isFirst);
 };
 
 /**
@@ -102,15 +104,18 @@ cm.LegendView.prototype.getContent = function() {
  * passing null as the parentFolderType.
  * @param {?cm.LayerModel.FolderType} parentFolderType The type of the parent
  *     folder into which this legend is being rendered.
+ * @param {boolean} isFirst Whether this legend is being displayed at the top
+ *   of a list of legends.
  * @return {Element} A DOM element that contains the rendered legend.
  * @protected
  */
-cm.LegendView.prototype.getContentForParentType = function(parentFolderType) {
+cm.LegendView.prototype.getContentForParentType = function(
+    parentFolderType, isFirst) {
   if (!this.hasRendered_) {
     this.setupListeners();
     this.hasRendered_ = true;
   }
-  this.render(parentFolderType);
+  this.render(parentFolderType, isFirst);
   return this.parentElem_;
 };
 
@@ -146,9 +151,11 @@ cm.LegendView.prototype.setupListeners = function() {
  *   the parent layer.  Right now, we treat locked folders specially and
  *   sublayers remove any adornments (title, box outlines, etc), but we expect
  *   to be experimenting with different folder behaviors and renderings.
+ * @param {boolean} isFirst Whether this legend is being displayed at the top
+ *   of a list of legends.
  * @protected
  */
-cm.LegendView.prototype.render = function(parentFolderType) {};
+cm.LegendView.prototype.render = function(parentFolderType, isFirst) {};
 
 /**
  * Whether this legend's layer is currently enabled.
@@ -173,9 +180,8 @@ cm.LegendView.prototype.isInZoomRange = function() {
  * Subclasses can use isEnabled(), isInZoomRange() and isEmpty() to implement
  * the necessary logic.
  * @return {boolean}
- * @protected
  */
-cm.LegendView.prototype.shouldHide = function() { return false; };
+cm.LegendView.prototype.isHidden = function() { return false; };
 
 /**
  * Respond to changes in the layer's title.
@@ -197,11 +203,11 @@ cm.LegendView.prototype.titleString = function() {
 
 /**
  * Sets the hidden class on our root element according to the return value
- * of shouldHide(), above.
+ * of isHidden(), above.
  * @private
  */
 cm.LegendView.prototype.updateHidden_ = function() {
-  goog.dom.classes.enable(this.parentElem_, cm.css.HIDDEN, this.shouldHide());
+  goog.dom.classes.enable(this.parentElem_, cm.css.HIDDEN, this.isHidden());
 };
 
 /**
@@ -309,14 +315,15 @@ cm.SimpleLegendView_.prototype.setupListeners = function() {
 };
 
 /** @override */
-cm.SimpleLegendView_.prototype.render = function(parentFolderType) {
+cm.SimpleLegendView_.prototype.render = function(parentFolderType, isFirst) {
   // Sometimes a legend renders its comments with a box and title; other times
   // it relies on its parent to render the box and title.
   // sublayersShouldDrawBox() tells us which behavior we want.
   var drawBox = cm.LegendView.sublayersShouldDrawBox(parentFolderType);
   cm.ui.clear(this.parentElem_);
   goog.dom.classes.enable(this.parentElem_, cm.css.TABBED_LEGEND_BOX, drawBox);
-
+  goog.dom.classes.enable(
+      this.parentElem_, cm.css.FIRST_TABBED_LEGEND_BOX, isFirst && drawBox);
   if (drawBox) {
     cm.ui.append(this.parentElem_, this.titleElem_, this.legendElem_);
   } else {
@@ -340,7 +347,7 @@ cm.SimpleLegendView_.prototype.updateMetadataListener_ = function() {
 };
 
 /** @override */
-cm.SimpleLegendView_.prototype.shouldHide = function() {
+cm.SimpleLegendView_.prototype.isHidden = function() {
   // The layer is not visible if:
   // - the current map zoom level is outside the min/max zoom limits for
   // the layer (superclass checks this since every layer has zoom limits that
@@ -388,13 +395,30 @@ cm.FolderLegendView_ = function(layerModel, metadataModel, appState) {
    * @type Array.<cm.LegendView>
    * @private
    */
-  this.sublayerLegendViews_ = [];
-  goog.array.forEach(layerModel.getSublayerIds(), goog.bind(function(id) {
-    this.sublayerLegendViews_.push(cm.LegendView.getLegendViewForLayer(
-        layerModel.getSublayer(id), metadataModel, appState));
-  }, this));
+  this.sublayerLegendViews_ = this.buildSublayerLegendViews_();
+
+  /**
+   * The last value we saw for isFirst when we were rendered.
+   * @type {boolean}
+   * @private
+   */
+   this.isFirst_ = false;
 };
 goog.inherits(cm.FolderLegendView_, cm.LegendView);
+
+/**
+ * Builds and returns the list of legend views for the sublayers.
+ * @return {Array.<cm.LegendView>}
+ * @private
+ */
+cm.FolderLegendView_.prototype.buildSublayerLegendViews_ = function() {
+  var sublayerLegendViews = [];
+  goog.array.forEach(this.layerModel_.getSublayerIds(), goog.bind(function(id) {
+    sublayerLegendViews.push(cm.LegendView.getLegendViewForLayer(
+        this.layerModel_.getSublayer(id), this.metadataModel_, this.appState_));
+  }, this));
+  return sublayerLegendViews;
+};
 
 /** @override */
 cm.FolderLegendView_.prototype.setupListeners = function() {
@@ -411,14 +435,15 @@ cm.FolderLegendView_.prototype.setupListeners = function() {
         /** @type cm.LayerModel */(sublayers.getAt(i)), this.metadataModel_,
         this.appState_);
     goog.array.insertAt(this.sublayerLegendViews_, newLegendView, i);
-    this.render(null);
+    this.render(null, this.isFirst_);
   }, this);
   cm.events.listen(sublayers, 'remove_at', function(i, layer) {
     goog.array.removeAt(this.sublayerLegendViews_, i);
-    this.render(null);
+    this.render(null, this.isFirst_);
   }, this);
   cm.events.onChange(this.layerModel_, ['folder_type'], function() {
-    this.render(null);
+    this.render(null, this.isFirst_);
+    this.handleTitleChanged_();
     this.handleTitleChanged_();
   }, this);
   cm.events.onChange(
@@ -426,6 +451,12 @@ cm.FolderLegendView_.prototype.setupListeners = function() {
         if (this.folderType_() === cm.LayerModel.FolderType.SINGLE_SELECT) {
           this.handleTitleChanged_();
         }
+      }, this);
+  // Triggered by the layer arranger
+  cm.events.listen(
+      goog.global, cm.events.MODEL_CHANGED, function() {
+        this.sublayerLegendViews_ = this.buildSublayerLegendViews_();
+        this.render(null, this.isFirst_);
       }, this);
 };
 
@@ -441,20 +472,24 @@ cm.FolderLegendView_.prototype.folderType_ = function() {
 };
 
 /** @override */
-cm.FolderLegendView_.prototype.render = function(parentFolderType) {
+cm.FolderLegendView_.prototype.render = function(parentFolderType, isFirst) {
   // Clear the existing UI
+  this.isFirst_ = isFirst;
   cm.ui.clear(this.parentElem_);
   goog.dom.classes.enable(this.parentElem_, cm.css.TABBED_LEGEND_BOX, false);
+  goog.dom.classes.enable(
+      this.parentElem_, cm.css.FIRST_TABBED_LEGEND_BOX, false);
 
   // Render our legend
-  this.renderOwnLegend_(parentFolderType);
+  var childIsFirst = this.renderOwnLegend_(parentFolderType, isFirst);
 
   // Render the sublayers
   goog.array.forEach(this.sublayerLegendViews_, goog.bind(function(sublayer) {
     // If any ancestor is locked, we use the locked style for all descendants
     cm.ui.append(this.parentElem_, sublayer.getContentForParentType(
         (parentFolderType === cm.LayerModel.FolderType.LOCKED) ?
-            parentFolderType : this.folderType_()));
+            parentFolderType : this.folderType_(), childIsFirst));
+    childIsFirst = childIsFirst && sublayer.isHidden();
   }, this));
   this.updateHidden_();
 };
@@ -464,10 +499,16 @@ cm.FolderLegendView_.prototype.render = function(parentFolderType) {
  * itself.
  * @param {?cm.LayerModel.FolderType} parentFolderType the type of folder
  *    (if any) into which this folder is being rendered.
+ * @param {boolean} isFirst Whether this legend is being displayed at the top
+ *   of a list of legends.
+ * @return {boolean} Whether the sublayers should be rendered as the first
+ *   legend displayed.
  * @private
  */
-cm.FolderLegendView_.prototype.renderOwnLegend_ = function(parentFolderType) {
+cm.FolderLegendView_.prototype.renderOwnLegend_ = function(
+    parentFolderType, isFirst) {
   var legendBox;
+  var childrenAreFirst = false;
   if (!cm.LegendView.sublayersShouldDrawBox(this.folderType_())) {
     // If the sublayers are not drawing their own boxes,the folder can render
     // directly in to parentElem_ because the legends of the sublayers should
@@ -485,21 +526,23 @@ cm.FolderLegendView_.prototype.renderOwnLegend_ = function(parentFolderType) {
 
   if (cm.LegendView.sublayersShouldDrawBox(parentFolderType)) {
     goog.dom.classes.enable(legendBox, cm.css.TABBED_LEGEND_BOX, true);
+    goog.dom.classes.enable(legendBox, cm.css.FIRST_TABBED_LEGEND_BOX, isFirst);
     cm.ui.append(legendBox, this.titleElem_);
-
+    childrenAreFirst = isFirst && this.isEmpty;
   }
   cm.ui.append(legendBox, this.legendElem_);
+  return childrenAreFirst;
 };
 
 /** @override */
-cm.FolderLegendView_.prototype.shouldHide = function() {
+cm.FolderLegendView_.prototype.isHidden = function() {
   if (!this.isEnabled()) return true;
   if (!this.isInZoomRange()) return true;
   if (!this.isEmpty) return false;
 
   var sublayersHaveContent = false;
   goog.array.forEach(this.sublayerLegendViews_, function(sublayer) {
-    if (!sublayer.shouldHide()) sublayersHaveContent = true;
+    if (!sublayer.isHidden()) sublayersHaveContent = true;
   });
   return !sublayersHaveContent;
 };
