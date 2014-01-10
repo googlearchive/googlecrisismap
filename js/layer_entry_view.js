@@ -504,8 +504,8 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
         case cm.LayerModel.Type.GEORSS:
           linkText = cm.MSG_DOWNLOAD_GEORSS_LINK;
           break;
-        case cm.LayerModel.Type.SPREADSHEET:
-          linkText = cm.MSG_DOWNLOAD_SPREADSHEET_LINK;
+        case cm.LayerModel.Type.CSV:
+          linkText = cm.MSG_DOWNLOAD_CSV_LINK;
           break;
         case cm.LayerModel.Type.FUSION:
           var value = this.model_.get('ft_from') + '';

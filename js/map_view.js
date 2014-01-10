@@ -487,7 +487,7 @@ cm.MapView.prototype.addOverlay_ = function(layer) {
 };
 
 /**
- * Constructs the /.kmlify URL for a given SPREADSHEET layer.
+ * Constructs the /.kmlify URL for a given CSV layer.
  * @param {cm.LayerModel} layer The layer model.
  * @return {string?} A URL to /.kmlify that generates the appropriate KML.
  * @private
@@ -559,7 +559,7 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
         layer, this.map_, this.appState_, this.metadataModel_, this.config_);
       break;
 
-    case cm.LayerModel.Type.SPREADSHEET:
+    case cm.LayerModel.Type.CSV:
       var url = this.buildKmlifyUrl_(layer);
       if (url) {
         this.overlays_[id] = new google.maps.KmlLayer({
