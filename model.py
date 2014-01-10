@@ -917,7 +917,8 @@ class CrowdReport(utils.Struct):
     updated_seconds = utils.UtcToTimestamp(updated)
     report_id = CrowdReport.GenerateReportId(source)
     report = _CrowdReportModel(id=report_id, source=source, author=author,
-                               effective=effective, updated=updated, text=text,
+                               effective=effective, published=updated,
+                               updated=updated, text=text,
                                topic_ids=topic_ids, answer_ids=answer_ids,
                                location=location or NOWHERE)
     report.put()
