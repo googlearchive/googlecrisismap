@@ -11,6 +11,9 @@
 
 // Author: kpy@google.com (Ka-Ping Yee)
 
+goog.require('cm.Analytics');
+goog.require('goog.testing.MockClock');
+
 function PresenterTest() {
   cm.TestBase.call(this);
 
@@ -45,6 +48,34 @@ PresenterTest.prototype.filterQueryChanged = function() {
   cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED,
     {query: query});
   expectEq(query, this.appState_.getFilterQuery());
+};
+
+/**
+ * Tests that an analytics event is logged when a filter query is entered.
+ */
+PresenterTest.prototype.filterQueryChangeLogging = function() {
+  var clock = new goog.testing.MockClock(true);
+  this.expectLogAction(
+      cm.Analytics.LayersTabAction.FILTER_QUERY_ENTERED, null, 1, 'foo');
+
+  // Log the action one second after last change event.
+  cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED,
+      {query: 'fo'});
+  clock.tick(999);
+  cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED,
+      {query: 'foo'});
+  clock.tick(1000);
+
+  // Verify that no action is logged if there is no query.
+  cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED, {query: ''});
+  clock.tick(1000);
+  cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED,
+      {query: null});
+  clock.tick(1000);
+  cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED);
+  clock.tick(1000);
+
+  clock.uninstall();
 };
 
 /**

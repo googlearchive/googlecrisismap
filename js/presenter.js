@@ -110,7 +110,8 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     // (after a delay, on a backspace press, etc) so we don't
     // get an analytics log per keypress.
     appState.setFilterQuery(event.query);
-  });
+    this.logFilterQueryChange_(event.query, 1000);
+  }, this);
   cm.events.listen(panelView, cm.events.FILTER_MATCHES_CHANGED,
     function(event) {
       appState.setMatchedLayers(event.matches);
@@ -170,4 +171,26 @@ cm.Presenter.prototype.zoomToUserLocation = function(zoom) {
           position.coords.latitude, position.coords.longitude));
     });
   }
+};
+
+/**
+ * Logs a change in the filter query after the specified delay since the last
+ * change.
+ * @param {string} query The query value.
+ * @param {number} delayMs Number of milliseconds since the last filter query
+ *    change event to delay before logging the change.
+ * @private
+ */
+cm.Presenter.prototype.logFilterQueryChange_ = function(query, delayMs) {
+  if (this.filterQueryTimeoutId_) {
+    goog.global.clearTimeout(this.filterQueryTimeoutId_);
+  }
+  var logFn = goog.bind(function() {
+      this.filterQueryTimeoutId_ = null;
+      if (query) {
+        cm.Analytics.logAction(
+            cm.Analytics.LayersTabAction.FILTER_QUERY_ENTERED, null, query);
+      }
+  }, this);
+  this.filterQueryTimeoutId_ = goog.global.setTimeout(logFn, delayMs);
 };

@@ -109,6 +109,7 @@ cm.Analytics.TabPanelAction = cm.Analytics.prependUiElement_(
 cm.Analytics.LayersTabAction = cm.Analytics.prependUiElement_(
     'Layers tab', {
       DOWNLOAD_DATA_LINK_CLICKED: 'Layer download data link clicked',
+      FILTER_QUERY_ENTERED: 'Filter query entered',
       VIEW_IN_MAPS_ENGINE_LINK_CLICKED: 'View in maps engine link clicked',
       EMBEDDED_LINK_CLICKED: 'Link embedded in layer description clicked',
       OPACITY_SLIDER_MOVED: 'Layer opacity slider moved',
@@ -214,7 +215,7 @@ cm.Analytics.categoryForAction_ = function(action) {
  *     the correct cm.Analytics.<UI Element>Action list, above.
  * @param {?string} layerId  The ID of a layer associated with
  *     the action.  If no layer is associated with the action, pass null.
- * @param {number=} opt_value An optional numeric value for the event (Analytics
+ * @param {number|string=} opt_value An optional value for the event (Analytics
  *     will compute sums and averages of these values).
  * @param {number=} opt_topicId An optional topic ID, if there is a topic
  *     relevant to this event.  (The topic ID should be fully qualified, in
