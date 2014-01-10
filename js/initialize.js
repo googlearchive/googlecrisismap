@@ -300,7 +300,7 @@ cm.Map.prototype.buildUi_ = function(frame) {
                       {'publisher_name': this.config_['publisher_name'],
                        'langs': this.config_['langs']});
   }
-  goog.style.setElementShown(this.footerElem_, showFooter);
+  goog.style.showElement(this.footerElem_, showFooter);
 
   var extraViewsPlugins = /** @type {Array.<cm.ExtraViewsPlugin>} */
       (this.config_['extra_views_plugins']);

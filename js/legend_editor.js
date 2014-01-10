@@ -199,7 +199,7 @@ cm.LegendEditor = function(parentElem, id, options, draft) {
   this.featurePalette_ = new goog.ui.Palette([cm.ui.create('div')]);
   this.featurePalette_.setSize(cm.LegendEditor.PALETTE_WIDTH_);
   this.featurePalette_.render(this.featurePaletteElem_);
-  goog.style.setElementShown(this.featurePaletteContainer_, false);
+  goog.style.showElement(this.featurePaletteContainer_, false);
   cm.events.listen(this.featurePalette_, goog.ui.Component.EventType.ACTION,
       goog.bind(this.handleFeaturePaletteClick_, this));
 
@@ -374,8 +374,8 @@ cm.LegendEditor.prototype.showHtmlEditor_ = function(showHtml, opt_value) {
     showHtml = true;  // no legend service means no graphical editing
   }
 
-  goog.style.setElementShown(this.htmlEditorElem, showHtml);
-  goog.style.setElementShown(this.legendEditorElem_, !showHtml);
+  goog.style.showElement(this.htmlEditorElem, showHtml);
+  goog.style.showElement(this.legendEditorElem_, !showHtml);
 
   // Set this.shown_ to the opposite of showHtml, and update the UI if this
   // causes a change.
@@ -404,8 +404,8 @@ cm.LegendEditor.prototype.handleChange = function() {
     if (valid) {
       this.lastValid_ = /** @type {cm.Html} */(this.get('value'));
     }
-    goog.style.setElementShown(this.editGraphicallyLink_, valid);
-    goog.style.setElementShown(
+    goog.style.showElement(this.editGraphicallyLink_, valid);
+    goog.style.showElement(
         this.revertToLastValidLink_, !valid && this.lastValid_);
   }
 };
@@ -521,7 +521,7 @@ cm.LegendEditor.prototype.handleGraphicClick_ = function(legendItem) {
  */
 cm.LegendEditor.prototype.setTextEditable_ = function(legendItem, inputElem,
     editable) {
-  goog.style.setElementShown(inputElem, editable);
+  goog.style.showElement(inputElem, editable);
   if (editable) {
     this.handleTextChange_(legendItem, inputElem);
     inputElem.focus();
@@ -641,9 +641,9 @@ cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
   if (url && !goog.string.isEmpty(url) && goog.array.contains(
       cm.LegendEditor.SUPPORTED_LAYER_TYPES_, draft.get('type'))) {
     if (!this.extractRequestSent_) {
-      goog.style.setElementShown(this.loadingElem_, true);
-      goog.style.setElementShown(this.featurePaletteElem_, false);
-      goog.style.setElementShown(this.featurePaletteContainer_, true);
+      goog.style.showElement(this.loadingElem_, true);
+      goog.style.showElement(this.featurePaletteElem_, false);
+      goog.style.showElement(this.featurePaletteContainer_, true);
 
       this.extractRequestSent_ = true;
       // In edit mode, the app root is always at "../..".
@@ -653,7 +653,7 @@ cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
           return;
         }
 
-        goog.style.setElementShown(this.loadingElem_, false);
+        goog.style.showElement(this.loadingElem_, false);
         var features = [];
         var colors = new goog.structs.Set();
         if (event.target.isSuccess()) {
@@ -667,7 +667,7 @@ cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
         // the palette requires at least one element.
         this.featurePalette_.setContent(features.length ?
             features : [cm.ui.create('div')]);
-        goog.style.setElementShown(this.featurePaletteContainer_,
+        goog.style.showElement(this.featurePaletteContainer_,
                                    features.length);
 
         // Add all the default colors to the set, and then pick a fixed
@@ -676,7 +676,7 @@ cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
         this.colorPalette_.setColors(goog.array.slice(
             colors.getValues(), 0, cm.LegendEditor.DEFAULT_COLORS_.length));
 
-        goog.style.setElementShown(this.featurePaletteElem_, true);
+        goog.style.showElement(this.featurePaletteElem_, true);
 
         this.extractRequestSent_ = false;
         if (this.extractRequestPending_) {
@@ -691,7 +691,7 @@ cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
     // No valid URL; clear any queued request, and only use the default color
     // palette.
     this.extractRequestPending_ = false;
-    goog.style.setElementShown(this.featurePaletteContainer_, false);
+    goog.style.showElement(this.featurePaletteContainer_, false);
     this.colorPalette_.setColors(cm.LegendEditor.DEFAULT_COLORS_);
   }
 };

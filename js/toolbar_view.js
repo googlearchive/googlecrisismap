@@ -196,8 +196,8 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
         new goog.format.JsonPrettyPrinter.TextDelimiters()).
         format(mapModel.toMapRoot()));
 
-    showJsonLink && goog.style.setElementShown(showJsonLink, false);
-    showDiffLink && goog.style.setElementShown(showDiffLink, true);
+    showJsonLink && goog.style.showElement(showJsonLink, false);
+    showDiffLink && goog.style.showElement(showDiffLink, true);
     cm.ui.showPopup(popup);
   };
 
@@ -216,8 +216,8 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
           // TODO(joeysilva): Fix bug where line numbers are compacted.
           new cm.Html(htmlDiffs[diffSelectElem.selectedIndex]).pasteInto(
               contentElem);
-          goog.style.setElementShown(showJsonLink, true);
-          goog.style.setElementShown(showDiffLink, false);
+          goog.style.showElement(showJsonLink, true);
+          goog.style.showElement(showDiffLink, false);
           cm.ui.showPopup(popup);
         };
 
