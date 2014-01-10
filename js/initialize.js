@@ -275,8 +275,8 @@ cm.Map.prototype.buildUi_ = function(frame) {
   this.constructDom_(frame);
 
   // Construct the views.
-  // The MapView must be created first because it replaces the contents of the
-  // map <div> element, and other views add stuff within that <div> element.
+  // The MapView should be created first, or early, because it replaces the
+  // contents of the map div, and other views will add content to that div.
   var mapView = new cm.MapView(this.mapElem_, mapModel, appState, metadataModel,
                                this.touch_, this.config_, preview,
                                this.embedded_);
@@ -686,6 +686,16 @@ cm.Map.prototype.constructPresenter_ = function(appState, mapModel, mapView) {
   var match = cm.ui.document.location.hash.match('gz=([0-9]+)');
   if (match) {
     presenter.zoomToUserLocation(match[1] - 0);
+  }
+
+  if (this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR) {
+    // On narrow maps, the first panel collapse will emit an event to reset
+    // the viewport so that it can be re-centered to use all available space.
+    cm.events.listen(this.panelView_, cm.events.TAB_PANEL_FIRST_COLLAPSED,
+      function() {
+        mapView.matchViewport(
+            /** @type cm.LatLonBox */(mapView.get('viewport')));
+      });
   }
 };
 

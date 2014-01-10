@@ -107,6 +107,13 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
    */
   this.expandCollapseButton_;
 
+  /**
+   * Whether the tab panel has been collapsed at least once by the user.
+   * @type boolean
+   * @private
+   */
+  this.collapsedAtLeastOnce_;
+
   this.createTabs_();
   this.createButtons_();
   this.render_();
@@ -128,11 +135,8 @@ cm.TabPanelView.TabPosition = {
  */
 cm.TabPanelView.prototype.render_ = function() {
   this.tabView_.render(this.parentElem_);
-
-  // When the panel is on the right or left, the tab panel is expanded on load;
-  // otherwise it is collapsed on load.
-  this.setExpanded_(this.tabPosition_ !== cm.TabPanelView.TabPosition.BELOW);
-
+  this.setExpanded_(true);
+  this.collapsedAtLeastOnce_ = false;
   cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED, function() {
     this.setExpanded_(true);
   }, this);
@@ -178,6 +182,12 @@ cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
 
   // Trigger adjustments to the tab panel height in initialize.js
   cm.events.emit(goog.global, 'resize');
+
+  // Trigger viewport adjustment on first collapse.
+  if (!shouldExpand && !this.collapsedAtLeastOnce_) {
+    this.collapsedAtLeastOnce_ = true;
+    cm.events.emit(this, cm.events.TAB_PANEL_FIRST_COLLAPSED);
+  }
 };
 
 /**
@@ -245,9 +255,17 @@ cm.TabPanelView.prototype.createTabs_ = function() {
                     cm.events.ZOOM_TO_LAYER],
                    this);
   this.tabView_.appendTabItem(layersTab);
-  this.tabView_.appendTabItem(
-      new cm.LegendTabItem(
-          this.mapModel_, this.appState_, this.config_, this.metadataModel_));
+
+  var legendTab = new cm.LegendTabItem(
+      this.mapModel_, this.appState_, this.config_, this.metadataModel_);
+  this.tabView_.appendTabItem(legendTab);
+
+  // TODO(romano): We currently select the 'About' tab by default. If instead
+  // we want to select the 'Legend' tab, we should add something like
+  // this.tabView_.selectTabItem(
+  //     legendTab.getIsEnabled() && lagendTab || aboutTab);
+  // once we handle disabling the legend tab when there are no enabled layers
+  // with legends.
 };
 
 /**

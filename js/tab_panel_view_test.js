@@ -98,19 +98,26 @@ TabPanelViewTest.prototype.testExpandCollapse = function() {
 TabPanelViewTest.prototype.testExpandCollapseBelow = function() {
   this.below_ = true;
   this.createTabPanelView_();
-  var button = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
 
-  // The panel should be collapsed by default. Note that this will change
-  // when we differentiate between mobile and embedded loads.
-  expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
+  var numTimesFirstCollapsed = 0;
+  cm.events.listen(this.tabPanel_, cm.events.TAB_PANEL_FIRST_COLLAPSED,
+    function() { numTimesFirstCollapsed += 1; });
 
-  // Expand the tab panel.
-  cm.events.emit(button, 'click');
-  expectThat(button, withClass(cm.css.CHEVRON_DOWN));
+  // The panel should be expanded by default.
+  var button = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_DOWN));
   expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
 
   // Collapse the tab panel.
   cm.events.emit(button, 'click');
   expectThat(button, withClass(cm.css.CHEVRON_UP));
   expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
+  expectEq(1, numTimesFirstCollapsed);
+
+  // Expand the tab panel.
+  cm.events.emit(button, 'click');
+  expectThat(button, withClass(cm.css.CHEVRON_DOWN));
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
+
+  // Collapse again and verify theat the first-collapsed event doesn't fire.
+  expectEq(1, numTimesFirstCollapsed);
 };
