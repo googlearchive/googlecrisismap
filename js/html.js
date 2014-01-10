@@ -46,7 +46,11 @@ cm.Html = function(unsanitizedHtml) {
    * @type {?string}
    * @private
    */
-  this.sanitizedHtml_ = null;
+  // This property is populated lazily; in particular, see equals() below.
+  // cm.Html.EMPTY is a shared global and we don't want its value to ever vary,
+  // even if tests install varying fakes for the sanitizer.  So, as a special
+  // case, we immediately populate this.sanitizedHtml_ when the argument is ''.
+  this.sanitizedHtml_ = unsanitizedHtml ? null : '';
 };
 
 
