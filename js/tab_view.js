@@ -15,6 +15,7 @@ goog.require('cm.TabBar');
 goog.require('cm.TabItem');
 goog.require('cm.events');
 goog.require('cm.ui');
+goog.require('goog.array');
 
 /**
  * An UI element for a group of tabs and a content region for  their associated
@@ -178,7 +179,7 @@ cm.TabView.prototype.selectSomething_ = function() {
  * @param {cm.TabItem} tabItem TheTab to be removed.
  */
 cm.TabView.prototype.removeTabItem = function(tabItem) {
-  var index = this.tabItems_.indexOf(tabItem);
+  var index = goog.array.indexOf(this.tabItems_, tabItem);
   if (index === -1) return;
   var isSelected = index === this.selectedTabIndex_;
   if (isSelected) {
@@ -198,7 +199,7 @@ cm.TabView.prototype.removeTabItem = function(tabItem) {
  * @param {cm.TabItem} tabItem The TabItem to be selected.
  */
 cm.TabView.prototype.selectTabItem = function(tabItem) {
-  var index = this.tabItems_.indexOf(tabItem);
+  var index = goog.array.indexOf(this.tabItems_, tabItem);
   if (index === -1) return;
   this.tabBar_.selectTab(index);
   this.handleTabSelected_();
@@ -219,7 +220,7 @@ cm.TabView.prototype.selectedTabItem = function() {
  * @param {cm.TabItem} tabItem The tab item that has changed.
  */
 cm.TabView.prototype.updateTabItem = function(tabItem) {
-  var tabIndex = this.tabItems_.indexOf(tabItem);
+  var tabIndex = goog.array.indexOf(this.tabItems_, tabItem);
   if (tabIndex == -1) return;
   this.tabBar_.updateTab(tabIndex, tabItem.getTitle(), tabItem.getIsEnabled());
   if (tabIndex === this.selectedTabIndex_) {

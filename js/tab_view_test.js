@@ -188,7 +188,7 @@ TabViewTest.prototype.testRemoveSelectedTabItem = function() {
 TabViewTest.prototype.testSetTabEnabled = function() {
   this.initializeTabView_();
   var tab = this.tabView_.selectedTabItem();
-  var tabIndex = this.tabs_.indexOf(tab);
+  var tabIndex = goog.array.indexOf(this.tabs_, tab);
   tab.setIsEnabled(false);
   expectThat(allDescendantsOf(this.tabBarElem_, withClass(TAB_CLASS))[tabIndex],
              withClass(DISABLED_TAB_CLASS));
