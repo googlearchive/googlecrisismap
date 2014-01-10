@@ -29,9 +29,12 @@ function LayersTabItemTest() {
 LayersTabItemTest.prototype = new cm.TestBase();
 registerTestSuite(LayersTabItemTest);
 
-LayersTabItemTest.prototype.addLayer_ = function(id, title) {
-  var newLayer = this.createFakeLayer(id);
-  newLayer.set('title', title);
+LayersTabItemTest.prototype.addLayer_ = function(layerId, layerTitle) {
+  var newLayer = cm.LayerModel.newFromMapRoot({
+    id: layerId,
+    title: layerTitle,
+    type: 'KML'
+  });
   this.mapModel_.get('layers').push(newLayer);
   return newLayer;
 };
@@ -103,8 +106,11 @@ LayersTabItemTest.prototype.testInsertLayer = function() {
   // of the other two
   this.addLayer_('layer1', 'Layer One');
   this.addLayer_('layer2', 'Layer Two');
-  var layerModel = this.createFakeLayer('layer3');
-  layerModel.set('title', 'Layer Three');
+  var layerModel = cm.LayerModel.newFromMapRoot({
+    id: 'layer3',
+    title: 'Layer Three',
+    type: 'KML'
+  });
   this.mapModel_.get('layers').insertAt(0, layerModel);
 
   var layerElems = allDescendantsOf(

@@ -1044,7 +1044,9 @@ function withText(expected) {
   return new gjstest.Matcher(
       'has text equal to "' + expected + '"',
       'doesn\'t have text equal to "' + expected + '"',
-      function(x) { return FakeUi.getText(x) === expected; });
+      function(x) {
+        return FakeUi.getText(x) === expected;
+  });
 }
 
 /**
@@ -1383,31 +1385,4 @@ cm.TestBase.verifyCallCount_ = function(record, errString) {
   } else {
     expectEq(expected, called, errString);
   }
-};
-
-// TODO(rew): This doesn't really belong here; the fake DOM and mocks for
-// cm.ui should be kept isolated so they can be re-used elsewhere.
-// b/10566080, b/11168769
-
-/**
- * Creates a fake folder with an empty sublayer list.
- * @param {string} id The ID.
- * @param {boolean=} opt_folder Pass true if this layer should be a folder.
- * @param {string=} opt_source The return value for getSourceAddress.
- * @param {string=} opt_singleSelect The return value for isSingleSelect.
- * @return {google.maps.MVCObject} The new layer.
- */
-cm.TestBase.prototype.createFakeLayer = function(id, opt_folder,
-  opt_source, opt_singleSelect) {
-  var layer = new google.maps.MVCObject();
-  layer.set('id', id);
-  if (opt_folder) {
-    layer.set('type', cm.LayerModel.Type.FOLDER);
-  }
-  layer.set('sublayers', new google.maps.MVCArray());
-  layer.isSingleSelect = function() { return (opt_singleSelect || false); };
-  layer.insideZoomBounds = cm.LayerModel.prototype.insideZoomBounds;
-  layer.getSourceAddress = function() { return (opt_source || 'XYZ:xyz'); };
-  layer.getSublayerIds = function() { return []; };
-  return layer;
 };

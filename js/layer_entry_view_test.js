@@ -10,30 +10,31 @@
 // specific language governing permissions and limitations under the License.
 
 
+goog.require('cm.LayerModel');
 goog.require('cm.css');
+
+LAYER_JSON = {
+  id: 'layer0',
+  title: 'monsters',
+  description: 'lots of monsters',
+  legend: 'red - evil monsters<br/>' +
+          'dark red - eviler monsters',
+  type: 'KML',
+  url: 'XYZ:xyz',
+  visibility: 'DEFAULT_OFF'
+};
 
 function LayerEntryViewTest() {
   cm.TestBase.call(this);
 
-  // The LayerModel is just a simple MVCObject, so it's much simpler to test it
-  // as an MVCObject than to create a mock instance.
-  this.layerModel_ = this.createFakeLayer('layer0');
-  this.layerModel_.set('title', 'monsters');
-  this.layerModel_.set(
-      'description', cm.Html.fromSanitizedHtml('lots of monsters'));
-  this.layerModel_.set(
-      'legend', cm.Html.fromSanitizedHtml(
-          'red - evil monsters<br/>' +
-          'dark red - eviler monsters'));
-  this.layerModel_.set('type', cm.LayerModel.Type.FUSION);
-
-  this.metadataModel_ = new cm.MetadataModel();
+  this.mapModel_ = cm.MapModel.newFromMapRoot(
+      {id: 'layerEntryViewTest', layers: [LAYER_JSON]});
+  this.layerModel_ = this.mapModel_.get('layers').getAt(0);
+  this.appState_ = new cm.AppState();
+  this.appState_.setFromMapModel(this.mapModel_);
+  this.metadataModel_ = new cm.MetadataModel(this.mapModel_);
 
   this.setForTest_('goog.style.setOpacity', createMockFunction());
-
-  this.appState_ = createMockInstance(cm.AppState);
-  stub(this.appState_.getLayerEnabled)('layer0').is(false);
-  stub(this.appState_.get)('layer_opacities').is(undefined);
 }
 LayerEntryViewTest.prototype = new cm.TestBase();
 registerTestSuite(LayerEntryViewTest);
@@ -75,9 +76,13 @@ LayerEntryViewTest.prototype.createView_ = function(
  * a title div, and a hidden content div containing a comments div.
  */
 LayerEntryViewTest.prototype.testConstructor = function() {
+  // Not interested in testing the sanitizer here, so just install
+  // a transparent one.
+  this.setForTest_('cm.Html.sanitize_', function(string) { return string; });
+
   var parent = this.createView_();
   var contentElem = expectDescendantOf(
-      parent, 'div', withClass(cm.css.CONTENT), withClass(cm.css.HIDDEN));
+      parent, 'div', withClass(cm.css.CONTENT), not(isShown()));
   expectDescendantOf(
       parent, withClass(cm.css.LAYER_TITLE), withText('monsters'));
   expectDescendantOf(
@@ -86,7 +91,8 @@ LayerEntryViewTest.prototype.testConstructor = function() {
   expectDescendantOf(
       contentElem, withClass(cm.css.LAYER_LEGEND_BOX),
       not(withStyle('display', 'none'),
-      hasDescendant(not(withClass(cm.css.HIDDEN)),
+      hasDescendant(
+          not(isShown()),
           hasDescendant(withClass(cm.css.LAYER_LEGEND), withText(
               'red - evil monsters<br/>' +
               'dark red - eviler monsters')))));
@@ -143,7 +149,6 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   var slider = this.expectNew_('goog.ui.Slider');
   this.fakeThumb_ = cm.ui.create('div');
   stub(slider.getValueThumb)().is(this.fakeThumb_);
-  stub(this.appState_.get)('layer_opacities').is({});
 
   expectCall(slider.setMoveToPointEnabled)(true);
   expectCall(slider.render)(_);
@@ -171,9 +176,8 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   expectEq(50, opacity);
 
   // Test whether changes in the app state are reflected upon the slider.
-  stub(this.appState_.get)('layer_opacities').is({'layer0': 40});
   expectCall(slider.setValue)(40);
-  cm.events.emit(this.appState_, 'layer_opacities_changed');
+  this.appState_.setLayerOpacity('layer0', 40);
   expectEq(0.4, sliderDot.style.opacity);
 
   // The slider thumb should contain circle and dot divs.
@@ -191,7 +195,6 @@ LayerEntryViewTest.prototype.testSublayerPicker = function() {
   this.layerModel_.set('folder_type', cm.LayerModel.FolderType.SINGLE_SELECT);
   this.layerModel_.isSingleSelect = function() { return true; };
 
-  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is(null);
   this.expectNew_('cm.SublayerPicker', _, this.layerModel_, '');
   this.createView_();
 };
@@ -207,14 +210,30 @@ LayerEntryViewTest.prototype.updateTitle = function() {
 /** Tests whether word breaks are placed properly for title. */
 LayerEntryViewTest.prototype.updateTitleWithWordBreaks = function() {
   var parent = this.createView_();
-  var longTitle = '<b>thisisaverylooooooooooooooooooongone</b>';
+  var longTitle = 'thisisaverylooooooooooooooooooongone';
   this.layerModel_.set('title', longTitle);
-  var wordBrokenTitle = '&lt;b&gt;thisisa<wbr>verylooooo<wbr>' +
-                        'oooooooooo<wbr>oooongone&lt;<wbr>/b&gt;';
-  expectDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
-      withInnerHtml(wordBrokenTitle));
+  // We expect the title to be broken into chunks using <wbr> tags.
+  // Each chunk should be no more than 10 characters long
   expectNoDescendantOf(parent, withClass(cm.css.LAYER_TITLE),
       withInnerHtml(longTitle));
+  var titleHtml = expectDescendantOf(
+      parent, withClass(cm.css.LAYER_TITLE)).innerHTML;
+  var words = titleHtml.split('wbr');
+  for (var i = 0; i < words.length; i++) {
+    var word = words[i];
+    var start, end;
+    // Discard leading and trailing '<', '</', '>', '/>' - those are part
+    // of the wbr tag, not part of the word.
+    start = (word.indexOf('/>') === 0) ? 2 : (word.indexOf('>') === 0) ? 1 : 0;
+    if (word.lastIndexOf('</') === word.length - 2) {
+      end = word.length - 2;
+    } else if (word.lastIndexOf('<') === word.length - 1) {
+      end = word.length - 1;
+    } else {
+      end = word.length;
+    }
+    expectTrue(end - start <= 10);
+  }
 };
 
 /** Tests that setting the 'description' property updates the description. */
@@ -228,22 +247,23 @@ LayerEntryViewTest.prototype.updateDescription = function() {
 
 /** Tests that setting the 'legend' property updates the legend. */
 LayerEntryViewTest.prototype.updateLegend = function() {
+  this.appState_.setLayerEnabled(this.layerModel_.id, true);
   var parent = this.createView_();
 
   // clear legend and check that box disappears
   this.layerModel_.set('legend', cm.Html.fromSanitizedHtml(''));
-  expectDescendantOf(parent,
-      withClass(cm.css.LAYER_LEGEND_BOX), withClass(cm.css.HIDDEN),
-          hasDescendant(withClass(cm.css.LAYER_LEGEND), withText('')));
+  expectDescendantOf(
+      parent, withClass(cm.css.LAYER_LEGEND_BOX), not(isShown()),
+      hasDescendant(withClass(cm.css.LAYER_LEGEND), withText('')));
 
   // put a new legend
   var text = 'red - evil monsters<br/>' +
              'dark red - eviler monsters<br/>' +
              'blue - friendly monsters';
   this.layerModel_.set('legend', cm.Html.fromSanitizedHtml(text));
-  expectDescendantOf(parent,
-      withClass(cm.css.LAYER_LEGEND_BOX), not(withClass(cm.css.HIDDEN),
-          hasDescendant(withClass(cm.css.LAYER_LEGEND), withText(text))));
+  expectDescendantOf(
+      parent, withClass(cm.css.LAYER_LEGEND_BOX), isShown(),
+      hasDescendant(withClass(cm.css.LAYER_LEGEND), withInnerHtml(text)));
 };
 
 /** Tests that the layer's timestamp is displayed correctly. */
@@ -433,21 +453,22 @@ LayerEntryViewTest.prototype.testZoomLink = function() {
 LayerEntryViewTest.prototype.testZoomLinkVisibility = function() {
   // A non-KML layer with a valid viewport...
   this.layerModel_.set('viewport', new cm.LatLonBox(30, 40, -80, -100));
+  this.appState_.setLayerEnabled(this.layerModel_.id, true);
   var parent = this.createView_();
   // ...should have a visible zoom link.
   var zoomLink = expectDescendantOf(parent, 'a',
                                     withText(containsRegExp(/Zoom/)));
-  expectThat(zoomLink.parentNode, isElement(not(withClass(cm.css.HIDDEN))));
+  expectThat(zoomLink, isShown());
 
-  // When the viewport is not defined...
+  // When we clear the viewport...
   this.layerModel_.set('viewport', undefined);
-  // ...the zoom link should disappear.
-  expectThat(zoomLink.parentNode, isElement(withClass(cm.css.HIDDEN)));
+  // ...the zoom link for a KML layer should still be present.
+  expectThat(zoomLink, isShown());
 
-  // When the layer type is changed to KML...
-  this.layerModel_.set('type', cm.LayerModel.Type.KML);
-  // ...the zoom link should reappear.
-  expectThat(zoomLink.parentNode, isElement(not(withClass(cm.css.HIDDEN))));
+  // But when we change to a Fusion table
+  this.layerModel_.set('type', cm.LayerModel.Type.FUSION);
+  // ...the zoom link should disappear.
+  expectThat(zoomLink, not(isShown()));
 };
 
 /**
@@ -488,26 +509,20 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
   expectFalse(checkbox.checked);  // layer is initially toggled off
   // Defaults for queries made by layer filtering when enabled layers
   // are changed.
-  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
-    returnWith(true));
-  expectCall(this.appState_.getFilterQuery)().willRepeatedly(
-    returnWith(''));
 
   // Enable the layer.
-  stub(this.appState_.getLayerEnabled)('layer0').is(true);
-  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  this.appState_.setLayerEnabled('layer0', true);
   expectTrue(checkbox.checked);
   // Warning element is hidden initially.
-  expectNoDescendantOf(parent, 'div', withClass(cm.css.HIDDEN), not(anyOf(
+  expectNoDescendantOf(parent, 'div', not(isShown()), not(anyOf(
       [withClass(cm.css.WARNING),
        withClass(cm.css.CHECKBOX_FOLDER_DECORATION)])));
 
   // Disable the layer.
-  stub(this.appState_.getLayerEnabled)('layer0').is(false);
-  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  this.appState_.setLayerEnabled('layer0', false);
   expectFalse(checkbox.checked);
   // Warning element is already hidden, make sure some other is hidden too.
-  expectDescendantOf(parent, 'div', withClass(cm.css.HIDDEN),
+  expectDescendantOf(parent, 'div', not(isShown()),
                      not(withClass(cm.css.WARNING)));
 };
 
@@ -519,18 +534,23 @@ LayerEntryViewTest.prototype.updateEnabled = function() {
  * @private
  */
 LayerEntryViewTest.prototype.createSingleSelect_ = function(sublayerIds) {
+  var sublayerJson = {
+    type: 'KML',
+    url: 'ABC:abc'
+  };
   var children = [];
   goog.array.forEach(sublayerIds, function(id) {
-    var childModel = this.createFakeLayer(id, true, 'ABC:abc', false);
+    sublayerJson.id = id;
+    sublayerJson.title = 'Title for ' + id;
+    var childModel = cm.LayerModel.newFromMapRoot(sublayerJson);
     children.push(childModel);
   }, this);
-
-  this.layerModel_.set('sublayers', new google.maps.MVCArray(children));
-  this.layerModel_.isSingleSelect = function() { return true; };
-  this.layerModel_.getSublayerIds = function() { return sublayerIds; };
   var sublayerPicker = this.expectNew_('cm.SublayerPicker',
                                        _, this.layerModel_, _);
   sublayerPicker.dispose = function() {};
+  this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
+  this.layerModel_.set('folder_type', cm.LayerModel.FolderType.SINGLE_SELECT);
+  this.layerModel_.set('sublayers', new google.maps.MVCArray(children));
   return children;
 };
 
@@ -542,15 +562,10 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
   var children = this.createSingleSelect_(['child1', 'child2'], 0);
   // Defaults for queries made by layer filtering when enabled layers
   // are changed.
-  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
-    returnWith(true));
-  expectCall(this.appState_.getFilterQuery)().willRepeatedly(
-    returnWith(''));
 
   // Initialize the single-select menu with a single enabled child.
-  stub(this.appState_.getLayerEnabled)('child1').is(true);
-  stub(this.appState_.getLayerEnabled)('child2').is(false);
-  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is('child1');
+  this.appState_.setLayerEnabled('child1', true);
+  this.appState_.setLayerEnabled('child2', false);
 
   var parent = this.createView_();
   var child1 = this.view_.layerEntryViews_['child1'].getEntryElement();
@@ -561,8 +576,7 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
   expectFalse(checkbox.checked);
 
   // Enable the parent layer.
-  stub(this.appState_.getLayerEnabled)('layer0').is(true);
-  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  this.appState_.setLayerEnabled('layer0', true);
   expectTrue(checkbox.checked);
 
   expectDescendantOf(parent, 'div', withClass(cm.css.SUBLAYER_SELECT));
@@ -570,13 +584,12 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
 
   // The selected sublayer's checkbox should not be shown.
   expectDescendantOf(child1, 'div', withClass(cm.css.CHECKBOX_CONTAINER),
-                     withClass(cm.css.HIDDEN));
+                     not(isShown()));
   // The selected sublayer's title should not be shown, but its details
   // should be.
   expectDescendantOf(child1, 'label', withAttr('for', 'checkboxchild1'),
-                     withClass(cm.css.HIDDEN));
-  expectDescendantOf(child1, 'div', withClass(cm.css.CONTENT),
-                    not(withClass(cm.css.HIDDEN)));
+                     not(isShown()));
+  expectDescendantOf(child1, 'div', withClass(cm.css.CONTENT), isShown());
 
   // The sibling sublayer should be hidden.
   expectThat(child2, isElement('div'), withAttr('display', 'none'));
@@ -585,7 +598,7 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelect = function() {
   // use expectNoDescendantOf(parent, ...) because the child content
   // element will give a false match.
   expectThat(this.view_.getEntryElement().childNodes[1], isElement('div'),
-             withClass(cm.css.CONTENT), withClass(cm.css.HIDDEN));
+             withClass(cm.css.CONTENT), not(isShown()));
 };
 
 /** Tests displaying layer details of single-select folders in the editor. */
@@ -593,33 +606,27 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelectInEditor = function() {
   var children = this.createSingleSelect_(['child1', 'child2'], 0);
   // Defaults for queries made by layer filtering when enabled layers
   // are changed.
-  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
-    returnWith(true));
-  expectCall(this.appState_.getFilterQuery)().willRepeatedly(
-    returnWith(''));
 
   // Initialize the single-select menu with a single enabled child.
-  stub(this.appState_.getLayerEnabled)('child1').is(true);
-  stub(this.appState_.getLayerEnabled)('child2').is(false);
-  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is('child1');
+  this.appState_.setLayerEnabled('child1', true);
+  this.appState_.setLayerEnabled('child2', false);
 
   var parent = this.createView_({enable_editing: true});
   var child1 = this.view_.layerEntryViews_['child1'].getEntryElement();
   var child2 = this.view_.layerEntryViews_['child2'].getEntryElement();
 
   // Enable the parent layer.
-  stub(this.appState_.getLayerEnabled)('layer0').is(true);
-  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  this.appState_.setLayerEnabled('layer0', true);
 
   // The selected sublayer's checkbox should not be shown.
   expectDescendantOf(child1, 'div', withClass(cm.css.CHECKBOX_CONTAINER),
-                     withClass(cm.css.HIDDEN));
+                     not(isShown()));
 
   // The selected sublayer's title and details should be shown.
   expectDescendantOf(child1, 'label', withAttr('for', 'checkboxchild1'),
-                     not(withClass(cm.css.HIDDEN)));
+                     isShown());
   expectDescendantOf(child1, 'div', withClass(cm.css.CONTENT),
-                    not(withClass(cm.css.HIDDEN)));
+                     isShown());
 
   // The sibling sublayer should be hidden.
   expectThat(child2, isElement('div'), withAttr('display', 'none'));
@@ -629,7 +636,7 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelectInEditor = function() {
   // element will give a false match.
   expectThat(this.view_.getEntryElement().childNodes[1],
              isElement('div'), withClass(cm.css.CONTENT),
-             not(withClass(cm.css.HIDDEN)));
+             isShown());
 };
 
 /**
@@ -638,18 +645,11 @@ LayerEntryViewTest.prototype.updateEnabledSingleSelectInEditor = function() {
  */
 LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
   var children = this.createSingleSelect_(['child1', 'child2']);
-  // Defaults for queries made by layer filtering when enabled layers
-  // are changed.
-  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
-    returnWith(true));
-  expectCall(this.appState_.getFilterQuery)().willRepeatedly(
-    returnWith(''));
 
   // Initialize the single-select menu with 'child2' and its parent enabled.
-  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is('child2');
-  stub(this.appState_.getLayerEnabled)('child1').is(false);
-  stub(this.appState_.getLayerEnabled)('child2').is(true);
-  stub(this.appState_.getLayerEnabled)('layer0').is(true);
+  this.appState_.setLayerEnabled('child1', false);
+  this.appState_.setLayerEnabled('child2', true);
+  this.appState_.setLayerEnabled('layer0', true);
   var parent = this.createView_();
   var childElem1 = this.view_.layerEntryViews_['child1'].getEntryElement();
   var childElem2 = this.view_.layerEntryViews_['child2'].getEntryElement();
@@ -666,8 +666,7 @@ LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
   expectEq(childElem1, notSelected);
 
   // Select the other sublayer and verify its class name.
-  stub(this.appState_.getFirstEnabledSublayerId)(this.layerModel_).is('child1');
-  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
+  this.appState_.setLayerEnabled('child1', true);
   selected = expectDescendantOf(parent,
                                 withClass(cm.css.LAYER_ENTRY),
                                 withClass(cm.css.PROMOTED_SUBLAYER));
@@ -676,29 +675,29 @@ LayerEntryViewTest.prototype.updateEnabledOnSelection = function() {
 
 /** Tests that a locked folder's sublayers are not shown. */
 LayerEntryViewTest.prototype.updateEnabledLockedFolder = function() {
-  var childModel = this.createFakeLayer('child', true, 'PQR:pqr', false);
-  this.layerModel_.getSublayerIds = function() { return ['child']; };
-  this.layerModel_.isSingleSelect = function() { return false; };
-
+  var childModel = cm.LayerModel.newFromMapRoot({
+    id: 'child',
+    title: 'child model',
+    type: 'KML',
+    url: 'PQR:pqr'
+  });
   this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
-  this.layerModel_.set('sublayers', new google.maps.MVCArray([childModel]));
+  this.layerModel_.get('sublayers').push(childModel);
   this.layerModel_.set('folder_type', cm.LayerModel.FolderType.LOCKED);
 
   // When a locked folder and its sublayers are enabled...
-  stub(this.appState_.getLayerEnabled)('layer0').is(true);
-  stub(this.appState_.getLayerEnabled)('child').is(true);
+  this.appState_.setLayerEnabled('layer0', true);
+  this.appState_.setLayerEnabled('child', true);
   var parent = this.createView_();
   // ...the sublayers should be hidden.  We can't
   // use expectNoDescendantOf(parent, ...) because descendant layers'
   // sublayer elements will give a false match for this layer's sublayers.
-  expectThat(this.view_.getEntryElement().childNodes[2],
-             isElement(withClass(cm.css.HIDDEN)));
+  expectThat(this.view_.getEntryElement().childNodes[2], not(isShown()));
 
   // When the folder is unlocked...
   this.layerModel_.set('folder_type', cm.LayerModel.FolderType.UNLOCKED);
   // ...the sublayers should be visible.
-  expectThat(this.view_.getEntryElement().childNodes[2],
-             isElement(not(withClass(cm.css.HIDDEN))));
+  expectThat(this.view_.getEntryElement().childNodes[2], isShown());
 };
 
 /**
@@ -736,6 +735,7 @@ LayerEntryViewTest.prototype.clickCheckbox = function() {
 LayerEntryViewTest.prototype.testMetadataUpdates = function() {
   this.layerModel_.set('type', cm.LayerModel.Type.KML);
   this.layerModel_.set('url', 'http://monsters.com.au');
+  this.appState_.setLayerEnabled(this.layerModel_.id, true);
 
   var parent = this.createView_();
   var elems = goog.array.map(
@@ -753,13 +753,13 @@ LayerEntryViewTest.prototype.testMetadataUpdates = function() {
   });
 
   var warningElem = expectDescendantOf(parent, withClass(cm.css.WARNING),
-                                       not(withClass(cm.css.HIDDEN)));
+                                       isShown());
   expectThat(cm.ui.getText(warningElem), containsRegExp(/nothing to show/));
   var timeElem = expectDescendantOf(parent, withClass(cm.css.TIMESTAMP),
-                                    not(withClass(cm.css.HIDDEN)));
+                                    isShown());
   var downloadElem = expectDescendantOf(parent, 'a', withText('Download KML'),
                                         withHref('http://monsters.com.au'),
-                                        not(withClass(cm.css.HIDDEN)));
+                                        isShown());
   expectEq('25 k', downloadElem.parentNode.title);
   var zoomLink = expectDescendantOf(
       parent, 'a', withText(containsRegExp(/Zoom/)));
@@ -779,59 +779,43 @@ LayerEntryViewTest.prototype.testMetadataUpdates = function() {
  */
 LayerEntryViewTest.prototype.testUpdateMatchingSublayersMessage = function() {
   var parent = this.createView_();
+  var matchMsg = expectDescendantOf(
+      parent, withClass(cm.css.LAYER_FILTER_INFO));
   this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
-  var query = 'q';
   var layerId = this.layerModel_.get('id');
-  expectEq('', cm.ui.getText(this.view_.matchingSublayersMessage_));
+  expectEq('', cm.ui.getText(matchMsg));
 
   // Setup expectations and calls.
   // We need the layers to be disabled, or the sublayer messages won't show.
-  expectCall(this.appState_.getLayerEnabled)(_)
-    .willRepeatedly(returnWith(false));
-  sub1 = this.createFakeLayer('sub1');
-  sub1.set('parent', this.layerModel_);
-  sub2 = this.createFakeLayer('sub2');
-  sub2.set('parent', this.layerModel_);
+  sub1 = cm.LayerModel.newFromMapRoot({id: 'sub1', type: 'KML'});
+  sub2 = cm.LayerModel.newFromMapRoot({id: 'sub2', type: 'KML'});
   this.layerModel_.get('sublayers').setAt(0, sub1);
   this.layerModel_.get('sublayers').setAt(1, sub2);
+  this.appState_.setLayerEnabled('sub1', false);
+  this.appState_.setLayerEnabled('sub2', false);
+  // Must set some query, but anything non-empty will do, since we will
+  // be spoon-feeding the matches to the appstate.
+  this.appState_.setFilterQuery('q');
 
   // Expectations for the actual test.
-  // Set the filter query to always be query.
-  expectCall(this.appState_.getFilterQuery)()
-    .willRepeatedly(returnWith('not empty'));
-
-  expectCall(this.appState_.getLayerMatched)(_).willRepeatedly(
-    returnWith(false));
-  cm.events.emit(this.appState_, 'matched_layer_ids_changed');
-  expectEq('', cm.ui.getText(this.view_.matchingSublayersMessage_));
-  expectDescendantOf(parent, withClass(cm.css.LAYER_FILTER_INFO));
-  expectNoDescendantOf(parent, allOf([withClass(cm.css.LAYER_FILTER_INFO),
-    withClass(cm.css.HIDDEN)]));
+  expectEq('', cm.ui.getText(matchMsg));
+  expectThat(matchMsg, isShown());
 
   // Make 'sub1' match.
-  expectCall(this.appState_.getLayerMatched)('sub1').willRepeatedly(
-    returnWith(true));
-  cm.events.emit(this.appState_, 'matched_layer_ids_changed');
-  expectEq('1 matching layer in this folder', cm.ui.getText(
-    this.view_.matchingSublayersMessage_));
-  expectNoDescendantOf(parent, allOf([withClass(cm.css.LAYER_FILTER_INFO),
-    withClass(cm.css.HIDDEN)]));
+  this.appState_.setMatchedLayers(['sub1']);
+  expectEq('1 matching layer in this folder', cm.ui.getText(matchMsg));
+  expectThat(matchMsg, isShown());
 
   // Make 'sub2' match as well.
-  expectCall(this.appState_.getLayerMatched)('sub2').willRepeatedly(
-    returnWith(true));
-  cm.events.emit(this.appState_, 'matched_layer_ids_changed');
-  expectEq('2 matching layers in this folder', cm.ui.getText(
-    this.view_.matchingSublayersMessage_));
-  expectNoDescendantOf(parent, allOf([withClass(cm.css.LAYER_FILTER_INFO),
-    withClass(cm.css.HIDDEN)]));
+  this.appState_.setMatchedLayers(['sub1', 'sub2']);
+  expectEq('2 matching layers in this folder', cm.ui.getText(matchMsg));
+  expectThat(matchMsg, isShown());
 
   // When the layer is enabled, the sublayer message is hidden.
-  expectCall(this.appState_.getLayerEnabled)(layerId)
-    .willRepeatedly(returnWith(true));
-  cm.events.emit(this.appState_, 'enabled_layer_ids_changed');
-  expectDescendantOf(parent, allOf([withClass(cm.css.LAYER_FILTER_INFO),
-    withClass(cm.css.HIDDEN)]));
+  this.appState_.setLayerEnabled('layer0', true);
+  this.appState_.setLayerEnabled('sub1', true);
+  this.appState_.setLayerEnabled('sub2', true);
+  expectThat(matchMsg, not(isShown()));
 };
 
 /**
@@ -864,10 +848,10 @@ LayerEntryViewTest.prototype.testNoLegend = function() {
         legend: 'Simple Legend'
       });
   var parent = new FakeElement('div');
-  stub(this.appState_.getLayerEnabled)('folder').is(true);
-  stub(this.appState_.getLayerEnabled)('simple').is(true);
-  stub(this.appState_.getLayerEnabled)('sublayer1').is(true);
-  stub(this.appState_.getLayerEnabled)('sublayer2').is(true);
+  this.appState_.setLayerEnabled('folder', true);
+  this.appState_.setLayerEnabled('simple', true);
+  this.appState_.setLayerEnabled('sublayer1', true);
+  this.appState_.setLayerEnabled('sublayer2', true);
   var folderView = new cm.LayerEntryView(
       parent, folderModel, this.metadataModel_, this.appState_, {}, 0, false);
   var simpleView = new cm.LayerEntryView(
