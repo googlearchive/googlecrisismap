@@ -25,9 +25,9 @@
         "west": -83.700
       }
     },
-    "type": "GOOGLE_MAP_DATA",
+    "type": "GOOGLE_MAPS_ENGINE",
     "source": {
-      "google_map_data": {
+      "google_maps_engine": {
         "map_id": "10343636198137636421-05153758434712631099-4",
         "layer_key": "layer_00001"
       }
@@ -50,9 +50,9 @@
     "clip_to_viewport": true,
     "visibility": "DEFAULT_OFF",
     "opacity": 50,
-    "type": "GOOGLE_MAP_TILES",
+    "type": "TILE",
     "source": {
-      "google_map_tiles": {
+      "tile": {
         "tile_coordinate_type": "GOOGLE",
         "url": "http://mw1.google.com/crisisresponse/2011/philippines_flooding/geoeye/Philippines_PO_765484_2011_08_23_2011_12_28_maptiles/{X}_{Y}_{Z}.png"
       }
@@ -170,9 +170,9 @@
               "clip_to_viewport": true,
               "visibility": "DEFAULT_OFF",
               "opacity": 50,
-              "type": "GOOGLE_MAP_TILES",
+              "type": "TILE",
               "source": {
-                "google_map_tiles": {
+                "tile": {
                   "tile_coordinate_type": "GOOGLE",
                   "url": "http://mw1.google.com/crisisresponse/2011/bangkok_floods/geoeye/Bangkok_Floods_po_735655_2011-11-12_2011_11_17_maptiles/{X}_{Y}_{Z}.png"
                 }

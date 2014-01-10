@@ -48,9 +48,9 @@ var KML_MAP_ROOT_JSON = {
 var MAPTILE_MAP_ROOT_JSON = {
   id: 'foo',
   title: 'bar',
-  type: 'GOOGLE_MAP_TILES',
+  type: 'TILE',
   source: {
-    google_map_tiles: {
+    tile: {
       url: 'http://mw1.google.com/mw-weather/radar/maptiles/index.js',
       url_is_tile_index: true
     }
@@ -90,6 +90,27 @@ LayerModelTest.prototype.newFromMapRootMaptileLayer = function() {
   expectEq(true, layerModel.get('url_is_tile_index'));
 };
 
+/**
+ * Tests that the application interprets legacy maproot source field
+ * 'google_map_tiles' in the same way as 'tiles'.
+ */
+LayerModelTest.prototype.handlesLegacyMaptileMaprootField = function() {
+  var maproot = {
+    type: 'GOOGLE_MAP_TILES',
+    source: {
+      google_map_tiles: {
+        url: 'url',
+        url_is_tile_index: true
+      }
+    }
+  };
+
+  var layerModel = cm.LayerModel.newFromMapRoot(maproot);
+  expectEq(cm.LayerModel.Type.TILE, layerModel.get('type'));
+  expectEq('url', layerModel.get('url'));
+  expectEq(true, layerModel.get('url_is_tile_index'));
+};
+
 /** Tests the default values set in LayerModel.newFromMapRoot. */
 LayerModelTest.prototype.newFromMapRootDefaultValues = function() {
   var EMPTY_MAPROOT = {type: 'KML', title: 'Empty map'};
@@ -124,16 +145,20 @@ LayerModelTest.prototype.newFromMapRootLayerTypes = function() {
   layerModel = cm.LayerModel.newFromMapRoot({type: 'GEORSS'});
   expectEq(cm.LayerModel.Type.GEORSS, layerModel.get('type'));
 
-  layerModel = cm.LayerModel.newFromMapRoot(
-      {type: 'GOOGLE_MAP_TILES'});
+  layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_MAP_TILES'});
   expectEq(cm.LayerModel.Type.TILE, layerModel.get('type'));
 
-  layerModel = cm.LayerModel.newFromMapRoot(
-      {type: 'GOOGLE_FUSION_TABLES'});
+  layerModel = cm.LayerModel.newFromMapRoot({type: 'TILE'});
+  expectEq(cm.LayerModel.Type.TILE, layerModel.get('type'));
+
+  layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_FUSION_TABLES'});
   expectEq(cm.LayerModel.Type.FUSION, layerModel.get('type'));
 
   layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_MAP_DATA'});
-  expectEq(cm.LayerModel.Type.MAP_DATA, layerModel.get('type'));
+  expectEq(cm.LayerModel.Type.MAPS_ENGINE, layerModel.get('type'));
+
+  layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_MAPS_ENGINE'});
+  expectEq(cm.LayerModel.Type.MAPS_ENGINE, layerModel.get('type'));
 
   layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_TRAFFIC'});
   expectEq(cm.LayerModel.Type.TRAFFIC, layerModel.get('type'));
@@ -176,9 +201,9 @@ LayerModelTest.prototype.newExternalMapsEngineLayerFromMapRoot = function() {
           'west': -4.0
         }
       },
-      'type': 'GOOGLE_MAP_DATA',
+      'type': 'GOOGLE_MAPS_ENGINE',
       'source': {
-        'google_map_data': {
+        'google_maps_engine': {
           'map_id': 'map_id',
 
           // NOTE(user): In practice, only key should be set. layer_id
@@ -192,7 +217,7 @@ LayerModelTest.prototype.newExternalMapsEngineLayerFromMapRoot = function() {
 
   var layerModel = cm.LayerModel.newFromMapRoot(maproot.layers[0]);
 
-  expectEq(cm.LayerModel.Type.MAP_DATA, layerModel.get('type'));
+  expectEq(cm.LayerModel.Type.MAPS_ENGINE, layerModel.get('type'));
   expectEq('layer_title', layerModel.get('title'));
   expectEq('map_id', layerModel.get('maps_engine_map_id'));
   expectEq('layer_id', layerModel.get('maps_engine_layer_id'));
@@ -207,13 +232,37 @@ LayerModelTest.prototype.handlesMissingMapsEngineLayerDescription = function() {
   var maproot = {
     'title': 'A map',
     'layers': [{
-      'type': 'GOOGLE_MAP_DATA'
+      'type': 'GOOGLE_MAPS_ENGINE'
     }]
   };
 
   var layerModel = cm.LayerModel.newFromMapRoot(maproot.layers[0]);
 
-  expectEq(cm.LayerModel.Type.MAP_DATA, layerModel.get('type'));
+  expectEq(cm.LayerModel.Type.MAPS_ENGINE, layerModel.get('type'));
+};
+
+/**
+ * Tests that the application interprets legacy maproot source field
+ * 'google_map_data' in the same way as 'google_maps_engine'.
+ */
+LayerModelTest.prototype.handlesLegacyMapsEngineMaprootField = function() {
+  var maproot = {
+    'layers': [{
+      'type': 'GOOGLE_MAP_DATA',
+      'source': {
+        'google_map_data': {
+          'map_id': 'map_id',
+          'layer_key': 'layer_key'
+        }
+      }
+    }]
+  };
+
+  var layerModel = cm.LayerModel.newFromMapRoot(maproot.layers[0]);
+
+  expectEq(cm.LayerModel.Type.MAPS_ENGINE, layerModel.get('type'));
+  expectEq('map_id', layerModel.get('maps_engine_map_id'));
+  expectEq('layer_key', layerModel.get('maps_engine_layer_key'));
 };
 
 /**
@@ -224,11 +273,11 @@ LayerModelTest.prototype.newFromMapRootFolders = function() {
   var json = {id: 'root', type: 'FOLDER', sublayers: [
     {id: 'sub0', type: 'KML'},
     {id: 'sub1', type: 'GEORSS'},
-    {id: 'sub2', type: 'GOOGLE_MAP_TILES'},
+    {id: 'sub2', type: 'TILE'},
     {id: 'sub3', type: 'FOLDER', sublayers: [
       {type: 'GOOGLE_FUSION_TABLES'},
       {type: 'GOOGLE_TRAFFIC'},
-      {type: 'GOOGLE_MAP_DATA'}
+      {type: 'GOOGLE_MAPS_ENGINE'}
      ]}
   ]};
   var layerModel = cm.LayerModel.newFromMapRoot(json);
@@ -399,7 +448,7 @@ LayerModelTest.prototype.testGetSourceAddress = function() {
   expectEq('KML:http://monkfish.com', layerModel.getSourceAddress());
 
   layerModel = cm.LayerModel.newFromMapRoot(MAPTILE_MAP_ROOT_JSON);
-  expectEq('GOOGLE_MAP_TILES:' +
+  expectEq('TILE:' +
            'http://mw1.google.com/mw-weather/radar/maptiles/index.js',
            layerModel.getSourceAddress());
 

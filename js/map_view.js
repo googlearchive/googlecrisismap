@@ -529,7 +529,7 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       });
       break;
 
-    case cm.LayerModel.Type.MAP_DATA:
+    case cm.LayerModel.Type.MAPS_ENGINE:
       var options = {
         'suppressInfoWindows': true  // we handle InfoWindows, not Maps API
       };

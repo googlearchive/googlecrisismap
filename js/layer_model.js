@@ -42,7 +42,7 @@ cm.LayerModel.Type = {
   GEORSS: 'GEORSS',
   TILE: 'TILE',
   FUSION: 'FUSION',
-  MAP_DATA: 'MAP_DATA',
+  MAPS_ENGINE: 'MAPS_ENGINE',
   TRAFFIC: 'TRAFFIC',
   TRANSIT: 'TRANSIT',
   WEATHER: 'WEATHER',
@@ -63,8 +63,10 @@ cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
   'KML': cm.LayerModel.Type.KML,
   'GEORSS': cm.LayerModel.Type.GEORSS,
   'GOOGLE_MAP_TILES': cm.LayerModel.Type.TILE,
+  'TILE': cm.LayerModel.Type.TILE,
   'GOOGLE_FUSION_TABLES': cm.LayerModel.Type.FUSION,
-  'GOOGLE_MAP_DATA': cm.LayerModel.Type.MAP_DATA,
+  'GOOGLE_MAP_DATA': cm.LayerModel.Type.MAPS_ENGINE,
+  'GOOGLE_MAPS_ENGINE': cm.LayerModel.Type.MAPS_ENGINE,
   'GOOGLE_TRAFFIC': cm.LayerModel.Type.TRAFFIC,
   'GOOGLE_TRANSIT': cm.LayerModel.Type.TRANSIT,
   'GOOGLE_WEATHER': cm.LayerModel.Type.WEATHER,
@@ -206,7 +208,7 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       model.set('url', georss['url']);
       break;
     case cm.LayerModel.Type.TILE:
-      var tile = source['google_map_tiles'] || {};
+      var tile = source['tile'] || source['google_map_tiles'] || {};
       model.set('url', tile['url']);
       model.set('url_is_tile_index', tile['url_is_tile_index']);
       model.set('tile_coordinate_type',
@@ -220,11 +222,12 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       model.set('ft_from', fusion['from']);
       model.set('ft_where', fusion['where']);
       break;
-    case cm.LayerModel.Type.MAP_DATA:
-      var map_data = source['google_map_data'] || {};
-      model.set('maps_engine_map_id', map_data['map_id']);
-      model.set('maps_engine_layer_id', map_data['layer_id']);
-      model.set('maps_engine_layer_key', map_data['layer_key']);
+    case cm.LayerModel.Type.MAPS_ENGINE:
+      var maps_engine = source['google_maps_engine'] ||
+          source['google_map_data'] || {};
+      model.set('maps_engine_map_id', maps_engine['map_id']);
+      model.set('maps_engine_layer_id', maps_engine['layer_id']);
+      model.set('maps_engine_layer_key', maps_engine['layer_key']);
 
       break;
     case cm.LayerModel.Type.WEATHER:
@@ -286,7 +289,7 @@ cm.LayerModel.prototype.toMapRoot = function() {
       source['georss'] = {'url': this.get('url')};
       break;
     case cm.LayerModel.Type.TILE:
-      source['google_map_tiles'] = {
+      source['tile'] = {
         'url': this.get('url'),
         'url_is_tile_index': this.get('url_is_tile_index'),
         'tile_coordinate_type':
@@ -301,8 +304,8 @@ cm.LayerModel.prototype.toMapRoot = function() {
         'where': this.get('ft_where')
       };
       break;
-    case cm.LayerModel.Type.MAP_DATA:
-      source['google_map_data'] = {
+    case cm.LayerModel.Type.MAPS_ENGINE:
+      source['google_maps_engine'] = {
         'layer_id': this.get('maps_engine_layer_id'),
         'layer_key': this.get('maps_engine_layer_key'),
         'map_id': this.get('maps_engine_map_id')

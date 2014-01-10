@@ -437,7 +437,7 @@ MapViewTest.prototype.addOverlayKmlWithoutUrl = function() {
 MapViewTest.prototype.addOverlayMapsEngineExternal = function() {
   this.addLayer_({
     'id': 'rockyroad',
-    'type': cm.LayerModel.Type.MAP_DATA,
+    'type': cm.LayerModel.Type.MAPS_ENGINE,
     'maps_engine_map_id': 'frotz',
     'maps_engine_layer_key': 'igram',
     'suppress_info_windows': true
@@ -462,7 +462,7 @@ MapViewTest.prototype.addOverlayMapsEngineExternal = function() {
 MapViewTest.prototype.addOverlayMapsEngineExternalLegacyIdScheme = function() {
   this.addLayer_({
     'id': 'rockyroad',
-    'type': cm.LayerModel.Type.MAP_DATA,
+    'type': cm.LayerModel.Type.MAPS_ENGINE,
     'maps_engine_map_id': 'frotz',
     'maps_engine_layer_id': 'word',
     'suppress_info_windows': true

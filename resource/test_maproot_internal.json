@@ -1,7 +1,7 @@
 {
   "id": "foo",
   "title": "Test Maproot Internal",
-  "description": "For internal testing of maps with maproot GoogleMapData layer types.",
+  "description": "For internal testing of maps with maproot GoogleMapsEngine layer types.",
   "viewport": {
     "lat_lon_alt_box": {
       "north": 38.905,
@@ -25,9 +25,9 @@
         "west": -83.700
       }
     },
-    "type": "GOOGLE_MAP_DATA",
+    "type": "GOOGLE_MAPS_ENGINE",
     "source": {
-      "google_map_data": {
+      "google_maps_engine": {
         "sub_type": "VECTOR",
         "tile_auth_token": {
           "token": "some_token"
@@ -53,9 +53,9 @@
         "west": -83.700
       }
     },
-    "type": "GOOGLE_MAP_DATA",
+    "type": "GOOGLE_MAPS_ENGINE",
     "source": {
-      "google_map_data": {
+      "google_maps_engine": {
         "sub_type": "IMAGE",
         "tile_auth_token": {
           "token": "1234"
