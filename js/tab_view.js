@@ -113,6 +113,17 @@ cm.TabView.prototype.setExpanded = function(expand) {
 };
 
 /**
+ * Return the tab item that has the given title, or null if there is none.
+ * @param {string} title The tab title.
+ * @return {?cm.TabItem} The tab item if it exists.
+ */
+cm.TabView.prototype.getTabItemByTitle = function(title) {
+  return (goog.array.find(this.tabItems_, function(tab, index, items) {
+    return tab.getTitle() === title;
+  }));
+};
+
+/**
  * Updates the content of the TabView based on the state of the TabBar. Used
  * as the handler for selection events from the TabBar.
  * @private
@@ -124,8 +135,8 @@ cm.TabView.prototype.handleTabSelected_ = function() {
   }
   this.selectedTabIndex_ = this.tabBar_.getSelectedTab();
   this.tabItems_[this.selectedTabIndex_].setSelected(true);
-  this.contentElem_.appendChild(
-      this.tabItems_[this.selectedTabIndex_].getContent());
+  cm.ui.append(this.contentElem_,
+               this.tabItems_[this.selectedTabIndex_].getContent());
   cm.events.emit(this, cm.events.TAB_SELECTION_CHANGED);
 };
 
@@ -226,7 +237,7 @@ cm.TabView.prototype.updateTabItem = function(tabItem) {
   if (tabIndex === this.selectedTabIndex_) {
     if (tabItem.getIsEnabled()) {
       cm.ui.clear(this.contentElem_);
-      this.contentElem_.appendChild(tabItem.getContent());
+      cm.ui.append(this.contentElem_, tabItem.getContent());
     } else {
       this.selectSomething_();
     }

@@ -35,26 +35,45 @@ TabPanelViewTest.prototype.createTabPanelView_ = function() {
   this.tabPanel_ = new cm.TabPanelView(
       cm.ui.document.body, this.parent_, this.mapDiv_, this.mapModel_,
       this.metadataModel_, this.appState_, this.below_, this.config_);
+  this.tabElements_ = allDescendantsOf(this.parent_, withClass('goog-tab'));
+  this.tabView_ = this.tabPanel_.tabView_;
+};
+
+/**
+ * Tests that the tab with the given name is present at the given
+ * index and returns the current tab content element.
+ * @param {string} tabName The expected tab name.
+ * @param {number} index The expected index.
+ * @param {boolean} isSelected Whether to expect that the tab is selected.
+ * @return {Element} The tab contentelement.
+ * @private
+ */
+TabPanelViewTest.prototype.expectTab_ = function(tabName, index,
+                                                 isSelected) {
+  expectThat(this.tabElements_[index], withText(hasSubstr(tabName)),
+             isSelected ? withClass('goog-tab-selected') :
+                 not(withClass('goog-tab-selected')));
+  return (findDescendantOf(this.parent_, withClass('cm-tab-content')));
 };
 
 TabPanelViewTest.prototype.testCreation = function() {
   this.createTabPanelView_();
-
   expectDescendantOf(this.parent_, withClass('goog-tab-bar'));
 
-  var allTabs = allDescendantsOf(this.parent_, withClass('goog-tab'));
-  expectThat(allTabs[0], withText(hasSubstr('About')));
-  // Test that the about tab is present and selected
-  expectDescendantOf(
-      this.parent_, withText(hasSubstr(this.mapModel_.get('title'))));
-  expectDescendantOf(
-      this.parent_,
-      withText(hasSubstr(this.mapModel_.get('description').toText())));
+  // Test that the 'About' tab is present and selected, and verify its content.
+  var aboutContent = this.expectTab_('About', 0, true);
+  expectDescendantOf(aboutContent,
+                     withText(hasSubstr(this.mapModel_.get('title'))));
+  expectDescendantOf(aboutContent,
+                     withText(hasSubstr(
+                         this.mapModel_.get('description').toText())));
+  this.expectTab_('Layers', 1, false);
 
-  expectThat(allTabs[1], withText(hasSubstr('Layers')));
-
-  // As the standard tab items are implemented, this test should grow to
-  // expect them.
+  // Select the 'Layers' tab and verify its content.
+  var layersTab = this.tabView_.getTabItemByTitle('Layers');
+  this.tabView_.selectTabItem(layersTab);
+  var layersContent = this.expectTab_('Layers', 1, true);
+  expectDescendantOf(layersContent, withClass('cm-panel-layers'));
 };
 
 /** Tests that the About panel is absent. */
@@ -120,4 +139,27 @@ TabPanelViewTest.prototype.testExpandCollapseBelow = function() {
 
   // Collapse again and verify theat the first-collapsed event doesn't fire.
   expectEq(1, numTimesFirstCollapsed);
+};
+
+/**
+ * Tests that the tab panel view listens for layer filter eventsn
+ * on the layers tab item.
+ */
+TabPanelViewTest.prototype.testLayerFilter = function() {
+  this.createTabPanelView_();
+  var layersTabItem = this.tabView_.getTabItemByTitle('Layers');
+
+  var query = '';
+  cm.events.listen(this.tabPanel_, cm.events.FILTER_QUERY_CHANGED,
+                   function(e) { query = e.query; });
+  cm.events.emit(layersTabItem, cm.events.FILTER_QUERY_CHANGED,
+                 {'query': 'a query'});
+  expectEq('a query', query);
+
+  var matches = ['layer1', 'layer2'];
+  cm.events.listen(this.tabPanel_, cm.events.FILTER_MATCHES_CHANGED,
+                   function(e) { matches = e.matches; });
+  cm.events.emit(layersTabItem, cm.events.FILTER_MATCHES_CHANGED,
+                 {'matches': ['layer3', 'layer4']});
+  expectThat(matches, elementsAre(['layer3', 'layer4']));
 };

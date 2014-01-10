@@ -163,19 +163,17 @@ LayersTabItemTest.prototype.testFilterLayers = function() {
       layersTab.getContent(), withClass(cm.css.LAYER_FILTER));
   var layerFilterInput = findDescendantOf(layerFilterDiv, isElement('input'));
 
-  // Test two-way binding: when appState changes, input box value changes.
+  // The first time the AppState query value changes, the text input value
+  // should change (so that on page load the query URL parameter is recognized).
+  expectEq('', layerFilterInput.value);
   this.appState_.setFilterQuery(query);
   expectEq(query, layerFilterInput.value);
 
-  // But only activates once since in practice, this should only happen on
-  // page load.
+  // Subsequent AppState query changes should not affect the text input value.
   this.appState_.setFilterQuery(newQuery);
   expectEq(query, layerFilterInput.value);
 
-  // Test that when the input box changes, the app state changes.
-  // However, since the Presenter acts as a proxy for the
-  // FILTER_QUERY_CHANGED event, we test that that event is fired on the
-  // panel view and trust the presenter to update the app state.
+  // An event should fire when the text input value changes.
   layerFilterInput.value = query;
   this.expectEvent(layersTab, cm.events.FILTER_QUERY_CHANGED, 1,
                    function(props) { return (query === props.query); });
@@ -183,7 +181,7 @@ LayersTabItemTest.prototype.testFilterLayers = function() {
 };
 
 /** Tests that the layer filter's presence matches its config setting. */
-LayersTabItemTest.prototype.testFilterLayers_notConfigured = function() {
+LayersTabItemTest.prototype.testFilterLayersNotConfigured = function() {
   this.config_ = {'enable_layer_filter': false};
   var layersTab = this.createLayersTabItem_();
   expectNoDescendantOf(layersTab.getContent(), withClass(cm.css.LAYER_FILTER));

@@ -435,7 +435,7 @@ html, body {
 .cm-layer-filter {
   margin: 12px;
 }
-.cm-frame.cm-panel-below .cm-layer-filter {
+.cm-frame.cm-touch .cm-layer-filter {
   display: none;
 }
 .cm-frame .cm-layer-filter input:hover,

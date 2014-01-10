@@ -255,6 +255,8 @@ cm.TabPanelView.prototype.createTabs_ = function() {
                     cm.events.ZOOM_TO_LAYER],
                    this);
   this.tabView_.appendTabItem(layersTab);
+  cm.events.forward(layersTab, cm.events.FILTER_QUERY_CHANGED, this);
+  cm.events.forward(layersTab, cm.events.FILTER_MATCHES_CHANGED, this);
 
   var legendTab = new cm.LegendTabItem(
       this.mapModel_, this.appState_, this.config_, this.metadataModel_);

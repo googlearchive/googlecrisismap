@@ -208,3 +208,10 @@ TabViewTest.prototype.testSelectedTabItem = function() {
   // takes long enough to provoke a timeout.
   expectTrue(tab === this.tabView_.selectedTabItem());
 };
+
+TabViewTest.prototype.testGetTabItemByTitle = function() {
+  this.initializeTabView_();
+  var tab = this.tabView_.getTabItemByTitle('Mock 0');
+  expectEq('Mock 0', tab.getTitle());
+  expectEq(null, this.tabView_.getTabItemByTitle('Nonexistent'));
+};
