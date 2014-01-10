@@ -186,11 +186,11 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      type: cm.editors.Type.MENU, choices: layerTypeChoices,
      conditions: {'type': isPlainLayer},
      tooltip: cm.MSG_LAYER_TYPE_TOOLTIP},
-    {key: 'url', label: cm.MSG_SOURCE_URL, type: cm.editors.Type.TEXT,
+    {key: 'url', label: cm.MSG_SOURCE_URL, type: cm.editors.Type.URL,
      conditions: {'type': usesUrlField},
      tooltip: cm.MSG_SOURCE_URL_TOOLTIP},
     {key: 'maps_engine_url', label: cm.MSG_SOURCE_URL,
-     type: cm.editors.Type.TEXT,
+     type: cm.editors.Type.URL,
      conditions: {'type':
                   isType(cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO)},
      tooltip: cm.MSG_MAPS_ENGINE_LITE_OR_PRO_URL_TOOLTIP},

@@ -1087,12 +1087,15 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
   position: relative;
 }
 .cm-editors > .cm-text-input-row > th,
-.cm-editors > .cm-text-editor > th {
+.cm-editors > .cm-text-editor > th,
+.cm-editors > .cm-url-input-row > th,
+.cm-editors > .cm-url-editor > th {
   vertical-align: top;
   padding-top: 12px; /* align label with content of text input field */
 }
 .cm-editors > .cm-text-input-row input[type='text'],
-.cm-editors > .cm-text-editor input[type='text'] {
+.cm-editors > .cm-text-editor input[type='text'],
+.cm-editors > .cm-url-editor input[type='text'] {
   width: 100%;
 }
 .cm-editors > .cm-textarea-row > th,

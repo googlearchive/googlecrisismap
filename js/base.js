@@ -633,6 +633,13 @@ cm.MSG_LAYER_TYPE_MAPS_ENGINE_LITE_OR_PRO = goog.getMsg(
 cm.MSG_SOURCE_URL = goog.getMsg('Source URL');
 
 /**
+ * @desc Error message shown when a user enters a URL that does not contain
+ *     a valid protocol such as http:// or https://.
+ */
+cm.MSG_INVALID_URL = goog.getMsg(
+    'Invalid URL - please include a protocol (e.g. http:// or https://)');
+
+/**
  * @desc Label for a checkbox that controls whether to show a link to
  *     download the data for this layer.
  */

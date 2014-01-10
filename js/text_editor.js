@@ -42,10 +42,20 @@ cm.TextEditor = function(parentElem, id, options) {
   // When the user makes an edit in the UI, update the MVCObject property.
   cm.events.listen(
       this.input_, ['change', 'input', 'keyup', 'cut', 'paste'], function() {
-    this.setValid(this.input_.value.replace(/^\s+|\s+$/g, ''));
+    this.validate(this.input_.value);
   }, this);
 };
 goog.inherits(cm.TextEditor, cm.Editor);
+
+/**
+ * Validates the given user-supplied value for submission.
+ * If acceptable, implementations must invoke this.setValid(...).
+ * If validation fails, implementations must invoke this.setInvalid(message).
+ * @param {string} value User-supplied value.
+ */
+cm.TextEditor.prototype.validate = function(value) {
+  this.setValid(value.replace(/^\s+|\s+$/g, ''));
+};
 
 /** @override */
 cm.TextEditor.prototype.updateUi = function(value) {

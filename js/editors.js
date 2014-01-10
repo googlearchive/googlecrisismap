@@ -23,6 +23,7 @@ goog.require('cm.MenuEditor');
 goog.require('cm.NumberEditor');
 goog.require('cm.RadioEditor');
 goog.require('cm.TextEditor');
+goog.require('cm.UrlEditor');
 goog.require('cm.WmsMenuEditor');
 goog.require('cm.ui');
 goog.require('goog.object');
@@ -47,6 +48,7 @@ cm.editors.Type = {
   NUMBER: 'NUMBER',
   RADIO: 'RADIO',
   TEXT: 'TEXT',
+  URL: 'URL',
   WMS_MENU: 'WMS_MENU'
 };
 
@@ -65,6 +67,7 @@ cm.editors.CONSTRUCTORS = goog.object.create(
   cm.editors.Type.NUMBER, cm.NumberEditor,
   cm.editors.Type.RADIO, cm.RadioEditor,
   cm.editors.Type.TEXT, cm.TextEditor,
+  cm.editors.Type.URL, cm.UrlEditor,
   cm.editors.Type.WMS_MENU, cm.WmsMenuEditor
 );
 
