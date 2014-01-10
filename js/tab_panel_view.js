@@ -82,14 +82,11 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
   this.detailsTab_ = null;
 
   /**
-   * Where the tab is positioned relative to the map. Placement below
-   * the map overrides left or right side placement.
+   * Where the tab is positioned relative to the map.
    * @type cm.TabPanelView.TabPosition
    * @private
    */
-  this.tabPosition_ = below ? cm.TabPanelView.TabPosition.BELOW :
-      (this.config_['panel_side'] === 'left') ?
-          cm.TabPanelView.TabPosition.LEFT : cm.TabPanelView.TabPosition.RIGHT;
+  this.tabPosition_;
 
   /**
    * Whether the panel is currently expanded.
@@ -106,10 +103,9 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
    */
   this.expandCollapseButton_;
 
-  goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_BELOW, below);
-
   this.createTabs_();
   this.createButtons_();
+  this.resize(below);
   this.render_();
 };
 
@@ -138,33 +134,61 @@ cm.TabPanelView.prototype.render_ = function() {
   cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED, function() {
     this.setExpanded_(true);
   }, this);
-
-  cm.events.listen(goog.global, 'resize', this.handleResize_, this);
 };
 
 /**
- * Handler for window resizing.
- * @private
+ * Update the tab panel UI; called by initialize.js on window resize.
+ * @param {boolean} below Whether the tab panel should be placed below
+ *     the map.
  */
-cm.TabPanelView.prototype.handleResize_ = function() {
-  // Relies on the panel element's height being set by the resizeTabPanel()
+cm.TabPanelView.prototype.resize = function(below) {
+  // Placement below the map overrides left or right side placement.
+  this.tabPosition_ = below ? cm.TabPanelView.TabPosition.BELOW :
+      (this.config_['panel_side'] === 'left') ?
+          cm.TabPanelView.TabPosition.LEFT : cm.TabPanelView.TabPosition.RIGHT;
+  goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_BELOW, below);
+
+  // This relies on the panel element's height being set by the resizeTabPanel()
   // function in initialize.js.
   this.tabView_.setHeight(this.parentElem_.offsetHeight);
+
+  this.updateExpandCollapseButton_(this.expanded_);
 };
 
 /**
  * Expand or collapse the tab panel.
- * @param {boolean} expand If true, expand the panel; otherwise
+ * @param {boolean} shouldExpand If true, expand the panel; otherwise
  *   collapse it.
  * @private
  */
-cm.TabPanelView.prototype.setExpanded_ = function(expand) {
-  if (expand === this.expanded_) {
+cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
+  if (shouldExpand === this.expanded_) {
     return;
   }
-  this.tabView_.setExpanded(expand);
-  goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_EXPANDED, expand);
+  this.tabView_.setExpanded(shouldExpand);
+  goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_EXPANDED,
+                          shouldExpand);
 
+  this.updateExpandCollapseButton_(shouldExpand);
+  this.expanded_ = shouldExpand;
+
+  // Trigger adjustments to the tab panel height in initialize.js
+  cm.events.emit(goog.global, 'resize');
+
+  // Resize the content in case the window changed size while the
+  // panel was collapsed. This relies on the panel element's height
+  // being set by the resizeTabPanel() function in initialize.js.
+  this.tabView_.setHeight(this.parentElem_.offsetHeight);
+};
+
+/**
+ * Toggle the chevron up/down depending on whether the tab panel is expanded
+ * and where it is positioned.
+ * @param {boolean} expand Whether or not the panel will be expanded
+ *   after the update.
+ * @private
+ */
+cm.TabPanelView.prototype.updateExpandCollapseButton_ = function(expand) {
   var from, to;
   if (this.tabPosition_ === cm.TabPanelView.TabPosition.BELOW) {
     from = expand ? cm.css.CHEVRON_UP : cm.css.CHEVRON_DOWN;
@@ -174,16 +198,7 @@ cm.TabPanelView.prototype.setExpanded_ = function(expand) {
     to = expand ? cm.css.CHEVRON_UP : cm.css.CHEVRON_DOWN;
   }
   goog.dom.classes.swap(this.expandCollapseButton_, from, to);
-  this.expanded_ = expand;
-
-  // Trigger adjustments to the tab panel height in initialize.js
-  cm.events.emit(goog.global, 'resize');
-
-  // Resize the content in case the window changed size while the
-  // panel was collapsed.
-  this.handleResize_();
 };
-
 
 /**
  * Sets the maximum height of the panel; currently a no-op.  Carried forward
