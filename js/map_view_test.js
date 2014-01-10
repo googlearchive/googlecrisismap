@@ -94,6 +94,7 @@ function MapViewTest() {
   this.map_.mapTypes = createMockInstance(google.maps.MapTypeRegistry);
 
   this.infoWindow_ = this.expectNew_('google.maps.InfoWindow');
+  this.hoop_ = this.expectNew_('google.maps.Marker', _);
 
   // Individual tests should modify this.layers_ to set up their expectations.
   this.layers_ = new google.maps.MVCArray();
@@ -156,6 +157,22 @@ MapViewTest.prototype.expectInfoWindowOpen_ = function(
     position: position, pixelOffset: pixelOffset, content: content
   });
   expectCall(this.infoWindow_.open)(this.map_);
+};
+
+MapViewTest.prototype.expectDetailsTab_ = function(
+    content, position, pixelOffset) {
+  // Simulate the conversion of a string of HTML into a DOM node.
+  var node = {nodeType: goog.dom.NodeType.ELEMENT,
+              innerHTML: content, childNodes: ['x']};
+  expectCall(goog.dom.htmlToDocumentFragment)(content)
+      .willOnce(returnWith(node));
+
+  // TODO(romano): test that details tab is added to tab bar
+  // and selected.
+
+  expectCall(this.hoop_.setIcon)(_);
+  expectCall(this.hoop_.setPosition)(position);
+  expectCall(this.hoop_.setMap)(this.map_);
 };
 
 /**
@@ -255,6 +272,17 @@ MapViewTest.prototype.previewView = function() {
 MapViewTest.prototype.mapClickClosesInfoWindow = function() {
   this.newMapView_(false);
   expectCall(this.infoWindow_.close)();
+  cm.events.emit(this.map_, 'click');
+};
+
+/** Tests that clicking on the map removes the hoop marker. */
+MapViewTest.prototype.mapClickRemovesHoop = function() {
+  this.expectedMapOptions_.scaleControl = false;
+  this.expectedMapOptions_.streetViewControl = false;
+  this.expectedMapOptions_.zoomControlOptions.style =
+      google.maps.ZoomControlStyle.SMALL;
+  this.newMapView_(false, {'use_tab_panel': true, 'use_details_tab': true});
+  expectCall(this.hoop_.setMap)(null);
   cm.events.emit(this.map_, 'click');
 };
 
@@ -707,7 +735,7 @@ MapViewTest.prototype.clickingOverlayOpensInfoWindow = function() {
  * Tests that clicking on an overlay with empty info window does not
  * open the info window.
  */
-MapViewTest.prototype.clickingEmptyOverlayDoesNotOpensInfoWindow = function() {
+MapViewTest.prototype.clickingEmptyOverlayDoesNotOpenInfoWindow = function() {
   this.addLayer_({id: 'bubble-gum', type: cm.LayerModel.Type.KML, url: 'url'});
   this.stubVisibleLayerIds_(['bubble-gum']);
 
@@ -727,6 +755,50 @@ MapViewTest.prototype.clickingEmptyOverlayDoesNotOpensInfoWindow = function() {
       .willOnce(returnWith({childNodes: []}));
   expectCall(this.infoWindow_.open)().times(0);
   cm.events.emit(overlay, 'click', kmlEvent);
+};
+
+/** Tests that clicking on an overlay places the hoop marker. */
+MapViewTest.prototype.clickingOverlayDisplaysDetailsTab = function() {
+  this.expectedMapOptions_.scaleControl = false;
+  this.expectedMapOptions_.streetViewControl = false;
+  this.expectedMapOptions_.zoomControlOptions.style =
+      google.maps.ZoomControlStyle.SMALL;
+  this.addLayer_({id: 'bubble-gum', type: cm.LayerModel.Type.KML, url: 'url'});
+  this.stubVisibleLayerIds_(['bubble-gum']);
+
+  var overlay = this.expectNew_('google.maps.KmlLayer', _);
+  stub(overlay.getMap)().is(null);
+  expectCall(overlay.setMap)(this.map_);
+  this.newMapView_(false, {'use_tab_panel': true, 'use_details_tab': true});
+  // The featureData is ob defined in KML events.
+  var kmlEvent = {
+    featureData: {infoWindowHtml: 'grossest ice cream ever'},
+    latLng: {},
+    pixelOffset: {}
+  };
+  this.expectDetailsTab_(kmlEvent.featureData.infoWindowHtml,
+                         kmlEvent.latLng, kmlEvent.pixelOffset);
+  cm.events.emit(overlay, 'click', kmlEvent);
+
+  // Make sure leading and trailing whitespace is trimmed
+  kmlEvent = {
+    featureData: {infoWindowHtml: '\r\n grossest ice cream ever\n\t  '},
+    latLng: {},
+    pixelOffset: {}
+  };
+  this.expectDetailsTab_('grossest ice cream ever',
+                         kmlEvent.latLng, kmlEvent.pixelOffset);
+  cm.events.emit(overlay, 'click', kmlEvent);
+
+  // featureData is NOT defined in Fusion Tables events.
+  var ftEvent = {
+    infoWindowHtml: '<u>grossest</u> ice cream ever',
+    latLng: {},
+    pixelOffset: {}
+  };
+  this.expectDetailsTab_(ftEvent.infoWindowHtml, ftEvent.latLng,
+                         ftEvent.pixelOffset);
+  cm.events.emit(overlay, 'click', ftEvent);
 };
 
 /**
