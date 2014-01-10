@@ -66,14 +66,6 @@ specific language governing permissions and limitations under the License.
   border-top: none;
 }
 
-.cm-footer-shadow .cm-tab-panel {
-  box-shadow: 0 0 6px rgba(0,0,0,0.4);
-}
-
-.cm-footer-shadow .cm-tab-bar-container {
-  border-top: none;
-}
-
 .cm-tab-bar-buttons {
   display: inline-block;
   float: right;
@@ -502,4 +494,3 @@ specific language governing permissions and limitations under the License.
 .cm-crowd .cm-button-area {
   margin: 12px 0 6px;
 }
-
