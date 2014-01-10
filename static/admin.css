@@ -339,3 +339,15 @@ h2 + h3 {
 .cm-perms-user-settings .cm-button-area {
   margin: 23px 0;
 }
+.cm-crowd-reports {
+  border-collapse: collapse;
+  font-size: 11px;
+  border-color: gray;
+}
+.cm-crowd-reports td {
+  padding: 4px;
+  border: 1px solid #ccc;
+}
+.cm-crowd-reports td.checkbox {
+  padding: 2px;
+}

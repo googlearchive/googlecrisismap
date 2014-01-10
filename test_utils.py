@@ -159,6 +159,16 @@ def CreateMap(maproot_json='{"title": "Foo"}', domain=DEFAULT_DOMAIN, **kwargs):
     return model.Map.Create(maproot_json, domain, **kwargs)
 
 
+def NewCrowdReport(source='http://source.com/',
+                   author='http://google.org/crisismap/.users/anonymous/12345',
+                   text='Crowd report text',
+                   topic_ids=('map1.gas', 'map1.water'),
+                   answer_ids=('map1.gas.q1.yes',), location=None):
+  effective = datetime.datetime.utcnow()
+  return model.CrowdReport.Put(source, author, effective, text,
+                               topic_ids, answer_ids, location)
+
+
 class BaseTest(unittest.TestCase):
   """Base Tests for appengine classes."""
 

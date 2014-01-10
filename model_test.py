@@ -79,6 +79,7 @@ class MapTests(test_utils.BaseTest):
       m = test_utils.CreateMap()
 
       permissions = {perms.Role.MAP_VIEWER: m.model.viewers,
+                     perms.Role.MAP_REVIEWER: m.model.reviewers,
                      perms.Role.MAP_EDITOR: m.model.editors,
                      perms.Role.MAP_OWNER: m.model.owners}
       initial_grantees = copy.deepcopy(permissions)
@@ -109,6 +110,7 @@ class MapTests(test_utils.BaseTest):
       m = test_utils.CreateMap()
 
       permissions = {perms.Role.MAP_VIEWER: m.model.viewers,
+                     perms.Role.MAP_REVIEWER: m.model.reviewers,
                      perms.Role.MAP_EDITOR: m.model.editors,
                      perms.Role.MAP_OWNER: m.model.owners}
       initial_grantees = copy.deepcopy(permissions)
@@ -135,6 +137,7 @@ class MapTests(test_utils.BaseTest):
     m = test_utils.CreateMap()
     self.assertEquals(['root'], m.model.owners)
     self.assertEquals([], m.model.editors)
+    self.assertEquals([], m.model.reviewers)
     self.assertEquals([], m.model.viewers)
     self.assertEquals(['xyz.com'], m.model.domains)
     self.assertEquals(m.model.world_readable, False)
@@ -147,24 +150,36 @@ class MapTests(test_utils.BaseTest):
     m = test_utils.CreateMap()
     self.assertEquals({'root', 'member'}, set(m.model.owners))
     self.assertEquals([], m.model.editors)
+    self.assertEquals([], m.model.reviewers)
     self.assertEquals([], m.model.viewers)
 
     domains.Domain.Create('xyz.com', initial_domain_role=perms.Role.MAP_EDITOR)
     m = test_utils.CreateMap()
     self.assertEquals(['root'], m.model.owners)
     self.assertEquals(['member'], m.model.editors)
+    self.assertEquals([], m.model.reviewers)
+    self.assertEquals([], m.model.viewers)
+
+    domains.Domain.Create('xyz.com',
+                          initial_domain_role=perms.Role.MAP_REVIEWER)
+    m = test_utils.CreateMap()
+    self.assertEquals(['root'], m.model.owners)
+    self.assertEquals([], m.model.editors)
+    self.assertEquals(['member'], m.model.reviewers)
     self.assertEquals([], m.model.viewers)
 
     domains.Domain.Create('xyz.com', initial_domain_role=perms.Role.MAP_VIEWER)
     m = test_utils.CreateMap()
     self.assertEquals(['root'], m.model.owners)
     self.assertEquals([], m.model.editors)
+    self.assertEquals([], m.model.reviewers)
     self.assertEquals(['member'], m.model.viewers)
 
     domains.Domain.Create('xyz.com', initial_domain_role=None)
     m = test_utils.CreateMap()
     self.assertEquals(['root'], m.model.owners)
     self.assertEquals([], m.model.editors)
+    self.assertEquals([], m.model.reviewers)
     self.assertEquals([], m.model.viewers)
 
   def testMapCache(self):
@@ -365,13 +380,15 @@ class CatalogEntryTests(test_utils.BaseTest):
 
   def testMapDelete(self):
     with test_utils.RootLogin():
-      m = test_utils.CreateMap(
-          owners=['owner'], editors=['editor'], viewers=['viewer'])
+      m = test_utils.CreateMap(owners=['owner'], editors=['editor'],
+                               reviewers=['reviewer'], viewers=['viewer'])
       model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
       map_id = m.id
 
     # Non-owners should not be able to delete the map.
     with test_utils.Login('editor'):
+      self.assertRaises(perms.AuthorizationError, model.Map.Get(map_id).Delete)
+    with test_utils.Login('reviewer'):
       self.assertRaises(perms.AuthorizationError, model.Map.Get(map_id).Delete)
     with test_utils.Login('viewer'):
       self.assertRaises(perms.AuthorizationError, model.Map.Get(map_id).Delete)
@@ -406,8 +423,8 @@ class CatalogEntryTests(test_utils.BaseTest):
 
   def testMapBlock(self):
     with test_utils.RootLogin():
-      m = test_utils.CreateMap(
-          owners=['owner'], editors=['editor'], viewers=['viewer'])
+      m = test_utils.CreateMap(owners=['owner'], editors=['editor'],
+                               reviewers=['reviewer'], viewers=['viewer'])
       model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
       map_id = m.id
 
@@ -483,14 +500,64 @@ class CatalogEntryTests(test_utils.BaseTest):
 class CrowdReportTests(test_utils.BaseTest):
   """Tests the CrowdReport class."""
 
-  def NewCrowdReport(
-      self, source='http://source.com/', author='author@example.com',
-      text='Crowd report text',
-      topic_ids=('VB5ItphmLJ8tLPax.gas', 'VB5ItphmLJ8tLPax.water'),
-      answer_ids=('VB5ltphmLJ8tLPax.gas.1.1',), location=None):
-    effective = datetime.datetime.utcnow()
-    return model.CrowdReport.Put(source, author, effective, text,
-                                 topic_ids, answer_ids, location)
+  def testGet(self):
+    """Tests CrowdReport.Get."""
+    cr1 = test_utils.NewCrowdReport(text='testGet')
+    self.assertEquals(None, model.CrowdReport.Get('unknown'))
+    self.assertEquals(cr1.text, model.CrowdReport.Get(cr1.key.string_id()).text)
+
+  def testGetForAuthor(self):
+    """Tests CrowdReport.GetForAuthor."""
+    self.SetTime(1)
+    cr1 = test_utils.NewCrowdReport(author='alpha@gmail.test', text='Report 1')
+    self.SetTime(2)
+    cr2 = test_utils.NewCrowdReport(author='alpha@gmail.test', text='Report 2')
+    self.SetTime(3)
+    cr3 = test_utils.NewCrowdReport(author='beta@gmail.test', text='Report 3')
+
+    # pylint: disable=g-long-lambda,invalid-name
+    GetTextsForAuthor = lambda *args, **kwargs: [
+        x.text for x in model.CrowdReport.GetForAuthor(*args, **kwargs)]
+
+    self.assertEquals([], GetTextsForAuthor(None, count=10))
+    self.assertEquals([], GetTextsForAuthor('unknown', count=10))
+    self.assertEquals([cr3.text],
+                      GetTextsForAuthor('beta@gmail.test', count=10))
+    self.assertEquals([cr2.text, cr1.text],
+                      GetTextsForAuthor('alpha@gmail.test', count=10))
+    self.assertEquals([cr2.text],
+                      GetTextsForAuthor('alpha@gmail.test', count=1))
+    self.assertEquals([cr1.text],
+                      GetTextsForAuthor('alpha@gmail.test', count=10, offset=1))
+
+  def testGetForTopics(self):
+    """Tests CrowdReport.GetForTopics."""
+    topic1 = 'VB5ItphmLJ8tLPax.gas'
+    topic2 = 'VB5ItphmLJ8tLPax.water'
+    topic3 = 'VB5ItphmLJ8tLPax.power'
+
+    self.SetTime(1)
+    cr1 = test_utils.NewCrowdReport(topic_ids=[topic1], text='Report 1')
+    self.SetTime(2)
+    cr2 = test_utils.NewCrowdReport(topic_ids=[topic1, topic2], text='Report 2')
+    self.SetTime(3)
+    cr3 = test_utils.NewCrowdReport(topic_ids=[topic2, topic3], text='Report 3')
+
+    # pylint: disable=g-long-lambda,invalid-name
+    GetTextsForTopics = lambda *args, **kwargs: [
+        x.text for x in model.CrowdReport.GetForTopics(*args, **kwargs)]
+
+    self.assertEquals([], GetTextsForTopics([], count=10))
+    self.assertEquals([], GetTextsForTopics(['unknown'], count=10))
+    self.assertEquals([cr3.text], GetTextsForTopics([topic3], count=10))
+    self.assertEquals([cr3.text, cr2.text],
+                      GetTextsForTopics([topic2], count=10))
+    self.assertEquals([cr3.text, cr2.text, cr1.text],
+                      GetTextsForTopics([topic1, topic3], count=10))
+    self.assertEquals([cr3.text],
+                      GetTextsForTopics([topic1, topic3], count=1))
+    self.assertEquals([cr2.text, cr1.text],
+                      GetTextsForTopics([topic1, topic3], count=10, offset=1))
 
   def testGetWithoutLocation(self):
     """Tests CrowdReport.GetWithoutLocation."""
@@ -499,47 +566,46 @@ class CrowdReportTests(test_utils.BaseTest):
       return now - datetime.timedelta(hours=hours, minutes=minutes)
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=1)))
-    self.NewCrowdReport(topic_ids=['foo'], location=ndb.GeoPt(37, -74))
+    test_utils.NewCrowdReport(topic_ids=['foo'], location=ndb.GeoPt(37, -74))
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=2)))
-    self.NewCrowdReport(topic_ids=['bar', 'baz'])
+    test_utils.NewCrowdReport(topic_ids=['bar', 'baz'])
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=3)))
-    cr3 = self.NewCrowdReport(topic_ids=['foo', 'bar'])
+    cr3 = test_utils.NewCrowdReport(topic_ids=['foo', 'bar'])
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=4)))
-    cr4 = self.NewCrowdReport(topic_ids=['foo', 'bar'])
+    cr4 = test_utils.NewCrowdReport(topic_ids=['foo', 'bar'])
 
     self.SetTime(utils.UtcToTimestamp(now))
 
+    # pylint: disable=g-long-lambda,invalid-name
+    GetEffectiveWithoutLocation = lambda *args, **kwargs: [
+        x.effective for x in model.CrowdReport.GetWithoutLocation(*args,
+                                                                  **kwargs)]
+
     # No topic_id match
-    self.assertEquals(
-        [],
-        [x.effective for x in model.CrowdReport.GetWithoutLocation(
-            topic_ids=['bez'], count=1, max_updated=None)])
+    self.assertEquals([],
+                      GetEffectiveWithoutLocation(topic_ids=['bez'], count=1,
+                                                  max_updated=None))
     # No match before max_updated
-    self.assertEquals(
-        [],
-        [x.effective for x in model.CrowdReport.GetWithoutLocation(
-            topic_ids=['foo'], count=1,
-            max_updated=TimeAgo(hours=5))])
+    self.assertEquals([],
+                      GetEffectiveWithoutLocation(topic_ids=['foo'], count=1,
+                                                  max_updated=TimeAgo(hours=5)))
 
     # 2 matches, ignore report with location, return count=1
-    self.assertEquals(
-        [cr3.effective],
-        [x.effective for x in model.CrowdReport.GetWithoutLocation(
-            topic_ids=['foo'], count=1, max_updated=None)])
+    self.assertEquals([cr3.effective],
+                      GetEffectiveWithoutLocation(topic_ids=['foo'], count=1,
+                                                  max_updated=None))
     # 2 matches
-    self.assertEquals(
-        [cr3.effective, cr4.effective],
-        [x.effective for x in model.CrowdReport.GetWithoutLocation(
-            topic_ids=['foo'], count=10, max_updated=None)])
+    self.assertEquals([cr3.effective, cr4.effective],
+                      GetEffectiveWithoutLocation(topic_ids=['foo'], count=10,
+                                                  max_updated=None))
     # 2 matches, one updated too late
     self.assertEquals(
         [cr4.effective],
-        [x.effective for x in model.CrowdReport.GetWithoutLocation(
-            topic_ids=['foo'], count=10,
-            max_updated=TimeAgo(hours=3, minutes=30))])
+        GetEffectiveWithoutLocation(topic_ids=['foo'], count=10,
+                                    max_updated=TimeAgo(hours=3, minutes=30)))
 
   def testGetByLocation(self):
     """Tests CrowdReport.GetByLocation."""
@@ -548,77 +614,76 @@ class CrowdReportTests(test_utils.BaseTest):
       return now - datetime.timedelta(hours=hours, minutes=minutes)
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=1)))
-    self.NewCrowdReport(topic_ids=['foo'])
+    test_utils.NewCrowdReport(topic_ids=['foo'])
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=2)))
-    cr2 = self.NewCrowdReport(topic_ids=['bar', 'baz'],
-                              location=ndb.GeoPt(37, -74))
+    cr2 = test_utils.NewCrowdReport(topic_ids=['bar', 'baz'],
+                                    location=ndb.GeoPt(37, -74))
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=3)))
-    cr3 = self.NewCrowdReport(topic_ids=['foo', 'bar'],
-                              location=ndb.GeoPt(37, -74))
+    cr3 = test_utils.NewCrowdReport(topic_ids=['foo', 'bar'],
+                                    location=ndb.GeoPt(37, -74))
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=4)))
-    cr4 = self.NewCrowdReport(topic_ids=['foo', 'bar'],
-                              location=ndb.GeoPt(37.001, -74))  # 0.001 ~= 111m
+    cr4 = test_utils.NewCrowdReport(topic_ids=['foo', 'bar'],
+                                    # 0.001 ~= 111m
+                                    location=ndb.GeoPt(37.001, -74))
 
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=5)))
-    cr5 = self.NewCrowdReport(topic_ids=['foo', 'bez'],
-                              location=ndb.GeoPt(37.1, -74))  # 0.1 ~= 11km
+    cr5 = test_utils.NewCrowdReport(topic_ids=['foo', 'bez'],
+                                    # 0.1 ~= 11km
+                                    location=ndb.GeoPt(37.1, -74))
 
     self.SetTime(utils.UtcToTimestamp(now))
 
+    # pylint: disable=g-long-lambda,invalid-name
+    GetEffectiveByLocation = lambda *args, **kwargs: [
+        x.effective for x in model.CrowdReport.GetByLocation(*args, **kwargs)]
+
     # No topic_id match
-    self.assertEquals(
-        [],
-        [x.effective for x in model.CrowdReport.GetByLocation(
-            center=ndb.GeoPt(37, -74), topic_radii={'unk': 1000}, count=1,
-            max_updated=None)])
+    self.assertEquals([],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                             topic_radii={'unk': 1000}, count=1,
+                                             max_updated=None))
     # No location match
-    self.assertEquals(
-        [],
-        [x.effective for x in model.CrowdReport.GetByLocation(
-            center=ndb.GeoPt(37.2, -74), topic_radii={'bez': 1000}, count=1,
-            max_updated=None)])
+    self.assertEquals([],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37.2, -74),
+                                             topic_radii={'bez': 1000}, count=1,
+                                             max_updated=None))
     # No match before max_updated
-    self.assertEquals(
-        [],
-        [x.effective for x in model.CrowdReport.GetByLocation(
-            center=ndb.GeoPt(37, -74), topic_radii={'bez': 1000}, count=1,
-            max_updated=TimeAgo(hours=6))])
+    self.assertEquals([],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                             topic_radii={'bez': 1000}, count=1,
+                                             max_updated=TimeAgo(hours=6)))
 
     # 2 matches, ignore report with no location, return count=1
-    self.assertEquals(
-        [cr2.effective],
-        [x.effective for x in model.CrowdReport.GetByLocation(
-            center=ndb.GeoPt(37, -74), topic_radii={'bar': 10}, count=1,
-            max_updated=None)])
+    self.assertEquals([cr2.effective],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                             topic_radii={'bar': 10}, count=1,
+                                             max_updated=None))
     # 2 matches with small search radius
-    self.assertEquals(
-        [cr2.effective, cr3.effective],
-        [x.effective for x in model.CrowdReport.GetByLocation(
-            center=ndb.GeoPt(37, -74), topic_radii={'bar': 10},
-            max_updated=None)])
+    self.assertEquals([cr2.effective, cr3.effective],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                             topic_radii={'bar': 10},
+                                             max_updated=None))
     # 3 matches with expanded search radius
-    self.assertEquals(
-        [cr2.effective, cr3.effective, cr4.effective],
-        [x.effective for x in model.CrowdReport.GetByLocation(
-            center=ndb.GeoPt(37, -74), topic_radii={'bar': 200},
-            max_updated=None)])
+    self.assertEquals([cr2.effective, cr3.effective, cr4.effective],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                             topic_radii={'bar': 200},
+                                             max_updated=None))
     # 3 matches with multiple topics
     self.assertEquals(
         [cr3.effective, cr4.effective, cr5.effective],
-        [x.effective for x in model.CrowdReport.GetByLocation(
-            center=ndb.GeoPt(37, -74),
-            topic_radii={'foo': 200, 'bez': 12000},
-            max_updated=None)])
+        GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                               topic_radii={'foo': 200, 'bez': 12000},
+                               max_updated=None))
+
     # Limit to oldest 2 with max_updated
     self.assertEquals(
         [cr4.effective, cr5.effective],
-        [x.effective for x in model.CrowdReport.GetByLocation(
-            center=ndb.GeoPt(37, -74),
-            topic_radii={'bar': 200, 'bez': 12000},
-            max_updated=TimeAgo(hours=3, minutes=30))])
+        GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                               topic_radii={'bar': 200, 'bez': 12000},
+                               max_updated=TimeAgo(hours=3, minutes=30)))
 
 
 if __name__ == '__main__':

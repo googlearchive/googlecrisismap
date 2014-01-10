@@ -29,12 +29,15 @@ NO_PERMISSIONS = 'NO_PERMISSIONS'
 INITIAL_DOMAIN_ROLE_CHOICES = (
     (NO_PERMISSIONS, 'Have no access to the map'),
     (perms.Role.MAP_VIEWER, 'Can view the map'),
-    (perms.Role.MAP_EDITOR, 'Can view and edit the map'),
-    (perms.Role.MAP_OWNER, 'Can view, edit, and delete the map'),
+    (perms.Role.MAP_REVIEWER, 'Can view and review reports for the map'),
+    (perms.Role.MAP_EDITOR, 'Can view, edit and review reports for the map'),
+    (perms.Role.MAP_OWNER,
+     'Can view, edit, review reports, and delete the map'),
 )
 
 DOMAIN_PERMISSION_CHOICES = (
     (perms.Role.MAP_CREATOR, 'Can create maps'),
+    (perms.Role.DOMAIN_REVIEWER, 'Can review crowd reports for domain'),
     (perms.Role.CATALOG_EDITOR, 'Can publish maps'),
     (perms.Role.DOMAIN_ADMIN, 'Can manage domain'),
 )

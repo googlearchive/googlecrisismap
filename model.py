@@ -99,6 +99,9 @@ class MapModel(db.Model):
   # User IDs of users who can edit this map.
   editors = db.StringListProperty()
 
+  # User IDs of users who can review reports for this map.
+  reviewers = db.StringListProperty()
+
   # User IDs of users who can view the current version of this map.
   viewers = db.StringListProperty()
 
@@ -461,7 +464,8 @@ class Map(object):
   for x in ['created', 'creator_uid', 'updated', 'updater_uid',
             'blocked', 'blocker_uid', 'deleted', 'deleter_uid',
             'title', 'description', 'current_version', 'world_readable',
-            'owners', 'editors', 'viewers', 'domains', 'domain_role']:
+            'owners', 'editors', 'reviewers', 'viewers', 'domains',
+            'domain_role']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
 
   # Handy access to the user profiles associated with user IDs.
@@ -523,8 +527,8 @@ class Map(object):
     return model and model.deleted != NEVER and Map(model)
 
   @staticmethod
-  def Create(maproot_json, domain, owners=None, editors=None, viewers=None,
-             world_readable=False):
+  def Create(maproot_json, domain, owners=None, editors=None, reviewers=None,
+             viewers=None, world_readable=False):
     """Stores a new map with the given properties and MapRoot JSON content."""
     # maproot_json must be syntactically valid JSON, but otherwise any JSON
     # object is allowed; we don't check for MapRoot validity here.
@@ -541,6 +545,8 @@ class Map(object):
       owners = [users.GetCurrent().id]
     if editors is None:
       editors = []
+    if reviewers is None:
+      reviewers = []
     if viewers is None:
       viewers = []
     if domain.initial_domain_role:
@@ -549,6 +555,8 @@ class Map(object):
         owners = list(set(owners) | domain_subjects)
       elif domain.initial_domain_role == perms.Role.MAP_EDITOR:
         editors = list(set(editors) | domain_subjects)
+      elif domain.initial_domain_role == perms.Role.MAP_REVIEWER:
+        reviewers = list(set(reviewers) | domain_subjects)
       elif domain.initial_domain_role == perms.Role.MAP_VIEWER:
         viewers = list(set(viewers) | domain_subjects)
 
@@ -559,8 +567,9 @@ class Map(object):
         key_name=base64.urlsafe_b64encode(
             ''.join(chr(random.randrange(256)) for i in xrange(12))),
         created=datetime.datetime.utcnow(), creator_uid=users.GetCurrent().id,
-        owners=owners, editors=editors, viewers=viewers, domains=[domain.name],
-        domain_role=domain.initial_domain_role, world_readable=world_readable))
+        owners=owners, editors=editors, reviewers=reviewers, viewers=viewers,
+        domains=[domain.name], domain_role=domain.initial_domain_role,
+        world_readable=world_readable))
     map_object.PutNewVersion(maproot_json)  # also puts the MapModel
     return map_object
 
@@ -681,6 +690,8 @@ class Map(object):
     # the role is not editor, viewer, or owner.
     if role == perms.Role.MAP_VIEWER and uid in self.model.viewers:
       self.model.viewers.remove(uid)
+    if role == perms.Role.MAP_REVIEWER and uid in self.model.reviewers:
+      self.model.reviewers.remove(uid)
     elif role == perms.Role.MAP_EDITOR and uid in self.model.editors:
       self.model.editors.remove(uid)
     elif role == perms.Role.MAP_OWNER and uid in self.model.owners:
@@ -693,12 +704,14 @@ class Map(object):
     # their former permission level is revoked.
     # Does nothing if role is not in permissions.
     self.AssertAccess(perms.Role.MAP_OWNER)
-    permissions = [
-        perms.Role.MAP_VIEWER, perms.Role.MAP_EDITOR, perms.Role.MAP_OWNER]
+    permissions = [perms.Role.MAP_VIEWER, perms.Role.MAP_REVIEWER,
+                   perms.Role.MAP_EDITOR, perms.Role.MAP_OWNER]
     if role not in permissions:
       return
     elif role == perms.Role.MAP_VIEWER and uid not in self.model.viewers:
       self.model.viewers.append(uid)
+    elif role == perms.Role.MAP_REVIEWER and uid not in self.model.reviewers:
+      self.model.reviewers.append(uid)
     elif role == perms.Role.MAP_EDITOR and uid not in self.model.editors:
       self.model.editors.append(uid)
     elif role == perms.Role.MAP_OWNER and uid not in self.model.owners:
@@ -730,8 +743,9 @@ class EmptyMap(Map):
 
   def __init__(self):
     Map.__init__(self, MapModel(
-        key_name='0', owners=[], editors=[], viewers=[], domains=['gmail.com'],
-        world_readable=True, title=self.TITLE, description=self.DESCRIPTION))
+        key_name='0', owners=[], editors=[], reviewers=[], viewers=[],
+        domains=['gmail.com'], world_readable=True, title=self.TITLE,
+        description=self.DESCRIPTION))
 
   def GetCurrent(self):
     key = db.Key.from_path('MapModel', '0', 'MapVersionModel', 1)
@@ -842,6 +856,60 @@ class CrowdReport(utils.Struct):
     """
     unique_int_id, _ = _CrowdReportModel.allocate_ids(1)
     return source.rstrip('/') + '/.reports/' + str(unique_int_id)
+
+  @staticmethod
+  def Get(report_id):
+    """Gets the report with the given report_id.
+
+    Args:
+      report_id: The key().string_id() of the _CrowdReportModel to retrieve
+
+    Returns:
+      A struct representing the CrowdReport or None if no such report exists
+      for the report_id.
+    """
+    report = _CrowdReportModel.get_by_id(report_id)
+    return report and utils.Struct.FromModel(report) or None
+
+  @staticmethod
+  def GetForAuthor(author, count, offset=0):
+    """Gets reports with the given author.
+
+    Args:
+      author: A string matching _CrowdReportModel.author
+      count: The maximum number of reports to retrieve.
+      offset: The number of reports to skip, for paging cases.
+
+    Yields:
+      The 'count' most recently updated CrowdReport objects, in order by
+      decreasing update time, that have the given author.
+    """
+    if not author:
+      return
+    query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
+    query = query.filter(_CrowdReportModel.author == author)
+    for report in query.fetch(count, offset=offset):
+      yield utils.Struct.FromModel(report)
+
+  @staticmethod
+  def GetForTopics(topic_ids, count, offset=0):
+    """Gets reports with any of the given topic_ids.
+
+    Args:
+      topic_ids: A list of strings in the form map_id + '.' + topic_id.
+      count: The maximum number of reports to retrieve.
+      offset: The number of reports to skip, for paging cases.
+
+    Yields:
+      The 'count' most recently updated CrowdReport objects, in order by
+      decreasing update time, that have any of the given topic_ids.
+    """
+    if not topic_ids:
+      return
+    query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
+    query = query.filter(_CrowdReportModel.topic_ids.IN(topic_ids))
+    for report in query.fetch(count, offset=offset):
+      yield utils.Struct.FromModel(report)
 
   @staticmethod
   def GetWithoutLocation(topic_ids, count, max_updated=None):

@@ -32,10 +32,12 @@ class AdminDomainTest(test_utils.BaseTest):
     super(AdminDomainTest, self).setUp()
     test_utils.SetupUser(test_utils.Login('manager'))
     test_utils.SetupUser(test_utils.DomainLogin('insider', 'xyz.com'))
+    test_utils.SetupUser(test_utils.DomainLogin('reviewer', 'xyz.com'))
     test_utils.SetupUser(test_utils.DomainLogin('outsider', 'not-xyz.com'))
     # TODO(kpy): Consider moving this setup into the tests that use it.
     perms.Grant('xyz.com', perms.Role.MAP_CREATOR, 'xyz.com')
     perms.Grant('manager', perms.Role.DOMAIN_ADMIN, 'xyz.com')
+    perms.Grant('reviewer', perms.Role.DOMAIN_REVIEWER, 'xyz.com')
     perms.Grant('insider', perms.Role.CATALOG_EDITOR, 'xyz.com')
     perms.Grant('outsider', perms.Role.MAP_CREATOR, 'xyz.com')
 
@@ -263,10 +265,14 @@ class AdminDomainTest(test_utils.BaseTest):
     # User 2 is a map creator at xyz.com, despite belonging to abc.com
     admin.SetRolesForDomain(
         {'insider': {perms.Role.MAP_CREATOR}}, 'xyz.com')
+    # User 3 is a map reviewer at xyz.com
+    admin.SetRolesForDomain(
+        {'reviewer': {perms.Role.DOMAIN_REVIEWER}}, 'xyz.com')
 
     self.assertEquals(
         {'xyz.com': {perms.Role.MAP_CREATOR},
          'manager': {perms.Role.DOMAIN_ADMIN, perms.Role.CATALOG_EDITOR},
+         'reviewer': {perms.Role.DOMAIN_REVIEWER},
          'insider': {perms.Role.MAP_CREATOR},
          'outsider': {perms.Role.MAP_CREATOR}},
         perms.GetSubjectsForTarget('xyz.com'))
@@ -275,6 +281,7 @@ class AdminDomainTest(test_utils.BaseTest):
         {'manager': {perms.Role.CATALOG_EDITOR}}, 'xyz.com')
     self.assertEquals({'xyz.com': {perms.Role.MAP_CREATOR},
                        'manager': {perms.Role.CATALOG_EDITOR},
+                       'reviewer': {perms.Role.DOMAIN_REVIEWER},
                        'insider': {perms.Role.MAP_CREATOR},
                        'outsider': {perms.Role.MAP_CREATOR}},
                       perms.GetSubjectsForTarget('xyz.com'))

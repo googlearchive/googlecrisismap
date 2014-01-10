@@ -61,10 +61,12 @@ Role = utils.Struct(
     CATALOG_EDITOR='CATALOG_EDITOR',  # can edit the catalog for a domain
     DOMAIN_ADMIN='DOMAIN_ADMIN',  # can grant permissions for the domain
     MAP_CREATOR='MAP_CREATOR',  # can create new maps
+    DOMAIN_REVIEWER='DOMAIN_REVIEWER',  # can review crowd reports in the domain
 
     # Map-specific roles
     MAP_OWNER='MAP_OWNER',  # can change permissions for a map
     MAP_EDITOR='MAP_EDITOR',  # can save new versions of a map
+    MAP_REVIEWER='MAP_REVIEWER',  # can review reports for a map
     MAP_VIEWER='MAP_VIEWER',  # can view current version of a map
 )
 
@@ -220,6 +222,13 @@ class AccessPolicy(object):
     return user and (_ExistsForUser(user, Role.DOMAIN_ADMIN, domain) or
                      self.HasRoleAdmin(user))
 
+  def HasRoleDomainReviewer(self, user, domain):
+    """Returns True if the user should get DOMAIN_REVIEWER access."""
+    # Users get domain administration access if they have domain administrator
+    # permission to the domain, or if they have global admin access.
+    return user and (_ExistsForUser(user, Role.DOMAIN_REVIEWER, domain) or
+                     self.HasRoleAdmin(user))
+
   def HasRoleCatalogEditor(self, user, domain):
     """Returns True if a user should get CATALOG_EDITOR access for a domain."""
     # Users get catalog editor access if they have catalog editor permission to
@@ -259,6 +268,11 @@ class AccessPolicy(object):
     if role == Role.MAP_EDITOR:
       return False
 
+    if domain_role == Role.MAP_REVIEWER or user.id in map_object.reviewers:
+      return True
+    if role == Role.MAP_REVIEWER:
+      return False
+
     if domain_role == Role.MAP_VIEWER or user.id in map_object.viewers:
       return True
     return False
@@ -279,6 +293,15 @@ class AccessPolicy(object):
     return (self._HasMapPermission(user, Role.MAP_EDITOR, map_object) or
             self.HasRoleMapOwner(user, map_object))
 
+  def HasRoleMapReviewer(self, user, map_object):
+    """Returns True if the user has MAP_REVIEWER access to a given map."""
+    # Users get reviewer access if they are in the reviewers list for the map,
+    # if their domain is a reviewer of the map, if they have domain reviewer
+    # access to all maps, or if they have editor access.
+    return (self._HasMapPermission(user, Role.MAP_REVIEWER, map_object) or
+            self.HasRoleDomainReviewer(user, map_object.domains[0]) or
+            self.HasRoleMapEditor(user, map_object))
+
   def HasRoleMapViewer(self, user, map_object):
     """Returns True if the user has MAP_VIEWER access to a given map."""
     # Users get viewer access if the map is world-readable, if they are in the
@@ -291,7 +314,8 @@ class AccessPolicy(object):
 def GetAccessibleDomains(user, role):
   """Gets the set of domains for which the user has the specified access."""
   # Ordered by increasing strength: stronger roles implicitly grant weaker ones.
-  DOMAIN_ROLES = [Role.MAP_CREATOR, Role.CATALOG_EDITOR, Role.DOMAIN_ADMIN]
+  DOMAIN_ROLES = [Role.DOMAIN_REVIEWER, Role.MAP_CREATOR, Role.CATALOG_EDITOR,
+                  Role.DOMAIN_ADMIN]
   if role not in DOMAIN_ROLES:
     return set()
   # This set includes the desired role and all stronger roles.
@@ -323,7 +347,8 @@ def CheckAccess(role, target=None, user=None, policy=None):
 
   def RequireTargetClass(required_cls, cls_desc):
     if not isinstance(target, required_cls):
-      raise TypeError('For role %r, target must be a %s' % (role, cls_desc))
+      raise TypeError('For role %r, target %r must be a %s' %
+                      (role, target, cls_desc))
 
   if role not in Role:
     raise ValueError('Invalid role %r' % role)
@@ -341,6 +366,9 @@ def CheckAccess(role, target=None, user=None, policy=None):
   if role == Role.MAP_CREATOR:
     RequireTargetClass(basestring, 'string')
     return policy.HasRoleMapCreator(user, target)
+  if role == Role.DOMAIN_REVIEWER:
+    RequireTargetClass(basestring, 'string')
+    return policy.HasRoleDomainReviewer(user, target)
   if role == Role.DOMAIN_ADMIN:
     RequireTargetClass(basestring, 'string')
     return policy.HasRoleDomainAdmin(user, target)
@@ -350,6 +378,8 @@ def CheckAccess(role, target=None, user=None, policy=None):
     raise TypeError('For role %r, target must be a Map' % role)
   if role == Role.MAP_OWNER:
     return policy.HasRoleMapOwner(user, target)
+  if role == Role.MAP_REVIEWER:
+    return policy.HasRoleMapReviewer(user, target)
   if role == Role.MAP_EDITOR:
     return policy.HasRoleMapEditor(user, target)
   if role == Role.MAP_VIEWER:

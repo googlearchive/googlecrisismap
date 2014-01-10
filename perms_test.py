@@ -21,7 +21,7 @@ import test_utils
 def GetRolesForMap(map_object):
   """Gets the set of all roles that the current user has for a MapModel."""
   map_roles = set(perms.Role) - set(
-      ['CATALOG_EDITOR', 'MAP_CREATOR', 'DOMAIN_ADMIN'])
+      ['CATALOG_EDITOR', 'MAP_CREATOR', 'DOMAIN_ADMIN', 'DOMAIN_REVIEWER'])
   return {role for role in map_roles
           if perms.CheckAccess(role, target=map_object)}
 
@@ -31,12 +31,14 @@ class PermsTests(test_utils.BaseTest):
   def testUserRoles(self):
     """Verifies that access permissions restrict user actions correctly."""
     m = test_utils.CreateMap(
-        owners=['owner'], editors=['editor'], viewers=['viewer'])
+        owners=['owner'], editors=['editor'], reviewers=['reviewer'],
+        viewers=['viewer'])
 
     with test_utils.RootLogin():
       # Check admin roles.
-      self.assertEquals({'ADMIN', 'MAP_OWNER', 'MAP_EDITOR', 'MAP_VIEWER'},
-                        GetRolesForMap(m))
+      self.assertEquals(
+          {'ADMIN', 'MAP_OWNER', 'MAP_EDITOR', 'MAP_REVIEWER', 'MAP_VIEWER'},
+          GetRolesForMap(m))
 
       # Verify an admin can perform all operations.
       version_id = m.PutNewVersion('{}')
@@ -47,8 +49,9 @@ class PermsTests(test_utils.BaseTest):
 
     with test_utils.Login('owner'):
       # Check owner roles.
-      self.assertEquals({'MAP_OWNER', 'MAP_EDITOR', 'MAP_VIEWER'},
-                        GetRolesForMap(m))
+      self.assertEquals(
+          {'MAP_OWNER', 'MAP_EDITOR', 'MAP_REVIEWER', 'MAP_VIEWER'},
+          GetRolesForMap(m))
 
       # Verify the owner can perform expected operations.
       self.assertRaises(
@@ -61,7 +64,8 @@ class PermsTests(test_utils.BaseTest):
 
     with test_utils.Login('editor'):
       # Check editor roles.
-      self.assertEquals({'MAP_EDITOR', 'MAP_VIEWER'}, GetRolesForMap(m))
+      self.assertEquals({'MAP_EDITOR', 'MAP_REVIEWER', 'MAP_VIEWER'},
+                        GetRolesForMap(m))
 
       # Verify the editor can perform expected operations.
       self.assertRaises(
@@ -71,6 +75,19 @@ class PermsTests(test_utils.BaseTest):
       m.GetCurrent()
       m.GetVersions()
       m.GetVersion(version_id)
+
+    with test_utils.Login('reviewer'):
+      # Check reviewer roles.
+      self.assertEquals({'MAP_REVIEWER', 'MAP_VIEWER'}, GetRolesForMap(m))
+
+      # Verify the reviewer can perform expected operations.
+      self.assertRaises(
+          perms.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
+      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, '{}')
+      m.GetCurrent()
+      m.GetCurrentJson()
+      self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
+      self.assertRaises(perms.AuthorizationError, m.GetVersions)
 
     with test_utils.Login('viewer'):
       # Check viewer roles.
@@ -118,11 +135,16 @@ class PermsTests(test_utils.BaseTest):
 
     # Verify that a user in foo.com gets the domain role for foo.com.
     with test_utils.DomainLogin('insider', 'foo.com'):
-      self.assertEquals({'MAP_OWNER', 'MAP_EDITOR', 'MAP_VIEWER'},
-                        GetRolesForMap(m))
+      self.assertEquals(
+          {'MAP_OWNER', 'MAP_EDITOR', 'MAP_REVIEWER', 'MAP_VIEWER'},
+          GetRolesForMap(m))
 
       m.model.domain_role = perms.Role.MAP_EDITOR
-      self.assertEquals({'MAP_EDITOR', 'MAP_VIEWER'}, GetRolesForMap(m))
+      self.assertEquals({'MAP_EDITOR', 'MAP_REVIEWER', 'MAP_VIEWER'},
+                        GetRolesForMap(m))
+
+      m.model.domain_role = perms.Role.MAP_REVIEWER
+      self.assertEquals({'MAP_REVIEWER', 'MAP_VIEWER'}, GetRolesForMap(m))
 
       m.model.domain_role = perms.Role.MAP_VIEWER
       self.assertEquals({'MAP_VIEWER'}, GetRolesForMap(m))
@@ -168,6 +190,22 @@ class PermsTests(test_utils.BaseTest):
     with test_utils.RootLogin():
       self.assertTrue(perms.CheckAccess(perms.Role.DOMAIN_ADMIN, 'xyz.com'))
 
+  def testDomainReviewerRole(self):
+    with test_utils.RootLogin():
+      perms.Grant('xyz.com', perms.Role.DOMAIN_REVIEWER, 'xyz.com')
+      perms.Grant('outside_friend', perms.Role.DOMAIN_REVIEWER, 'xyz.com')
+
+    with test_utils.DomainLogin('insider', 'xyz.com'):
+      self.assertTrue(perms.CheckAccess(perms.Role.DOMAIN_REVIEWER, 'xyz.com'))
+    with test_utils.DomainLogin('outside_friend', 'not-xyz.com'):
+      self.assertTrue(perms.CheckAccess(perms.Role.DOMAIN_REVIEWER, 'xyz.com'))
+    with test_utils.Login('stranger'):
+      self.assertFalse(perms.CheckAccess(perms.Role.DOMAIN_REVIEWER, 'xyz.com'))
+    with test_utils.DomainLogin('stranger_with_ga_domain', 'not-xyz.com'):
+      self.assertFalse(perms.CheckAccess(perms.Role.DOMAIN_REVIEWER, 'xyz.com'))
+    with test_utils.RootLogin():
+      self.assertTrue(perms.CheckAccess(perms.Role.DOMAIN_REVIEWER, 'xyz.com'))
+
   def testCheckAccessRaisesOnBadTarget(self):
     m = test_utils.CreateMap()
 
@@ -179,7 +217,7 @@ class PermsTests(test_utils.BaseTest):
 
     # Roles that require a map as a target
     for role in (perms.Role.MAP_OWNER, perms.Role.MAP_EDITOR,
-                 perms.Role.MAP_VIEWER):
+                 perms.Role.MAP_REVIEWER, perms.Role.MAP_VIEWER):
       # Test both no target and a target of the wrong class
       self.assertRaises(TypeError, perms.CheckAccess, role)
       self.assertRaises(TypeError, perms.CheckAccess, role, target='xyz.com')
@@ -204,6 +242,7 @@ class PermsTests(test_utils.BaseTest):
     privileged = test_utils.SetupUser(test_utils.Login('privileged'))
     outsider = test_utils.SetupUser(test_utils.Login('outsider'))
     with test_utils.RootLogin():
+      perms.Grant('privileged', perms.Role.DOMAIN_REVIEWER, 'domain-rev.com')
       perms.Grant('privileged', perms.Role.MAP_CREATOR, 'map-creator.com')
       perms.Grant('privileged', perms.Role.CATALOG_EDITOR, 'catalog-editor.com')
       perms.Grant('privileged', perms.Role.DOMAIN_ADMIN, 'domain-admin.com')
@@ -219,6 +258,10 @@ class PermsTests(test_utils.BaseTest):
       self.assertEquals(
           {'domain-admin.com', 'catalog-editor.com', 'map-creator.com'},
           perms.GetAccessibleDomains(privileged, perms.Role.MAP_CREATOR))
+      self.assertEquals(
+          {'domain-admin.com', 'catalog-editor.com', 'map-creator.com',
+           'domain-rev.com'},
+          perms.GetAccessibleDomains(privileged, perms.Role.DOMAIN_REVIEWER))
 
 
 if __name__ == '__main__':

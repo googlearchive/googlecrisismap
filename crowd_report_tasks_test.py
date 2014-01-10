@@ -22,14 +22,6 @@ import utils
 class CleanupTests(test_utils.BaseTest):
   """Tests the Cleanup class."""
 
-  def NewCrowdReport(
-      self, source='http://source.com/', author='author@example.com',
-      text='Crowd report text', topic_ids=('foo',), answer_ids=('foo.1.1',),
-      location=None):
-    effective = datetime.datetime.utcnow()
-    return model.CrowdReport.Put(source, author, effective, text,
-                                 topic_ids, answer_ids, location)
-
   def testGet(self):
     """Tests CrowdReport.GetWithoutLocation."""
     now = datetime.datetime.utcnow()
@@ -38,19 +30,19 @@ class CleanupTests(test_utils.BaseTest):
 
     self.SetTime(utils.UtcToTimestamp(
         TimeAgo(days=crowd_report_tasks.CROWD_REPORT_TTL_DAYS-1)))
-    cr1 = self.NewCrowdReport()
+    cr1 = test_utils.NewCrowdReport(topic_ids=['foo'])
 
     self.SetTime(utils.UtcToTimestamp(
         TimeAgo(days=crowd_report_tasks.CROWD_REPORT_TTL_DAYS)))
-    cr2 = self.NewCrowdReport()
+    cr2 = test_utils.NewCrowdReport(topic_ids=['foo'])
 
     self.SetTime(utils.UtcToTimestamp(
         TimeAgo(days=crowd_report_tasks.CROWD_REPORT_TTL_DAYS, hours=1)))
-    cr3 = self.NewCrowdReport()
+    cr3 = test_utils.NewCrowdReport(topic_ids=['foo'])
 
     self.SetTime(utils.UtcToTimestamp(
         TimeAgo(days=crowd_report_tasks.CROWD_REPORT_TTL_DAYS+1)))
-    cr4 = self.NewCrowdReport()
+    cr4 = test_utils.NewCrowdReport(topic_ids=['foo'])
 
     self.SetTime(utils.UtcToTimestamp(now))
 

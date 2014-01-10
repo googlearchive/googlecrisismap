@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+
+{% block content %}
+<h2>Review Crowd Reports: '{{map.title}}' (map ID: {{map.id}})</h2>
+
+<form method="post">
+  {{xsrf_tag|safe}}
+  <input type="hidden" name="count" value="{{count}}">
+  <input type="hidden" name="skip" value="{{skip}}">
+  <input type="hidden" name="author" value="{{author}}">
+  <input type="hidden" name="topic" value="{{topic_id}}">
+
+  <p>
+  <h3>Filters</h3>
+  <table>
+    <tr>
+      <td>ID:</td>
+      <td><input type="text" id="id" value="{{id}}"/></td>
+      <td><input type="button" value="Go" onclick="window.location.href='?id=' + document.getElementById('id').value"/></td>
+    </tr>
+    <tr>
+      <td>Author:</td>
+      <td><input type="text" id="author" value="{{author}}"/></td>
+      <td><input type="button" value="Go" onclick="window.location.href='?author=' + document.getElementById('author').value"/></td>
+    </tr>
+    <tr>
+      <td>Topic:</td>
+      <td>{% for topic_id in topic_ids %}<a href="?topic={{topic_id}}&skip=0">{{topic_id}}</a> {% endfor %}</td>
+    </tr>
+  </table>
+  </p>
+  <p>
+  <h3>Reviewing crowd reports {{first}}&ndash;{{last}}
+    {% if prev_url %}
+      (<a href="{{prev_url}}">previous page</a>)
+    {% endif %}
+    {% if next_url %}
+      (<a href="{{next_url}}">next page</a>)
+    {% endif %}
+  </h3>
+  <table class="cm-crowd-reports">
+    <tr>
+      <td width="1%"></td>
+      <td width="15%">Updated</td>
+      <td width="30%">Questions</td>
+      <td width="35%">Text</td>
+      <td width="9%">Location</td>
+      <td width="10%">Author</td>
+      <td width="1%">ID</td>
+    </tr>
+    {% for report in reports %}
+    <tr class="cm-crowd-report">
+      <td class="checkbox"><input type="checkbox" name="report" title="delete"
+                  value="{{report.id}}"></td>
+      <td>{{report.updated}}</td>
+      <td>{{report.questions|linebreaks}}</td>
+      <td>{{report.text}}</td>
+      <td><a href="{{report.url}}" target="_blank">{{report.location}}</a></td>
+      <td>{{report.author}}</td>
+      <td style="font-size:8px">{{report.id}}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </p>
+  <input type="submit" name="delete" value="Delete crowd reports"
+      class="cm-button cm-wipe" onclick="return confirm('Deleting crowd reports is PERMANENT and unrecoverable.  Are you sure you want to delete?')">
+{% endblock %}

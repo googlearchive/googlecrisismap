@@ -87,6 +87,7 @@ app = webapp2.WSGIApplication([
             Route('', 'index.Index'),
             Route('/', 'index.Index'),
             Route('/<label>', 'maps.MapByLabel'),
+            Route('/<label>/review', 'map_review.MapReviewByLabel'),
 
             Route('/.admin', 'admin.Admin'),
             Route('/.admin/<map_id>', 'admin.AdminMap'),
@@ -95,6 +96,7 @@ app = webapp2.WSGIApplication([
             Route('/.delete', 'delete.Delete'),
             Route('/.login', 'login.Login'),
             Route('/.maps', 'maps.MapList'),
+            Route('/.maps/<map_id>/review', 'map_review.MapReviewById'),
             Route('/.maps/<map_id>', 'maps.MapById'),
             Route('/.prefs', 'prefs.Prefs'),
             Route('/.publish', 'publish.Publish'),

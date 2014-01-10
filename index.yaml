@@ -72,6 +72,12 @@ indexes:
 
 - kind: CrowdReportModel
   properties:
+  - name: author
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
   - name: location
   - name: effective
     direction: desc
