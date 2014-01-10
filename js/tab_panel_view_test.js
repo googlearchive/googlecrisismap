@@ -17,17 +17,6 @@ function TabPanelViewTest() {
   // TODO(rew): This should be shared setup somewhere; need to look at how
   // widespread this kind of initialization is, and extract.
   this.mapDiv_ = new FakeElement('div');
-  this.mapModel_ = cm.MapModel.newFromMapRoot({
-    id: 'map', title: 'TabPanelViewTest map', description:
-    'TabPanelViewTest - description for MapModel',
-    layers: [
-      {id: 'layerA', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON',
-       legend: 'A legend'},
-      {id: 'layerB', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
-      {id: 'layerC', type: cm.LayerModel.Type.KML}
-    ]});
-  this.metadataModel_ = new cm.MetadataModel(this.mapModel_);
-  this.appState_ = new cm.AppState();
   this.below_ = false;
   this.expand_ = true;
   this.config_ = {};
@@ -35,7 +24,26 @@ function TabPanelViewTest() {
 TabPanelViewTest.prototype = new cm.TestBase();
 registerTestSuite(TabPanelViewTest);
 
-TabPanelViewTest.prototype.createTabPanelView_ = function() {
+TabPanelViewTest.DEFAULT_MAP_ROOT = {
+  id: 'map',
+  title: 'TabPanelViewTest map',
+  description: 'TabPanelViewTest - description for MapModel',
+  layers: [
+    {id: 'layerA', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON',
+     legend: 'A legend'},
+    {id: 'layerB', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+    {id: 'layerC', type: cm.LayerModel.Type.KML}
+  ]};
+
+TabPanelViewTest.prototype.createTabPanelView_ = function(opt_maproot) {
+  // Bring up the mapModel, metadataModel, and appState the same way that
+  // buildUi_() in initialize.js does.
+  this.mapModel_ = cm.MapModel.newFromMapRoot(
+      opt_maproot || TabPanelViewTest.DEFAULT_MAP_ROOT);
+  this.metadataModel_ = new cm.MetadataModel(this.mapModel_);
+  this.appState_ = new cm.AppState();
+  this.appState_.setFromMapModel(this.mapModel_);
+
   this.parent_ = new FakeElement('div');
   this.tabPanel_ = new cm.TabPanelView(
       cm.ui.document.body, this.parent_, this.mapDiv_, this.mapModel_,
@@ -319,4 +327,61 @@ TabPanelViewTest.prototype.testLayerFilter = function() {
   cm.events.emit(layersTabItem, cm.events.FILTER_MATCHES_CHANGED,
                  {'matches': ['layer3', 'layer4']});
   expectThat(matches, elementsAre(['layer3', 'layer4']));
+};
+
+/** Verify that the legend tab isn't created if there are no legends at all. */
+TabPanelViewTest.prototype.testNoLegendTabWhenNoLegendsPresent = function() {
+  var mapRoot = {
+    id: 'testNoLegendTabWhenNoLegendsPresent',
+    title: 'No Legend Map',
+  description: 'A map with no legends',
+  layers: [
+    {id: 'layer1', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+    {id: 'layer2', type: cm.LayerModel.Type.KML}
+  ]};
+  this.createTabPanelView_(mapRoot);
+  expectNoDescendantOf(
+      this.parent_, withClass('goog-tab'), withText(hasSubstr('Legend')));
+};
+
+/**
+ * Verify that the legend tab isn't created if the only legends available
+ * are on layers that can never be enabled (e.g. a disabled layer in a
+ * locked folder.)
+ */
+TabPanelViewTest.prototype.testNoLegendTabWhenImpossibleToEnableLegend =
+    function() {
+  var mapRoot = {
+    id: 'testNoLegendTabWhenImpossibleToEnableLegend',
+    title: 'Hidden Legend Map',
+  description: 'A map with one legend stuck disabled behind a locked folder',
+  layers: [
+    {id: 'layer1', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+    {id: 'locked folder', type: cm.LayerModel.Type.FOLDER,
+     list_item_type: 'CHECK_HIDE_CHILDREN', sublayers: [
+       {id: 'layer2', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_OFF',
+        legend: 'A legend no one can see'}
+     ]}
+  ]};
+  this.createTabPanelView_(mapRoot);
+  expectNoDescendantOf(
+      this.parent_, withClass('goog-tab'), withText(hasSubstr('Legend')));
+};
+
+/**
+ * Verify that when editing, the legend tab is present, even if there are
+ * no legends currently.
+ */
+TabPanelViewTest.prototype.testLegendTabPresentWhenEditing = function() {
+  var mapRoot = {
+    id: 'testLegendTabPresentWhenEditing',
+    title: 'No Legend Map',
+  description: 'A map with no legends',
+  layers: [
+    {id: 'layer1', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+    {id: 'layer2', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_OFF'}
+  ]};
+  this.config_['enable_editing'] = true;
+  this.createTabPanelView_(mapRoot);
+  this.expectTab_('Legend', 2, false);
 };

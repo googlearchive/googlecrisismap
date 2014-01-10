@@ -317,3 +317,32 @@ cm.MapModel.prototype.toMapRoot = function() {
                              function(topic) { return topic.toMapRoot(); })
   }));
 };
+
+/**
+ * Return whether the map has any legends that could ever become visible.
+ * @return {boolean}
+ */
+cm.MapModel.prototype.hasVisibleLegends = function() {
+  var foundLegend = false;
+  var lookForLegend = function(layer) {
+    var legendIsEmpty = /** @type cm.Html*/(layer.get('legend')).isEmpty();
+    if (legendIsEmpty) return;
+    if (layer.get('default_visibility')) {
+      foundLegend = true;
+      return;
+    }
+    // A disabled layer inside a locked ancestor can never be enabled, so
+    // discount those layers when looking for legends.
+    var parent = layer.get('parent');
+    while (parent) {
+      if (parent.get('folder_type') == cm.LayerModel.FolderType.LOCKED) {
+        return;
+      }
+      parent = parent.get('parent');
+    }
+    foundLegend = true;
+  };
+  cm.util.forLayersInMap(this, lookForLegend,
+                         function(_) { return !foundLegend; });
+  return foundLegend;
+};

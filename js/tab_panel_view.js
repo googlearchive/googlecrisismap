@@ -294,9 +294,14 @@ cm.TabPanelView.prototype.getBounds = function() {
  * @private
  */
 cm.TabPanelView.prototype.createTabs_ = function() {
+  // The tab that should be selected for first display to the user; we prefer
+  // the legend tab, then the about tab, then the layers tab.
+  var firstTab = null;
   if (!this.config_['hide_panel_header']) {
-    this.tabView_.appendTabItem(
-        new cm.AboutTabItem(this.mapModel_, this.appState_, this.config_));
+    var aboutTab = new cm.AboutTabItem(
+        this.mapModel_, this.appState_, this.config_);
+    this.tabView_.appendTabItem(aboutTab);
+    firstTab = aboutTab;
   }
   var layersTab = new cm.LayersTabItem(
           this.mapModel_, this.appState_, this.config_, this.metadataModel_);
@@ -306,18 +311,24 @@ cm.TabPanelView.prototype.createTabs_ = function() {
                     cm.events.ZOOM_TO_LAYER],
                    this);
   this.tabView_.appendTabItem(layersTab);
+  if (!firstTab) firstTab = layersTab;
   cm.events.forward(layersTab, cm.events.FILTER_QUERY_CHANGED, this);
   cm.events.forward(layersTab, cm.events.FILTER_MATCHES_CHANGED, this);
 
-  var legendTab = new cm.LegendTabItem(
-      this.mapModel_, this.appState_, this.config_, this.metadataModel_);
-  this.tabView_.appendTabItem(legendTab);
+  if (this.config_['enable_editing'] || this.mapModel_.hasVisibleLegends()) {
+    var legendTab = new cm.LegendTabItem(
+        this.mapModel_, this.appState_, this.config_, this.metadataModel_);
+    this.tabView_.appendTabItem(legendTab);
+    if (legendTab.getIsEnabled()) {
+      firstTab = legendTab;
+    }
+  }
 
   // Initially load the 'Legend' tab. If it is disabled, TabView.updateTabItem()
   // will select the first available tab in the order that they were added to
   // the TabView, so we will fall back to the 'About' tab if it exists, and
   // otherwise the 'Layers' tab.
-  this.tabView_.selectTabItem(legendTab);
+  this.tabView_.selectTabItem(firstTab);
 };
 
 /**
