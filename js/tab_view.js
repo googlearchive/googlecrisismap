@@ -124,11 +124,10 @@ cm.TabView.prototype.getTabItemByTitle = function(title) {
 };
 
 /**
- * Updates the content of the TabView based on the state of the TabBar. Used
- * as the handler for selection events from the TabBar.
- * If an unselected tab is clicked on, it gets selected; if a selected
- * tab is clicked on, it emits the cm.events.TAB_CLICK_ON_ALREADY_SELECTED
- * event.
+ * Updates the content of the TabView based on the state of the TabBar. Used as
+ * the handler for selection events from the TabBar. If an unselected tab is
+ * clicked on, it gets selected; if a selected tab is clicked on, it emits the
+ * cm.events.CLICK_ON_SELECTED_TAB event.
  * @private
  */
 cm.TabView.prototype.handleTabSelected_ = function() {

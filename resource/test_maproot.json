@@ -16,6 +16,7 @@
     "id": "16702544301115717071-07170133114386334500-4/1",
     "title": "Maps Engine Layer External",
     "description": "La la la",
+    "legend": "<div>Sample legend content</div>",
     "visibility": "DEFAULT_ON",
     "viewport": {
       "lat_lon_alt_box": {
