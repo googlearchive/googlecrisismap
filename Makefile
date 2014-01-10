@@ -42,7 +42,7 @@ AUX=aux/build_info.js \
 
 # Files that are used only by JS tests.
 TEST_FAKES=js/test_bootstrap.js,aux/maps_api.js
-TEST_DEPS=aux/json_files.js,js/test_utils.js,$(CLOSURE_DIR)/closure/goog/testing/events/events.js
+TEST_DEPS=aux/json_files.js,js/test_utils.js,$(CLOSURE_DIR)/closure/goog/testing/events/events.js,$(CLOSURE_DIR)/closure/goog/testing/propertyreplacer.js,$(CLOSURE_DIR)/closure/goog/testing/watchers.js,$(CLOSURE_DIR)/closure/goog/testing/mockclock.js
 
 # The source files are found in Closure, in aux/, and in js/.
 SOURCE_DIR_OPTIONS=-p $(CLOSURE_DIR)/closure \
