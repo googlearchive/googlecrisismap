@@ -92,8 +92,14 @@ cm.MetadataModel.FAST_UPDATE_DURATION_SECONDS = 15;
  */
 cm.MetadataModel.prototype.isEmpty = function(layer) {
   var metadata = this.get(layer.getSourceAddress()) || {};
-  return metadata['has_no_features'] || metadata['length'] === 0 ||
-      metadata['ill_formed'];
+  if (metadata['has_no_features'] || metadata['length'] === 0) {
+    return true;
+  }
+  // WMS can have content even though the returned XML was malformed
+  if (layer.get('type') === cm.LayerModel.Type.WMS) {
+    return false;
+  }
+  return metadata['ill_formed'];
 };
 
 

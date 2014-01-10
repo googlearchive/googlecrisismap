@@ -54,6 +54,18 @@ MetadataModelTest.prototype = new cm.TestBase();
 registerTestSuite(MetadataModelTest);
 
 
+MetadataModelTest.prototype.updateData_ = function(
+    expectedSourceJson, responseJson) {
+  // Set up the mock for the JSONP request...
+  var jsonp = this.expectNew_('goog.net.Jsonp', METADATA_URL);
+  expectCall(jsonp.send)(expectedSourceJson, _).willOnce(
+      function(_, callback) { callback(responseJson); });
+  expectCall(this.timer_.setInterval)(90000);
+
+  // ...and fire the timer.
+  cm.events.emit(this.timer_, goog.Timer.TICK);
+};
+
 /** Tests the various getters on the initially loaded metadata. */
 MetadataModelTest.prototype.testGetters = function() {
   var layer1 = this.mapModel_.getLayer('1');
@@ -81,27 +93,17 @@ MetadataModelTest.prototype.testGetters = function() {
 
 /** Tests the retrieval of periodic updates from the server. */
 MetadataModelTest.prototype.testUpdates = function() {
-  // Set up the mock for the JSONP request...
-  var jsonp = this.expectNew_('goog.net.Jsonp', METADATA_URL);
-  expectCall(jsonp.send)({
-    'source': []
-  }, _).willOnce(function(_, callback) {
-    callback({
-      'KML:http://a.com/b.kml': {
-        'has_no_features': true,
-        'length': 123,
-        'update_time': 123456789
-      },
-      'KML:http://j.com/z.kml': {
-        'has_unsupported_kml': true,
-        'update_time': 123456000
-      }
-    });
+  this.updateData_({'source': []}, {
+    'KML:http://a.com/b.kml': {
+      'has_no_features': true,
+      'length': 123,
+      'update_time': 123456789
+    },
+    'KML:http://j.com/z.kml': {
+      'has_unsupported_kml': true,
+      'update_time': 123456000
+    }
   });
-  expectCall(this.timer_.setInterval)(90000);
-
-  // ...and fire the timer.
-  cm.events.emit(this.timer_, goog.Timer.TICK);
 
   // The JSON response should now be loaded into the model.
   var layer1 = this.mapModel_.getLayer('1');
@@ -120,28 +122,19 @@ MetadataModelTest.prototype.testUpdates = function() {
   this.mapModel_.get('layers').insertAt(0, layer4);
 
   // ...set up the mock for a second JSONP request...
-  var jsonp = this.expectNew_('goog.net.Jsonp', METADATA_URL);
-  expectCall(jsonp.send)({
-    'source': ['GEORSS:http://foo']
-  }, _).willOnce(function(_, callback) {
-    callback({
-      'KML:http://a.com/b.kml': {
-        'length': 456,
-        'update_time': 123457000
-      },
-      'KML:http://j.com/z.kml': {
-        'fetch_error_occurred': true
-      },
-      'GEORSS:http://foo': {
-        'length': 789,
-        'update_time': 123459000
-      }
-    });
+  this.updateData_({'source': ['GEORSS:http://foo']}, {
+    'KML:http://a.com/b.kml': {
+      'length': 456,
+      'update_time': 123457000
+    },
+    'KML:http://j.com/z.kml': {
+      'fetch_error_occurred': true
+    },
+    'GEORSS:http://foo': {
+      'length': 789,
+      'update_time': 123459000
+    }
   });
-  expectCall(this.timer_.setInterval)(90000);
-
-  // ...and fire the timer again.
-  cm.events.emit(this.timer_, goog.Timer.TICK);
 
   // The metadata should be updated with the new layer.
   expectFalse(this.metadataModel_.isEmpty(layer1));
@@ -153,4 +146,16 @@ MetadataModelTest.prototype.testUpdates = function() {
 
   expectEq(123459000, this.metadataModel_.getUpdateTime(layer4));
   expectEq(789, this.metadataModel_.getLength(layer4));
+};
+
+MetadataModelTest.prototype.testIsEmpty_malformedWmsNotEmpty = function() {
+  // Set up the mock for the JSONP request...
+  var jsonp = this.updateData_({'source': []}, {
+    'WMS:http://d.com': {
+      'wms_layers': {'wms0' : {'minx': 1.1, 'miny': 2.2,
+                               'maxx': 3.3, 'maxy': 4.4}},
+      'ill_formed': true
+    }
+  });
+  expectFalse(this.metadataModel_.isEmpty(this.mapModel_.getLayer('7')));
 };
