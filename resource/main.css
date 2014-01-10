@@ -820,9 +820,15 @@ input[type=checkbox]:checked::after {
   right: 0;
   opacity: 0.5;
 }
-.cm-map-picker-button:hover {
+
+.cm-map-title {
+  cursor: default;
+}
+
+.cm-map-title:hover .cm-map-picker-button {
   opacity: 1;
 }
+
 .cm-embedded .cm-map-picker-button {
   right: 36px;
 }
@@ -886,7 +892,9 @@ input[type=checkbox]:checked::after {
 /* Toolbar */
 .cm-toolbar {
   font-size: 11px;
-  margin: 6px;
+  padding: 6px;
+  background: #eee;
+  border-bottom: 1px solid #ddd;
 }
 .cm-toolbar a {
   white-space: nowrap;

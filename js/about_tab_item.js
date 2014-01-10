@@ -13,7 +13,6 @@ goog.provide('cm.AboutTabItem');
 
 goog.require('cm');
 goog.require('cm.MapModel');
-goog.require('cm.MapPicker');
 goog.require('cm.MapTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.ui');
@@ -29,88 +28,17 @@ goog.require('cm.ui');
  */
 cm.AboutTabItem = function(mapModel, appState, config) {
   cm.MapTabItem.call(this, mapModel, appState, config);
-  /**
-   * @type Element
-   * @private
-   */
-  this.mapTitleElem_;
 
   /**
    * @type Element
    * @private
    */
   this.descElem_;
-
-  /**
-   * @type Array.<string>
-   * @private
-   */
-  this.menuItems_ = null;
-
-  var menuItems = config['map_picker_items'];
-  if (menuItems && menuItems.length && !config['draft_mode'] &&
-      !config['enable_editing'] && !config['hide_panel_header']) {
-    this.menuItems_ = menuItems;
-  }
 };
 goog.inherits(cm.AboutTabItem, cm.MapTabItem);
 
 /** @override */
-cm.AboutTabItem.prototype.addHeader = function(headerElem) {
-  if (this.config['draft_mode']) {
-    cm.ui.append(headerElem, cm.ui.create(
-        'span',
-        {'class': cm.css.DRAFT_INDICATOR, 'title': cm.MSG_DRAFT_TOOLTIP},
-        cm.MSG_DRAFT_LABEL));
-  }
-  cm.ui.append(headerElem, this.createTitle_());
-  this.enableMapPicker_(headerElem);
-
-  var publisher = this.config['publisher_name'];
-  if (publisher) {
-    var publisherElem = cm.ui.create('div', {'class': cm.css.MAP_PUBLISHER});
-    new cm.Html(
-        cm.getMsgPublisherAttribution(publisher)).pasteInto(publisherElem);
-    cm.ui.append(headerElem, publisherElem);
-  }
-};
-
-/**
- * Makes the title text a clickable target to bring up the map picker.
- * @param {Element} header The header element.
- * @private
- */
-cm.AboutTabItem.prototype.enableMapPicker_ = function(header) {
-  if (this.menuItems_) {
-    goog.dom.classes.add(this.mapTitleElem_, cm.css.MAP_TITLE_PICKER);
-    var picker = new cm.MapPicker(header, this.menuItems_);
-    cm.events.listen(this.mapTitleElem_, 'click', goog.bind(function(e) {
-      picker.showMenu(true);
-      e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
-    }, picker));
-  }
-};
-
-/**
- * Creates the title element for the tab.
- * @return {Element} The title element.
- * @private
- */
-cm.AboutTabItem.prototype.createTitle_ = function() {
-  this.mapTitleElem_ = cm.ui.create('h1', {'class': cm.css.MAP_TITLE});
-  cm.events.onChange(this.mapModel, 'title', this.handleTitleChanged_, this);
-  this.handleTitleChanged_();
-
-  if (this.editingEnabled) {
-    // Open the property inspector on the map.
-    cm.events.forward(this.mapTitleElem_, 'click',
-                      cm.app, cm.events.INSPECT, {object: this.mapModel});
-  }
-  return this.mapTitleElem_;
-};
-
-/** @override */
-cm.AboutTabItem.prototype.addScrollingContent = function(parentElem) {
+cm.AboutTabItem.prototype.addContent = function(parentElem) {
   this.descElem_ = cm.ui.create('div', {'class': cm.css.MAP_DESCRIPTION});
   cm.events.onChange(
       this.mapModel, 'description', this.handleDescriptionChanged_, this);
@@ -130,17 +58,6 @@ cm.AboutTabItem.prototype.addScrollingContent = function(parentElem) {
 };
 
 /* Various handlers */
-
-/**
- * Respond to a title change in the map model.
- * @private
- */
-cm.AboutTabItem.prototype.handleTitleChanged_ = function() {
-  var title = /** @type string */(this.mapModel.get('title'));
-  cm.ui.setText(this.mapTitleElem_, title);
-  cm.ui.document.title = title;
-  this.promptRelayout();
-};
 
 /**
  * Respond to a description change in the map model.

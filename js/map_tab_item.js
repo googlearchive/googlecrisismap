@@ -11,7 +11,9 @@
 
 goog.provide('cm.MapTabItem');
 
+goog.require('cm.MapPicker');
 goog.require('cm.TabItem');
+
 
 /**
  * Superclass for tabs in the tab panel that require a map model.
@@ -80,12 +82,18 @@ cm.MapTabItem = function(mapModel, appState, config) {
 
   /** @type boolean */
   this.editingEnabled = this.config['enable_editing'];
+
+  /**
+   * @type Element
+   * @private
+   */
+  this.mapTitleElem_;
 };
 
 /**
  * Renders the contents of the tab item in to this.content_.  By default
- * adds the toolbar (if editing), then addHeader(), then addScrollingContent(),
- * then adds both the header and scrolling region to the content.
+ * adds the toolbar (if editing), then appends both addHeader() and
+ * addContent() to scrollingDiv_.
  * @private
  */
 cm.MapTabItem.prototype.render_ = function() {
@@ -104,17 +112,43 @@ cm.MapTabItem.prototype.render_ = function() {
 
   var headerElem = cm.ui.create('div', {'class': cm.css.PANEL_HEADER});
   this.addHeader(headerElem);
-  this.addScrollingContent(this.scrollingDiv_);
-  cm.ui.append(this.content_, headerElem, this.scrollTop_, this.scrollingDiv_);
+  cm.ui.append(this.scrollingDiv_, headerElem);
+  this.addContent(this.scrollingDiv_);
+  cm.ui.append(this.content_, this.scrollTop_, this.scrollingDiv_);
 };
 
 /**
- * Called during rendering to fill the non-scrolling header region of the tab.
- * Subclasses should override to fill parentElem with content.
+ * Called during rendering to fill the header, which is located at the very top
+ * of the scrolling region of the tab.
+ * By default, this area contains map title and publisher. Subclasses may
+ * override to fill headerElem with different content.
  * @param {Element} headerElem The node into which header content should be
  *   placed.
  */
-cm.MapTabItem.prototype.addHeader = function(headerElem) {};
+cm.MapTabItem.prototype.addHeader = function(headerElem) {
+  if (this.config['hide_panel_header']) {
+    // Hide the element so it doesn't take up any space.
+    headerElem.style.display = 'none';
+  } else {
+    if (this.config['draft_mode']) {
+      cm.ui.append(headerElem, cm.ui.create(
+          'span',
+          {'class': cm.css.DRAFT_INDICATOR, 'title': cm.MSG_DRAFT_TOOLTIP},
+          cm.MSG_DRAFT_LABEL));
+    }
+
+    cm.ui.append(headerElem, this.createMapTitle_());
+    this.enableMapPicker_();
+
+    var publisher = this.config['publisher_name'];
+    if (publisher) {
+      var publisherElem = cm.ui.create('div', {'class': cm.css.MAP_PUBLISHER});
+      new cm.Html(
+          cm.getMsgPublisherAttribution(publisher)).pasteInto(publisherElem);
+      cm.ui.append(headerElem, publisherElem);
+    }
+  }
+};
 
 /**
  * Called during rendering to fill the scrolling region of the tab.  Subclasses
@@ -122,7 +156,7 @@ cm.MapTabItem.prototype.addHeader = function(headerElem) {};
  * in the scrolling section of the tab.
  * @param {Element} parentElem The node into which content should be placed.
  */
-cm.MapTabItem.prototype.addScrollingContent = function(parentElem) {};
+cm.MapTabItem.prototype.addContent = function(parentElem) {};
 
 /**
  * Cause the containing tab view to relayout following a change in size of
@@ -181,4 +215,54 @@ cm.MapTabItem.prototype.resize = function(panelHeight, setMaxHeight) {
     this.scrollingDiv_.style.maxHeight = '';
     this.scrollingDiv_.style.top = '';
   }
+};
+
+/**
+ * Creates an element containing the map title for display in the header
+ * of content pane when this.shouldDisplayMapTitle_ is true.
+ * @return {Element} The title element.
+ * @private
+ */
+cm.MapTabItem.prototype.createMapTitle_ = function() {
+  this.mapTitleElem_ = cm.ui.create('h1', {'class': cm.css.MAP_TITLE});
+  cm.events.onChange(this.mapModel, 'title', this.handleTitleChanged_, this);
+  this.handleTitleChanged_();
+
+  if (this.editingEnabled) {
+    // Open the property inspector on the map.
+    cm.events.forward(this.mapTitleElem_, 'click',
+                      cm.app, cm.events.INSPECT, {object: this.mapModel});
+  }
+  return this.mapTitleElem_;
+};
+
+/**
+ * Respond to a title change in the map model.
+ * @private
+ */
+cm.MapTabItem.prototype.handleTitleChanged_ = function() {
+  var title = /** @type string */(this.mapModel.get('title'));
+  cm.ui.setText(this.mapTitleElem_, title);
+  cm.ui.document.title = title;
+  this.promptRelayout();
+};
+
+/**
+ * Makes the title text a clickable target to bring up the map picker.
+ * @private
+ */
+cm.MapTabItem.prototype.enableMapPicker_ = function() {
+  var menuItems = this.config['map_picker_items'];
+  if (!this.mapTitleElem_ || !menuItems || !menuItems.length ||
+      this.config['draft_mode'] || this.config['enable_editing'] ||
+      this.config['hide_panel_header']) {
+    return;
+  }
+
+  goog.dom.classes.add(this.mapTitleElem_, cm.css.MAP_TITLE_PICKER);
+  var picker = new cm.MapPicker(this.mapTitleElem_, menuItems);
+  cm.events.listen(this.mapTitleElem_, 'click', goog.bind(function(e) {
+    picker.showMenu(true);
+    e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
+  }, picker));
 };

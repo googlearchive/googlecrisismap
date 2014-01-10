@@ -53,12 +53,7 @@ AboutTabItemTest.prototype.testCreation_editingEnabled = function() {
   var about = this.createAboutTabItem_(
       'AboutTabItemTest.testCreation', null,
       {'draft_mode': true, 'enable_editing': true});
-  var content = about.getContent();
-  expectDescendantOf(content, withClass(cm.css.DRAFT_INDICATOR));
-  expectDescendantOf(content, withText(cm.MSG_RESET_VIEW_LINK));
-  this.expectEvent(cm.app, cm.events.INSPECT);
-  cm.events.emit(
-      expectDescendantOf(content, withClass(cm.css.MAP_TITLE)), 'click');
+  expectDescendantOf(about.getContent(), withText(cm.MSG_RESET_VIEW_LINK));
 };
 
 /** Tests that the 'reset view' link is present and works. */
@@ -69,18 +64,6 @@ AboutTabItemTest.prototype.testResetViewLink = function() {
   this.expectLogAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
   this.expectEvent(cm.app, cm.events.RESET_VIEW);
   cm.events.emit(link, 'click');
-};
-
-/** Tests that the displayed title updates when the map model updates. */
-AboutTabItemTest.prototype.testTitleUpdates = function() {
-  var about = this.createAboutTabItem_('testTitleUpdates');
-  var newTitle = 'New Title';
-  expectNoDescendantOf(
-      about.getContent(), withClass(cm.css.MAP_TITLE), withText(newTitle));
-  this.mapModel_.set('title', newTitle);
-  expectDescendantOf(
-      about.getContent(), withClass(cm.css.MAP_TITLE), withText(newTitle));
-  expectEq(newTitle, cm.ui.document.title);
 };
 
 /** Tests that the displayed description updates when the map model updates. */
@@ -121,40 +104,4 @@ AboutTabItemTest.prototype.testSetDefaultView = function() {
   cm.events.emit(link, 'click', {});
   expectThat(event.oldDefault, not(isUndefined));
   expectThat(event.newDefault, not(isUndefined));
-};
-
-/** Tests that if a publisher is present, it is properly displayed. */
-AboutTabItemTest.prototype.testPublisherIsDisplayed = function() {
-  // We wish to ensure the sanitizer has been invoked (as opposed to other
-  // methods that insert potentially unsafe HTML directly in to the DOM), so we
-  // insert a mock that will capture sanitized strings.
-  var sanitized = [];
-  this.setForTest_('cm.Html.sanitize_', function(x) {
-    sanitized.push(x);
-    // copied from other tests; we add the asterisks so that sanitized strings
-    // are readily identifiable in test output, etc.
-    return '*' + x + '*';
-  });
-  var publisherString = 'Spiffy the TestBot';
-  var about = this.createAboutTabItem_(
-      'testPublisherIsDisplayed', null, {'publisher_name': publisherString});
-  var publisher =
-      expectDescendantOf(about.getContent(), withClass(cm.css.MAP_PUBLISHER));
-  expectThat(publisher.innerHTML, hasSubstr(publisherString));
-  expectThat(sanitized, contains(hasSubstr(publisherString)));
-};
-
-/** Tests that the map picker is enabled. */
-AboutTabItemTest.prototype.testMapPickerEnabled = function() {
-  var about = this.createAboutTabItem_(
-      'testEnabledMapPicker', null,
-      {'map_picker_items': ['Another Map']});
-  expectDescendantOf(about.getContent(), withClass('cm-map-title-picker'));
-};
-
-/** Tests that the map picker is disabled. */
-AboutTabItemTest.prototype.testMapPickerDisabled = function() {
-  var about = this.createAboutTabItem_(
-      'testEnabledMapPicker', null, {'map_picker_items': []});
-  expectNoDescendantOf(about.getContent(), withClass('cm-map-picker'));
 };

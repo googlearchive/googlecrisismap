@@ -84,13 +84,7 @@ goog.inherits(cm.LayersTabItem, cm.MapTabItem);
 cm.LayersTabItem.LAYER_FILTER_VISIBILITY_THRESHOLD = 8;
 
 /** @override */
-cm.LayersTabItem.prototype.addHeader = function(headerElem) {
-  // There's nothing to put in the header, so hide it.
-  headerElem.style.display = 'none';
-};
-
-/** @override */
-cm.LayersTabItem.prototype.addScrollingContent = function(parentElem) {
+cm.LayersTabItem.prototype.addContent = function(parentElem) {
   if (this.layerFilterBox_) {
     parentElem.appendChild(cm.ui.create('div', {'class': cm.css.LAYER_FILTER},
         this.layerFilterBox_, this.matchingLayersMessage_));

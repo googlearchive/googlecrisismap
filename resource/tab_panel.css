@@ -178,10 +178,6 @@ specific language governing permissions and limitations under the License.
   left: 5px;
 }
 
-.cm-tab-content .cm-panel-header {
-  margin: 0;
-}
-
 .cm-tab-content .cm-map-picker-button {
   right: auto;
   margin-left: 6px;
@@ -212,7 +208,8 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tab-panel .cm-panel-header {
-  margin-top: 6px;
+  margin: 12px 0px 6px 0px;
+  padding: 0px 12px;
 }
 
 .cm-tab-content .cm-legend-graphic {

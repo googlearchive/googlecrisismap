@@ -51,12 +51,13 @@ cm.DetailsTabItem.prototype.enableFormPopup = function(enabled) {
 
 /** @override */
 cm.DetailsTabItem.prototype.addHeader = function(headerElem) {
-  // There's nothing to put in the header, so hide it.
+  // We don't want the map title to appear on Details tabs, so override default
+  // header contents and hide the element.
   headerElem.style.display = 'none';
 };
 
 /** @override */
-cm.DetailsTabItem.prototype.addScrollingContent = function(parentElem) {
+cm.DetailsTabItem.prototype.addContent = function(parentElem) {
   cm.ui.append(parentElem, this.featureInfoElem_, this.crowdElem_);
 };
 

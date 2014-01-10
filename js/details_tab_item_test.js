@@ -32,4 +32,5 @@ DetailsTabItemTest.prototype.loadFeatureData = function() {
   });
   var content = this.tabItem_.getContent();
   expectDescendantOf(content, withText('some details about this feature'));
+  expectNoDescendantOf(content, withClass('cm-map-title'));
 };

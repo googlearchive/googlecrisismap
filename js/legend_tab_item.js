@@ -77,13 +77,7 @@ cm.LegendTabItem.prototype.loadLegends_ = function() {
 };
 
 /** @override */
-cm.LegendTabItem.prototype.addHeader = function(headerElem) {
-  // There's nothing to put in the header, so hide it.
-  headerElem.style.display = 'none';
-};
-
-/** @override */
-cm.LegendTabItem.prototype.addScrollingContent = function(parentElem) {
+cm.LegendTabItem.prototype.addContent = function(parentElem) {
   parentElem.appendChild(this.legendContainer_);
 };
 

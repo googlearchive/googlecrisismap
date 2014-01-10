@@ -35,7 +35,9 @@ var MIN_PANEL_HEIGHT_FOR_EMBEDDED_FORM = 450;
  * @param {boolean} expand Whether the panel should initially be expanded.
  * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     draft_mode: Indicate that the map is an unpublished draft?
- *     hide_panel_header: Hide the map title and description?
+ *     hide_panel_header: Hide the map title and description?  If true,
+ *       title header will be hidden on all tabs and the 'About' tab will be
+ *       omitted entirely.
  *     publisher_name: A string used as the map's publisher
  *     enable_editing: Allow any editing at all?  If true, the following fields
  *       are also used:
