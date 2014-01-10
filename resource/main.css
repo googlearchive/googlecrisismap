@@ -78,6 +78,7 @@ html, body {
 
 /* Headings */
 .cm-header h1,
+.cm-tab-panel h1,
 .cm-panel h1,
 .cm-map-title {  /* map title */
   font-size: 18px;
@@ -91,13 +92,14 @@ html, body {
 .cm-header h1 {  /* product heading */
   font-size: 16px;
 }
-.cm-header h2, .cm-panel h2, .cm-popup h2 {  /* dialog headings */
+/* dialog headings */
+.cm-header h2, .cm-panel h2, .cm-tab-panel h2, .cm-popup h2 {
   font-size: 16px;
   font-weight: normal;
   color: #333;
   display: inline-block;
 }
-.cm-panel h3, .cm-popup h3 {  /* item headings */
+.cm-panel h3, .cm-tab-panel h3, .cm-popup h3 {  /* item headings */
   font-size: 14px;
   font-weight: normal;
 }
@@ -117,26 +119,29 @@ html, body {
 .cm-popup h2 + a {
   float: right;
 }
-.cm-panel a, .cm-footer a, .cm-popup a, .cm-nav-list a {
+.cm-panel a, .cm-tab-panel a, .cm-footer a, .cm-popup a, .cm-nav-list a {
   text-decoration: none;
 }
-.cm-panel a:link, .cm-footer a:link, .cm-popup a:link, .cm-nav-list a:link {
+.cm-panel a:link, .cm-tab-panel a:link, .cm-footer a:link, .cm-popup a:link, .cm-nav-list a:link {
   color: #1155cc;
 }
-.cm-panel a:visited, .cm-footer a:visited, .cm-popup a:visited, .cm-nav-list a:visited {
+.cm-panel a:visited, .cm-tab-panel a:visited, .cm-footer a:visited, .cm-popup a:visited, .cm-nav-list a:visited {
   color: #6611cc;
 }
-.cm-panel a:hover, .cm-footer a:hover, .cm-popup a:hover, .cm-nav-list a:hover {
+.cm-panel a:hover, .cm-tab-panel a:hover, .cm-footer a:hover, .cm-popup a:hover, .cm-nav-list a:hover {
   text-decoration: underline;
 }
 
 /* Panel */
-.cm-panel a {
+.cm-panel a, .cm-tab-panel a {
   font-size: 11px;
 }
 .cm-panel .cm-layer-description,
+.cm-tab-panel .cm-layer-description,
 .cm-importer .cm-layer-description,
+.cm-tab-panel .cm-warning,
 .cm-panel .cm-warning,
+.cm-tab-panel .cm-timestamp,
 .cm-panel .cm-timestamp,
 .cm-preview.cm-layer-description {
   font-size: 11px;
@@ -144,6 +149,7 @@ html, body {
 }
 
 .cm-panel .cm-layer-legend-box,
+.cm-tab-panel .cm-layer-legend-box,
 .cm-preview.cm-layer-legend {
   font-size: 11px;
   color: #222;
@@ -327,7 +333,8 @@ html, body {
 .cm-embedded .cm-map-description {
   width: 450px !important;
 }
-.cm-panel .cm-panel-links {
+.cm-panel .cm-panel-links,
+.cm-tab-panel .cm-panel-links {
   margin: 4px 0 4px 0;
 }
 .cm-panel .cm-map-description {
@@ -397,7 +404,8 @@ html, body {
 .cm-layer-entry.cm-contains-promoted-sublayer > * > .cm-layer-entry.cm-promoted-sublayer {
   display: block;
 }
-.cm-panel .cm-layer-title {
+.cm-panel .cm-layer-title,
+.cm-tab-panel .cm-layer-title {
   font-size: 14px;
   line-height: 16px;
 }

@@ -62,7 +62,7 @@ def GetSourceAddress(layer):
     layer type is not supported by the metadata subsystem.
   """
   layer_type = layer.get('type', '')
-  source = layer.get('source', {}).get(layer_type.lower())
+  source = layer.get('source', {}).get(layer_type.lower(), {})
   if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS]:
     return layer_type + ':' + source.get('url', '')
 
