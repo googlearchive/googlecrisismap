@@ -48,6 +48,7 @@ specific language governing permissions and limitations under the License.
   background: #f0f0f0;
   position: relative;
   z-index: 1;
+  white-space: nowrap;
 }
 
 .cm-tab-bar-buttons {
@@ -176,6 +177,8 @@ specific language governing permissions and limitations under the License.
 .goog-tab-bar {
   display: inline-block;
   outline: none;
+  margin-right: 36px;  /* Makes room for chevron button */
+  white-space: normal;
 }
 
 .goog-tab-bar-top .goog-tab {

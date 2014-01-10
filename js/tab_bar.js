@@ -60,8 +60,8 @@ cm.TabBar.NEW_TAB_SELECTED = 'TabView.tabBar_.NEW_TAB_SELECTED';
  * @param {Element} parent The node in to which the tab bar should be rendered.
  */
 cm.TabBar.prototype.render = function(parent) {
-  this.tabBar_.render(this.container_);
   cm.ui.append(this.container_, this.buttons_);
+  this.tabBar_.render(this.container_);
   cm.ui.append(parent, this.container_);
 };
 
