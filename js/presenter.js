@@ -118,6 +118,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
 
   if (panelView instanceof cm.TabPanelView) {
     cm.events.listen(mapView, cm.events.SELECT_FEATURE, function(event) {
+      this.focusPosition_ = null;  // prevent recentering on previous feature
       var mapShouldPan = panelView.isBelowMap() && !panelView.isExpanded();
       panelView.selectFeature(event);
       if (mapShouldPan) {
