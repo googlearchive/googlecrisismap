@@ -1363,8 +1363,8 @@ cm.TestBase.AnalyticsTracker.prototype.expectAction = function(
 
 /** Verifies that all expectations have been satisfied. */
 cm.TestBase.AnalyticsTracker.prototype.verify = function() {
-  for (var action in this.expectedAction_) {
-    var expected = this.expectedAction_[action];
+  for (var action in this.expectedActions_) {
+    var expected = this.expectedActions_[action];
     cm.TestBase.verifyCallCount_(expected, this.errorDesc_(action));
   }
 };

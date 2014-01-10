@@ -115,7 +115,7 @@ MapPickerTest.prototype.testMenuSelection = function() {
       parent, withClass(cm.css.MAP_PICKER_BUTTON));
   cm.events.emit(body, 'click', {target: button});
   var pickerElem = expectDescendantOf(body, withClass(cm.css.MAP_PICKER));
-  var links = allDescendantsOf(pickerElem, withNodeName('a'));
+  var links = allDescendantsOf(pickerElem, withNodeName('li'));
   expectEq(2, links.length);
   this.expectLogAction(
       cm.Analytics.LayersPanelAction.MAP_PICKER_ITEM_SELECTED, null);

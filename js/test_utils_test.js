@@ -10,8 +10,12 @@
 // specific language governing permissions and limitations under the License.
 
 
+goog.require('cm.Analytics');
+
 function TestUtilsTest() {
+  cm.TestBase.call(this);
 }
+TestUtilsTest.prototype = new cm.TestBase();
 registerTestSuite(TestUtilsTest);
 
 /** Tests construction of a FakeElement. */
@@ -153,4 +157,17 @@ TestUtilsTest.prototype.match = function() {
            cm.TestBase.match(new Foo('abc'), new Foo('def')));
   expectEq(true, cm.TestBase.match([new Foo('abc'), {x: new Foo('def')}],
                                    [new Foo('abc'), {x: new Foo('def')}]));
+};
+
+/** Tests the cm.TestBase.expectLogAction function. */
+TestUtilsTest.prototype.testExpectLogAction = function() {
+  this.expectLogAction('foo', 'layer1');
+  // We store only one expectation per action, so this will overwrite the
+  // expecation for action 'foo'.
+  this.expectLogAction('foo', 'layer1', 2, 42);
+  this.expectLogAction('bar', 'layer2');
+
+  cm.Analytics.logAction('foo', 'layer1', 42);
+  cm.Analytics.logAction('foo', 'layer1', 42);
+  cm.Analytics.logAction('bar', 'layer2');
 };
