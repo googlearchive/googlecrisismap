@@ -93,20 +93,35 @@ cm.Analytics.prependUiElement_ = function(uiElement, uiEvents) {
  */
 
 /** @type {Object.<string, string>} */
-cm.Analytics.LayersPanelAction = cm.Analytics.prependUiElement_(
-    'Layers panel', {
+cm.Analytics.TabPanelAction = cm.Analytics.prependUiElement_(
+    'Tab panel', {
+      ABOUT_TAB_SELECTED: 'About tab selected',
+      DETAILS_TAB_SELECTED: 'Details tab selected',
+      LAYERS_TAB_SELECTED: 'Layers tab selected',
+      LEGEND_TAB_SELECTED: 'Legend tab selected',
+      MAP_PICKER_ITEM_SELECTED: 'Map picker menu item selected',
+      NEW_TAB_SELECTED: 'New tab selected',
+      PANEL_TOGGLED_CLOSED: 'Panel toggled closed',
+      PANEL_TOGGLED_OPEN: 'Panel toggled open'
+});
+
+/** @type {Object.<string, string>} */
+cm.Analytics.LayersTabAction = cm.Analytics.prependUiElement_(
+    'Layers tab', {
       DOWNLOAD_DATA_LINK_CLICKED: 'Layer download data link clicked',
       VIEW_IN_MAPS_ENGINE_LINK_CLICKED: 'View in maps engine link clicked',
       EMBEDDED_LINK_CLICKED: 'Link embedded in layer description clicked',
-      MAP_PICKER_ITEM_SELECTED: 'Map picker menu item selected',
       OPACITY_SLIDER_MOVED: 'Layer opacity slider moved',
-      PANEL_TOGGLED_CLOSED: 'Panel toggled closed',
-      PANEL_TOGGLED_OPEN: 'Panel toggled open',
       SUBLAYER_SELECTED: 'Sublayer menu item selected',
       TOGGLED_OFF: 'Layer checkbox toggled off',
       TOGGLED_ON: 'Layer checkbox toggled on',
-      VIEW_RESET: '"View reset" clicked',
       ZOOM_TO_AREA: 'Layer "Zoom to area" clicked'
+    });
+
+/** @type {Object.<string, string>} */
+cm.Analytics.AboutTabAction = cm.Analytics.prependUiElement_(
+    'About tab', {
+      VIEW_RESET: '"View reset" clicked'
     });
 
 /** @type {Object.<string, string>} */
@@ -124,10 +139,10 @@ cm.Analytics.MapAction = cm.Analytics.prependUiElement_('Map', {
 /** @type {Object.<string, string>} */
 cm.Analytics.CrowdReportFormAction = cm.Analytics.prependUiElement_(
     'Crowd report form', {
-      PROMPT_BUBBLE_CLICKED: 'Prompt bubble clicked',
-      POST_CLICKED: '"Post" clicked',
       ANSWER_BUTTON_CLICKED: 'Answer button clicked',
-      CLOSE_BUTTON_CLICKED: 'Close button clicked'
+      CLOSE_BUTTON_CLICKED: 'Close button clicked',
+      POST_CLICKED: '"Post" clicked',
+      PROMPT_BUBBLE_CLICKED: 'Prompt bubble clicked'
     }
 );
 
@@ -135,11 +150,11 @@ cm.Analytics.CrowdReportFormAction = cm.Analytics.prependUiElement_(
 // emitted.
 /** @type {Object.<string, string>} */
 cm.Analytics.PassiveAction = cm.Analytics.prependUiElement_('Passive', {
+  CROWD_REPORT_DISPLAYED: 'Crowd report displayed',
   LAYER_DISPLAYED: 'Layer displayed',  // Not working after first load
   LAYER_HIDDEN: 'Layer hidden',   // Not working
   MAP_ZOOM_CHANGED: 'Map zoom level changed',
-  PAGE_LOADED: 'Page loaded',
-  CROWD_REPORT_DISPLAYED: 'Crowd report displayed'
+  PAGE_LOADED: 'Page loaded'
 });
 
 /** @type {Object.<string, string>} */

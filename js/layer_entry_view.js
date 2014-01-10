@@ -291,7 +291,7 @@ cm.LayerEntryView = function(
   cm.events.listen(this.descriptionElem_, 'click', function(event) {
     if (event.target.tagName.toLowerCase() !== 'a') return;
     cm.Analytics.logAction(
-        cm.Analytics.LayersPanelAction.EMBEDDED_LINK_CLICKED,
+        cm.Analytics.LayersTabAction.EMBEDDED_LINK_CLICKED,
         /** @type string */(this.model_.get('id')));
   }, this);
   if (opt_index !== undefined && opt_index < parentElem.childNodes.length) {
@@ -357,8 +357,8 @@ cm.LayerEntryView = function(
     goog.global.setTimeout(goog.bind(function() {
       var value = this.checkboxElem_.checked;
       cm.Analytics.logAction(
-          value ? cm.Analytics.LayersPanelAction.TOGGLED_ON :
-              cm.Analytics.LayersPanelAction.TOGGLED_OFF,
+          value ? cm.Analytics.LayersTabAction.TOGGLED_ON :
+              cm.Analytics.LayersTabAction.TOGGLED_OFF,
           id);
       cm.events.emit(this, cm.events.TOGGLE_LAYER, {id: id, value: value});
     }, this), 0);
@@ -372,7 +372,7 @@ cm.LayerEntryView = function(
       model, ['min_zoom', 'max_zoom'], this.updateFade_, this);
 
   cm.events.listen(zoomLink, 'click', function() {
-    cm.Analytics.logAction(cm.Analytics.LayersPanelAction.ZOOM_TO_AREA, id);
+    cm.Analytics.logAction(cm.Analytics.LayersTabAction.ZOOM_TO_AREA, id);
     cm.events.emit(this, cm.events.ZOOM_TO_LAYER, {id: id});
   }, this);
   if (editLink) {
@@ -527,7 +527,7 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
         cm.ui.append(this.downloadElem_, cm.ui.SEPARATOR_DOT, link);
         cm.events.listen(link, 'click', function() {
           cm.Analytics.logAction(
-              cm.Analytics.LayersPanelAction.DOWNLOAD_DATA_LINK_CLICKED,
+              cm.Analytics.LayersTabAction.DOWNLOAD_DATA_LINK_CLICKED,
               this.model_.get('id'));
         }, this);
       }
@@ -538,7 +538,7 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
         cm.ui.append(this.downloadElem_, cm.ui.SEPARATOR_DOT, secondaryLink);
         cm.events.listen(secondaryLink, 'click', function() {
           cm.Analytics.logAction(
-              cm.Analytics.LayersPanelAction.VIEW_IN_MAPS_ENGINE_LINK_CLICKED,
+              cm.Analytics.LayersTabAction.VIEW_IN_MAPS_ENGINE_LINK_CLICKED,
               this.model_.get('id'));
         }, this);
       }
@@ -887,7 +887,7 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
             var layerId = /** @type string */(this.model_.get('id'));
             var level = /** @type number */(this.slider_.getValue());
             cm.Analytics.logAction(
-                cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
+                cm.Analytics.LayersTabAction.OPACITY_SLIDER_MOVED,
                 layerId, level * 100);
           }, this)
     ];

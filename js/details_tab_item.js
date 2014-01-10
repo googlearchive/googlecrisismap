@@ -85,3 +85,8 @@ cm.DetailsTabItem.prototype.loadFeatureData = function(featureData) {
 cm.DetailsTabItem.prototype.getTitle = function() {
   return cm.MSG_DETAILS_TAB_LABEL;
 };
+
+/** @override */
+cm.DetailsTabItem.prototype.analyticsSelectionEvent = function() {
+  return cm.Analytics.TabPanelAction.DETAILS_TAB_SELECTED;
+};

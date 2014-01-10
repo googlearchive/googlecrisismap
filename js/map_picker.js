@@ -75,7 +75,7 @@ cm.MapPicker.createMenu_ = function(menuItems) {
         cm.ui.createLink(item.title, selected ? null : item.url));
     cm.events.listen(link, 'click', function() {
       cm.Analytics.logAction(
-          cm.Analytics.LayersPanelAction.MAP_PICKER_ITEM_SELECTED, null);
+          cm.Analytics.TabPanelAction.MAP_PICKER_ITEM_SELECTED, null);
     });
     return link;
   }));

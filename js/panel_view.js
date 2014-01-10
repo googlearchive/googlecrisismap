@@ -186,10 +186,10 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
       goog.dom.classes.toggle(this.frameElem_, cm.css.PANEL_COLLAPSED);
       if (goog.dom.classes.has(this.frameElem_, cm.css.PANEL_COLLAPSED)) {
         cm.Analytics.logAction(
-            cm.Analytics.LayersPanelAction.PANEL_TOGGLED_CLOSED, null);
+            cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED, null);
       } else {
         cm.Analytics.logAction(
-            cm.Analytics.LayersPanelAction.PANEL_TOGGLED_OPEN, null);
+            cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
       }
       cm.events.emit(cm.app, 'resize');  // readjust layout
     }, this);
@@ -306,7 +306,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
 
   // Reset to the default view of the map.
   cm.events.listen(resetLink, 'click', function() {
-    cm.Analytics.logAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
+    cm.Analytics.logAction(cm.Analytics.AboutTabAction.VIEW_RESET, null);
     cm.events.emit(cm.app, cm.events.RESET_VIEW, {model: this.model_});
   }, this);
 

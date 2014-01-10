@@ -12,6 +12,7 @@
 goog.provide('cm.TabPanelView');
 
 goog.require('cm.AboutTabItem');
+goog.require('cm.Analytics');
 goog.require('cm.DetailsTabItem');
 goog.require('cm.LayersTabItem');
 goog.require('cm.LegendTabItem');
@@ -158,6 +159,9 @@ cm.TabPanelView.prototype.render_ = function(expand) {
   }, this);
   cm.events.listen(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB,
       function() {
+        cm.Analytics.logAction(this.expanded_ ?
+            cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED :
+            cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
         this.setExpanded_(!this.expanded_);
       }, this);
 };
@@ -348,6 +352,9 @@ cm.TabPanelView.prototype.createButtons_ = function() {
   this.expandCollapseButton_ = cm.ui.create('div',
                                             {'class': cm.css.CHEVRON_DOWN});
   cm.events.listen(this.expandCollapseButton_, 'click', function() {
+    cm.Analytics.logAction(this.expanded_ ?
+        cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED :
+        cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
     this.setExpanded_(!this.expanded_);
   }, this);
   this.tabView_.addButton(this.expandCollapseButton_);

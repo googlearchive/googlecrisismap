@@ -282,3 +282,8 @@ cm.MapTabItem.prototype.enableMapPicker_ = function() {
     e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
   }, picker));
 };
+
+/** @override */
+cm.MapTabItem.prototype.analyticsSelectionEvent = function() {
+  return cm.Analytics.TabPanelAction.NEW_TAB_SELECTED;
+};

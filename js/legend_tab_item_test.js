@@ -9,6 +9,7 @@
 // OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 // specific language governing permissions and limitations under the License.
 
+goog.require('cm.AboutTabItem');
 goog.require('cm.LegendTabItem');
 goog.require('cm.TestBase');
 goog.require('cm.css');
@@ -166,4 +167,17 @@ LegendTabItemTest.prototype.testTabDisabledWhenNoContent = function() {
   this.appState_.setLayerEnabled(this.layerJsons_[0].id, false);
   this.appState_.setLayerEnabled(this.layerJsons_[1].id, false);
   expectFalse(legendTabItem.getIsEnabled());
+};
+
+LegendTabItemTest.prototype.testAnalyticsSelectionEvent = function() {
+  var legendTabItem = this.createLegendTabItem_('testAnalyticsSelectionEvent');
+  var aboutTabItem = new cm.AboutTabItem(this.mapModel_, this.appState_, {});
+  var tabView = new cm.TabView();
+  tabView.appendTabItem(aboutTabItem);
+  tabView.appendTabItem(legendTabItem);
+  tabView.render(cm.ui.create('div'));
+  this.expectLogAction(cm.Analytics.TabPanelAction.LEGEND_TAB_SELECTED, null);
+
+  tabView.tabBar_.selectTab(1);
+  cm.events.emit(tabView.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
 };

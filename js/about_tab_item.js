@@ -91,7 +91,7 @@ cm.AboutTabItem.prototype.handleSetDefaultView_ = function() {
  * @private
  */
 cm.AboutTabItem.prototype.handleResetView_ = function() {
-    cm.Analytics.logAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
+    cm.Analytics.logAction(cm.Analytics.AboutTabAction.VIEW_RESET, null);
     cm.events.emit(cm.app, cm.events.RESET_VIEW, {model: this.mapModel});
 };
 
@@ -102,3 +102,8 @@ cm.AboutTabItem.prototype.getTitle = function() {
 
 /** @override */
 cm.AboutTabItem.prototype.getIcon = function() { return null; };
+
+/** @override */
+cm.AboutTabItem.prototype.analyticsSelectionEvent = function() {
+  return cm.Analytics.TabPanelAction.ABOUT_TAB_SELECTED;
+};

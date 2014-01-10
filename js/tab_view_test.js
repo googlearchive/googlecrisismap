@@ -80,6 +80,10 @@ TabViewTest.TestTabItem.prototype.setIsEnabled = function(isEnabled) {
   this.tabView.updateTabItem(this);
 };
 
+TabViewTest.TestTabItem.prototype.analyticsSelectionEvent = function() {
+  return cm.Analytics.TabPanelAction.NEW_TAB_SELECTED;
+};
+
 TabViewTest.prototype.initializeTabView_ = function(opt_numTabs) {
   this.parent_ = new FakeElement('div');
   this.tabView_ = new cm.TabView();
@@ -247,6 +251,7 @@ TabViewTest.prototype.testSelectAnUnselectedTabItem = function() {
   var selectedTabClickedEmitted = false;
   cm.events.listen(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB,
                    function() { selectedTabClickedEmitted = true; });
+  this.expectLogAction(cm.Analytics.TabPanelAction.NEW_TAB_SELECTED, null);
 
   // Emit an event from the TabBar, with it thinking that tab 1 (an
   // unselected tab) has been clicked on.

@@ -114,3 +114,8 @@ cm.LegendTabItem.prototype.update_ = function() {
 cm.LegendTabItem.prototype.getIsEnabled = function() {
   return this.isEnabled_;
 };
+
+/** @override */
+cm.LegendTabItem.prototype.analyticsSelectionEvent = function() {
+  return cm.Analytics.TabPanelAction.LEGEND_TAB_SELECTED;
+};

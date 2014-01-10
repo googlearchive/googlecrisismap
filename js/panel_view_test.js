@@ -73,7 +73,7 @@ PanelViewTest.prototype.testConstructorHiddenHeader = function() {
 PanelViewTest.prototype.testResetViewLink = function() {
   var parent = this.createView_();
   var link = expectDescendantOf(parent, withText(cm.MSG_RESET_VIEW_LINK));
-  this.expectLogAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
+  this.expectLogAction(cm.Analytics.AboutTabAction.VIEW_RESET, null);
   this.expectEvent(cm.app, cm.events.RESET_VIEW);
   cm.events.emit(link, 'click');
 };
@@ -235,13 +235,13 @@ PanelViewTest.prototype.testCollapseAndExpand = function() {
 
   var button = expectDescendantOf(parent, withClass(cm.css.COLLAPSE));
   this.expectLogAction(
-      cm.Analytics.LayersPanelAction.PANEL_TOGGLED_CLOSED, null);
+      cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED, null);
   cm.events.emit(button, 'click');
   expectEq(cm.css.PANEL_COLLAPSED, cm.ui.document.body.className);
 
   button = expectDescendantOf(this.mapDiv_, withClass(cm.css.EXPAND));
   this.expectLogAction(
-      cm.Analytics.LayersPanelAction.PANEL_TOGGLED_OPEN, null);
+      cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
   cm.events.emit(button, 'click');
   expectEq('', cm.ui.document.body.className);
 };

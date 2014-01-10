@@ -136,6 +136,9 @@ cm.TabView.prototype.handleTabSelected_ = function() {
     cm.events.emit(this, cm.events.CLICK_ON_SELECTED_TAB);
     return;
   }
+  cm.Analytics.logAction(
+      this.tabItems_[this.tabBar_.getSelectedTab()].analyticsSelectionEvent(),
+      null);
   this.doSelectTabItem_();
 };
 

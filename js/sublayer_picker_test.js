@@ -57,7 +57,7 @@ SublayerPickerTest.prototype.testMenuSelect = function() {
   expectEq('sub1', selected);
 
   var sublayer_logs = this.analyticsLogs_().filter(function(x) {
-    return x.action === cm.Analytics.LayersPanelAction.SUBLAYER_SELECTED;
+    return x.action === cm.Analytics.LayersTabAction.SUBLAYER_SELECTED;
   });
   expectThat(
       goog.array.map(sublayer_logs, function(act) {return act.layerId;}),

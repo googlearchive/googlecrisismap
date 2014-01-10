@@ -239,3 +239,17 @@ LayersTabItemTest.prototype.testWasRevealedSent = function() {
   expectTrue(revealedIds[revealedLayer.get('id')]);
   expectFalse(revealedIds[unrevealedLayer.get('id')]);
 };
+
+LayersTabItemTest.prototype.testAnalyticsSelectionEvent = function() {
+  var tabView = new cm.TabView();
+  var layersTab = this.createLayersTabItem_();
+  var aboutTab = new cm.AboutTabItem(
+      this.mapModel_, this.appState_, this.config_);
+  tabView.appendTabItem(aboutTab);
+  tabView.appendTabItem(layersTab);
+  tabView.render(cm.ui.create('div'));
+  tabView.tabBar_.selectTab(1);
+  this.expectLogAction(cm.Analytics.TabPanelAction.LAYERS_TAB_SELECTED, null);
+
+  cm.events.emit(tabView.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+};

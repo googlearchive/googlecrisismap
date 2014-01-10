@@ -9,6 +9,7 @@
 // OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 // specific language governing permissions and limitations under the License.
 
+goog.require('cm.AboutTabItem');
 goog.require('cm.TestBase');
 
 goog.require('goog.module');
@@ -33,4 +34,16 @@ DetailsTabItemTest.prototype.loadFeatureData = function() {
   var content = this.tabItem_.getContent();
   expectDescendantOf(content, withText('some details about this feature'));
   expectNoDescendantOf(content, withClass('cm-map-title'));
+};
+
+DetailsTabItemTest.prototype.testAnalyticsSelectionEvent = function() {
+  var aboutTabItem = new cm.AboutTabItem(this.mapModel_, this.appState_, {});
+  var tabView = new cm.TabView();
+  tabView.appendTabItem(aboutTabItem);
+  tabView.appendTabItem(this.tabItem_);
+  tabView.render(cm.ui.create('div'));
+  this.expectLogAction(cm.Analytics.TabPanelAction.DETAILS_TAB_SELECTED, null);
+
+  tabView.tabBar_.selectTab(1);
+  cm.events.emit(tabView.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
 };

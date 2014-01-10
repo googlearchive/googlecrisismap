@@ -66,7 +66,7 @@ cm.SublayerPicker.prototype.handleMenuChange_ = function() {
     option.selected = (option.value === this.select_.value);
   }, this);
   cm.Analytics.logAction(
-      cm.Analytics.LayersPanelAction.SUBLAYER_SELECTED, this.select_.value);
+      cm.Analytics.LayersTabAction.SUBLAYER_SELECTED, this.select_.value);
   cm.events.emit(this, cm.events.SELECT_SUBLAYER, {id: this.select_.value});
 };
 

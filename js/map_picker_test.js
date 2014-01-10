@@ -118,6 +118,6 @@ MapPickerTest.prototype.testMenuSelection = function() {
   var links = allDescendantsOf(pickerElem, withNodeName('li'));
   expectEq(2, links.length);
   this.expectLogAction(
-      cm.Analytics.LayersPanelAction.MAP_PICKER_ITEM_SELECTED, null);
+      cm.Analytics.TabPanelAction.MAP_PICKER_ITEM_SELECTED, null);
   cm.events.emit(links[1], 'click');
 };

@@ -247,6 +247,11 @@ cm.LayersTabItem.prototype.setTabView = function(tabView) {
   cm.MapTabItem.prototype.setTabView.call(this, tabView);
 };
 
+/** @override */
+cm.LayersTabItem.prototype.analyticsSelectionEvent = function() {
+  return cm.Analytics.TabPanelAction.LAYERS_TAB_SELECTED;
+};
+
 /**
  * Sigh.  Thanks to a bug in goog.ui.Slider, updates to a slider while hidden
  * may not be properly drawn, such that the thumb appears in the wrong place

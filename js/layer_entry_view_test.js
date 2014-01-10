@@ -178,7 +178,7 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
 
   // Test that the slider's 'change' event fires a CHANGE_OPACITY event with the
   // correct opacity.  Also expect the corresponding analytics log
-  this.expectLogAction(cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
+  this.expectLogAction(cm.Analytics.LayersTabAction.OPACITY_SLIDER_MOVED,
                        this.layerModel_.get('id'));
   var changeOpacityEmitted = false;
   var opacity;
@@ -388,7 +388,7 @@ LayerEntryViewTest.prototype.downloadUrlGeneratesLog = function() {
   var link = expectDescendantOf(parent,
       'a', withText('Download KML'), withHref('http://monsters.com.au'));
   this.expectLogAction(
-      cm.Analytics.LayersPanelAction.DOWNLOAD_DATA_LINK_CLICKED,
+      cm.Analytics.LayersTabAction.DOWNLOAD_DATA_LINK_CLICKED,
       this.layerModel_.get('id'));
   cm.events.emit(link, 'click');
 };
@@ -548,7 +548,7 @@ LayerEntryViewTest.prototype.testZoomLink = function() {
   var link = expectDescendantOf(parent, 'a',
                                 withText(containsRegExp(/Zoom/)));
   this.expectLogAction(
-      cm.Analytics.LayersPanelAction.ZOOM_TO_AREA, this.layerModel_.get('id'));
+      cm.Analytics.LayersTabAction.ZOOM_TO_AREA, this.layerModel_.get('id'));
   this.expectEvent(this.view_, cm.events.ZOOM_TO_LAYER);
   cm.events.emit(link, 'click');
 };
@@ -823,13 +823,13 @@ LayerEntryViewTest.prototype.clickCheckbox = function() {
   });
 
   // Simulate checking the checkbox.
-  this.expectLogAction(cm.Analytics.LayersPanelAction.TOGGLED_ON, 'layer0');
+  this.expectLogAction(cm.Analytics.LayersTabAction.TOGGLED_ON, 'layer0');
   checkbox.checked = true;
   cm.events.emit(checkbox, 'click');
   expectEq({id: 'layer0', value: true, type: cm.events.TOGGLE_LAYER}, event);
 
   // Simulate unchecking the checkbox.
-  this.expectLogAction(cm.Analytics.LayersPanelAction.TOGGLED_OFF, 'layer0');
+  this.expectLogAction(cm.Analytics.LayersTabAction.TOGGLED_OFF, 'layer0');
   event = null;
   checkbox.checked = false;
   cm.events.emit(checkbox, 'click');

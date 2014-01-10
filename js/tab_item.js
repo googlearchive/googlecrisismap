@@ -42,6 +42,13 @@ cm.TabItem.prototype.getContent = function() {};
 cm.TabItem.prototype.getIsEnabled = function() {};
 
 /**
+ * Analytics event to transmit when the user selects the tab (as opposed to
+ * programmatic selection).
+ * @return {string}
+ */
+cm.TabItem.prototype.analyticsSelectionEvent = function() {};
+
+/**
  * Called when a TabItem is selected or unselected from a TabView.  The TabItem
  * is guaranteed it will receive a setSelected(true) call before content() is
  * called to retrieve the element to display.

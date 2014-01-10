@@ -61,7 +61,7 @@ AboutTabItemTest.prototype.testResetViewLink = function() {
   var about = this.createAboutTabItem_('testResetViewLink');
   var link = expectDescendantOf(about.getContent(),
                                 withText(cm.MSG_RESET_VIEW_LINK));
-  this.expectLogAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
+  this.expectLogAction(cm.Analytics.AboutTabAction.VIEW_RESET, null);
   this.expectEvent(cm.app, cm.events.RESET_VIEW);
   cm.events.emit(link, 'click');
 };
@@ -104,4 +104,17 @@ AboutTabItemTest.prototype.testSetDefaultView = function() {
   cm.events.emit(link, 'click', {});
   expectThat(event.oldDefault, not(isUndefined));
   expectThat(event.newDefault, not(isUndefined));
+};
+
+AboutTabItemTest.prototype.testAnalyticsSelectionEvent = function() {
+  var tabView = new cm.TabView();
+  var about1 = this.createAboutTabItem_('testAnalyticsSelectionEvent - tab 1');
+  var about2 = this.createAboutTabItem_('testAnalyticsSelectionEvent - tab 2');
+  tabView.appendTabItem(about1);
+  tabView.appendTabItem(about2);
+  tabView.render(cm.ui.create('div'));
+  tabView.tabBar_.selectTab(1);
+  this.expectLogAction(cm.Analytics.TabPanelAction.ABOUT_TAB_SELECTED, null);
+
+  cm.events.emit(tabView.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
 };
