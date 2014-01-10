@@ -152,13 +152,13 @@ TabPanelViewTest.prototype.testExpandCollapse = function() {
   expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
 };
 
-TabPanelViewTest.prototype.testExpandCollapseBelow = function() {
+TabPanelViewTest.prototype.testExpandCollapseBelowExpanded = function() {
   this.below_ = true;
   this.createTabPanelView_();
 
-  var numTimesFirstCollapsed = 0;
-  cm.events.listen(this.tabPanel_, cm.events.TAB_PANEL_FIRST_COLLAPSED,
-    function() { numTimesFirstCollapsed += 1; });
+  var numTimesFirstChanged = 0;
+  cm.events.listen(this.tabPanel_, cm.events.TAB_PANEL_STATE_FIRST_CHANGED,
+    function() { numTimesFirstChanged += 1; });
 
   // The panel should be expanded by default.
   var button = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_DOWN));
@@ -168,7 +168,7 @@ TabPanelViewTest.prototype.testExpandCollapseBelow = function() {
   cm.events.emit(button, 'click');
   expectThat(button, withClass(cm.css.CHEVRON_UP));
   expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
-  expectEq(1, numTimesFirstCollapsed);
+  expectEq(1, numTimesFirstChanged);
 
   // Expand the tab panel.
   cm.events.emit(button, 'click');
@@ -176,7 +176,35 @@ TabPanelViewTest.prototype.testExpandCollapseBelow = function() {
   expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
 
   // Collapse again and verify theat the first-collapsed event doesn't fire.
-  expectEq(1, numTimesFirstCollapsed);
+  expectEq(1, numTimesFirstChanged);
+};
+
+TabPanelViewTest.prototype.testExpandCollapseBelowCollapsed = function() {
+  this.below_ = true;
+  this.expand_ = false;
+  this.createTabPanelView_();
+
+  var numTimesFirstChanged = 0;
+  cm.events.listen(this.tabPanel_, cm.events.TAB_PANEL_STATE_FIRST_CHANGED,
+    function() { numTimesFirstChanged += 1; });
+
+  // The panel should be collapsed by default.
+  var button = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
+  expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
+
+  // Expand the tab panel.
+  cm.events.emit(button, 'click');
+  expectThat(button, withClass(cm.css.CHEVRON_DOWN));
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
+  expectEq(1, numTimesFirstChanged);
+
+  // Collapse the tab panel.n
+  cm.events.emit(button, 'click');
+  expectThat(button, withClass(cm.css.CHEVRON_UP));
+  expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
+
+  // Expand again and verify theat the first-changed event doesn't fire.
+  expectEq(1, numTimesFirstChanged);
 };
 
 /**

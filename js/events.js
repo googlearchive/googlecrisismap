@@ -188,8 +188,8 @@ cm.events.CHANGE_OPACITY = 'CHANGE_OPACITY';
 /** The user changed the selection in a tab view. */
 cm.events.TAB_SELECTION_CHANGED = 'TAB_SELECTION_CHANGED';
 
-/** The tab panel was collapsed for the first time. */
-cm.events.TAB_PANEL_FIRST_COLLAPSED = 'TAB_PANEL_FIRST_COLLAPSED';
+/** The tab panel was expanded or collapsed for the first time. */
+cm.events.TAB_PANEL_STATE_FIRST_CHANGED = 'TAB_PANEL_STATE_FIRST_CHANGED';
 
 /** The user clicked on a tab that was currently selected */
 cm.events.CLICK_ON_SELECTED_TAB = 'CLICK_ON_SELECTED_TAB';

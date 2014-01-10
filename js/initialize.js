@@ -703,12 +703,13 @@ cm.Map.prototype.constructPresenter_ = function(appState, mapModel, mapView) {
   }
 
   if (this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR) {
-    // On narrow maps, the first panel collapse will emit an event to reset
-    // the viewport so that it can be re-centered to use all available space.
-    cm.events.listen(this.panelView_, cm.events.TAB_PANEL_FIRST_COLLAPSED,
-      function() {
+    // On narrow maps, the first time the user expands or collapses the panel
+    // we re-center the viewport to use the available space.
+    var token = cm.events.listen(this.panelView_,
+      cm.events.TAB_PANEL_STATE_FIRST_CHANGED, function() {
         mapView.matchViewport(
             /** @type cm.LatLonBox */(mapView.get('viewport')));
+        cm.events.unlisten(token);
       });
   }
 };
