@@ -154,6 +154,7 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-tab-content .cm-map-picker-button {
+  right: auto;
   margin-left: 6px;
   top: 0px;
   position: relative;
