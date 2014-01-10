@@ -95,6 +95,33 @@ TabPanelViewTest.prototype.testConstructorBelow = function() {
   expectThat(this.parent_, withClass(cm.css.TAB_PANEL_BELOW));
 };
 
+TabPanelViewTest.prototype.testMultipleClicksOnSelectedTab = function() {
+  this.createTabPanelView_();
+  var chevron = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
+
+  // Initally we should be in an expanded state
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
+  expectThat(chevron, withClass(cm.css.CHEVRON_UP));
+
+  // Re-selecting the currently selected tab should result in collapsed state
+  cm.events.emit(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB);
+  expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
+  expectThat(chevron, withClass(cm.css.CHEVRON_DOWN));
+};
+
+TabPanelViewTest.prototype.testExpandByClickingOnSelectedTab = function() {
+  this.createTabPanelView_();
+  var chevron = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
+
+  // Collapse the tab bar by selecting an already-selected tab.
+  cm.events.emit(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB);
+
+  // Selecting the currently selected tab while in collapsed state should result
+  // in an expanded state
+  cm.events.emit(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB);
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
+  expectThat(chevron, withClass(cm.css.CHEVRON_UP));
+};
 
 TabPanelViewTest.prototype.testExpandCollapse = function() {
   this.createTabPanelView_();

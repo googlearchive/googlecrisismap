@@ -191,6 +191,9 @@ cm.events.TAB_SELECTION_CHANGED = 'TAB_SELECTION_CHANGED';
 /** The tab panel was collapsed for the first time. */
 cm.events.TAB_PANEL_FIRST_COLLAPSED = 'TAB_PANEL_FIRST_COLLAPSED';
 
+/** The user clicked on a tab that was currently selected */
+cm.events.CLICK_ON_SELECTED_TAB = 'CLICK_ON_SELECTED_TAB';
+
 /** The user requested to toggle whether a layer is enabled (not undoable). */
 cm.events.TOGGLE_LAYER = 'TOGGLE_LAYER';
 

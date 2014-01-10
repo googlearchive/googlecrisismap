@@ -18,7 +18,7 @@ goog.require('cm.ui');
 goog.require('goog.array');
 
 /**
- * An UI element for a group of tabs and a content region for  their associated
+ * An UI element for a group of tabs and a content region for their associated
  * content; individual tabs are implemented as cm.TabItems then added to the
  * tab view.  Used in the tabbed panel.
  * @constructor
@@ -126,9 +126,25 @@ cm.TabView.prototype.getTabItemByTitle = function(title) {
 /**
  * Updates the content of the TabView based on the state of the TabBar. Used
  * as the handler for selection events from the TabBar.
+ * If an unselected tab is clicked on, it gets selected; if a selected
+ * tab is clicked on, it emits the cm.events.TAB_CLICK_ON_ALREADY_SELECTED
+ * event.
  * @private
  */
 cm.TabView.prototype.handleTabSelected_ = function() {
+  if (this.selectedTabIndex_ == this.tabBar_.getSelectedTab()) {
+    cm.events.emit(this, cm.events.CLICK_ON_SELECTED_TAB);
+    return;
+  }
+  this.doSelectTabItem_();
+};
+
+/**
+ * Updates the content of the TabView based on the state of the TabBar. Used
+ * as the handler for selection events from the TabBar.
+ * @private
+ */
+cm.TabView.prototype.doSelectTabItem_ = function() {
   cm.ui.clear(this.contentElem_);
   if (this.selectedTabIndex_ !== cm.TabView.NO_SELECTION) {
     this.tabItems_[this.selectedTabIndex_].setSelected(false);
@@ -181,7 +197,7 @@ cm.TabView.prototype.selectSomething_ = function() {
   }
   if (tabIndex < 0) return;
   this.tabBar_.selectTab(tabIndex);
-  this.handleTabSelected_();
+  this.doSelectTabItem_();
 };
 
 /**
@@ -213,7 +229,7 @@ cm.TabView.prototype.selectTabItem = function(tabItem) {
   var index = goog.array.indexOf(this.tabItems_, tabItem);
   if (index === -1) return;
   this.tabBar_.selectTab(index);
-  this.handleTabSelected_();
+  this.doSelectTabItem_();
 };
 
 /**

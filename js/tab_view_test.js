@@ -215,3 +215,47 @@ TabViewTest.prototype.testGetTabItemByTitle = function() {
   expectEq('Mock 0', tab.getTitle());
   expectEq(null, this.tabView_.getTabItemByTitle('Nonexistent'));
 };
+
+TabViewTest.prototype.testSelectASelectedTabItem = function() {
+  this.initializeTabView_(2);
+  // Make sure that the first tab in the TabView is selected.
+  this.tabView_.selectTabItem(0);
+
+  // Listen for and record emitted events from the TabView, so that we
+  // can check for expected behavior based on events we send it.
+  var tabSelectionChangedEmitted = false;
+  cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED,
+                   function() { tabSelectionChangedEmitted = true; });
+  var selectedTabClickedEmitted = false;
+  cm.events.listen(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB,
+                   function() { selectedTabClickedEmitted = true; });
+
+  // Emit an event from the TabBar, with it thinking that tab 0 has been
+  // clicked on.  TabView should recognize this as a click on an already
+  // selected tab.
+  cm.events.emit(this.tabView_.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+  expectTrue(selectedTabClickedEmitted);
+  expectFalse(tabSelectionChangedEmitted);
+};
+
+TabViewTest.prototype.testSelectAnUnselectedTabItem = function() {
+  this.initializeTabView_(2);
+  // Make sure that the first tab in the TabView is selected.
+  this.tabView_.selectTabItem(0);
+
+  // Listen for and record emitted events from the TabView, so that we
+  // can check for expected behavior based on events we send it.
+  var tabSelectionChangedEmitted = false;
+  cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED,
+                   function() { tabSelectionChangedEmitted = true; });
+  var selectedTabClickedEmitted = false;
+  cm.events.listen(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB,
+                   function() { selectedTabClickedEmitted = true; });
+
+  // Emit an event from the TabBar, with it thinking that tab 1 (an
+  // unselected tab) has been clicked on.
+  this.tabView_.tabBar_.selectTab(1);
+  cm.events.emit(this.tabView_.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+  expectTrue(tabSelectionChangedEmitted);
+  expectFalse(selectedTabClickedEmitted);
+};

@@ -140,6 +140,10 @@ cm.TabPanelView.prototype.render_ = function() {
   cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED, function() {
     this.setExpanded_(true);
   }, this);
+  cm.events.listen(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB,
+      function() {
+        this.setExpanded_(!this.expanded_);
+      }, this);
 };
 
 /**
