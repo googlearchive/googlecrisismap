@@ -11,7 +11,7 @@ specific language governing permissions and limitations under the License. */
 
 /* Buttons are styled to match the Maps API Visual Refresh. */
 .cm-mapbutton {
-  font-family: roboto, arial, sans-serif;
+  font-family: arial, sans-serif;
   font-size: 11px;
   color: #000;
   text-align: center;
