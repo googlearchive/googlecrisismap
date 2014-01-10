@@ -91,7 +91,7 @@ clean:
 	@echo "want to regenerate it (takes 2 to 6 minutes), you can rm aux/*"
 
 # Run all the JS and Python tests (we need languages.py for Python tests).
-test: languages.py aux/json_files.js $(LIST)
+test: languages.py $(AUX) $(LIST)
 	@gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),$$(echo js/*_test.js | tr ' ' ',') | \
 	    python tools/format_gjstest_output.py && \
 	    echo "All JS tests passed.\n" && \
@@ -99,12 +99,12 @@ test: languages.py aux/json_files.js $(LIST)
 	    echo "\nAll JS and Python tests passed."
 
 # Run a single JS test using gjstest.
-%_test: aux/json_files.js $(LIST)
+%_test: $(AUX) $(LIST)
 	@gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),js/$@.js | \
 	    python tools/format_gjstest_output.py
 
 # Build the HTML file for a test using gjstest.
-%_test.html: aux/json_files.js $(LIST)
+%_test.html: $(AUX) $(LIST)
 	gjstest --js_files=$(TEST_FAKES),$$(tr '\n' ',' < $(LIST)),$(TEST_DEPS),js/$$(echo $@ | sed -e 's/\.html/.js/') --html_output_file=$@
 	@ls -l $@
 
