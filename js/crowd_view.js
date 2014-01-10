@@ -12,6 +12,7 @@
 goog.provide('cm.CrowdView');
 
 goog.require('cm');
+goog.require('cm.Analytics');
 goog.require('cm.MapModel');
 goog.require('cm.events');
 goog.require('cm.ui');
@@ -145,6 +146,9 @@ cm.CrowdView.prototype.makeAnswerButtons_ = function(topicId, question) {
         goog.dom.classes.enable(b, cm.css.SELECTED, b === button);
       });
       self.selectedAnswerIds_[qid] = answerTitleAndId.id;
+      cm.Analytics.logAction(
+          cm.Analytics.CrowdReportFormAction.ANSWER_BUTTON_CLICKED,
+          self.layerId_);
       self.updateSubmitButton_();
     });
     return button;
@@ -242,8 +246,17 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
     }
   }
 
-  cm.events.listen(bubble, 'click', openForm);
-  cm.events.listen(closeBtn, 'click', closeForm);
+  cm.events.listen(bubble, 'click', function(event) {
+    cm.Analytics.logAction(
+        cm.Analytics.CrowdReportFormAction.PROMPT_BUBBLE_CLICKED,
+        self.layerId_);
+    openForm(event);
+  });
+  cm.events.listen(closeBtn, 'click', function(event) {
+    cm.Analytics.logAction(
+        cm.Analytics.CrowdReportFormAction.CLOSE_BUTTON_CLICKED, self.layerId_);
+    closeForm(event);
+  });
 
   // Text input behaviour
   cm.events.listen(self.textInput_, ['keyup', 'cut', 'paste', 'change'],
@@ -265,6 +278,8 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
                '&topic_ids=' + encodeURIComponent(topicIds.join(',')) +
                '&answer_ids=' + encodeURIComponent(answerIds.join(',')) +
                '&text=' + encodeURIComponent(self.textInput_.value));
+    cm.Analytics.logAction(
+        cm.Analytics.CrowdReportFormAction.POST_CLICKED, self.layerId_);
     closeForm(event);
   }
   cm.events.listen(self.submitBtn_, 'click', submitForm);
@@ -295,6 +310,8 @@ cm.CrowdView.prototype.loadReports_ = function(parentElem) {
     cm.ui.append(parentElem, cm.ui.create('div', {},
         goog.array.map(reports, goog.bind(self.renderReport_, self))));
     parentElem.style.display = reports.length ? '' : 'none';
+    cm.Analytics.logAction(cm.Analytics.PassiveAction.CROWD_REPORT_DISPLAYED,
+                           self.layerId_, reports.length);
   });
 };
 

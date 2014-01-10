@@ -116,8 +116,19 @@ cm.Analytics.MapAction = cm.Analytics.prependUiElement_('Map', {
   MY_LOCATION_CLICKED: 'My location button clicked',
   SEARCH_QUERY_ENTERED: 'Search query entered',
   SHARE_TOGGLED_OFF: 'Share button toggled off',
-  SHARE_TOGGLED_ON: 'Share button toggled on'
+  SHARE_TOGGLED_ON: 'Share button toggled on',
+  FEATURE_CLICKED: 'Feature clicked'
 });
+
+/** @type {Object.<string, string>} */
+cm.Analytics.CrowdReportFormAction = cm.Analytics.prependUiElement_(
+    'Crowd report form', {
+      PROMPT_BUBBLE_CLICKED: 'Prompt bubble clicked',
+      POST_CLICKED: '"Post" clicked',
+      ANSWER_BUTTON_CLICKED: 'Answer button clicked',
+      CLOSE_BUTTON_CLICKED: 'Close button clicked'
+    }
+);
 
 // TODO(rew): These aren't tested; need tests to verify they are being
 // emitted.
@@ -126,7 +137,8 @@ cm.Analytics.PassiveAction = cm.Analytics.prependUiElement_('Passive', {
   LAYER_DISPLAYED: 'Layer displayed',  // Not working after first load
   LAYER_HIDDEN: 'Layer hidden',   // Not working
   MAP_ZOOM_CHANGED: 'Map zoom level changed',
-  PAGE_LOADED: 'Page loaded'
+  PAGE_LOADED: 'Page loaded',
+  CROWD_REPORT_DISPLAYED: 'Crowd report displayed'
 });
 
 /** @type {Object.<string, string>} */
@@ -188,12 +200,17 @@ cm.Analytics.categoryForAction_ = function(action) {
  *     the action.  If no layer is associated with the action, pass null.
  * @param {number=} opt_value An optional numeric value for the event (Analytics
  *     will compute sums and averages of these values).
+ * @param {number=} opt_topicId An optional topic ID, if there is a topic
+ *     relevant to this event.  (The topic ID should be fully qualified, in
+ *     the form mapId + '.' + topicId.)
  */
-cm.Analytics.logAction = function(action, layerId, opt_value) {
+cm.Analytics.logAction = function(action, layerId, opt_value, opt_topicId) {
   if (layerId) {
     _gaq.push(['_setCustomVar', 1, 'Layer ID',
-               cm.Analytics.currentMapId_ + cm.Analytics.SEPARATOR_ + layerId,
-               3]);
+               cm.Analytics.currentMapId_ + cm.Analytics.SEPARATOR_ + layerId]);
+  }
+  if (opt_topicId) {
+    _gaq.push(['_setCustomVar', 5, 'Topic ID', opt_topicId]);
   }
   _gaq.push(['_trackEvent', cm.Analytics.categoryForAction_(action), action,
              cm.Analytics.currentMapId_, opt_value,
@@ -203,7 +220,8 @@ cm.Analytics.logAction = function(action, layerId, opt_value) {
     // that are tied to events immediately after the event has been
     // pushed.  This avoids them being inadvertently carried on other
     // events.
-    _gaq.push(['_setCustomVar', 1, 'Layer ID', null, 3]);
+    _gaq.push(['_setCustomVar', 1, 'Layer ID', null]);
+    _gaq.push(['_setCustomVar', 5, 'Topic ID', null]);
   }
 };
 
