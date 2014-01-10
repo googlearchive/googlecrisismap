@@ -208,7 +208,6 @@ specific language governing permissions and limitations under the License.
 
 .cm-tab-panel .cm-panel-header {
   margin-top: 6px;
-  padding: 6px 12px;
 }
 
 .cm-tab-content .cm-legend-graphic {
@@ -322,14 +321,6 @@ specific language governing permissions and limitations under the License.
   left: -1px;
   margin-right: 0;
   padding-left: 9px;
-}
-
-.cm-tab-panel .cm-panel-header {
-  margin-top: 6px;
-}
-
-.cm-panel-header {
-  padding: 6px 12px;
 }
 
 /* Crowd reports */
