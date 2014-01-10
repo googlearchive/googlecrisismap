@@ -270,7 +270,7 @@ cm.Map.prototype.buildUi_ = function(frame) {
       mapModel, this.config_['metadata'], this.config_['metadata_url']);
 
   // Forward model changes to global scope.
-  cm.events.forward(mapModel, cm.events.MODEL_CHANGED, goog.global);
+  cm.events.forward(mapModel, cm.events.MODEL_CHANGED, cm.app);
 
   // Set up analytics.
   cm.Analytics.initialize(this.config_['analytics_id'] || '',
@@ -317,7 +317,7 @@ cm.Map.prototype.buildUi_ = function(frame) {
   var extraViews =
       cm.ExtraViewsPlugin.initAll(this.frameElem_, this.config_,
                                   extraViewsPlugins);
-  cm.events.listen(goog.global, 'resize', function() {
+  cm.events.listen(cm.app, 'resize', function() {
     self.handleResize_(preview, extraViewsPlugins, extraViews);
   });
   new cm.BuildInfoView(this.mapElem_);
@@ -327,9 +327,9 @@ cm.Map.prototype.buildUi_ = function(frame) {
   this.handleResize_(preview, extraViewsPlugins, extraViews);
   if (!this.config_['use_tab_panel']) {
     // We readjust the layout whenever the ViewportSizeMonitor detects that the
-    // window resized, and also when anything emits 'resize' on goog.global.
-    cm.events.forward(new goog.dom.ViewportSizeMonitor(goog.global), 'resize',
-                      goog.global);
+    // window resized, and also when anything emits 'resize' on cm.app.
+    cm.events.forward(
+        new goog.dom.ViewportSizeMonitor(goog.global), 'resize', cm.app);
   }
 
   // If allowed, pass the google.maps.Map element to the parent frame.
@@ -344,7 +344,7 @@ cm.Map.prototype.buildUi_ = function(frame) {
   this.constructEditor_(appState, mapModel);
 
   // Trigger resizing of the panel components when initialization is done.
-  cm.events.emit(goog.global, 'resize');
+  cm.events.emit(cm.app, 'resize');
 
   // Expose the google.maps.Map and the MapModel for testing and debugging.
   window['theMap'] = this.map_;

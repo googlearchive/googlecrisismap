@@ -210,7 +210,7 @@ cm.ShareEmailView.prototype.handleShare_ = function() {
                  '&message=' + encodeURIComponent(messageText);
   goog.net.XhrIo.send(this.shareUrl_, function(e) {
       var success = (e.target.getStatus() === 201);
-      cm.events.emit(goog.global, success ? cm.events.SHARE_EMAIL_SENT :
+      cm.events.emit(cm.app, success ? cm.events.SHARE_EMAIL_SENT :
                      cm.events.SHARE_EMAIL_FAILED);
     }, 'POST', postArgs);
   cm.ui.remove(this.popup_);

@@ -236,7 +236,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
         cm.util.round(event.latLng.lng(), 4));
   });
   // Only show lat/lon coordinates when the inspector dialog is open.
-  cm.events.listen(goog.global, cm.events.INSPECTOR_VISIBLE, function(e) {
+  cm.events.listen(cm.app, cm.events.INSPECTOR_VISIBLE, function(e) {
     mouseLatLngElem.style.display = e.value ? '' : 'none';
   });
 
@@ -252,7 +252,7 @@ cm.MapView = function(parentElem, mapModel, appState, metadataModel,
     cm.Analytics.logAction(
         cm.Analytics.PassiveAction.MAP_ZOOM_CHANGED, null, zoom);
     this.updateVisibility_();
-    cm.events.emit(goog.global, cm.events.ZOOM_CHANGED, {'zoom': zoom});
+    cm.events.emit(cm.app, cm.events.ZOOM_CHANGED, {'zoom': zoom});
   }, this);
 
   cm.events.listen(this.mapModel_, cm.events.LAYERS_ADDED, function(e) {

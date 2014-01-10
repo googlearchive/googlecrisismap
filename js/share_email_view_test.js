@@ -19,18 +19,18 @@ function ShareEmailViewTest() {
 
   // Listen for a SHARE_EMAIL event.
   this.shareEmail_ = false;
-  cm.events.listen(goog.global, cm.events.SHARE_EMAIL, function(e) {
+  cm.events.listen(cm.app, cm.events.SHARE_EMAIL, function(e) {
       this.shareEmail_ = true;
     }, this);
 
   // Listen for a SHARE_EMAIL_SENT or SHARE_EMAIL_FAILED event.
   this.shareEmailSent_ = false;
-  cm.events.listen(goog.global, cm.events.SHARE_EMAIL_SENT, function(e) {
+  cm.events.listen(cm.app, cm.events.SHARE_EMAIL_SENT, function(e) {
       this.shareEmailSent_ = true;
     }, this);
 
   this.shareEmailFailed_ = false;
-  cm.events.listen(goog.global, cm.events.SHARE_EMAIL_FAILED, function(e) {
+  cm.events.listen(cm.app, cm.events.SHARE_EMAIL_FAILED, function(e) {
       this.shareEmailFailed_ = true;
     }, this);
 

@@ -68,7 +68,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
    */
   this.focusPosition_ = null;
 
-  cm.events.listen(goog.global, cm.events.RESET_VIEW, function(event) {
+  cm.events.listen(cm.app, cm.events.RESET_VIEW, function(event) {
     this.resetView(event.model);
   }, this);
 
@@ -76,7 +76,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
     appState.setLayerEnabled(event.id, event.value);
   }, this);
 
-  cm.events.listen(goog.global, cm.events.CHANGE_OPACITY, function(event) {
+  cm.events.listen(cm.app, cm.events.CHANGE_OPACITY, function(event) {
     appState.setLayerOpacity(event.id, event.opacity);
   });
 
@@ -101,7 +101,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
   // handle other events.  At the moment, the cm.SharePopup is tightly
   // coupled to cm.ShareButton (cm.ShareButton owns a private this.popup_).
 
-  cm.events.listen(goog.global, cm.events.GO_TO_MY_LOCATION, function(event) {
+  cm.events.listen(cm.app, cm.events.GO_TO_MY_LOCATION, function(event) {
     this.zoomToUserLocation(DEFAULT_MY_LOCATION_ZOOM_LEVEL);
   }, this);
 
@@ -130,7 +130,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
       panelView.deselectFeature();
       this.focusPosition_ = null;
     }, this);
-    cm.events.listen(goog.global, cm.events.DETAILS_TAB_OPENED, function() {
+    cm.events.listen(cm.app, cm.events.DETAILS_TAB_OPENED, function() {
       var viewport = /** @type cm.LatLonBox */(mapView.get('viewport'));
       if (this.focusPosition_ && !viewport.contains(this.focusPosition_)) {
         mapView.focusOnPoint(this.focusPosition_);

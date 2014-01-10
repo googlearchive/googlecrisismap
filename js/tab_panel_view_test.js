@@ -232,7 +232,7 @@ TabPanelViewTest.prototype.testFeatureSelectAndDeselect = function() {
 TabPanelViewTest.prototype.expectFeatureSelection_ = function() {
   // Set up a listener that should fire when a feature is selected.
   this.detailsOpened_ = false;
-  cm.events.listen(goog.global, cm.events.DETAILS_TAB_OPENED, function() {
+  cm.events.listen(cm.app, cm.events.DETAILS_TAB_OPENED, function() {
     this.detailsOpened_ = true;
   }, this);
   this.createTabPanelView_();

@@ -68,8 +68,7 @@ cm.LegendTabItem.prototype.loadLegends_ = function() {
   cm.events.listen(
       layers, 'remove_at', function(i, layer) { this.update_(); }, this);
   // Triggered when the Arranger rearranges the layers
-  cm.events.listen(
-      goog.global, cm.events.MODEL_CHANGED, this.update_, this);
+  cm.events.listen(cm.app, cm.events.MODEL_CHANGED, this.update_, this);
   // Triggered when the set of enabled layers changes (which could change
   // which legend is displayed first, hence the need to re-render).
   cm.events.onChange(

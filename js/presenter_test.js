@@ -113,7 +113,7 @@ PresenterTest.prototype.testFeatureClickMarkerNotVisible = function() {
 
   // Should pan when the details tab is opened.
   expectCall(this.mapView_.focusOnPoint)(event.position);
-  cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+  cm.events.emit(cm.app, cm.events.DETAILS_TAB_OPENED);
 };
 
 /**
@@ -134,7 +134,7 @@ PresenterTest.prototype.testFeatureClickMarkerNotVisible2 = function() {
 
   // Should pan when the details tab is opened.
   expectCall(this.mapView_.focusOnPoint)(_);
-  cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+  cm.events.emit(cm.app, cm.events.DETAILS_TAB_OPENED);
 };
 
 /*
@@ -156,7 +156,7 @@ PresenterTest.prototype.testFeatureClickMarkerVisible = function() {
 
   // Should not pan when the details tab is opened.
   this.mapView_.focusOnPoint = function() { throw new Error('Bad call'); };
-  cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+  cm.events.emit(cm.app, cm.events.DETAILS_TAB_OPENED);
 };
 
 /*
@@ -177,5 +177,5 @@ PresenterTest.prototype.testFeatureClickMarkerVisible2 = function() {
 
   // Should not pan when the details tab is opened.
   this.mapView_.focusOnPoint = function() { throw new Error('Bad call'); };
-  cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+  cm.events.emit(cm.app, cm.events.DETAILS_TAB_OPENED);
 };

@@ -106,13 +106,13 @@ SimpleLegendViewTest.prototype.testHidesOnZoomChange = function() {
       SIMPLE_LAYER_WITH_ZOOM_BOUNDS_JSON, 'testHidesOnZoomChange');
   var content = legendView.getContent();
   this.validateRenderingMatchesLayerModel_(content);
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED,
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED,
                  {zoom: SIMPLE_LAYER_WITH_ZOOM_BOUNDS_JSON.min_zoom - 1});
   expectThat(content, withClass(cm.css.HIDDEN));
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED,
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED,
                  {zoom: SIMPLE_LAYER_WITH_ZOOM_BOUNDS_JSON.min_zoom + 1});
   expectThat(content, not(withClass(cm.css.HIDDEN)));
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED,
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED,
                 {zoom: SIMPLE_LAYER_WITH_ZOOM_BOUNDS_JSON.max_zoom + 1});
   expectThat(content, withClass(cm.css.HIDDEN));
 };
@@ -121,7 +121,7 @@ SimpleLegendViewTest.prototype.testUpdateOnModelZoomChange = function() {
   var legendView = this.createLegendView_(
       SIMPLE_LAYER_WITH_ZOOM_BOUNDS_JSON, 'testUpdateOnModelZoomChange');
   var content = legendView.getContent();
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED,
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED,
                  {zoom: SIMPLE_LAYER_WITH_ZOOM_BOUNDS_JSON.min_zoom + 1});
   expectThat(content, not(withClass(cm.css.HIDDEN)));
   this.layerModel_.set(
@@ -133,7 +133,7 @@ SimpleLegendViewTest.prototype.testUpdateOnModelZoomSet = function() {
   var legendView = this.createLegendView_(
       SIMPLE_LAYER_JSON, 'testUpdateOnModelAddsZoomBounds');
   var content = legendView.getContent();
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED, {zoom: 3});
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED, {zoom: 3});
   expectThat(content, not(withClass(cm.css.HIDDEN)));
   this.layerModel_.set('min_zoom', 5);
   expectThat(content, withClass(cm.css.HIDDEN));

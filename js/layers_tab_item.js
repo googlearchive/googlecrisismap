@@ -130,7 +130,7 @@ cm.LayersTabItem.prototype.addLayer_ = function(layer, index) {
       this.config, index, false);
   var view = this.layerEntryViews_[id];
   cm.events.listen(view, cm.events.DELETE_LAYER, function(e) {
-    cm.events.emit(goog.global, cm.events.DELETE_LAYER,
+    cm.events.emit(cm.app, cm.events.DELETE_LAYER,
                    {model: this.model, id: e.id});
   }, this);
   cm.events.forward(view, [cm.events.TOGGLE_LAYER,
@@ -186,7 +186,7 @@ cm.LayersTabItem.prototype.configureLayerFilter_ = function() {
   // layer filter interact, since this listener could result in a layer
   // disappearing after being edited.
   cm.events.listen(
-      goog.global, cm.events.MODEL_CHANGED, this.filterLayers_, this);
+      cm.app, cm.events.MODEL_CHANGED, this.filterLayers_, this);
 };
 
 /**

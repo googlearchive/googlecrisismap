@@ -367,7 +367,7 @@ cm.LayerEntryView = function(
   // Attach event handler to change the visibility of panel entry view based on
   // the layer's min/max zoom levels and the map's current zoom level.
   cm.events.listen(
-      goog.global, cm.events.ZOOM_CHANGED, this.handleZoomChange_, this);
+      cm.app, cm.events.ZOOM_CHANGED, this.handleZoomChange_, this);
   cm.events.onChange(
       model, ['min_zoom', 'max_zoom'], this.updateFade_, this);
 
@@ -376,7 +376,7 @@ cm.LayerEntryView = function(
     cm.events.emit(this, cm.events.ZOOM_TO_LAYER, {id: id});
   }, this);
   if (editLink) {
-    cm.events.forward(editLink, 'click', goog.global,
+    cm.events.forward(editLink, 'click', cm.app,
                       cm.events.INSPECT, {object: model});
   }
   if (deleteLink) {
@@ -834,7 +834,7 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
                 cm.Analytics.LayersPanelAction.OPACITY_SLIDER_MOVED,
                 layerId, level * 100);
             cm.events.emit(
-                goog.global, cm.events.CHANGE_OPACITY,
+                cm.app, cm.events.CHANGE_OPACITY,
                 {id: layerId, opacity: level});
           }, this),
       // Keep the slider's value updated.

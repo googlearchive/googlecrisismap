@@ -22,7 +22,7 @@ function InspectorViewTest() {
   this.objectEdited_ = false;
   this.oldValues_ = null;
   this.newValues_ = null;
-  cm.events.listen(goog.global, cm.events.OBJECT_EDITED, function(e) {
+  cm.events.listen(cm.app, cm.events.OBJECT_EDITED, function(e) {
     this.objectEdited_ = true;
     this.oldValues_ = e.oldValues;
     this.newValues_ = e.newValues;
@@ -128,7 +128,7 @@ InspectorViewTest.prototype.testOkForNew = function() {
   // Listen for an NEW_LAYER event.
   var layersCreated = false;
   var properties = null;
-  cm.events.listen(goog.global, cm.events.NEW_LAYER, function(e) {
+  cm.events.listen(cm.app, cm.events.NEW_LAYER, function(e) {
     layersCreated = true;
     properties = e.properties;
   }, this);
@@ -159,7 +159,7 @@ InspectorViewTest.prototype.testConditionalsForNew = function() {
   // Listen for an NEW_LAYER event.
   var layersCreated = false;
   var properties = null;
-  cm.events.listen(goog.global, cm.events.NEW_LAYER, function(e) {
+  cm.events.listen(cm.app, cm.events.NEW_LAYER, function(e) {
     layersCreated = true;
     properties = e.properties;
   }, this);
@@ -289,7 +289,7 @@ InspectorViewTest.prototype.testImport = function() {
   this.openInspector_(true);
 
   var fired = false;
-  cm.events.listen(goog.global, cm.events.IMPORT, function() {
+  cm.events.listen(cm.app, cm.events.IMPORT, function() {
     fired = true;
   });
 

@@ -206,7 +206,7 @@ cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
   this.expanded_ = shouldExpand;
 
   // Trigger adjustments to the tab panel height in initialize.js
-  cm.events.emit(goog.global, 'resize');
+  cm.events.emit(cm.app, 'resize');
 
   // Trigger viewport adjustment on first collapse.
   if (!this.firstExpandCollapseDone_) {
@@ -220,7 +220,7 @@ cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
 
   // Recenter viewport if there is a currently selected marker.
   if (shouldExpand && this.tabView_.selectedTabItem() === this.detailsTab_) {
-    cm.events.emit(goog.global, cm.events.DETAILS_TAB_OPENED);
+    cm.events.emit(cm.app, cm.events.DETAILS_TAB_OPENED);
   }
 };
 

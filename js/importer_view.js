@@ -569,7 +569,7 @@ cm.ImporterView.prototype.handleResize_ = function(opt_container) {
  */
 cm.ImporterView.prototype.handleNewLayer_ = function() {
   this.close_();
-  cm.events.emit(goog.global, cm.events.INSPECT);
+  cm.events.emit(cm.app, cm.events.INSPECT);
 };
 
 /**
@@ -586,7 +586,7 @@ cm.ImporterView.prototype.handleOk_ = function() {
   }, this);
 
   this.close_();
-  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {layers: layers});
+  cm.events.emit(cm.app, cm.events.ADD_LAYERS, {layers: layers});
 };
 
 /**

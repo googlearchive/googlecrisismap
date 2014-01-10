@@ -137,7 +137,7 @@ cm.LegendView.prototype.setupListeners = function() {
   this.handleLegendChanged_();
 
   cm.events.listen(
-      goog.global, cm.events.ZOOM_CHANGED, this.handleZoomLevelChanged_, this);
+      cm.app, cm.events.ZOOM_CHANGED, this.handleZoomLevelChanged_, this);
 
   cm.events.onChange(
       this.appState_, 'enabled_layer_ids', this.updateHidden_, this);
@@ -453,11 +453,10 @@ cm.FolderLegendView_.prototype.setupListeners = function() {
         }
       }, this);
   // Triggered by the layer arranger
-  cm.events.listen(
-      goog.global, cm.events.MODEL_CHANGED, function() {
-        this.sublayerLegendViews_ = this.buildSublayerLegendViews_();
-        this.render(null, this.isFirst_);
-      }, this);
+  cm.events.listen(cm.app, cm.events.MODEL_CHANGED, function() {
+    this.sublayerLegendViews_ = this.buildSublayerLegendViews_();
+    this.render(null, this.isFirst_);
+  }, this);
 };
 
 /**

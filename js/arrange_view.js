@@ -206,10 +206,10 @@ cm.ArrangeView.prototype.handleOk_ = function() {
                                    this.layerIdTreeFromDraggableLayer_, this);
   cm.ui.clear(this.layerListElem_);
   goog.array.clear(this.draggableElements_);
-  cm.events.emit(goog.global, cm.events.LAYERS_ARRANGED,
+  cm.events.emit(cm.app, cm.events.LAYERS_ARRANGED,
                  {oldValue: oldOrdering, newValue: newOrdering});
   this.layerDragHandler_.dispose();
-  cm.events.emit(goog.global, 'resize');
+  cm.events.emit(cm.app, 'resize');
 };
 
 /**
@@ -221,7 +221,7 @@ cm.ArrangeView.prototype.handleCancel_ = function() {
   cm.ui.clear(this.layerListElem_);
   goog.array.clear(this.draggableElements_);
   this.layerDragHandler_.dispose();
-  cm.events.emit(goog.global, 'resize'); // necessary?
+  cm.events.emit(cm.app, 'resize'); // necessary?
 };
 
 /**

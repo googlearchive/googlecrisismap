@@ -46,13 +46,13 @@ cm.SetDefaultViewCommand = function(oldDefault, newDefault) {
 /** @override */
 cm.SetDefaultViewCommand.prototype.execute = function(appState, mapModel) {
   this.newDefault_.writeToMapModel(mapModel);
-  cm.events.emit(goog.global, cm.events.RESET_VIEW, {model: mapModel});
+  cm.events.emit(cm.app, cm.events.RESET_VIEW, {model: mapModel});
   return true;
 };
 
 /** @override */
 cm.SetDefaultViewCommand.prototype.undo = function(appState, mapModel) {
   this.oldDefault_.writeToMapModel(mapModel);
-  cm.events.emit(goog.global, cm.events.RESET_VIEW, {model: mapModel});
+  cm.events.emit(cm.app, cm.events.RESET_VIEW, {model: mapModel});
   return true;
 };

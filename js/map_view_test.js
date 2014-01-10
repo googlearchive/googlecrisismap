@@ -289,9 +289,9 @@ MapViewTest.prototype.mouseLatLonCoordinates = function() {
   this.newMapView_(false);
   var latLonElem = expectDescendantOf(this.elem_, withClass(cm.css.LAT_LNG));
   expectEq('none', latLonElem.style.display);
-  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: true});
+  cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: true});
   expectEq('', latLonElem.style.display);
-  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
+  cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: false});
   expectEq('none', latLonElem.style.display);
 };
 
@@ -1179,7 +1179,7 @@ MapViewTest.prototype.testAdjustViewportFromUri = function() {
 MapViewTest.prototype.testZoomChanged = function() {
   var mapView = this.newMapView_(false);
   var eventFiredCorrectly = false;
-  cm.events.listen(goog.global, cm.events.ZOOM_CHANGED, function(e) {
+  cm.events.listen(cm.app, cm.events.ZOOM_CHANGED, function(e) {
     eventFiredCorrectly = goog.isDefAndNotNull(e.zoom);
   });
   mapView.set('zoom', 3);

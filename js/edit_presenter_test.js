@@ -26,7 +26,7 @@ EditPresenterTest.prototype.testImportEvent = function() {
   var importer = this.expectNew_('cm.ImporterView', '/root/.api/maps');
   var presenter = new cm.EditPresenter(null, map, null, this.config_);
   expectCall(importer.openImporter)();
-  cm.events.emit(goog.global, cm.events.IMPORT, {});
+  cm.events.emit(cm.app, cm.events.IMPORT, {});
 };
 
 /** Tests that the EditPresenter responds correctly to INSPECT events. */
@@ -44,7 +44,7 @@ EditPresenterTest.prototype.testInspectEvent = function() {
     contains({key: 'viewport', label: 'Default viewport',
               type: cm.editors.Type.LAT_LON_BOX, app_state: null})
   ]), null, map);
-  cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
+  cm.events.emit(cm.app, cm.events.INSPECT, {object: map});
 
   // Emitting an INSPECT event on a layer should open an inspector on the layer.
   var layer = new cm.LayerModel();
@@ -70,12 +70,12 @@ EditPresenterTest.prototype.testInspectEvent = function() {
   ]);
   expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, null,
                                 layer);
-  cm.events.emit(goog.global, cm.events.INSPECT, {object: layer});
+  cm.events.emit(cm.app, cm.events.INSPECT, {object: layer});
 
   // Emitting an INSPECT event with no object should open an inspector on a new
   // layer.
   expectCall(inspector.inspect)('Create new layer', layerSpecExpect, null);
-  cm.events.emit(goog.global, cm.events.INSPECT, {});
+  cm.events.emit(cm.app, cm.events.INSPECT, {});
 };
 
 function findEditorSpec(key, editorSpecs) {
@@ -97,7 +97,7 @@ EditPresenterTest.prototype.testEnableOsmMapTypeEditing = function() {
 
   // This should call inspector.inspect, which captures the 'editorSpecs' arg.
   var presenter = new cm.EditPresenter(null, null, null, {});
-  cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
+  cm.events.emit(cm.app, cm.events.INSPECT, {object: map});
   // The OSM option should not be present.
   var spec = findEditorSpec('map_type', specs);
   expectThat(spec.choices, not(contains(OSM_CHOICE)));
@@ -105,7 +105,7 @@ EditPresenterTest.prototype.testEnableOsmMapTypeEditing = function() {
   // Try again, this time with the enable_osm_map_type_editing flag set.
   presenter = new cm.EditPresenter(null, null, null,
                                    {enable_osm_map_type_editing: true});
-  cm.events.emit(goog.global, cm.events.INSPECT, {object: map});
+  cm.events.emit(cm.app, cm.events.INSPECT, {object: map});
   // The OSM option should be present this time.
   var spec = findEditorSpec('map_type', specs);
   expectThat(spec.choices, contains(OSM_CHOICE));
@@ -121,7 +121,7 @@ EditPresenterTest.prototype.testArrangerEvent = function() {
   // Emitting an ARRANGE event should open the layer arranger.
   expectCall(arranger.isOpen)();
   expectCall(arranger.open)();
-  cm.events.emit(goog.global, cm.events.ARRANGE, {});
+  cm.events.emit(cm.app, cm.events.ARRANGE, {});
 };
 
 /** Tests that the EditPresenter responds to ADD_LAYERS events. */
@@ -133,7 +133,7 @@ EditPresenterTest.prototype.testAddLayersEvent = function() {
   var layers = [{title: 'Empty Layer'}];
   var createLayersCommand = this.expectNew_('cm.CreateLayersCommand', layers);
   expectCall(createLayersCommand.execute)(_, _);
-  cm.events.emit(goog.global, cm.events.ADD_LAYERS, {layers: layers});
+  cm.events.emit(cm.app, cm.events.ADD_LAYERS, {layers: layers});
 };
 
 /**
@@ -154,7 +154,7 @@ EditPresenterTest.prototype.testNewLayerEvent = function() {
                 maproots[0]['title'] === properties['title']);
           }));
   expectCall(createLayersCommand.execute)(_, _);
-  cm.events.emit(goog.global, cm.events.NEW_LAYER, {properties: properties});
+  cm.events.emit(cm.app, cm.events.NEW_LAYER, {properties: properties});
 };
 
 /** Tests that the EditPresenter responds to DELETE_LAYER events. */
@@ -166,7 +166,7 @@ EditPresenterTest.prototype.testLayerDeletedEvent = function() {
   var id = 'new_layer_id';
   var deleteLayerCommand = this.expectNew_('cm.DeleteLayerCommand', id);
   expectCall(deleteLayerCommand.execute)(_, _);
-  cm.events.emit(goog.global, cm.events.DELETE_LAYER, {id: id});
+  cm.events.emit(cm.app, cm.events.DELETE_LAYER, {id: id});
 };
 
 /** Tests that the EditPresenter responds correctly to OBJECT_EDITED events. */
@@ -178,7 +178,7 @@ EditPresenterTest.prototype.testObjectEditedEvent = function() {
   var a = {x: 5}, b = {x: 6};
   var editCommand = this.expectNew_('cm.EditCommand', a, b, null);
   expectCall(editCommand.execute)(_, _);
-  cm.events.emit(goog.global, cm.events.OBJECT_EDITED, {
+  cm.events.emit(cm.app, cm.events.OBJECT_EDITED, {
     oldValues: a, newValues: b, layerId: null
   });
 };
@@ -194,7 +194,7 @@ EditPresenterTest.prototype.testLayersArrangedEvent = function() {
   var arrangeCommand = this.expectNew_('cm.ArrangeCommand',
                                        oldVal, newVal);
   expectCall(arrangeCommand.execute)(_, _);
-  cm.events.emit(goog.global, cm.events.LAYERS_ARRANGED, {
+  cm.events.emit(cm.app, cm.events.LAYERS_ARRANGED, {
     oldValue: oldVal, newValue: newVal
   });
 };
@@ -205,7 +205,7 @@ EditPresenterTest.prototype.testCommandBufferChangedEvent = function() {
   var presenter = new cm.EditPresenter(null, null, null);
   var undoPossible, redoPossible;
 
-  cm.events.listen(goog.global, cm.events.UNDO_REDO_BUFFER_CHANGED,
+  cm.events.listen(cm.app, cm.events.UNDO_REDO_BUFFER_CHANGED,
     function(e) {
       undoPossible = e.undo_possible;
       redoPossible = e.redo_possible;
@@ -222,12 +222,12 @@ EditPresenterTest.prototype.testCommandBufferChangedEvent = function() {
   expectFalse(redoPossible);
 
   // After an undo operation, there is a command to redo but nothing to undo.
-  cm.events.emit(goog.global, cm.events.UNDO);
+  cm.events.emit(cm.app, cm.events.UNDO);
   expectFalse(undoPossible);
   expectTrue(redoPossible);
 
   // After a redo operation, there is a command to undo but nothing to redo.
-  cm.events.emit(goog.global, cm.events.REDO);
+  cm.events.emit(cm.app, cm.events.REDO);
   expectTrue(undoPossible);
   expectFalse(redoPossible);
 };
@@ -241,7 +241,7 @@ EditPresenterTest.prototype.testShareEmailView = function() {
   sharer.share = function(save_url) { url = true; };
 
   // Emitting a SHARE_EMAIL event should open a share email popup.
-  cm.events.emit(goog.global, cm.events.SHARE_EMAIL);
+  cm.events.emit(cm.app, cm.events.SHARE_EMAIL);
   expectTrue(url);
 };
 
@@ -257,6 +257,6 @@ EditPresenterTest.prototype.testSetDefaultView = function() {
   expectCall(command.execute)(_, _);
 
   var presenter = new cm.EditPresenter(null, null, null);
-  cm.events.emit(goog.global, cm.events.DEFAULT_VIEW_SET,
+  cm.events.emit(cm.app, cm.events.DEFAULT_VIEW_SET,
       {oldDefault: oldDefault, newDefault: newDefault});
 };

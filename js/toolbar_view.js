@@ -48,7 +48,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
     touch, opt_diffUrl) {
   var collaborateLink = cm.ui.createLink(cm.MSG_COLLABORATE_LINK);
   cm.events.forward(collaborateLink, 'click',
-                    goog.global, cm.events.SHARE_EMAIL);
+                    cm.app, cm.events.SHARE_EMAIL);
 
   // TODO(romano): move the toolbars into the inner panel element, which
   // contains the collapse button, map title, description, and layers.
@@ -65,12 +65,12 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
   goog.dom.classes.add(undoLink, cm.css.DISABLED);
   goog.dom.classes.add(redoLink, cm.css.DISABLED);
 
-  var undoLinkEventToken = cm.events.forward(undoLink, 'click',
-      goog.global, cm.events.UNDO);
-  var redoLinkEventToken = cm.events.forward(redoLink, 'click',
-      goog.global, cm.events.REDO);
+  var undoLinkEventToken = cm.events.forward(
+      undoLink, 'click', cm.app, cm.events.UNDO);
+  var redoLinkEventToken = cm.events.forward(
+      redoLink, 'click', cm.app, cm.events.REDO);
 
-  cm.events.listen(goog.global, cm.events.UNDO_REDO_BUFFER_CHANGED,
+  cm.events.listen(cm.app, cm.events.UNDO_REDO_BUFFER_CHANGED,
     function(e) {
       goog.dom.classes.enable(undoLink, cm.css.DISABLED, !e.undo_possible);
       goog.dom.classes.enable(redoLink, cm.css.DISABLED, !e.redo_possible);
@@ -85,7 +85,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
 
     // The "Save" link is initially disabled. Changing the model enables it.
     goog.dom.classes.add(saveLink, cm.css.DISABLED);
-    cm.events.listen(goog.global, cm.events.MODEL_CHANGED, function() {
+    cm.events.listen(cm.app, cm.events.MODEL_CHANGED, function() {
       cm.ui.setText(saveLink, cm.MSG_SAVE);
       goog.dom.classes.remove(saveLink, cm.css.DISABLED, cm.css.ERROR);
     }, this);
@@ -93,18 +93,18 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
     // Handle clicks on the "Save" link.
     cm.events.listen(saveLink, 'click', function() {
       this.disableSaveLink_(saveLink);
-      cm.events.emit(goog.global, cm.events.SAVE, {model: mapModel});
+      cm.events.emit(cm.app, cm.events.SAVE, {model: mapModel});
     }, this);
     // In the tabbed UI, this needs to listen for whether another tab has fired
     // a save event and update this tabs links as well.
-    cm.events.listen(goog.global, cm.events.SAVE, function() {
+    cm.events.listen(cm.app, cm.events.SAVE, function() {
       this.disableSaveLink_(saveLink);
     }, this);
     // Handle completion of the Save operation.
-    cm.events.listen(goog.global, cm.events.SAVE_DONE, function() {
+    cm.events.listen(cm.app, cm.events.SAVE_DONE, function() {
       cm.ui.setText(saveLink, cm.MSG_SAVED);
     }, this);
-    cm.events.listen(goog.global, cm.events.SAVE_FAILED, function() {
+    cm.events.listen(cm.app, cm.events.SAVE_FAILED, function() {
       // If the save fails, leave the link enabled so the user can click it
       // to try again.  Not the most elegant solution, but good enough for now.
       goog.dom.classes.remove(saveLink, cm.css.DISABLED);
@@ -124,7 +124,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
   }
 
   var addNewLayerLink = cm.ui.createLink(cm.MSG_ADD_NEW_LAYERS);
-  cm.events.forward(addNewLayerLink, 'click', goog.global, cm.events.INSPECT);
+  cm.events.forward(addNewLayerLink, 'click', cm.app, cm.events.INSPECT);
   cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT,
                addNewLayerLink, cm.ui.SEPARATOR_DOT);
 
@@ -132,7 +132,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
   // FOLDER argument.
   var addNewFolderLink = cm.ui.createLink(cm.MSG_ADD_NEW_FOLDER);
   cm.events.forward(
-      addNewFolderLink, 'click', goog.global, cm.events.ADD_LAYERS, {
+      addNewFolderLink, 'click', cm.app, cm.events.ADD_LAYERS, {
         layers: [{title: cm.MSG_UNTITLED_FOLDER,
                   type: cm.LayerModel.Type.FOLDER}]
       });
@@ -140,7 +140,7 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
 
   if (!touch) {
     var arrangeLink = cm.ui.createLink(cm.MSG_ARRANGE_LAYERS_LINK);
-    cm.events.forward(arrangeLink, 'click', goog.global, cm.events.ARRANGE);
+    cm.events.forward(arrangeLink, 'click', cm.app, cm.events.ARRANGE);
     cm.ui.append(editToolbarElem, arrangeLink);
   }
 

@@ -103,8 +103,8 @@ cm.AboutTabItem.prototype.createTitle_ = function() {
 
   if (this.editingEnabled) {
     // Open the property inspector on the map.
-    cm.events.forward(this.mapTitleElem_, 'click', goog.global,
-                      cm.events.INSPECT, {object: this.mapModel});
+    cm.events.forward(this.mapTitleElem_, 'click',
+                      cm.app, cm.events.INSPECT, {object: this.mapModel});
   }
   return this.mapTitleElem_;
 };
@@ -164,7 +164,7 @@ cm.AboutTabItem.prototype.handleSetDefaultView_ = function() {
   var oldDefault = cm.AppState.fromAppState(this.appState);
   oldDefault.setFromMapModel(this.mapModel);
   var newDefault = cm.AppState.fromAppState(this.appState);
-  cm.events.emit(goog.global, cm.events.DEFAULT_VIEW_SET,
+  cm.events.emit(cm.app, cm.events.DEFAULT_VIEW_SET,
                  {oldDefault: oldDefault, newDefault: newDefault});
 };
 
@@ -175,7 +175,7 @@ cm.AboutTabItem.prototype.handleSetDefaultView_ = function() {
  */
 cm.AboutTabItem.prototype.handleResetView_ = function() {
     cm.Analytics.logAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
-    cm.events.emit(goog.global, cm.events.RESET_VIEW, {model: this.mapModel});
+    cm.events.emit(cm.app, cm.events.RESET_VIEW, {model: this.mapModel});
 };
 
 /** @override */

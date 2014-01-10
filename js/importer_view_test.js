@@ -43,7 +43,7 @@ function ImporterViewTest() {
   // Listen for an ADD_LAYERS event.
   this.layersCreated_ = false;
   this.layers_ = null;
-  cm.events.listen(goog.global, cm.events.ADD_LAYERS, function(e) {
+  cm.events.listen(cm.app, cm.events.ADD_LAYERS, function(e) {
     this.layersCreated_ = true;
     this.layers_ = e.layers;
   }, this);
@@ -254,7 +254,7 @@ ImporterViewTest.prototype.testCreateNew = function() {
   this.openImporter_();
 
   var fired = false;
-  cm.events.listen(goog.global, cm.events.INSPECT, function() {
+  cm.events.listen(cm.app, cm.events.INSPECT, function() {
     fired = true;
   });
 

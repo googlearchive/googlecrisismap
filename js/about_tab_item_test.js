@@ -56,7 +56,7 @@ AboutTabItemTest.prototype.testCreation_editingEnabled = function() {
   var content = about.getContent();
   expectDescendantOf(content, withClass(cm.css.DRAFT_INDICATOR));
   expectDescendantOf(content, withText(cm.MSG_RESET_VIEW_LINK));
-  this.expectEvent(goog.global, cm.events.INSPECT);
+  this.expectEvent(cm.app, cm.events.INSPECT);
   cm.events.emit(
       expectDescendantOf(content, withClass(cm.css.MAP_TITLE)), 'click');
 };
@@ -67,7 +67,7 @@ AboutTabItemTest.prototype.testResetViewLink = function() {
   var link = expectDescendantOf(about.getContent(),
                                 withText(cm.MSG_RESET_VIEW_LINK));
   this.expectLogAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
-  this.expectEvent(goog.global, cm.events.RESET_VIEW);
+  this.expectEvent(cm.app, cm.events.RESET_VIEW);
   cm.events.emit(link, 'click');
 };
 
@@ -115,7 +115,7 @@ AboutTabItemTest.prototype.testSetDefaultView = function() {
       about.getContent(), withText(cm.MSG_SET_DEFAULT_VIEW_LINK));
 
   var event = undefined;
-  cm.events.listen(goog.global, cm.events.DEFAULT_VIEW_SET, function(e) {
+  cm.events.listen(cm.app, cm.events.DEFAULT_VIEW_SET, function(e) {
     event = e;
   });
   cm.events.emit(link, 'click', {});

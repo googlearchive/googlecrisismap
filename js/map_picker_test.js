@@ -99,7 +99,7 @@ MapPickerTest.prototype.menuButton = function() {
   expectDescendantOf(body, withClass(cm.css.MAP_PICKER));
 
   // Resizing the window should make it disappear.
-  cm.events.emit(goog.global, 'resize');
+  cm.events.emit(cm.app, 'resize');
   expectNoDescendantOf(body, withClass(cm.css.MAP_PICKER));
 };
 

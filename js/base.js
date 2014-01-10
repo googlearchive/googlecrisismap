@@ -15,6 +15,9 @@ goog.require('goog.i18n.MessageFormat');
 
 cm = {};
 
+/** A place to emit, and attach listeners for, app-wide events. */
+cm.app = {};
+
 
 // All localizable messages are declared below.  Please provide a @desc for
 // each message to give the translators some context.

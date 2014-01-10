@@ -226,7 +226,7 @@ cm.InspectorView.prototype.inspect = function(
 
   // Bring up the inspector dialog.
   cm.ui.showPopup(this.popup_);
-  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: true});
+  cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: true});
 };
 
 /**
@@ -234,8 +234,8 @@ cm.InspectorView.prototype.inspect = function(
  * @private
  */
 cm.InspectorView.prototype.handleCopyClick_ = function() {
-  cm.events.emit(goog.global, cm.events.IMPORT);
-  cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
+  cm.events.emit(cm.app, cm.events.IMPORT);
+  cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: false});
   cm.ui.remove(this.popup_);
 };
 
@@ -266,10 +266,10 @@ cm.InspectorView.prototype.handleOk_ = function() {
     }
   }
   if (this.isNew_) {
-    cm.events.emit(goog.global, cm.events.NEW_LAYER, {properties: newValues});
+    cm.events.emit(cm.app, cm.events.NEW_LAYER, {properties: newValues});
   } else {
     var object = this.object_;
-    cm.events.emit(goog.global, cm.events.OBJECT_EDITED, {
+    cm.events.emit(cm.app, cm.events.OBJECT_EDITED, {
       oldValues: oldValues,
       newValues: newValues,
       layerId: object instanceof cm.LayerModel ? object.get('id') : null
@@ -300,7 +300,7 @@ cm.InspectorView.prototype.dispose_ = function(opt_disposeInspector) {
     this.editors_ = null;
   }
   if (opt_disposeInspector) {
-    cm.events.emit(goog.global, cm.events.INSPECTOR_VISIBLE, {value: false});
+    cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: false});
     cm.ui.remove(this.popup_);
   }
 

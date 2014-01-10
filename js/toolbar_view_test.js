@@ -27,11 +27,11 @@ registerTestSuite(ToolbarViewTest);
 ToolbarViewTest.prototype.testUndoLink = function() {
   var undoLink = expectDescendantOf(this.parent_, withText('Undo'));
   var undoEmitted = false;
-  cm.events.listen(goog.global, cm.events.UNDO, function() {
+  cm.events.listen(cm.app, cm.events.UNDO, function() {
     undoEmitted = true;
   });
 
-  cm.events.emit(goog.global, cm.events.UNDO_REDO_BUFFER_CHANGED,
+  cm.events.emit(cm.app, cm.events.UNDO_REDO_BUFFER_CHANGED,
       {redo_possible: true, undo_possible: true});
   cm.events.emit(undoLink, 'click');
   expectTrue(undoEmitted);
@@ -42,11 +42,11 @@ ToolbarViewTest.prototype.testUndoLink = function() {
 ToolbarViewTest.prototype.testRedoLink = function() {
   var redoLink = expectDescendantOf(this.parent_, withText('Redo'));
   var redoEmitted = false;
-  cm.events.listen(goog.global, cm.events.REDO, function() {
+  cm.events.listen(cm.app, cm.events.REDO, function() {
     redoEmitted = true;
   });
 
-  cm.events.emit(goog.global, cm.events.UNDO_REDO_BUFFER_CHANGED,
+  cm.events.emit(cm.app, cm.events.UNDO_REDO_BUFFER_CHANGED,
       {redo_possible: true, undo_possible: true});
   cm.events.emit(redoLink, 'click');
   expectTrue(redoEmitted);
@@ -57,7 +57,7 @@ ToolbarViewTest.prototype.testRedoLink = function() {
 ToolbarViewTest.prototype.testArrangeLink = function() {
   var link = expectDescendantOf(this.parent_, withText('Arrange'));
   var eventEmitted = false;
-  cm.events.listen(goog.global, cm.events.ARRANGE, function() {
+  cm.events.listen(cm.app, cm.events.ARRANGE, function() {
     eventEmitted = true;
   });
   cm.events.emit(link, 'click');
@@ -68,7 +68,7 @@ ToolbarViewTest.prototype.testArrangeLink = function() {
 ToolbarViewTest.prototype.testAddLayerLink = function() {
   var link = expectDescendantOf(this.parent_, withText('Add layer'));
   var eventEmitted = false;
-  cm.events.listen(goog.global, cm.events.INSPECT, function() {
+  cm.events.listen(cm.app, cm.events.INSPECT, function() {
     eventEmitted = true;
   });
   cm.events.emit(link, 'click');
@@ -79,7 +79,7 @@ ToolbarViewTest.prototype.testAddLayerLink = function() {
 ToolbarViewTest.prototype.testAddFolderLink = function() {
   var link = expectDescendantOf(this.parent_, withText('Add folder'));
   var eventEmitted = false;
-  cm.events.listen(goog.global, cm.events.ADD_LAYERS, function() {
+  cm.events.listen(cm.app, cm.events.ADD_LAYERS, function() {
     eventEmitted = true;
   });
   cm.events.emit(link, 'click');
@@ -163,7 +163,7 @@ ToolbarViewTest.prototype.testBeforeUnload = function() {
 
 /** Verifies the beforeunload handler when there are changes to be saved. */
 ToolbarViewTest.prototype.testBeforeUnloadSave = function() {
-  cm.events.emit(goog.global, cm.events.MODEL_CHANGED);
+  cm.events.emit(cm.app, cm.events.MODEL_CHANGED);
   var str = window.onbeforeunload();
   expectEq(cm.MSG_UNSAVED_CHANGES, str);
 };
@@ -173,7 +173,7 @@ ToolbarViewTest.prototype.testSaveLink = function() {
   // The save link should be unavailable until the model changes.
   expectDescendantOf(this.parent_, withText('Saved'), withClass('cm-disabled'));
   expectNoDescendantOf(this.parent_, withText('Save'));
-  cm.events.emit(goog.global, cm.events.MODEL_CHANGED);
+  cm.events.emit(cm.app, cm.events.MODEL_CHANGED);
 
   // The 'Save' link should be available. On 'click' it should be disabled.
   expectNoDescendantOf(this.parent_, withText('Saved'));
@@ -182,7 +182,7 @@ ToolbarViewTest.prototype.testSaveLink = function() {
   expectThat(saveLink, withClass('cm-disabled'));
 
   // When saving is complete, the text should change.
-  cm.events.emit(goog.global, cm.events.SAVE_DONE);
+  cm.events.emit(cm.app, cm.events.SAVE_DONE);
   expectDescendantOf(this.parent_, withText('Saved'));
   expectNoDescendantOf(this.parent_, withText('Save'));
 };
@@ -194,7 +194,7 @@ ToolbarViewTest.prototype.testTabbedUiSaveLink = function() {
   new cm.ToolbarView(
       otherParent, this.mapModel_, true, true, '/root/.maps', false,
       undefined, true);
-  cm.events.emit(goog.global, cm.events.MODEL_CHANGED);
+  cm.events.emit(cm.app, cm.events.MODEL_CHANGED);
 
   // Clicking on the 'Save' in one toolbar should disable all the
   // 'Save' links.
@@ -205,7 +205,7 @@ ToolbarViewTest.prototype.testTabbedUiSaveLink = function() {
   expectThat(otherSaveLink, withClass('cm-disabled'));
 
   // When saving is complete, the text of all 'Save' links should change.
-  cm.events.emit(goog.global, cm.events.SAVE_DONE);
+  cm.events.emit(cm.app, cm.events.SAVE_DONE);
   expectDescendantOf(this.parent_, withText('Saved'));
   expectDescendantOf(otherParent, withText('Saved'));
   expectNoDescendantOf(this.parent_, withText('Save'));

@@ -508,6 +508,9 @@ cm.TestBase = function() {
   this.setForTest_('document', fakeDocument);
   this.setForTest_('goog.global', fakeWindow);
   this.setForTest_('window', fakeWindow);
+
+  // Ensure that no previously attached cm.app listeners will affect the test.
+  this.setForTest_('cm.app', {});
 };
 
 /**
@@ -743,11 +746,15 @@ cm.TestBase.prototype.expectLogAction = function(
     return value;
   }
 
-  /** Restores all symbols replaced by setForTest_, including DOM fakes. */
+  /** Restores global state and performs post-test verifications. */
   cm.TestBase.prototype.tearDown = function() {
+    // Restore everything set by setForTest_; this includes dropping references
+    // to cm.app and DOM fakes, allowing listeners on them to be GCed.
     for (var dottedName in this.originalValues_) {
       setByDottedName(dottedName, this.originalValues_[dottedName]);
     }
+
+    // Perform post-test verifications.
     if (this.analyticsTracker_) {
       this.analyticsTracker_.verify();
     }

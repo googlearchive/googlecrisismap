@@ -162,7 +162,7 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
                        this.layerModel_.get('id'));
   var changeOpacityEmitted = false;
   var opacity;
-  cm.events.listen(goog.global, cm.events.CHANGE_OPACITY, function(e) {
+  cm.events.listen(cm.app, cm.events.CHANGE_OPACITY, function(e) {
     changeOpacityEmitted = true;
     opacity = e.opacity;
   });
@@ -466,16 +466,16 @@ LayerEntryViewTest.prototype.testZoomFading = function() {
 
   // Each of the elements above should be faded out twice and faded in twice.
   expectCall(goog.style.setOpacity)(anyOf(elems), 0.5).times(elems.length);
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED, {zoom: 9}); // Fade out.
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED, {zoom: 9}); // Fade out.
 
   expectCall(goog.style.setOpacity)(anyOf(elems), 1.0).times(elems.length);
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED, {zoom: 4}); // Fade in.
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED, {zoom: 4}); // Fade in.
 
   expectCall(goog.style.setOpacity)(anyOf(elems), 0.5).times(elems.length);
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED, {zoom: 2}); // Fade out.
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED, {zoom: 2}); // Fade out.
 
   expectCall(goog.style.setOpacity)(anyOf(elems), 1.0).times(elems.length);
-  cm.events.emit(goog.global, cm.events.ZOOM_CHANGED, {zoom: 5}); // Fade in.
+  cm.events.emit(cm.app, cm.events.ZOOM_CHANGED, {zoom: 5}); // Fade in.
 };
 
 /**

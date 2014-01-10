@@ -318,7 +318,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   // The INSPECT event contains an object for editing existing objects, or
   // no object for a new layer.
   // TODO(joeysilva): Use a type field to specify new layers or new folders.
-  cm.events.listen(goog.global, cm.events.INSPECT, function(e) {
+  cm.events.listen(cm.app, cm.events.INSPECT, function(e) {
     if (!e.object) {
       // New layer
       inspector.inspect('Create new layer', layerFields, appState);
@@ -330,25 +330,25 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   });
 
   // The user has requested to arrange the layers in the panel.
-  cm.events.listen(goog.global, cm.events.ARRANGE, function(e) {
+  cm.events.listen(cm.app, cm.events.ARRANGE, function(e) {
     if (!arranger.isOpen()) {
       arranger.open();
     }
   });
 
   // The user has requested to add layers.
-  cm.events.listen(goog.global, cm.events.IMPORT, function(e) {
+  cm.events.listen(cm.app, cm.events.IMPORT, function(e) {
     importer.openImporter();
   });
 
   // The user has selected some layers to import and wants to import them.
-  cm.events.listen(goog.global, cm.events.ADD_LAYERS, function(e) {
+  cm.events.listen(cm.app, cm.events.ADD_LAYERS, function(e) {
     this.doCommand(new cm.CreateLayersCommand(e.layers), appState, mapModel);
   }, this);
 
   // The user has filled in properties for a new layer and wants to create the
   // layer.
-  cm.events.listen(goog.global, cm.events.NEW_LAYER, function(e) {
+  cm.events.listen(cm.app, cm.events.NEW_LAYER, function(e) {
     var model = cm.LayerModel.newFromMapRoot({type: 'KML'});
     for (var key in e.properties) {
       if (e.properties[key] !== undefined) {
@@ -360,44 +360,44 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   }, this);
 
   // The user has requested to delete a layer.
-  cm.events.listen(goog.global, cm.events.DELETE_LAYER, function(e) {
+  cm.events.listen(cm.app, cm.events.DELETE_LAYER, function(e) {
     this.doCommand(new cm.DeleteLayerCommand(e.id), appState, mapModel);
   }, this);
 
   // The user has requested to save the current map model to the server.
-  cm.events.listen(goog.global, cm.events.SAVE, this.handleSave, this);
+  cm.events.listen(cm.app, cm.events.SAVE, this.handleSave, this);
 
   // The user has finished an edit and wants to commit the changes.
-  cm.events.listen(goog.global, cm.events.OBJECT_EDITED, function(e) {
+  cm.events.listen(cm.app, cm.events.OBJECT_EDITED, function(e) {
     this.doCommand(new cm.EditCommand(e.oldValues, e.newValues, e.layerId),
                    appState, mapModel);
   }, this);
 
   // The user has finished arranging layers and wants to commit the changes.
-  cm.events.listen(goog.global, cm.events.LAYERS_ARRANGED, function(e) {
+  cm.events.listen(cm.app, cm.events.LAYERS_ARRANGED, function(e) {
     this.doCommand(new cm.ArrangeCommand(e.oldValue, e.newValue),
                    appState, mapModel);
-    cm.events.emit(goog.global, cm.events.MODEL_CHANGED, {model: mapModel});
+    cm.events.emit(cm.app, cm.events.MODEL_CHANGED, {model: mapModel});
   }, this);
 
   // The user has requested undo or redo.
-  cm.events.listen(goog.global, cm.events.UNDO, function() {
+  cm.events.listen(cm.app, cm.events.UNDO, function() {
     this.handleUndo(appState, mapModel);
   }, this);
-  cm.events.listen(goog.global, cm.events.REDO, function() {
+  cm.events.listen(cm.app, cm.events.REDO, function() {
     this.handleRedo(appState, mapModel);
   }, this);
 
-  cm.events.listen(goog.global, cm.events.SHARE_EMAIL, function() {
+  cm.events.listen(cm.app, cm.events.SHARE_EMAIL, function() {
     sharer.share(config['share_url']);
   }, this);
 
-  cm.events.listen(goog.global, cm.events.SHARE_EMAIL_FAILED, function() {
+  cm.events.listen(cm.app, cm.events.SHARE_EMAIL_FAILED, function() {
     sharer.emailError();
   }, this);
 
   // The user has set the current view as the default view.
-  cm.events.listen(goog.global, cm.events.DEFAULT_VIEW_SET, function(e) {
+  cm.events.listen(cm.app, cm.events.DEFAULT_VIEW_SET, function(e) {
     this.doCommand(new cm.SetDefaultViewCommand(e.oldDefault, e.newDefault),
                    appState, mapModel);
   }, this);
@@ -456,7 +456,7 @@ cm.EditPresenter.prototype.handleSave = function(event) {
   var json = goog.json.serialize(event.model.toMapRoot());
   goog.net.XhrIo.send(this.saveUrl_, function(e) {
     var success = (e.target.getStatus() === 201);
-    cm.events.emit(goog.global,
+    cm.events.emit(cm.app,
                    success ? cm.events.SAVE_DONE : cm.events.SAVE_FAILED);
   }, 'POST', 'json=' + encodeURIComponent(json));
 };
@@ -468,7 +468,7 @@ cm.EditPresenter.prototype.handleSave = function(event) {
  */
 cm.EditPresenter.prototype.addToNextRedoIndex_ = function(value) {
   this.nextRedoIndex_ += value;
-  cm.events.emit(goog.global, cm.events.UNDO_REDO_BUFFER_CHANGED,
+  cm.events.emit(cm.app, cm.events.UNDO_REDO_BUFFER_CHANGED,
       {redo_possible: this.nextRedoIndex_ !== this.commands_.length,
        undo_possible: this.nextRedoIndex_ !== 0});
 };

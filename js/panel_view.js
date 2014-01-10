@@ -191,7 +191,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
         cm.Analytics.logAction(
             cm.Analytics.LayersPanelAction.PANEL_TOGGLED_OPEN, null);
       }
-      cm.events.emit(goog.global, 'resize');  // readjust layout
+      cm.events.emit(cm.app, 'resize');  // readjust layout
     }, this);
   cm.events.listen(collapse, 'click', toggleCollapseOnClick);
   var expand = cm.ui.create('div', {'class': cm.css.EXPAND},
@@ -283,8 +283,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
     // TODO(romano): There should be UX decison made about how the editor and
     // layer filter interact, since this listener could result in a layer
     // disappearing after being edited.
-    cm.events.listen(goog.global, cm.events.MODEL_CHANGED, this.filterLayers_,
-                     this);
+    cm.events.listen(cm.app, cm.events.MODEL_CHANGED, this.filterLayers_, this);
   }
 
   // Populate the title and description and listen for changes.
@@ -300,7 +299,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
       var oldDefault = cm.AppState.fromAppState(this.appState_);
       oldDefault.setFromMapModel(this.model_);
       var newDefault = cm.AppState.fromAppState(this.appState_);
-      cm.events.emit(goog.global, cm.events.DEFAULT_VIEW_SET,
+      cm.events.emit(cm.app, cm.events.DEFAULT_VIEW_SET,
           {oldDefault: oldDefault, newDefault: newDefault});
     }, this);
   }
@@ -308,11 +307,11 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
   // Reset to the default view of the map.
   cm.events.listen(resetLink, 'click', function() {
     cm.Analytics.logAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
-    cm.events.emit(goog.global, cm.events.RESET_VIEW, {model: this.model_});
+    cm.events.emit(cm.app, cm.events.RESET_VIEW, {model: this.model_});
   }, this);
 
   // Open the property inspector on the map.
-  cm.events.forward(this.titleElem_, 'click', goog.global,
+  cm.events.forward(this.titleElem_, 'click', cm.app,
                     cm.events.INSPECT, {object: model});
 
   // Add or remove LayerEntryViews when layers are added or removed.
@@ -484,7 +483,7 @@ cm.PanelView.prototype.addLayer_ = function(layer, index) {
       this.config_, index);
   var view = this.layerEntryViews_[id];
   cm.events.listen(view, cm.events.DELETE_LAYER, function(e) {
-    cm.events.emit(goog.global, cm.events.DELETE_LAYER,
+    cm.events.emit(cm.app, cm.events.DELETE_LAYER,
                    {model: this.model_, id: e.id});
   }, this);
   cm.events.forward(view, [cm.events.TOGGLE_LAYER,

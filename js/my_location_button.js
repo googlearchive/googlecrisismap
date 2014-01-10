@@ -39,6 +39,6 @@ cm.MyLocationButton = function(map) {
 
   cm.events.listen(button, 'click', function() {
     cm.Analytics.logAction(cm.Analytics.MapAction.MY_LOCATION_CLICKED, null);
-    cm.events.emit(goog.global, cm.events.GO_TO_MY_LOCATION);
+    cm.events.emit(cm.app, cm.events.GO_TO_MY_LOCATION);
   }, this);
 };

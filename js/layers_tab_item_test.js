@@ -84,7 +84,7 @@ LayersTabItemTest.prototype.testDeleteLayerEventForwarded = function() {
   goog.module.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
   var layer = this.addLayer_('my_layer', 'testDeleteLayerEventForwarded');
   var layersTab = this.createLayersTabItem_({'enable_editing': true});
-  this.expectEvent(goog.global, cm.events.DELETE_LAYER, 1, function(props) {
+  this.expectEvent(cm.app, cm.events.DELETE_LAYER, 1, function(props) {
     return (props.id === 'my_layer');
   });
   var zoomLink = expectDescendantOf(

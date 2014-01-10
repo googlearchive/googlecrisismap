@@ -80,7 +80,7 @@ cm.AppState = function(opt_language) {
   /** The currently selected base map type, as a cm.MapModel.Type. */
   this.set('map_type', cm.MapModel.Type.ROADMAP);
 
-  cm.events.listen(goog.global, [cm.events.MODEL_CHANGED], function(e) {
+  cm.events.listen(cm.app, [cm.events.MODEL_CHANGED], function(e) {
     e.model && this.updateSingleSelectFolders(e.model);
   }, this);
 };

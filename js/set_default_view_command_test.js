@@ -36,7 +36,7 @@ function SetDefaultViewCommandTest() {
 
   this.resetFired_ = false;
   this.resetMapModel_ = undefined;
-  cm.events.listen(goog.global, cm.events.RESET_VIEW, function(e) {
+  cm.events.listen(cm.app, cm.events.RESET_VIEW, function(e) {
     this.resetFired_ = true;
     this.resetMapModel_ = e.model;
   }, this);

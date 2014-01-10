@@ -216,7 +216,6 @@ AppStateTest.prototype.testUpdateSingleSelectFolders = function() {
  * of its sublayers.
  */
 AppStateTest.prototype.testGetVisibleLayerIds = function() {
-  this.originalGlobal_ = goog.global;
   var child11 = this.createLayer_('child11');
   var child12 = this.createLayer_('child12');
   var root1 = this.createLayer_('root1', null, [child11, child12]);
@@ -248,9 +247,9 @@ AppStateTest.prototype.testGetVisibleLayerIds = function() {
 /** Tests conversion of the AppState to URI parameters. */
 AppStateTest.prototype.testGetUri = function() {
   // Provide a fake location URL that includes some pre-existing parameters.
-  this.setForTest_('goog.global',
-      {'location': 'http://app.com/root/foo' +
-          '?lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9'});
+  this.setForTest_('goog.global.location',
+                   'http://app.com/root/foo' +
+                   '?lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9');
 
   // Add state to the app state.
   this.appState_.set('map_type', cm.MapModel.Type.SATELLITE);
@@ -273,10 +272,10 @@ AppStateTest.prototype.testGetUri = function() {
            this.appState_.getUri().toString());
 
   // Include the 'base' parameter in the location.
-  this.setForTest_('goog.global',
-      {'location': 'http://app.com/root?' +
-          'crisis=foo&lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9&' +
-          'base=http://elsewhere.org/whatever'});
+  this.setForTest_('goog.global.location',
+                   'http://app.com/root?' +
+                   'crisis=foo&lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9&' +
+                   'base=http://elsewhere.org/whatever');
 
   expectEq('http://elsewhere.org/whatever' +
            '?hl=fr' +

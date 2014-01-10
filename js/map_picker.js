@@ -133,7 +133,7 @@ cm.MapPicker.prototype.createMenuButton_ = function(parentElem, menuElem) {
   // If things move around, just hide the menu (don't bother to reposition it).
   // Collapsing the cm.PanelView emits 'resize' on the window, so this happens
   // on panel expand/collapse as well as manual resizing of the browser window.
-  cm.events.listen(goog.global, 'resize', goog.bind(function(e) {
+  cm.events.listen(cm.app, 'resize', goog.bind(function(e) {
     this.showMenu(false);
   }, this));
 };

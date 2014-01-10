@@ -74,7 +74,7 @@ PanelViewTest.prototype.testResetViewLink = function() {
   var parent = this.createView_();
   var link = expectDescendantOf(parent, withText(cm.MSG_RESET_VIEW_LINK));
   this.expectLogAction(cm.Analytics.LayersPanelAction.VIEW_RESET, null);
-  this.expectEvent(goog.global, cm.events.RESET_VIEW);
+  this.expectEvent(cm.app, cm.events.RESET_VIEW);
   cm.events.emit(link, 'click');
 };
 
@@ -125,7 +125,7 @@ PanelViewTest.prototype.testLayerEventsForwarded = function() {
     zoomToLayer = true;
   });
   var layerDeleted = false;
-  cm.events.listen(goog.global, cm.events.DELETE_LAYER, function() {
+  cm.events.listen(cm.app, cm.events.DELETE_LAYER, function() {
     layerDeleted = true;
   });
 
@@ -316,7 +316,7 @@ PanelViewTest.prototype.testSetDefaultView = function() {
       withText('Set current view as default'));
 
   var event = undefined;
-  cm.events.listen(goog.global, cm.events.DEFAULT_VIEW_SET, function(e) {
+  cm.events.listen(cm.app, cm.events.DEFAULT_VIEW_SET, function(e) {
     event = e;
   });
   cm.events.emit(link, 'click', {});

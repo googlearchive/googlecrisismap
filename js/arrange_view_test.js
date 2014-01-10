@@ -164,7 +164,7 @@ ArrangeViewTest.prototype.testOKHandler = function() {
   // Listen for LAYERS_ARRANGED to be emitted by the OK handler.
   var oldOrdering = [];
   var newOrdering = [];
-  cm.events.listen(goog.global, cm.events.LAYERS_ARRANGED, function(e) {
+  cm.events.listen(cm.app, cm.events.LAYERS_ARRANGED, function(e) {
     oldOrdering = e.oldValue;
     newOrdering = e.newValue;
   });
@@ -211,7 +211,7 @@ ArrangeViewTest.prototype.testCancelHandler = function() {
 
   // Verify that LAYERS_ARRANGED is never fired.
   var layersArranged = false;
-  var token = cm.events.listen(goog.global, cm.events.LAYERS_ARRANGED,
+  var token = cm.events.listen(cm.app, cm.events.LAYERS_ARRANGED,
                                function(e) {
     layersArranged = true;
   });
@@ -261,7 +261,7 @@ ArrangeViewTest.prototype.testOKHandlerNestedFolders = function() {
   // Listen for LAYERS_ARRANGED to be emitted by the OK handler.
   var oldOrdering = [];
   var newOrdering = [];
-  cm.events.listen(goog.global, cm.events.LAYERS_ARRANGED, function(e) {
+  cm.events.listen(cm.app, cm.events.LAYERS_ARRANGED, function(e) {
     oldOrdering = e.oldValue;
     newOrdering = e.newValue;
   });
