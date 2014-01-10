@@ -55,7 +55,7 @@ SharePopupTest.prototype.createPopup_ = function(
   expectCall(this.popup_.setEnableCrossIframeDismissal)(false);
 
   // Create the cm.SharePopup.
-  goog.style.showElement = function() { return null; };
+  goog.style.setElementShown = function() { return null; };
   var appState = createMockInstance(cm.AppState);
   stub(appState.getUri)().is(APPSTATE_URI_OBJECT);
   stub(appState.get)('language').is('en');

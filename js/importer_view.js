@@ -307,7 +307,7 @@ cm.ImporterView.prototype.renderLayerElem_ = function(
 
   var sublayers = layerModel.get('sublayers');
   if (sublayers.length > 0) {
-    goog.style.showElement(folderElem, false);
+    goog.style.setElementShown(folderElem, false);
 
     sublayers.forEach(goog.bind(function(sublayer) {
       this.renderLayerElem_(
@@ -531,7 +531,7 @@ cm.ImporterView.prototype.handleExpanderClick_ = function(
   e.stopPropagation ? e.stopPropagation() : (e.cancelBubble = true);
   this.closePreview_();
   var expanded = goog.dom.classes.toggle(expanderElem, cm.css.EXPANDED);
-  goog.style.showElement(folderElem, expanded);
+  goog.style.setElementShown(folderElem, expanded);
 };
 
 /**
