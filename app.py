@@ -105,6 +105,7 @@ app = webapp2.WSGIApplication([
             # XHR or JSONP request handlers
             Route('/.api/maps', 'api.PublishedMaps'),
             Route('/.api/maps/<map_id>', 'api.MapById'),
+            Route('/.api/reports', 'api.CrowdReports'),
             Route('/.diff/<map_id>', 'diff.Diff'),
             Route('/.legend', 'legend_item_extractor.GetLegendItems'),
             Route('/.jsonp', 'jsonp.Jsonp'),

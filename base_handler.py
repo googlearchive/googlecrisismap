@@ -14,12 +14,14 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
+import base64
 import hmac
 import httplib
 import inspect
 import json
 import logging
 import os
+import random
 import re
 import time
 
@@ -40,6 +42,7 @@ from google.appengine.ext.webapp import template
 
 # A mapping from deprecated ISO language codes to valid ones.
 CANONICAL_LANGS = {'he': 'iw', 'in': 'id', 'mo': 'ro', 'jw': 'jv', 'ji': 'yi'}
+
 
 
 def NormalizeLang(lang):
@@ -137,6 +140,12 @@ def SanitizeCallback(callback):
   raise Error(httplib.BAD_REQUEST, 'Invalid callback name.')
 
 
+def MakeRandomId():
+  """Generates a random identifier made of 12 URL-safe characters."""
+  return base64.urlsafe_b64encode(
+      ''.join(chr(random.randrange(256)) for i in xrange(12)))
+
+
 class Error(Exception):
   """An error that carries an HTTP status and a message to show the user."""
 
@@ -163,6 +172,37 @@ class BaseHandler(webapp2.RequestHandler):
   # These are used in RenderTemplate, so ensure they always exist.
   xsrf_token = ''
   xsrf_tag = ''
+
+  def GetCurrentUserUrl(self):
+    """Gets a URL identifying the current user.
+
+    If the user is logged in, the URL will contain the user ID.  Otherwise,
+    we'll use a randomly generated cookie to make a semi-stable user URL.
+
+    Returns:
+      A URL (under this app's root URL) that identifies the current user.
+    """
+    user = users.GetCurrent()
+    if user:
+      return self.GetUrlForUser(user)
+    return self.GetUrlForAnonymousUser()
+
+  def GetUrlForAnonymousUser(self):
+    """Gets a semi-stable user URL using a randomly-generated cookie."""
+    user_token = self.request.cookies.get('cm_user_token') or MakeRandomId()
+    self.response.set_cookie('cm_user_token', user_token, max_age=365*24*3600)
+    return self.request.root_url + '/.users/anonymous.' + user_token
+
+  def GetUrlForUser(self, user):
+    """Gets a URL identifying a particular User entity known to this app."""
+    return self.request.root_url + '/.users/' + user.id
+
+  def GetUserForUrl(self, url):
+    """Gets the User entity identified by a URL, or None if there is none."""
+    url_dir, uid = url.rsplit('/', 1)
+    if url_dir == self.request.root_url + '/.users':
+      if not uid.startswith('anonymous.'):
+        return users.Get(uid)
 
   def HandleRequest(self, **kwargs):
     """A wrapper around the Get or Post method defined in the handler class."""
@@ -204,6 +244,7 @@ class BaseHandler(webapp2.RequestHandler):
       self.request.lang = SelectLanguage(
           self.request.get('hl'), self.request.headers.get('accept-language'))
       self.request.root_path = root_path
+      self.request.root_url = self.request.host_url + root_path
 
       # Call the handler, making nice pages for errors derived from Error.
       method(**kwargs)

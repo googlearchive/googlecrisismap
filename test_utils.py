@@ -45,6 +45,7 @@ mox.ANY = mox.IgnoreArg()
 ROOT_URL = 'http://app.com/root'
 ROOT_PATH = urlparse.urlsplit(ROOT_URL).path
 DEFAULT_DOMAIN = 'xyz.com'
+DEFAULT_RANDOM_ID = '66JxzuTOQRUjbgle'
 
 
 def DispatchRequest(request):
@@ -92,6 +93,20 @@ def DomainLogin(uid, domain):
 def RootLogin():
   """Context manager: signs in as user 'root', which always has ADMIN access."""
   return LoginContext(perms.ROOT.id, '', 'root@gmail.test')
+
+
+class EnvContext(object):
+  """A context manager that temporarily sets some environment variables."""
+
+  def __init__(self, **kwargs):
+    self.new = kwargs
+
+  def __enter__(self):
+    self.old = dict((key, os.environ.get(key, '')) for key in self.new)
+    os.environ.update(self.new)
+
+  def __exit__(self, etype, evalue, etb):
+    os.environ.update(self.old)
 
 
 def SetupUser(context):
@@ -170,6 +185,7 @@ class BaseTest(unittest.TestCase):
         base_handler, 'GenerateXsrfToken', lambda uid, timestamp=None: 'XSRF')
     self.mox.stubs.Set(
         base_handler, 'ValidateXsrfToken', lambda uid, token: token == 'XSRF')
+    self.mox.stubs.Set(base_handler, 'MakeRandomId', lambda: DEFAULT_RANDOM_ID)
 
   def tearDown(self):
     self.mox.UnsetStubs()

@@ -16,15 +16,16 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import json
 
+import base_handler
 import model
 import test_utils
 
 
-class ApiTest(test_utils.BaseTest):
-  """Tests for api class."""
+class MapByIdTest(test_utils.BaseTest):
+  """Tests for the MapById API."""
 
   def setUp(self):
-    super(ApiTest, self).setUp()
+    super(MapByIdTest, self).setUp()
     self.map = test_utils.CreateMap(
         owners=['owner'], editors=['editor'], viewers=['viewer'])
 
@@ -53,6 +54,10 @@ class ApiTest(test_utils.BaseTest):
       # Verify that the edited content was saved properly.
       map_object = model.Map.Get(self.map.id)
       self.assertEquals(maproot_json, map_object.GetCurrentJson())
+
+
+class PublishedMapsTest(test_utils.BaseTest):
+  """Tests for the PublishedMaps API."""
 
   def testPublishedMaps(self):
     map1 = {'title': 'Map 1',
@@ -85,6 +90,121 @@ class ApiTest(test_utils.BaseTest):
                        {'url': '/root/xyz.com/label1', 'maproot': map1}],
                       json.loads(response.body))
 
+
+class CrowdReportsTest(test_utils.BaseTest):
+  """Tests for the CrowdReports API."""
+
+  def setUp(self):
+    test_utils.BaseTest.setUp(self)
+    self.default_time_secs = 1234567890.0
+    self.SetTime(self.default_time_secs)
+    self.maxDiff = None
+
+  def tearDown(self):
+    test_utils.BaseTest.tearDown(self)
+
+  def testLoggedInSingleReportWithNoLatLng(self):
+    with test_utils.EnvContext(USER_ID='123456789',
+                               USER_EMAIL='alice@alpha.test',
+                               USER_ORGANIZATION='alpha.test'):
+      self.DoPost('/.api/reports',
+                  'topic_ids=foo,bar&answer_ids=foo.1.1,bar.1.1&text=report1'
+                  '&xsrf_token=XSRF')  # XSRF check is stubbed in test_utils
+
+    response = self.DoGet('/.api/reports?topic_ids=foo')
+
+    reports = json.loads(response.body)
+    self.assertEquals(1, len(reports))
+    self.assertDictEqual(
+        {u'answer_ids': [u'foo.1.1', u'bar.1.1'],
+         u'author': u'http://app.com/root/.users/1',
+         u'author_email': u'alice@alpha.test',
+         u'effective': self.default_time_secs,
+         u'location': [model.NOWHERE.lat, model.NOWHERE.lon],
+         u'published': self.default_time_secs,
+         u'topic_ids': [u'foo', u'bar'],
+         u'text': u'report1',
+         u'updated': self.default_time_secs},
+        reports[0])
+
+
+  def testAnonymousMultipleReportsWithLatLng(self):
+    report1_time = self.default_time_secs
+    self.DoPost(
+        '/.api/reports',
+        'topic_ids=bar&answer_ids=bar.1.1&text=report1&ll=37.1,-74.2')
+
+    report2_time = 1234567981.0
+    self.SetTime(report2_time)
+    self.DoPost(
+        '/.api/reports',
+        'topic_ids=foo&answer_ids=foo.1.2&text=report2&ll=37.1,-74.2001')
+
+    response = self.DoGet(
+        '/.api/reports?ll=37.10001,-74.2&topic_ids=foo,bar&radii=100,100')
+
+    reports = json.loads(response.body)
+    self.assertEquals(2, len(reports))
+    self.assertDictEqual(
+        {u'answer_ids': [u'foo.1.2'],
+         u'author': u'http://app.com/root/.users/anonymous.%s' %
+                    test_utils.DEFAULT_RANDOM_ID,
+         u'author_email': None,
+         u'effective': report2_time,
+         u'location': [37.1, -74.2001],
+         u'published': report2_time,
+         u'topic_ids': [u'foo'],
+         u'text': u'report2',
+         u'updated': report2_time},
+        reports[0])
+    self.assertDictEqual(
+        {u'answer_ids': [u'bar.1.1'],
+         u'author': u'http://app.com/root/.users/anonymous.%s' %
+                    test_utils.DEFAULT_RANDOM_ID,
+         u'author_email': None,
+         u'effective': report1_time,
+         u'location': [37.1, -74.2],
+         u'published': report1_time,
+         u'topic_ids': [u'bar'],
+         u'text': u'report1',
+         u'updated': report1_time},
+        reports[1])
+
+    # topic excludes report_2
+    response = self.DoGet(
+        '/.api/reports?ll=37.10001,-74.2&topic_ids=bar&radii=100')
+    reports = json.loads(response.body)
+    self.assertEquals(1, len(reports))
+    self.assertEquals('report1', reports[0]['text'])
+
+    # radius excludes report_2
+    response = self.DoGet(
+        '/.api/reports?ll=37.1,-74.2&topic_ids=foo,bar&radii=1,1')
+    reports = json.loads(response.body)
+    self.assertEquals(1, len(reports))
+    self.assertEquals('report1', reports[0]['text'])
+
+    # count = 1
+    response = self.DoGet(
+        '/.api/reports?ll=37.10001,-74.2&topic_ids=foo,bar&radii=100,100'
+        '&count=1')
+    reports = json.loads(response.body)
+    self.assertEquals(1, len(reports))
+    self.assertEquals('report2', reports[0]['text'])
+
+    # max_updated excludes most recent report2
+    response = self.DoGet(
+        '/.api/reports?ll=37.10001,-74.2&topic_ids=foo,bar&radii=100,100'
+        '&count=2&max_updated=1234567980')
+    reports = json.loads(response.body)
+    self.assertEquals(1, len(reports))
+    self.assertEquals('report1', reports[0]['text'])
+
+    # no topic matches
+    response = self.DoGet(
+        '/.api/reports?ll=37.10001,-74.2&topic_ids=blah&radii=1000000')
+    reports = json.loads(response.body)
+    self.assertEquals([], reports)
 
 if __name__ == '__main__':
   test_utils.main()
