@@ -44,6 +44,13 @@ cm.MapModel = function() {
   this.layersById_ = {};
 
   /**
+   * A dictionary of topic models in the map, keyed by topic ID.
+   * @type Object
+   * @private
+   */
+  this.topicsById_ = {};
+
+  /**
    * A dictionary of listener tokens for the insertion/deletion of layers.
    * @type Object.<Array.<cm.events.ListenerToken>>
    * @private
@@ -125,13 +132,19 @@ cm.MapModel.newFromMapRoot = function(maproot) {
 
   /**
    * Fills in the 'topics' property of the given model.
-   * @param {cm.MapModel} model A MapModel whose 'layers' property will be set.
+   * @param {cm.MapModel} model A MapModel whose 'topics' property will be set.
    * @param {Object} maproot A MapRoot JS object.
    * @param {Array.<string>} layerIds The layer IDs to be allowed in topics.
    */
   function initTopicsFromMapRoot(model, maproot, layerIds) {
     var topics = new google.maps.MVCArray();
     model.set('topics', topics);
+    cm.events.listen(topics, 'insert_at', function(i) {
+      model.handleInsertTopic_(/** @type cm.TopicModel */(topics.getAt(i)));
+    });
+    cm.events.listen(topics, 'remove_at', function(i, topic) {
+      model.handleRemoveTopic_(topic);
+    });
     goog.array.forEach(maproot['topics'] || [], function(topicMapRoot) {
       var topic = cm.TopicModel.newFromMapRoot(topicMapRoot, layerIds);
       topic && topics.push(topic);
@@ -186,13 +199,18 @@ cm.MapModel.prototype.getLayerIds = function() {
  * @return {cm.TopicModel?} A topic model, or null if the ID is not found.
  */
 cm.MapModel.prototype.getTopic = function(id) {
-  var topics = this.get('topics').getArray();
-  for (var i = 0; i < topics.length; i++) {
-    if (topics[i].get('id') === id) {
-      return topics[i];
-    }
-  }
-  return null;
+  return this.topicsById_[id];
+};
+
+/**
+ * Returns an array of the map's topic IDs.
+ * @return {Array.<string>} The array of topic IDs.
+ *   The layer ID hierarchy.
+ */
+cm.MapModel.prototype.getTopicIds = function() {
+  return goog.array.map(this.get('topics').getArray(), function(topic) {
+    return topic.get('id');
+  });
 };
 
 /**
@@ -203,7 +221,8 @@ cm.MapModel.prototype.getTopic = function(id) {
 cm.MapModel.prototype.getCrowdTopicsForLayer = function(id) {
   var topics = [];
   this.get('topics').forEach(function(topic) {
-    if (topic.get('layer_ids').contains(id) && topic.get('crowd_enabled')) {
+    if (goog.array.contains(topic.get('layer_ids'), id) &&
+        topic.get('crowd_enabled')) {
       topics.push(topic);
     }
   });
@@ -284,6 +303,64 @@ cm.MapModel.prototype.unregisterLayer_ = function(id) {
   var tokens = this.listenerTokens_[id];
   tokens && cm.events.unlisten(tokens);
   delete this.layersById_[id];
+};
+
+/**
+ * Register the given topic with the map.
+ * @param {cm.TopicModel} topic The topic model.
+ * @private
+ */
+cm.MapModel.prototype.handleInsertTopic_ = function(topic) {
+  this.registerTopic_(topic);
+  cm.events.emit(this, cm.events.TOPICS_ADDED, {topics: [topic]});
+};
+
+/**
+ * Unregisters the given topic from the map.
+ * @param {cm.TopicModel} topic The topic model.
+ * @private
+ */
+cm.MapModel.prototype.handleRemoveTopic_ = function(topic) {
+  var id = /** @type string */(topic.get('id'));
+  this.unregisterTopic_(id);
+  cm.events.emit(this, cm.events.TOPICS_REMOVED, {ids: [id]});
+};
+
+/**
+ * Registers a single TopicModel with this map, and enforces that the topic ID
+ * is unique in this map.  If the topic has no ID or an ID that collides with
+ * another topic in this map, the topic ID will be changed to a unique value.
+ * @param {cm.TopicModel} topic The topic to register.
+ * @private
+ */
+cm.MapModel.prototype.registerTopic_ = function(topic) {
+  var id = /** @type string */(topic.get('id'));
+  if (this.topicsById_[id] === topic) {  // topic is already registered
+    return;
+  }
+  if (!id || id in this.topicsById_) {
+    // The topic doesn't have a valid ID; use the first available numeric ID.
+    for (id = 1; id in this.topicsById_; id++) {}
+    topic.set('id', '' + id);
+  }
+  this.topicsById_[id] = topic;
+
+  // Listen for changes in this topic.
+  this.listenerTokens_[id] = [
+    /** @type cm.events.ListenerToken */(
+      cm.events.forward(topic, cm.events.MODEL_CHANGED, this))
+  ];
+};
+
+/**
+ * Unregister a single TopicModel from the map.
+ * @param {string} id The topic id of the layer to unregister.
+ * @private
+ */
+cm.MapModel.prototype.unregisterTopic_ = function(id) {
+  var tokens = this.listenerTokens_[id];
+  tokens && cm.events.unlisten(tokens);
+  delete this.topicsById_[id];
 };
 
 /** @return {Object} This map as a MapRoot JS object. */

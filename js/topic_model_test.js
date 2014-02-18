@@ -49,16 +49,32 @@ TopicModelTest.prototype.newFromMapRoot = function() {
   expectEq(TOPIC_MAP_ROOT_JSON.id, model.get('id'));
   expectEq(TOPIC_MAP_ROOT_JSON.title, model.get('title'));
   expectEq(new cm.LatLonBox(3, 2, 8, 7), model.get('viewport'));
-  expectEq(['1', '2', '3', '4', '5'], model.get('layer_ids').getValues());
+  expectEq(['1', '2', '3', '4', '5'], model.get('layer_ids'));
   expectEq(TOPIC_MAP_ROOT_JSON.tags, model.get('tags'));
   expectEq(TOPIC_MAP_ROOT_JSON.crowd_enabled, model.get('crowd_enabled'));
   expectEq(TOPIC_MAP_ROOT_JSON.questions, model.get('questions'));
 };
 
+TopicModelTest.prototype.newFromMapRootMissingId = function() {
+  var json = goog.object.clone(TOPIC_MAP_ROOT_JSON);
+  delete json['id'];
+  json['title'] = ' Complex (title 3!) ';
+  var model = cm.TopicModel.newFromMapRoot(json, ['1', '2', '3', '4', '5']);
+  expectEq('complex__title_3__', model.get('id'));
+
+  json['title'] = '   ';
+  model = cm.TopicModel.newFromMapRoot(json, ['1', '2', '3', '4', '5']);
+  expectEq('topic0', model.get('id'));
+
+  delete json['title'];
+  model = cm.TopicModel.newFromMapRoot(json, ['1', '2', '3', '4', '5']);
+  expectEq('topic1', model.get('id'));
+};
+
 TopicModelTest.prototype.newFromMapRootInvalidLayerIds = function() {
   var model = cm.TopicModel.newFromMapRoot(
       TOPIC_MAP_ROOT_JSON, ['1', '3', '6']);
-  expectEq(['1', '3'], model.get('layer_ids').getValues());
+  expectEq(['1', '3'], model.get('layer_ids'));
 };
 
 TopicModelTest.prototype.toMapRoot = function() {

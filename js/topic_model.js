@@ -44,8 +44,18 @@ cm.TopicModel.newFromMapRoot = function(maproot, valid_layer_ids) {
   var source = maproot['source'] || {};
   var model = new cm.TopicModel();
 
+  var id = maproot['id'];
+  // If there is no id in the maproot, try to create a sensible id from
+  // the topic title.  If that fails, try to generate a unique topic id.
+  if (!id && maproot['title']) {
+    var title = goog.string.trim(maproot['title']);
+    id = title.replace(/[^\w.-]/g, '_').toLowerCase();
+  }
+  if (!id) {
+    id = 'topic' + cm.TopicModel.nextId_++;
+  }
   /** {string} An ID unique among topics in this MapModel. */
-  model.set('id', maproot['id'] || ('topic' + cm.TopicModel.nextId_++));
+  model.set('id', id);
 
   /** {string} Title for this topic. */
   model.set('title', maproot['title'] || '');
@@ -57,7 +67,7 @@ cm.TopicModel.newFromMapRoot = function(maproot, valid_layer_ids) {
   /** {Array.<string>} IDs of the layers associated with this topic. */
   model.set('layer_ids',
             new goog.structs.Set(valid_layer_ids)
-                .intersection(maproot['layer_ids'] || []));
+                .intersection(maproot['layer_ids'] || []).getValues());
 
   /** {Array.<string>} Tags associated with this topic. */
   model.set('tags', maproot['tags'] || []);
@@ -106,7 +116,7 @@ cm.TopicModel.prototype.toMapRoot = function() {
     'id': this.get('id'),
     'title': this.get('title'),
     'viewport': box ? {'lat_lon_alt_box': box.round(4).toMapRoot()} : null,
-    'layer_ids': this.get('layer_ids').getValues(),
+    'layer_ids': this.get('layer_ids'),
     'tags': this.get('tags'),
     'crowd_enabled': this.get('crowd_enabled') || null,
     'cluster_radius':
@@ -126,3 +136,13 @@ cm.TopicModel.prototype.toMapRoot = function() {
     })
   }));
 };
+
+/** @override */
+cm.TopicModel.prototype.changed = function(key) {
+  cm.events.emit(this, cm.events.MODEL_CHANGED);
+};
+
+// Export this method so it can be called by the MVCObject machinery.
+goog.exportProperty(cm.TopicModel.prototype, 'changed',
+                    cm.TopicModel.prototype.changed);
+

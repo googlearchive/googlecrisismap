@@ -122,6 +122,12 @@ cm.events.LAYERS_ADDED = 'LAYERS_ADDED';
 /** A set of layers has been removed from the map model. */
 cm.events.LAYERS_REMOVED = 'LAYERS_REMOVED';
 
+/** A set of topics has been added to the map model. */
+cm.events.TOPICS_ADDED = 'TOPICS_ADDED';
+
+/** A set of topics has been removed from the map model. */
+cm.events.TOPICS_REMOVED = 'TOPICS_REMOVED';
+
 /** The email and permission have been sent and granted. */
 cm.events.SHARE_EMAIL_SENT = 'SHARE_EMAIL_SENT';
 

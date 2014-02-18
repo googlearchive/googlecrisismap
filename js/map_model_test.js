@@ -85,6 +85,18 @@ MapModelTest.prototype.createFakeLayer_ = function(id) {
 };
 
 /**
+ * Create a fake TopicModel with the given topic ID.
+ * @param {string} id The topic ID.
+ * @return {google.maps.MVCobject} The fake topic.
+ * @private
+ */
+MapModelTest.prototype.createFakeTopic_ = function(id) {
+  var model = new google.maps.MVCObject();
+  model.set('id', id);
+  return model;
+};
+
+/**
  * For this and all sublayers of the given layer json, creates either
  * a mock LayerModel instance or a simple MVCObject, sets up stubs
  * and expectations, and adds the model to this.expectedLayers_. The fake
@@ -271,6 +283,12 @@ MapModelTest.prototype.getLayerIds = function() {
   expectThat(mapModel.getLayerIds(), elementsAre(['layer1', 'layer2']));
 };
 
+/** Tests that getTopicIds returns the topic IDs. */
+MapModelTest.prototype.getTopicIds = function() {
+  var mapModel = this.mapModelFromMapRoot_(DRACULA_MAPROOT, false);
+  expectThat(mapModel.getTopicIds(), elementsAre(['gas', 'shelter', 'food']));
+};
+
 MapModelTest.prototype.getCrowdTopicsForLayer = function() {
   var mapModel = this.mapModelFromMapRoot_(DRACULA_MAPROOT, false);
   var topics = mapModel.getCrowdTopicsForLayer('layer1');
@@ -410,6 +428,62 @@ MapModelTest.prototype.removeLayer = function() {
   var numLayers = 0;
   cm.util.forLayersInMap(mapModel, function() { numLayers++; });
   expectEq(0, numLayers);
+};
+
+/** Tests topic insertion. */
+MapModelTest.prototype.insertTopic = function() {
+  var mapModel = this.mapModelFromMapRoot_({topics: [{id: 'topic0'}]}, false);
+  var numAdded = 0;
+  cm.events.listen(mapModel, cm.events.TOPICS_ADDED, function(e) {
+    numAdded += e.topics.length;
+  });
+
+  // Push a single topic.
+  var topic1 = this.createFakeTopic_('topic1');
+  mapModel.get('topics').push(topic1);
+  expectEq(topic1, mapModel.getTopic('topic1'));
+  expectEq(1, numAdded);
+
+  // Insert a single topic.
+  var topic2 = this.createFakeTopic_('topic2');
+  mapModel.get('topics').insertAt(0, topic2);
+  expectEq(topic2, mapModel.getTopic('topic2'));
+  expectEq(2, numAdded);
+
+  // Push a topic with a duplicate topic
+  var topic3 = this.createFakeTopic_('topic2');
+  mapModel.get('topics').push(topic3);
+  expectEq('1', topic3.get('id'));  // changed to first available int
+  expectEq(topic3, mapModel.getTopic('1'));
+  expectEq(3, numAdded);
+
+  // Push a topic with no ID.
+  var topic4 = this.createFakeTopic_();
+  mapModel.get('topics').push(topic4);
+  expectEq('2', topic4.get('id'));  // changed to first available int
+  expectEq(topic4, mapModel.getTopic('2'));
+  expectEq(4, numAdded);
+};
+
+/** Tests topic removal. */
+MapModelTest.prototype.removeTopic = function() {
+  var mapModel = this.mapModelFromMapRoot_(
+      {topics: [{id: 't1'}, {id: 't2'}, {id: 't3'}]} , false);
+  var numRemoved = 0;
+  cm.events.listen(mapModel, cm.events.TOPICS_REMOVED, function(e) {
+    numRemoved += e.ids.length;
+  }, this);
+
+  // Remove a topic.
+  mapModel.get('topics').removeAt(2);
+  expectThat(mapModel.getTopic('t3'), isUndefined);
+  expectEq(1, numRemoved);
+
+  // Clear all topics.
+  mapModel.get('topics').clear();
+  expectThat(mapModel.getTopic('t1'), isUndefined);
+  expectThat(mapModel.getTopic('t2'), isUndefined);
+  expectEq(3, numRemoved);
 };
 
 function MapModelSystemTest() {
