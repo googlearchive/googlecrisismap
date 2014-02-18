@@ -18,6 +18,7 @@ import datetime
 import json
 
 import base_handler
+import config
 import model
 import utils
 
@@ -52,6 +53,24 @@ def ParseDatetime(string, default=None):
     return datetime.datetime.utcfromtimestamp(float(string))
   except ValueError:
     return default
+
+
+def ContainsSpam(text):
+  """Checks text for words and phrases that are considered spam.
+
+  Args:
+    text: The text to be scanned.
+
+  Returns:
+    True if the text contains any of the words or phrases in the config setting
+    'crowd_report_spam_phrases', which should be a list of strings.  Whitespace
+    is normalized and case is ignored for comparison.
+  """
+  lowercase_text = ' '.join(text.lower().split())
+  for spam_phrase in config.Get('crowd_report_spam_phrases', []):
+    lowercase_spam = ' '.join(spam_phrase.lower().split())
+    if lowercase_spam in lowercase_text:
+      return True
 
 
 class MapById(base_handler.BaseHandler):
@@ -135,6 +154,8 @@ class CrowdReports(base_handler.BaseHandler):
     ll = ParseGeoPt(self.request.get('ll'))
     text = self.request.get('text', '')
     now = datetime.datetime.utcnow()
+    if ContainsSpam(text):
+      raise base_handler.Error(403, 'Crowd report text rejected as spam.')
     model.CrowdReport.Put(source=self.request.root_url, author=author,
                           effective=now, text=text, topic_ids=topic_ids,
                           answer_ids=answer_ids, location=ll)

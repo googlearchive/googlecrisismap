@@ -17,6 +17,7 @@ __author__ = 'lschumacher@google.com (Lee Schumacher)'
 import json
 
 import base_handler
+import config
 import model
 import test_utils
 
@@ -211,6 +212,29 @@ class CrowdReportsTest(test_utils.BaseTest):
         '/.api/reports?ll=37.10001,-74.2&topic_ids=blah&radii=1000000')
     reports = json.loads(response.body)
     self.assertEquals([], reports)
+
+  def testSpammyReport(self):
+    config.Set('crowd_report_spam_phrases', ['rabbits', 'fluffy cats'])
+    self.DoPost('/.api/reports', 'll=10,10&topic_ids=foo&text=no+spam+words')
+
+    # Verify case-insensitive match for a single word.
+    self.DoPost('/.api/reports',
+                'll=20,20&topic_ids=foo&text=i+love+Rabbits', status=403)
+
+    # Verify case-insensitive match for a phrase.
+    self.DoPost('/.api/reports',
+                'll=10,10&topic_ids=foo&text=i+love+cats')  # okay
+    self.DoPost('/.api/reports',
+                'll=20,20&topic_ids=foo&text=what+FLUFFY++cats', status=403)
+
+    # Confirm that none of the spammy reports were stored.
+    response = self.DoGet('/.api/reports?ll=20,20&topic_ids=foo&radii=1000')
+    self.assertEquals([], json.loads(response.body))
+
+    # Confirm that the non-spammy reports were all stored.
+    response = self.DoGet('/.api/reports?ll=10,10&topic_ids=foo&radii=1000')
+    self.assertEquals(2, len(json.loads(response.body)))
+
 
 if __name__ == '__main__':
   test_utils.main()
