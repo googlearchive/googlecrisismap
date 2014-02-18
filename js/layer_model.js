@@ -252,6 +252,7 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       model.set('ft_select', fusion['select']);
       model.set('ft_from', fusion['from']);
       model.set('ft_where', fusion['where']);
+      model.set('ft_heatmap', fusion['heatmap_enabled'] || null);
       break;
     case cm.LayerModel.Type.MAPS_ENGINE:
       var maps_engine = source['google_maps_engine'] ||
@@ -365,7 +366,8 @@ cm.LayerModel.prototype.toMapRoot = function() {
       source['google_fusion_tables'] = {
         'select': this.get('ft_select'),
         'from': this.get('ft_from'),
-        'where': this.get('ft_where')
+        'where': this.get('ft_where'),
+        'heatmap_enabled': this.get('ft_heatmap')
       };
       break;
     case cm.LayerModel.Type.MAPS_ENGINE:

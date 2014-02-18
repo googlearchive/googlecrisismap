@@ -382,13 +382,30 @@ MapViewTest.prototype.addOverlayMELMEP = function() {
 MapViewTest.prototype.addOverlayFusionTables = function() {
   this.addLayer_({
     id: 'mint-chip', type: cm.LayerModel.Type.FUSION,
-    ft_select: 'icecream', ft_from: 123, ft_where: ''
+    ft_select: 'icecream', ft_from: 123, ft_where: '', ft_heatmap: false
   });
   this.stubVisibleLayerIds_(['mint-chip']);
 
   var overlay = this.expectNew_('google.maps.FusionTablesLayer', {
     query: {select: 'icecream', from: 123, where: ''},
-    suppressInfoWindows: true
+    heatmap: { enabled: false }, suppressInfoWindows: true
+  });
+  stub(overlay.getMap)().is(null);
+  expectCall(overlay.setMap)(this.map_);
+  this.newMapView_(false);
+};
+
+/** Tests adding a Fusion Tables overlay with heatmap enabled. */
+MapViewTest.prototype.addOverlayFusionTablesWithHeatmap = function() {
+  this.addLayer_({
+    id: 'mint-chip', type: cm.LayerModel.Type.FUSION,
+    ft_select: 'icecream', ft_from: 123, ft_where: '', ft_heatmap: true
+  });
+  this.stubVisibleLayerIds_(['mint-chip']);
+
+  var overlay = this.expectNew_('google.maps.FusionTablesLayer', {
+    query: { select: 'icecream', from: 123, where: '' },
+    heatmap: { enabled: true }, suppressInfoWindows: true
   });
   stub(overlay.getMap)().is(null);
   expectCall(overlay.setMap)(this.map_);

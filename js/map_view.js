@@ -478,7 +478,7 @@ cm.MapView.prototype.addOverlay_ = function(layer) {
                     'longitude_field', 'title_template', 'description_template',
                     'icon_url_template', 'color_template', 'hotspot_template',
                     'condition0', 'condition1', 'condition2',
-                    'ft_select', 'ft_from', 'ft_where',
+                    'ft_select', 'ft_from', 'ft_where', 'ft_heatmap',
                     'maps_engine_map_id', 'maps_engine_layer_key',
                     'layer_id', 'temperature_unit', 'wind_speed_unit',
                     'label_color', 'wms_layers'];
@@ -584,12 +584,15 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       }
       break;
 
-    case cm.LayerModel.Type.FUSION:
+case cm.LayerModel.Type.FUSION:
       this.overlays_[id] = new google.maps.FusionTablesLayer({
         'query': {
           'select': layer.get('ft_select'),
           'from': layer.get('ft_from'),
           'where': layer.get('ft_where')
+        },
+        'heatmap': {
+          enabled: layer.get('ft_heatmap')
         },
         'suppressInfoWindows': true  // we handle InfoWindows, not Maps API
       });

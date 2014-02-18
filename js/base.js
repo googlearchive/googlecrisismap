@@ -742,6 +742,13 @@ cm.MSG_GFT_LOCATION_COLUMN = goog.getMsg('Location column');
 cm.MSG_GFT_FILTER_CONDITION = goog.getMsg('Filter condition');
 
 /**
+ * @desc Label for a checkbox for controlling whether a Google Fusion Table
+ *     layer should be displayed as a heatmap. An example Google Fusion Table
+ *     heatmap can be found here: http://goo.gl/QUJ5gX
+ */
+cm.MSG_GFT_HEATMAP = goog.getMsg('Display as heatmap?');
+
+/**
  * @desc Label for a menu for selecting the color of the text labels
  *     on a weather layer.
  */
@@ -1008,6 +1015,18 @@ cm.MSG_GFT_FILTER_CONDITION_TOOLTIP = goog.getMsg(
     'If this is left blank, all rows in the table that have valid location ' +
     'values are drawn on the map.');
 
+/**
+ * @desc Tooltip for the checkbox that's used to control whether a Fusion
+ *     Table has a heatmap enabled. "Fusion Tables" refers to the Google
+ *     Fusion Tables product. A heatmap is a visualization technique
+ *     that applies color intensity to denote the presence or absence
+ *     of data, e.g. http://goo.gl/QUJ5gX
+ */
+cm.MSG_GFT_HEATMAP_TOOLTIP = goog.getMsg(
+    'A checkbox for controlling whether a Google Fusion Table is to ' +
+    'be displayed as a heatmap rather than the default display of ' +
+    'individual points, lines, and polygons. An example Google Fusion ' +
+    'Table heatmap can be found at http://goo.gl/QUJ5gX');
 /**
  * @desc Tooltip for a menu for selecting the color of the text labels
  *     on a weather layer.
