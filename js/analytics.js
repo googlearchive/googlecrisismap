@@ -215,7 +215,7 @@ cm.Analytics.categoryForAction_ = function(action) {
  *     the correct cm.Analytics.<UI Element>Action list, above.
  * @param {?string} layerId  The ID of a layer associated with
  *     the action.  If no layer is associated with the action, pass null.
- * @param {number|string=} opt_value An optional value for the event (Analytics
+ * @param {number=} opt_value An optional numeric value for the event (Analytics
  *     will compute sums and averages of these values).
  * @param {number=} opt_topicId An optional topic ID, if there is a topic
  *     relevant to this event.  (The topic ID should be fully qualified, in

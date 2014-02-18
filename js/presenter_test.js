@@ -56,7 +56,7 @@ PresenterTest.prototype.filterQueryChanged = function() {
 PresenterTest.prototype.filterQueryChangeLogging = function() {
   var clock = new goog.testing.MockClock(true);
   this.expectLogAction(
-      cm.Analytics.LayersTabAction.FILTER_QUERY_ENTERED, null, 1, 'foo');
+      cm.Analytics.LayersTabAction.FILTER_QUERY_ENTERED, null, 1);
 
   // Log the action one second after last change event.
   cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED,

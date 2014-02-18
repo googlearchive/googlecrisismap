@@ -189,7 +189,7 @@ cm.Presenter.prototype.logFilterQueryChange_ = function(query, delayMs) {
       this.filterQueryTimeoutId_ = null;
       if (query) {
         cm.Analytics.logAction(
-            cm.Analytics.LayersTabAction.FILTER_QUERY_ENTERED, null, query);
+            cm.Analytics.LayersTabAction.FILTER_QUERY_ENTERED, null);
       }
   }, this);
   this.filterQueryTimeoutId_ = goog.global.setTimeout(logFn, delayMs);
