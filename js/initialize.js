@@ -351,6 +351,13 @@ cm.Map.prototype.buildUi_ = function(frame) {
   // Expose the google.maps.Map and the MapModel for testing and debugging.
   window['theMap'] = this.map_;
   window['mapModel'] = mapModel;
+
+  // Record how long it took to get the UI to load.
+  var startTimeMs = goog.getObjectByName('cmStartTimeMs');
+  var endTimeMs = goog.now();
+  if (startTimeMs && 0 < startTimeMs && startTimeMs < endTimeMs) {
+    cm.Analytics.logTime('page', 'load', endTimeMs - startTimeMs);
+  }
 };
 
 /**

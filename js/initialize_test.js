@@ -124,3 +124,22 @@ MapTest.prototype.testTabbedCollapsed = function() {
   map = new cm.Map(this.frame_);
   expectNoDescendantOf(this.frame_, withClass('cm-expanded'));
 };
+
+/** Test the analytics time logging. */
+MapTest.prototype.testTimeLogging = function() {
+  var fakeNow = new Date(2013, 0, 1).getTime();
+  var mockGoogNow = createMockFunction();
+  this.setForTest_('goog.now', mockGoogNow);
+  expectCall(mockGoogNow)().willRepeatedly(returnWith(fakeNow));
+
+  var mockLogTime = createMockFunction();
+  this.setForTest_('cm.Analytics.logTime', mockLogTime);
+  expectCall(mockLogTime)('page', 'load', 1000);
+
+  goog.global['cmStartTimeMs'] = fakeNow + 1000;
+  new cm.Map(this.frame_);
+
+  // Test a start time in the past to verify that we don't log bad data.
+  goog.global['cmStartTimeMs'] = fakeNow - 1000;
+  new cm.Map(this.frame_);
+};
