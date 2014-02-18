@@ -54,7 +54,6 @@ class MapVersionModel(db.Model):
   # tries to resolve it must be prepared for failure.
   created = db.DateTimeProperty()
   creator_uid = db.StringProperty()
-  creator = db.UserProperty()  # DEPRECATED
 
 
 class MapModel(db.Model):
@@ -78,23 +77,18 @@ class MapModel(db.Model):
   # deleted. Any code that tries to resolve them must be prepared for failure.
   created = db.DateTimeProperty()
   creator_uid = db.StringProperty()
-  creator = db.UserProperty()  # DEPRECATED
   updated = db.DateTimeProperty()
   updater_uid = db.StringProperty()
-  last_updated = db.DateTimeProperty()  # DEPRECATED
-  last_updater = db.UserProperty()  # DEPRECATED
 
   # To mark a map as deleted, set this to anything other than NEVER; the map
   # won't be returned by Map.Get* methods, though it remains in the datastore.
   deleted = db.DateTimeProperty(default=NEVER)
   deleter_uid = db.StringProperty()
-  deleter = db.UserProperty()  # DEPRECATED
 
   # To mark a map as blocked, set this to anything other than NEVER; then only
   # the first owner can view or edit the map, and the map cannot be published.
   blocked = db.DateTimeProperty(default=NEVER)
   blocker_uid = db.StringProperty()
-  blocker = db.UserProperty()  # DEPRECATED
 
   # User IDs of users who can set the flags and permission lists on this object.
   owners = db.StringListProperty()
@@ -153,11 +147,8 @@ class CatalogEntryModel(db.Model):
   # deleted. Any code that tries to resolve them must be prepared for failure.
   created = db.DateTimeProperty()
   creator_uid = db.StringProperty()
-  creator = db.UserProperty()  # DEPRECATED
   updated = db.DateTimeProperty()
   updater_uid = db.StringProperty()
-  last_updated = db.DateTimeProperty()  # DEPRECATED
-  last_updater = db.UserProperty()  # DEPRECATED
 
   # The displayed title (in the crisis picker).  Set from the map_object.
   title = db.StringProperty()
