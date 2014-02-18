@@ -238,6 +238,11 @@ class PermsTests(test_utils.BaseTest):
       perms.Revoke(subject, role, target)
       self.assertFalse(perms.CheckAccess(role, target))
 
+  def testIsUserId(self):
+    self.assertTrue(perms.IsUserId('12345'))
+    self.assertFalse(perms.IsUserId('flintstone.com'))
+    self.assertFalse(perms.IsUserId(None))
+
   def testGetAccessibleDomains(self):
     privileged = test_utils.SetupUser(test_utils.Login('privileged'))
     outsider = test_utils.SetupUser(test_utils.Login('outsider'))

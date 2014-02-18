@@ -200,7 +200,9 @@ def GetSubjectsForTarget(target):
 
 
 def IsUserId(subject):
-  """Returns True if the subject is a user ID, False if it's a domain."""
+  """Returns True if subject is a valid user ID; otherwise False."""
+  if not subject:
+    return False
   return '.' not in subject
 
 

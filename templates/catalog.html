@@ -42,12 +42,12 @@ specific language governing permissions and limitations under the License.
         </td>
         <td>{{e.title}}</td>
         <td>
-          <span class="cm-date cm-date-template" title="First&#160;published&#160;[[long_date {{e.created|date:"U"}}]]&#160;by&#160;{{e.creator.email}}&#10;Last&#160;published&#160;[[long_date {{e.updated|date:"U"}}]]&#160;by&#160;{{e.updater.email}}">[[short_date {{e.updated|date:"U"}}]]</span>
+          <span class="cm-date cm-date-template" title="First&#160;published&#160;[[long_date {{e.created|date:"U"}}]]&#160;by&#160;{{e.creator.email|default:"[deleted]"}}&#10;Last&#160;published&#160;[[long_date {{e.updated|date:"U"}}]]&#160;by&#160;{{e.updater.email|default:"[deleted]"}}">[[short_date {{e.updated|date:"U"}}]]</span>
           <span class="cm-email">
             {% if e.updater.email_domain == user.email_domain %}
-              {{e.updater.email_username}}
+              {{e.updater.email_username|default:"[deleted]"}}
             {% else %}
-              {{e.updater.email}}
+              {{e.updater.email|default:"[deleted]"}}
             {% endif %}
           </span>
         </td>

@@ -31,6 +31,10 @@ class UsersTest(test_utils.BaseTest):
     with test_utils.EnvContext(SERVER_SOFTWARE='Development/1.0'):
       self.assertTrue(users.IsDeveloper())
 
+  def testGetNonExistentUser(self):
+    user = users.Get('77')
+    self.assertEquals(None, user)
+
   def testGetCurrent_NormalLogin(self):
     # Try an effective user determined by the Google Account login.
     with test_utils.EnvContext(USER_ID='123456789',

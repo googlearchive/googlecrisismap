@@ -56,12 +56,12 @@ specific language governing permissions and limitations under the License.
             </div>
           </td>
           <td class="cm-updated-column">
-            <span class="cm-date cm-date-template" title="Created&#160;[[long_date {{m.created|date:"U"}}]]&#160;by&#160;{{m.creator.email}}&#10;Updated&#160;[[long_date {{m.updated|date:"U"}}]]&#160;by&#160;{{m.updater.email}}">[[short_date {{m.updated|date:"U"}}]]</span>
+            <span class="cm-date cm-date-template" title="Created&#160;[[long_date {{m.created|date:"U"}}]]&#160;by&#160;{{m.creator.email|default:"[deleted]"}}&#10;Updated&#160;[[long_date {{m.updated|date:"U"}}]]&#160;by&#160;{{m.updater.email|default:"[deleted]"}}">[[short_date {{m.updated|date:"U"}}]]</span>
             <span class="cm-email">
               {% if m.updater.email_domain == user.email_domain %}
-                {{m.updater.email_username}}
+                {{m.updater.email_username|default:"[deleted]"}}
               {% else %}
-                {{m.updater.email}}
+                {{m.updater.email|default:"[deleted]"}}
               {% endif %}
             </span>
           </td>
@@ -70,7 +70,7 @@ specific language governing permissions and limitations under the License.
               <div>
                 <a href="{{root}}/{{e.domain}}/{{e.label}}">
                   {{e.domain}}/{{e.label}}</a>
-                <span class="cm-date cm-date-template" title="First&#160;published&#160;[[long_date {{e.created|date:"U"}}]]&#160;by&#160;{{e.creator.email}}&#10;Last&#160;published&#160;[[long_date {{e.updated|date:"U"}}]]&#160;by&#160;{{e.updater.email}}">[[short_date {{e.updated|date:"U"}}]]</span>
+                <span class="cm-date cm-date-template" title="First&#160;published&#160;[[long_date {{e.created|date:"U"}}]]&#160;by&#160;{{e.creator.email|default:"[deleted]"}}&#10;Last&#160;published&#160;[[long_date {{e.updated|date:"U"}}]]&#160;by&#160;{{e.updater.email|default:"[deleted]"}}">[[short_date {{e.updated|date:"U"}}]]</span>
                 {% if e.domain in catalog_domains %}
                   {% ifnotequal e.map_version_key m.current_version_key %}
                     <form action=".publish" method="post">

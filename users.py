@@ -198,8 +198,11 @@ def IsDeveloper():
 
 
 def Get(uid):
-  """Returns the User object for a given uid."""
-  return User.FromModel(_GetModel(uid))
+  """Returns the User object for a given uid, or None if no such user."""
+  try:
+    return User.FromModel(_GetModel(uid))
+  except KeyError:
+    return None
 
 
 def GetCurrent():
