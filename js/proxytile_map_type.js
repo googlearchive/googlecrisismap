@@ -18,8 +18,8 @@ goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.style');
 
-// How many retries of a tile fetch.
-var MAX_RETRIES = 10;
+// How many retries of a WMS tile fetch.
+var MAX_WMS_TILE_RETRIES = 10;
 
 var TRANSPARENT_TILE_REGEXP = /maps\.gstatic\.com\/mapfiles\/transparent\.png/;
 
@@ -106,7 +106,8 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     retryTimeout: null,
     startTime: new Date().getTime()
   };
-
+  var isWmsTile = !!tileDiv.tileData.tilesetId;
+  var maxRetries = isWmsTile ? MAX_WMS_TILE_RETRIES : 0;
 
   // TODO(arb): Create an "outstanding tiles" counter, and trigger the loading
   // spinner (b/8755787)
@@ -121,7 +122,7 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     if (!tileData) return;
     // For WMS tiles, log a successful fetch when the loaded image is
     // not a transparent tile.
-    if (tileData.tilesetId && !TRANSPARENT_TILE_REGEXP.test(tileImg.src)) {
+    if (isWmsTile && !TRANSPARENT_TILE_REGEXP.test(tileImg.src)) {
       cm.Analytics.logTime('wms_tile_fetch', 'retry_' + tileData.retries,
                            new Date().getTime() - tileData.startTime,
                            tileData.tilesetId);
@@ -135,7 +136,7 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
     // Race condition here, too.
     if (!tileData) return;
     var retries = tileData.retries;
-    if (retries >= MAX_RETRIES) {
+    if (retries >= maxRetries) {
       // Set back to an empty tile to avoid the nasty broken image icon.
       tileDiv.firstChild.setAttribute(
           'src', '//maps.gstatic.com/mapfiles/transparent.png');

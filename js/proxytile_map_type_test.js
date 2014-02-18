@@ -47,7 +47,7 @@ ProxyTileMapTypeTest.prototype.testConstructor = function() {
   var map = new cm.ProxyTileMapType({'getTileUrl': function(coord, zoom) {}});
 };
 
-/** Tests tile creation and lifecycle. */
+/** Tests non-WMS tile creation and lifecycle. */
 ProxyTileMapTypeTest.prototype.tileLifeCycle = function() {
   var getTileUrl = function(coord, zoom) {
     return 'http://foo/' + zoom + '/' + coord.x + '/' + coord.y + '.png';
@@ -56,7 +56,33 @@ ProxyTileMapTypeTest.prototype.tileLifeCycle = function() {
   var tile = map.getTile({'x': 10, 'y': 20}, 12);
   expectThat(tile, isElement('div'));
   expectThat(tile, hasDescendant('img',
-                                 withAttr('src', 'http://foo/12/10/20.png')));
+      withAttr('src', 'http://foo/12/10/20.png')));
+
+  // Trigger the 'error' event and check that no retries are attempted.
+  cm.events.emit(tile.firstChild, 'error');
+  expectEq(0, this.catcher.timeouts.length);
+  expectThat(tile.tileData.retryTimeout, isNull);
+
+  // Trigger the 'load' event.
+  cm.events.emit(tile.firstChild, 'load');
+  expectThat(tile.tileData.retryTimeout, isNull);
+
+  // Release the tile and verify the image is removed.
+  map.releaseTile(tile);
+  expectThat(tile.tileData, isNull);
+  expectEq(0, tile.childNodes.length);
+};
+
+/** Tests WMS tile creation and lifecycle. */
+ProxyTileMapTypeTest.prototype.tileWMSLifeCycle = function() {
+  var getTileUrl = function(coord, zoom) {
+    return 'http://foo/.wms/' + zoom + '/' + coord.x + '/' + coord.y + '.png';
+  };
+  var map = new cm.ProxyTileMapType({'getTileUrl': getTileUrl});
+  var tile = map.getTile({'x': 10, 'y': 20}, 12);
+  expectThat(tile, isElement('div'));
+  expectThat(tile, hasDescendant('img',
+      withAttr('src', 'http://foo/.wms/12/10/20.png')));
 
   // Now trigger the 'error' event and check it behaves correctly.
   cm.events.emit(tile.firstChild, 'error');
@@ -70,7 +96,7 @@ ProxyTileMapTypeTest.prototype.tileLifeCycle = function() {
   // Trigger the retry loop
   this.catcher.timeouts[0][0].apply();
   expectThat(tile, hasDescendant('img',
-                                 withAttr('src', 'http://foo/12/10/20.png')));
+      withAttr('src', 'http://foo/.wms/12/10/20.png')));
 
   // Trigger the 'load' event.
   cm.events.emit(tile.firstChild, 'load');
