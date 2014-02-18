@@ -15,7 +15,6 @@
  */
 goog.provide('cm.InspectorView');
 
-goog.require('cm.LayerModel');
 goog.require('cm.css');
 goog.require('cm.editors');
 goog.require('cm.events');
@@ -26,52 +25,34 @@ goog.require('goog.ui.Tooltip');
 var TOOLTIP_HIDE_DELAY_MS = 500;
 
 /**
+ * A specification of an Editor. Specifies the key of the property to edit,
+ * the label to show to the user, and the type of editor to use to edit the
+ * property, and the tooltip to display for it.
+ * The conditions object, if given, is a map from property keys to predicates
+ * (single-argument functions that take a property value and return a boolean);
+ * the editor is shown only when all the predicates are true.  Some editors
+ * accept other options, which are given as additional properties in the
+ * editorSpecs item; see the cm.*Editor constructors for details.
+ * @typedef {{key: string,
+ *            label: string,
+ *            type: cm.editors.Type,
+ *            tooltip: string,
+ *            conditions: Object}}
+ */
+cm.EditorSpec;
+
+/**
  * A property inspector.  Call inspect() to inspect an object's properties.
+ * @param {Element} tableElem A <table> element, into which editors will be
+ *   rendered.
  * @constructor
  */
-cm.InspectorView = function() {
+cm.InspectorView = function(tableElem) {
   /**
    * @type Element
    * @private
    */
-  this.popup_;
-
-  /**
-   * @type Element
-   * @private
-   */
-  this.titleElem_;
-
-  /**
-   * @type Element
-   * @private
-   */
-  this.copyLayerLink_;
-
-  /**
-   * @type Element
-   * @private
-   */
-  this.tableElem_;
-
-  /**
-   * @type Element
-   * @private
-   */
-  this.okBtn_;
-
-  /**
-   * @type Element
-   * @private
-   */
-  this.cancelBtn_;
-
-  /**
-   * Whether or not this dialog is for a newly created layer.
-   * @type {boolean}
-   * @private
-   */
-  this.isNew_;
+  this.tableElem_ = tableElem;
 
   /**
    * @type Array.<goog.ui.Tooltip>
@@ -85,61 +66,23 @@ cm.InspectorView = function() {
    * @private
    */
   this.editors_ = null;
-
-  this.popup_ = cm.ui.create('div', {'class': [cm.css.INSPECTOR, cm.css.POPUP]},
-      cm.ui.create('div', undefined,
-          this.titleElem_ = cm.ui.create('h2'),
-          this.copyLayerLink_ = cm.ui.createLink(cm.MSG_IMPORT_LAYERS)),
-      this.tableElem_ = cm.ui.create('table',
-          {'class': cm.css.EDITORS, 'cellpadding': '0', 'cellspacing': '0'}),
-      cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
-          this.okBtn_ = cm.ui.create(
-              'div', {'class': [cm.css.BUTTON, cm.css.SUBMIT]}, cm.MSG_OK),
-          this.cancelBtn_ = cm.ui.create(
-              'div', {'class': cm.css.BUTTON}, cm.MSG_CANCEL)));
-
-  cm.events.listen(this.copyLayerLink_, 'click', this.handleCopyClick_, this);
-  cm.events.listen(this.okBtn_, 'click', this.handleOk_, this);
-  cm.events.listen(this.cancelBtn_, 'click', this.handleCancel_, this);
 };
 
 /**
- * Build and show an object property inspector.  Accepts a list of editor
+ * Builds an object property inspector.  Accepts a list of editor
  * specifications (indicating which properties to edit and the types of editors
- * to show), and optionally a MapModel or LayerModel to populate the initial
- * values with.  If the user presses "OK", the edits are applied all at once in
- * a single EditCommand, or a new LayerModel is created if no object was given.
- * @param {string} title The title to show on the dialog.
- * @param {Array.<Object.<{key: string,
- *                         label: string,
- *                         type: cm.editors.Type,
- *                         tooltip: string,
- *                         conditions: Object}>>} editorSpecs
- *     An array of editor specifications.  Each element specifies the key of
- *     the property to edit, the label to show to the user, and the type of
- *     editor to use to edit the property, and the tooltip to display for it.
- *     The conditions object, if given,
- *     is a map from property keys to predicates (single-argument functions
- *     that take a property value and return a boolean); the editor is shown
- *     only when all the predicates are true.  Some editors accept other
- *     options, which are given as additional properties in the editorSpecs
- *     item; see the cm.*Editor constructors for details.
- * @param {cm.AppState} appState The application state.
- * @param {cm.MapModel|cm.LayerModel=} opt_object If specified, the MapModel or
- *     LayerModel whose properties will be edited. Otherwise, a blank inspector
- *     will be displayed, and a new LayerModel will be created on OK.
+ * to show), and optionally a MVCObject to populate the initial values with.
+ * @param {Array.<cm.EditorSpec>} editorSpecs An array of editor specifications.
+ * @param {google.maps.MVCObject|null|undefined} modelToEdit If not null, the
+ *     model whose properties will be edited. Otherwise, a blank inspector
+ *     will be displayed, and a new model will be created.
+ * @return {Array.<cm.Editor>} The list of editors created.
  */
-cm.InspectorView.prototype.inspect = function(
-    title, editorSpecs, appState, opt_object) {
-  // We bind the editors to a separate "draft" copy of the object (instead of
-  // the original object) so we can apply all the edits in a single Command.
-  this.isNew_ = !opt_object;
-  this.object_ = opt_object || new google.maps.MVCObject();
+cm.InspectorView.prototype.inspect = function(editorSpecs, modelToEdit) {
+  // We bind the editors to a separate "draft" copy of the modelToEdit (instead
+  // of the original) so we can apply all the edits in a single Command.
+  this.object_ = modelToEdit || new google.maps.MVCObject();
   this.draft_ = new google.maps.MVCObject();
-  this.appState_ = appState;
-
-  cm.ui.setText(this.titleElem_, title);
-  goog.dom.classes.enable(this.copyLayerLink_, cm.css.HIDDEN, !this.isNew_);
 
   /** The table row DOM elements (each one holds a label and an editor). */
   this.rows_ = {};
@@ -150,100 +93,144 @@ cm.InspectorView.prototype.inspect = function(
 
   // The union of all the keys that appear in the condition objects (i.e. all
   // the keys on which the visibility of other editors can depend).
-  var triggerKeys = {};
+  this.triggerKeys_ = {};
 
   if (this.editors_) {
-    this.dispose_();
+    this.dispose();
   }
   this.editors_ = [];
+  this.editorMap_ = {};
   cm.ui.clear(this.tableElem_);
   for (var i = 0; i < editorSpecs.length; i++) {
-    var spec = editorSpecs[i];
-
-    // Add a table row for each editor.  Each table row automatically gets
-    // a CSS class name in lowercase-with-hyphens style based on the editor
-    // type, e.g. cm.editors.Type.FOO gets the CSS class "cm-foo-editor".
-    var id = cm.ui.generateId('editor');
-    var cell, row;
-    // TODO(user) figure out how to get goog.getCssName to work with
-    // this
-    var cls = 'cm-' + spec.type.toLowerCase().replace(/_/g, '-') + '-editor';
-    var labelElem, helpIcon;
-    cm.ui.append(this.tableElem_, row = cm.ui.create('tr', {'class': cls},
-        cm.ui.create('th', {},
-            labelElem = cm.ui.create('label', {'for': id}, spec.label),
-            helpIcon = spec.tooltip ?
-                cm.ui.create('div', {'class': cm.css.HELP_ICON}) : null),
-        cell = cm.ui.create('td')));
-
-    // Display a tooltip when user hovers over the help icon.
-    if (spec.tooltip) {
-      var tooltip = new goog.ui.Tooltip();
-      tooltip.setHtml(spec.tooltip);
-      tooltip.setHideDelayMs(TOOLTIP_HIDE_DELAY_MS);
-      tooltip.className = cm.css.EDITORS_TOOLTIP;
-      tooltip.attach(helpIcon);
-      this.tooltips_.push(tooltip);
-    }
-
-    var editor = cm.editors.create(cell, spec.type, id, spec, this.draft_);
-    this.editors_.push(editor);
-
-    // Add a validation error indicator next to each editor.
-    // TODO(kpy): When we figure out the exact UX we want, we might want to
-    // replace this with an icon and a popup or something like that.
-    var errorSpan = cm.ui.create('span', {'class': cm.css.VALIDATION_ERROR});
-    cm.ui.append(cell, errorSpan);
-    (function(errorSpan) {  // close over the local variable, errorSpan
-      cm.events.onChange(editor, 'validation_error', function() {
-        cm.ui.setText(errorSpan, this.get('validation_error') || '');
-      }, editor);
-    })(errorSpan);
-
-    // Bind the editor to a property on our draft new version of the object.
-    this.draft_.set(spec.key, this.object_.get(spec.key));
-    editor.bindTo('value', this.draft_, spec.key);
-    this.rows_[spec.key] = row;
-
-    // Collect the set of property keys on which conditional editors depend.
-    if (spec.conditions) {
-      for (var triggerKey in spec.conditions) {
-        triggerKeys[triggerKey] = true;
-      }
-      this.conditions_[spec.key] = spec.conditions;
-    }
+    this.addEditor(editorSpecs[i], true);
   }
 
   // Listen for changes that will affect conditional editors.
   this.updateConditionalEditors_();
-  for (var key in triggerKeys) {
+  for (var key in this.triggerKeys_) {
     cm.events.onChange(this.draft_, key, this.updateConditionalEditors_, this);
   }
 
-  // Watch enabled_layer_ids and close the inspector if this layer is disabled.
-  cm.events.onChange(this.appState_, 'enabled_layer_ids',
-                     this.cancelIfLayerDisabled_, this);
-
-  // Bring up the inspector dialog.
-  cm.ui.showPopup(this.popup_);
-  cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: true});
+  return this.editors_;
 };
 
 /**
- * Switches to importer dialog.
- * @private
+ * Adds the given editor spec to the inspector.
+ * This assumes you have already initialized the inspector by calling inspect.
+ * @param {Object.<cm.EditorSpec>} editorSpec Spec for the editor to add.
+ * @param {?boolean} opt_noUpdateConditionals If true, do not try to update
+ *     conditional editors after adding the editor spec.  This should normally
+ *     be set to false, and is only here to enable setting up editors in bulk
+ *     from within inspect.
+ * @return {cm.Editor} the editor corresponding to the given editorSpec.
  */
-cm.InspectorView.prototype.handleCopyClick_ = function() {
-  cm.events.emit(cm.app, cm.events.IMPORT);
-  cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: false});
-  cm.ui.remove(this.popup_);
+cm.InspectorView.prototype.addEditor = function(
+    editorSpec, opt_noUpdateConditionals) {
+  // Add a table row for each editor.  Each table row automatically gets
+  // a CSS class name in lowercase-with-hyphens style based on the editor
+  // type, e.g. cm.editors.Type.FOO gets the CSS class "cm-foo-editor".
+  var id = cm.ui.generateId('editor');
+  var cell, row;
+  // TODO(user) figure out how to get goog.getCssName to work with
+  // this
+  var cls =
+      'cm-' + editorSpec.type.toLowerCase().replace(/_/g, '-') + '-editor';
+  var labelElem, helpIcon;
+  cm.ui.append(this.tableElem_, row = cm.ui.create('tr', {'class': cls},
+      cm.ui.create('th', {},
+          labelElem = cm.ui.create('label', {'for': id}, editorSpec.label),
+          helpIcon = editorSpec.tooltip ?
+              cm.ui.create('div', {'class': cm.css.HELP_ICON}) : null),
+      cell = cm.ui.create('td')));
+
+  // Display a tooltip when user hovers over the help icon.
+  if (editorSpec.tooltip) {
+    var tooltip = new goog.ui.Tooltip();
+    tooltip.setHtml(editorSpec.tooltip);
+    tooltip.setHideDelayMs(TOOLTIP_HIDE_DELAY_MS);
+    tooltip.className = cm.css.EDITORS_TOOLTIP;
+    tooltip.attach(helpIcon);
+    this.tooltips_.push(tooltip);
+  }
+
+  var editor = cm.editors.create(cell, editorSpec.type, id, editorSpec,
+                                 this.draft_);
+  this.editors_.push(editor);
+  this.editorMap_[editorSpec.key] = editor;
+
+  // Add a validation error indicator next to each editor.
+  // TODO(kpy): When we figure out the exact UX we want, we might want to
+  // replace this with an icon and a popup or something like that.
+  var errorSpan = cm.ui.create('span', {'class': cm.css.VALIDATION_ERROR});
+  cm.ui.append(cell, errorSpan);
+  (function(errorSpan) {  // close over the local variable, errorSpan
+    cm.events.onChange(editor, 'validation_error', function() {
+      cm.ui.setText(errorSpan, this.get('validation_error') || '');
+    }, editor);
+  })(errorSpan);
+
+  // Bind the editor to a property on our draft new version of the object.
+  this.draft_.set(editorSpec.key, this.object_.get(editorSpec.key));
+  editor.bindTo('value', this.draft_, editorSpec.key);
+  this.rows_[editorSpec.key] = row;
+
+  // Collect the set of property keys on which conditional editors depend.
+  var newTriggerKeys = {};
+  if (editorSpec.conditions) {
+    for (var triggerKey in editorSpec.conditions) {
+      this.triggerKeys_[triggerKey] = true;
+      newTriggerKeys[triggerKey] = true;
+    }
+    this.conditions_[editorSpec.key] = editorSpec.conditions;
+  }
+
+  if (!opt_noUpdateConditionals) {
+    // Listen for changes that will affect conditional editors.
+    this.updateConditionalEditors_();
+    for (var key in newTriggerKeys) {
+      cm.events.onChange(
+          this.draft_, key, this.updateConditionalEditors_, this);
+      this.triggerKeys_[key] = newTriggerKeys[key];
+    }
+  }
+  return editor;
 };
 
 /**
- * Applies the user's edits by emitting an undoable EditCommand.
- * @private
+ * Deletes the editor with the given key to the inspector.
+ *
+ * @param {string} key The key of the property to delete.
  */
-cm.InspectorView.prototype.handleOk_ = function() {
+cm.InspectorView.prototype.deleteEditor = function(key) {
+  if (!this.rows_[key]) {
+    return;
+  }
+  goog.dom.removeNode(this.rows_[key]);
+  var editor = this.editorMap_[key];
+  editor.unbind(key);
+  goog.array.remove(this.editors_, editor);
+  this.draft_.set(key, undefined);
+  delete this.editorMap_[key];
+  delete this.rows_[key];
+  delete this.conditions_[key];
+};
+
+/**
+ * Collects and returns pending edits that have been made to the original model.
+ *
+ * @return {{oldValues: Object, newValues: Object}} An object with 2 properties,
+ *     oldValues and newValues.  Both objects will have the same keys. There are
+ *     three cases:
+ *     1. new value is added: oldValues[key] will be undefined
+ *                            newValues[key] will contain the new value
+ *     2. old value is removed: oldValues[key] will contain the old value,
+ *                              newValues[key] will be undefined
+ *     3. old value is changed: oldValues[key] will contain the old value,
+ *                              newValues[key] will contain the new value
+ *     Values in the original that have not been changed appear in neither
+ *     oldValues nor newValues.
+ */
+cm.InspectorView.prototype.collectEdits = function() {
   var oldValues = {}, newValues = {};
   for (var key in this.rows_) {
     var oldValue = this.object_.get(key);
@@ -265,60 +252,30 @@ cm.InspectorView.prototype.handleOk_ = function() {
       newValues[key] = newValue;
     }
   }
-  if (this.isNew_) {
-    cm.events.emit(cm.app, cm.events.NEW_LAYER, {properties: newValues});
-  } else {
-    var object = this.object_;
-    cm.events.emit(cm.app, cm.events.OBJECT_EDITED, {
-      oldValues: oldValues,
-      newValues: newValues,
-      layerId: object instanceof cm.LayerModel ? object.get('id') : null
-    });
-  }
-  this.dispose_(true);
+
+  return {oldValues: oldValues, newValues: newValues};
 };
 
 /**
- * Cancels the user's edits.
- * @private
+ * @return {google.maps.MVCObject} Returns the unedited original object.
  */
-cm.InspectorView.prototype.handleCancel_ = function() {
-  this.dispose_(true);
+cm.InspectorView.prototype.getOriginal = function() {
+  return this.object_;
 };
 
 /**
- * Dispose of the inspector's various editors, and optionally the inspector
- * popup itself.
- * @param {boolean=} opt_disposeInspector If true, dispose of the inspector.
- * @private
+ * Dispose of the inspector's various editors.
  */
-cm.InspectorView.prototype.dispose_ = function(opt_disposeInspector) {
+cm.InspectorView.prototype.dispose = function() {
   if (this.editors_) {
     goog.array.forEach(this.editors_, function(editor) {
       editor.dispose();
     });
     this.editors_ = null;
   }
-  if (opt_disposeInspector) {
-    cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: false});
-    cm.ui.remove(this.popup_);
-  }
-
   goog.array.forEach(this.tooltips_, function(tooltip) {
     tooltip.dispose();
   });
-};
-
-/**
- * Closes the inspector view if the layer has been disabled.
- * @private
- */
-cm.InspectorView.prototype.cancelIfLayerDisabled_ = function() {
-  // Close the inspector view only if the layer isn't new and isn't enabled.
-  if (this.object_ instanceof cm.LayerModel && !this.isNew_ &&
-      !this.appState_.getLayerEnabled(this.object_.get('id'))) {
-    this.handleCancel_();
-  }
 };
 
 /**

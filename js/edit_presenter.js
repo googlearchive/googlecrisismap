@@ -23,7 +23,7 @@ goog.require('cm.CreateLayersCommand');
 goog.require('cm.DeleteLayerCommand');
 goog.require('cm.EditCommand');
 goog.require('cm.ImporterView');
-goog.require('cm.InspectorView');
+goog.require('cm.InspectorPopup');
 goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
 goog.require('cm.SetDefaultViewCommand');
@@ -49,7 +49,7 @@ goog.require('goog.net.XhrIo');
 cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   var config = opt_config || {};
   var importer = new cm.ImporterView(config['api_maps_url']);
-  var inspector = new cm.InspectorView();
+  var inspector = new cm.InspectorPopup();
   var sharer = new cm.ShareEmailView();
 
   /**

@@ -32,7 +32,7 @@ EditPresenterTest.prototype.testImportEvent = function() {
 /** Tests that the EditPresenter responds correctly to INSPECT events. */
 EditPresenterTest.prototype.testInspectEvent = function() {
   var model = new cm.MapModel();
-  var inspector = this.expectNew_('cm.InspectorView');
+  var inspector = this.expectNew_('cm.InspectorPopup');
   var presenter = new cm.EditPresenter(null, model, null, this.config_);
 
   // Emitting an INSPECT event on a map should open an inspector on the map.
@@ -90,7 +90,7 @@ function findEditorSpec(key, editorSpecs) {
 EditPresenterTest.prototype.testEnableOsmMapTypeEditing = function() {
   var OSM_CHOICE = {value: 'OSM', label: 'OpenStreetMap'};
   var model = new cm.MapModel();
-  var inspector = this.expectNew_('cm.InspectorView'), specs;
+  var inspector = this.expectNew_('cm.InspectorPopup'), specs;
   inspector.inspect = function(title, editorSpecs, object) {
     specs = editorSpecs;
   };
@@ -171,7 +171,7 @@ EditPresenterTest.prototype.testLayerDeletedEvent = function() {
 
 /** Tests that the EditPresenter responds correctly to OBJECT_EDITED events. */
 EditPresenterTest.prototype.testObjectEditedEvent = function() {
-  var inspector = this.expectNew_('cm.InspectorView');
+  var inspector = this.expectNew_('cm.InspectorPopup');
   var presenter = new cm.EditPresenter(null, null, null);
 
   // Emitting an OBJECT_EDITED event should create and execute an EditCommand.
@@ -201,7 +201,7 @@ EditPresenterTest.prototype.testLayersArrangedEvent = function() {
 
 /** Tests that EditPresenter emits UNDO_REDO_BUFFER_CHANGED events correctly. */
 EditPresenterTest.prototype.testCommandBufferChangedEvent = function() {
-  var inspector = this.expectNew_('cm.InspectorView');
+  var inspector = this.expectNew_('cm.InspectorPopup');
   var presenter = new cm.EditPresenter(null, null, null);
   var undoPossible, redoPossible;
 
