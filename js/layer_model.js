@@ -39,6 +39,7 @@ goog.inherits(cm.LayerModel, google.maps.MVCObject);
 cm.LayerModel.Type = {
   FOLDER: 'FOLDER',
   KML: 'KML',
+  GEOJSON: 'GEOJSON',
   GEORSS: 'GEORSS',
   TILE: 'TILE',
   CSV: 'CSV',
@@ -64,6 +65,7 @@ cm.LayerModel.FolderType = {
 cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
   'FOLDER': cm.LayerModel.Type.FOLDER,
   'KML': cm.LayerModel.Type.KML,
+  'GEOJSON': cm.LayerModel.Type.GEOJSON,
   'GEORSS': cm.LayerModel.Type.GEORSS,
   'GOOGLE_MAP_TILES': cm.LayerModel.Type.TILE,
   'TILE': cm.LayerModel.Type.TILE,
@@ -230,6 +232,7 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
             tile['tile_coordinate_type']] ||
             cm.LayerModel.TileCoordinateType.GOOGLE);
       break;
+    case cm.LayerModel.Type.GEOJSON:
     case cm.LayerModel.Type.CSV:
     case cm.LayerModel.Type.GOOGLE_SPREADSHEET:
       var params = source[type.toLowerCase()] || {};
@@ -343,6 +346,7 @@ cm.LayerModel.prototype.toMapRoot = function() {
             this.get('tile_coordinate_type')]
       };
       break;
+    case cm.LayerModel.Type.GEOJSON:
     case cm.LayerModel.Type.CSV:
     case cm.LayerModel.Type.GOOGLE_SPREADSHEET:
       var description = this.get('description_template') || cm.Html.EMPTY;
@@ -468,9 +472,12 @@ cm.LayerModel.prototype.getSourceAddress = function() {
   var type = this.get('type');
   switch (type) {
     case cm.LayerModel.Type.KML:
+    case cm.LayerModel.Type.GEOJSON:
     case cm.LayerModel.Type.GEORSS:
     case cm.LayerModel.Type.TILE:
+    case cm.LayerModel.Type.CSV:
     case cm.LayerModel.Type.WMS:
+    case cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO:
       var url = /** @type string */(this.get('url') || '');
       if (type === cm.LayerModel.Type.WMS) {
         url = new goog.Uri(url, true)

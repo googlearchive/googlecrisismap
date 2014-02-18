@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [78.98, 30.28]
+      },
+      "properties": {
+        "id": "1",
+        "name": "Main Elementary",
+        "phone": "555-555-5555",
+        "description": "<b>Place:</b> Main Elementary"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [80.53, 29.84]
+      },
+      "properties": {
+        "id": "2",
+        "name": "Main High School",
+        "phone": "222-222-2222",
+        "description": "<b>Place:</b> Main High School"
+      }
+    }
+  ]
+}

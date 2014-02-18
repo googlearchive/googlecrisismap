@@ -21,6 +21,7 @@ class LayerType(object):
   """Allowed values for the 'type' property of a MapRoot layer."""
   FOLDER = 'FOLDER'
   KML = 'KML'
+  GEOJSON = 'GEOJSON'
   GEORSS = 'GEORSS'
   GOOGLE_MAP_TILES = 'GOOGLE_MAP_TILES'
   CSV = 'CSV'
@@ -66,8 +67,8 @@ def GetSourceAddress(layer):
   """
   layer_type = layer.get('type', '')
   source = layer.get('source', {}).get(layer_type.lower(), {})
-  if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS,
-                    LayerType.CSV, LayerType.GOOGLE_SPREADSHEET,
+  if layer_type in [LayerType.KML, LayerType.GEOJSON, LayerType.GEORSS,
+                    LayerType.WMS, LayerType.CSV, LayerType.GOOGLE_SPREADSHEET,
                     LayerType.GOOGLE_MAPS_ENGINE_LITE_OR_PRO]:
     return layer_type + ':' + source.get('url', '')
 
@@ -82,8 +83,8 @@ def GetHostnameForSource(source):
     A hostname, or None if no hostname can be determined.
   """
   layer_type, url = source.split(':', 1)
-  if layer_type in [LayerType.KML, LayerType.GEORSS, LayerType.WMS,
-                    LayerType.CSV, LayerType.GOOGLE_SPREADSHEET,
+  if layer_type in [LayerType.KML, LayerType.GEOJSON, LayerType.GEORSS,
+                    LayerType.WMS, LayerType.CSV, LayerType.GOOGLE_SPREADSHEET,
                     LayerType.GOOGLE_MAPS_ENGINE_LITE_OR_PRO]:
     netloc = urlparse.urlsplit(url).netloc
     return netloc.split(':')[0]

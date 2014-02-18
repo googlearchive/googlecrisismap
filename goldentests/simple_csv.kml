@@ -4,7 +4,7 @@
   <Style id="style1">
     <IconStyle>
       <color>ffffffff</color>
-    <Icon>
+      <Icon>
         <href>http://mw1.google.com/crisisresponse/icons/red_dot.png</href>
       </Icon>
       <hotSpot x="0.5" xunits="fraction" y="0.5" yunits="fraction" />
@@ -12,16 +12,16 @@
   </Style>
   <Placemark id="1">
     <name>Main Elementary</name>
-  <description />
-  <Point>
+    <description>&lt;b&gt;Place:&lt;/b&gt;Main Elementary</description>
+    <Point>
       <coordinates>78.980000,30.280000,0</coordinates>
     </Point>
     <styleUrl>#style1</styleUrl>
   </Placemark>
   <Placemark id="2">
     <name>Main High School</name>
-  <description />
-  <Point>
+    <description>&lt;b&gt;Place:&lt;/b&gt;Main High School</description>
+    <Point>
       <coordinates>80.530000,29.840000,0</coordinates>
     </Point>
     <styleUrl>#style1</styleUrl>

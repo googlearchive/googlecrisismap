@@ -26,6 +26,7 @@ goog.require('cm.css');
 goog.require('cm.util');
 goog.require('goog.Uri');
 goog.require('goog.array');
+goog.require('goog.dom');
 goog.require('goog.json');
 
 /** @const string */
@@ -491,7 +492,7 @@ cm.MapView.prototype.addOverlay_ = function(layer) {
 };
 
 /**
- * Constructs the /.kmlify URL for a given CSV or GOOGLE_SPREADSHEET layer.
+ * Constructs the /.kmlify URL for a GEOJSON, CSV, or GOOGLE_SPREADSHEET layer.
  * @param {cm.LayerModel} layer The layer model.
  * @return {string?} A URL to /.kmlify that generates the appropriate KML.
  * @private
@@ -500,34 +501,33 @@ cm.MapView.prototype.buildKmlifyUrl_ = function(layer) {
   var url = /** @type string */(layer.get('url'));
   if (layer.get('type') === cm.LayerModel.Type.GOOGLE_SPREADSHEET) {
     var match = url.match(/spreadsheet\/.*[?&]key=(\w+)/);
-    if (match) {
-      url = GOOGLE_SPREADSHEET_CSV_URL.replace('$key', match[1]);
-    } else {
-      return null;
-    }
+    url = match ? GOOGLE_SPREADSHEET_CSV_URL.replace('$key', match[1]) : null;
   }
+  if (!url.match(/\S/)) return null;
 
-  var lat = /** @type string */(layer.get('latitude_field'));
-  var lon = /** @type string */(layer.get('longitude_field'));
   var result = this.config_['kmlify_url'] + '?url=' + encodeURIComponent(url);
   function addParam(name, value) {
     if (value) result += '&' + name + '=' + encodeURIComponent(value);
   }
-  if (url.match(/\S/) && lat && lon) {
+  if (layer.get('type') === cm.LayerModel.Type.GEOJSON) {
+    addParam('type', 'geojson');
+  } else {
     addParam('type', 'csv');
+    var lat = /** @type string */(layer.get('latitude_field'));
+    var lon = /** @type string */(layer.get('longitude_field'));
+    if (!lat || !lon) return null;
     addParam('loc', (lat === lon) ? lat : lat + ',' + lon);
-    addParam('name', /** @type string */(layer.get('title_template')));
-    addParam('desc', /** @type string */(
-        layer.get('description_template').getUnsanitizedHtml()));
     addParam('icon', /** @type string */(layer.get('icon_url_template')));
     addParam('color', /** @type string */(layer.get('color_template')));
     addParam('hotspot', /** @type string */(layer.get('hotspot_template')));
-    addParam('cond', /** @type string */(layer.get('condition0')));
-    addParam('cond', /** @type string */(layer.get('condition1')));
-    addParam('cond', /** @type string */(layer.get('condition2')));
-    return result;
   }
-  return null;
+  addParam('name', /** @type string */(layer.get('title_template')));
+  addParam('desc', /** @type string */((layer.get('description_template') ||
+                                        cm.Html.EMPTY).getUnsanitizedHtml()));
+  addParam('cond', /** @type string */(layer.get('condition0')));
+  addParam('cond', /** @type string */(layer.get('condition1')));
+  addParam('cond', /** @type string */(layer.get('condition2')));
+  return result;
 };
 
 /**
@@ -572,6 +572,7 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
         layer, this.map_, this.appState_, this.metadataModel_, this.config_);
       break;
 
+    case cm.LayerModel.Type.GEOJSON:
     case cm.LayerModel.Type.CSV:
     case cm.LayerModel.Type.GOOGLE_SPREADSHEET:
       var url = this.buildKmlifyUrl_(layer);

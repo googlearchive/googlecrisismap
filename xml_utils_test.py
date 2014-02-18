@@ -38,7 +38,7 @@ class XmlUtilsTest(unittest.TestCase):
     <x />
   </a>
   <b>goodbye</b>
-</ns0:e>
+</ns0:e>\
 """, xml_utils.Serialize(e4))
 
 

@@ -98,21 +98,15 @@ def Read(fileobject):
 def Indent(element, level=0):
   """Adds indentation to an element subtree."""
   # TODO(kpy): Make this non-mutating so we don't have to copy in serialize().
-  indentation = '\n' + level*'  '
-  if element:
+  if element:  # True if element has any children
     if not element.text or not element.text.strip():
-      element.text = indentation + '  '
-    if not element.tail or not element.tail.strip():
-      element.tail = indentation
-    child = None
+      element.text = '\n' + '  '*(level + 1)
     for child in element:
       Indent(child, level + 1)
-    if child:
       if not child.tail or not child.tail.strip():
-        child.tail = indentation
-  elif level:
-    if not element.tail or not element.tail.strip():
-      element.tail = '\n' + (level-1)*'  '
+        child.tail = '\n' + '  '*(level + 1)
+    if not element[-1].tail or not element[-1].tail.strip():
+      element[-1].tail = '\n' + '  '*level
 
 
 def FixName(name, uri_prefixes):

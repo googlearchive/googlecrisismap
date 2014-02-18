@@ -501,6 +501,9 @@ cm.LayerEntryView.prototype.updateDownloadLink_ = function() {
         case cm.LayerModel.Type.KML:
           linkText = cm.MSG_DOWNLOAD_KML_LINK;
           break;
+        case cm.LayerModel.Type.GEOJSON:
+          linkText = cm.MSG_DOWNLOAD_GEOJSON_LINK;
+          break;
         case cm.LayerModel.Type.GEORSS:
           linkText = cm.MSG_DOWNLOAD_GEORSS_LINK;
           break;
@@ -643,7 +646,10 @@ cm.LayerEntryView.prototype.updateZoomLink_ = function() {
   var showZoomLink = !this.metadataModel_.isEmpty(this.model_) && (
       this.model_.get('viewport') ||
       this.model_.get('type') === cm.LayerModel.Type.KML ||
-      this.model_.get('type') === cm.LayerModel.Type.GEORSS);
+      this.model_.get('type') === cm.LayerModel.Type.GEOJSON ||
+      this.model_.get('type') === cm.LayerModel.Type.GEORSS ||
+      this.model_.get('type') === cm.LayerModel.Type.CSV ||
+      this.model_.get('type') === cm.LayerModel.Type.GOOGLE_SPREADSHEET);
   goog.dom.classes.enable(this.zoomElem_, cm.css.HIDDEN, !showZoomLink);
   // Include a separator dot iff the zoom element has a previous sibling.
   cm.ui.setText(/** @type Element */(this.zoomElem_.firstChild),

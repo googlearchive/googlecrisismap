@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.2">
+<Document>
+  <Style id="style1">
+    <IconStyle>
+      <Icon>
+        <href>http://app.com/root/.static/pin24.png</href>
+      </Icon>
+      <color>ffdd8844</color>
+      <hotSpot x="0.5" xunits="fraction" y="0" yunits="fraction" />
+    </IconStyle>
+    <LineStyle>
+      <width>2</width>
+      <color>7f0088ff</color>
+    </LineStyle>
+    <PolyStyle>
+      <outline>1</outline>
+      <fill>1</fill>
+      <color>260088ff</color>
+    </PolyStyle>
+  </Style>
+  <Placemark>
+    <name>Main Elementary</name>
+    <description>&lt;b&gt;Place:&lt;/b&gt; Main Elementary</description>
+    <Point>
+      <coordinates>78.98,30.28</coordinates>
+    </Point>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
+  <Placemark>
+    <name>Main High School</name>
+    <description>&lt;b&gt;Place:&lt;/b&gt; Main High School</description>
+    <Point>
+      <coordinates>80.53,29.84</coordinates>
+    </Point>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
+</Document>
+</kml>

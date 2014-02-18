@@ -340,6 +340,29 @@ MapViewTest.prototype.addOverlayKml = function() {
   this.newMapView_(false);
 };
 
+/** Tests adding a GeoJSON layer. */
+MapViewTest.prototype.addOverlayGeoJson = function() {
+  var layer = {
+    id: 'foo', type: cm.LayerModel.Type.GEOJSON, url: 'http://x.com/y.geojson',
+    title_template: '$title', description_template: new cm.Html('$description')
+  };
+  this.addLayer_(layer);
+  this.stubVisibleLayerIds_(['foo']);
+
+  var overlay = this.expectNew_('google.maps.KmlLayer', {
+      url: 'http://app.com/root/.kmlify' +
+          '?url=' + encodeURIComponent(layer.url) +
+          '&type=geojson' +
+          '&name=' + encodeURIComponent('$title') +
+          '&desc=' + encodeURIComponent('$description'),
+      preserveViewport: true,
+      suppressInfoWindows: true
+  });
+  stub(overlay.getMap)().is(null);
+  expectCall(overlay.setMap)(this.map_);
+  this.newMapView_(false, this.config_);
+};
+
 /** Tests adding a GeoRSS overlay. */
 MapViewTest.prototype.addOverlayGeoRss = function() {
   this.addLayer_({

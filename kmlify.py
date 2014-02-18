@@ -10,7 +10,7 @@
 # OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 # specific language governing permissions and limitations under the License.
 
-"""Extracts records from CSV or XML and emits them as KML placemarks."""
+"""Gets records from CSV, GeoJSON, or XML and emits them as KML placemarks."""
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
@@ -19,6 +19,7 @@ import base_handler
 
 import StringIO
 import csv
+import json
 import logging
 import pickle
 import re
@@ -32,13 +33,14 @@ from google.appengine.api import urlfetch
 
 KMZ_CONTENT_TYPE = 'application/vnd.google-earth.kmz'
 KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
-DEFAULT_ICON_URL = 'http://mw1.google.com/crisisresponse/icons/red_dot.png'
 KML_DOCUMENT_TEMPLATE = """\
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.2">
-%s</kml>
+%s
+</kml>
 """
-
+DEFAULT_ICON_URL = 'http://mw1.google.com/crisisresponse/icons/red_dot.png'
+ICON_FILES = {'small': 'pin16.png', 'medium': 'pin24.png', 'large': 'pin32.png'}
 OPERATORS = {
     '=': lambda x, y: x == y,
     '==': lambda x, y: x == y,
@@ -50,14 +52,21 @@ OPERATORS = {
 }
 
 
+def Stringify(text):
+  if text is None:
+    return ''
+  if isinstance(text, unicode):
+    return text.encode('utf-8')
+  return str(text)
+
+
 def HtmlEscape(text):
-  return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+  return Stringify(text).replace(
+      '&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
 def UrlQuote(text):
-  if isinstance(text, unicode):
-    text = text.encode('utf-8')
-  return urllib.quote(text)
+  return urllib.quote(Stringify(text))
 
 
 def ParseXml(xml):
@@ -75,8 +84,8 @@ def ParseXml(xml):
       if match:
         lineno, column = int(match.group(1)), int(match.group(2))
         offset = len('\n'.join(xml.split('\n')[:lineno - 1])) + 1 + column - 1
-        logging.info('before the error: %r', xml[max(0, offset - 100):offset])
-        logging.info('after the error: %r', xml[offset:offset + 100])
+        logging.info('before the error: %r', xml[:offset][-100:])
+        logging.info('after the error: %r', xml[offset:][:100])
       raise e
 
 
@@ -118,8 +127,8 @@ def MakeKmz(kml):
 
 
 def Compare(op, lhs, rhs):
-  try:
-    lhs = type(rhs)(lhs)  # convert left side to match type of right side
+  try:  # do the comparison according to the type of the right side
+    lhs = type(rhs)(lhs)
   except Exception:  # pylint:disable=broad-except
     return False
   return op(lhs, rhs)
@@ -157,15 +166,12 @@ def FetchData(url):
 def CreateHotspotElement(spec):
   """Creates a KML hotSpot element according to the given specification.
 
-  The specification is a string, and can be of the following form:
-    xval,yval: x and y are floats, and are pixel locations.
-    Some combination of 'lrtb' (left, right, top, bottom) - e.g 'tl' makes the
-    hotspot the top left corner. 'b' makes it the center bottom.
-
   Args:
-    spec: A string specification.
+    spec: A string "x,y" indicating a pixel offset from the bottom-left corner;
+        or any of the letters 'l', 'r', 't', 'b' (e.g. 'tr' for top-right,
+        'l' for center left); or '' to indicate the center of the image.
   Returns:
-    An xml Element with the hot spot definition.
+    An XML <hotSpot> Element.
   """
   try:
     x, y = spec.split(',')
@@ -179,27 +185,85 @@ def CreateHotspotElement(spec):
   return xml_utils.Xml('hotSpot', x=x, y=y, xunits=units, yunits=units)
 
 
+def KmlCoordinatesFromJson(coords):
+  if isinstance(coords[0], (int, float)):
+    coords = [coords]
+  return ' '.join(','.join(map(str, position)) for position in coords)
+
+
+def KmlGeometryFromJson(geom):
+  """Converts a GeoJSON Geometry object to a KML Geometry element."""
+  xml = xml_utils.Xml
+  t = geom.get('type')
+  coords = geom.get('coordinates', [])
+  if t in ['MultiPoint', 'MultiLineString', 'MultiPolygon']:
+    return xml('MultiGeometry', *(
+        KmlGeometryFromJson({'type': t[5:], 'coordinates': subcoords})
+        for subcoords in coords
+    ))
+  if t in ['Point', 'LineString']:
+    return xml(t, xml('coordinates', KmlCoordinatesFromJson(coords)))
+  if t == 'Polygon':
+    return xml('Polygon', *(
+        xml(i == 0 and 'outerBoundaryIs' or 'innerBoundaryIs',
+            xml('LinearRing', xml('coordinates', KmlCoordinatesFromJson(ring))))
+        for i, ring in enumerate(coords)
+    ))
+
+
+def KmlStyleFromJson(props, root_url):
+  """Converts a dictionary of GeoJSON properties to a KML Style element."""
+  # See https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0
+  xml = xml_utils.Xml
+  icon_file = ICON_FILES.get(props.get('marker-size', 'medium'))
+  return xml('Style',
+             xml('IconStyle',
+                 xml('Icon', xml('href', root_url + '/.static/' + icon_file)),
+                 KmlColorFromJson(props.get('marker-color', '48d')),
+                 CreateHotspotElement('b')),  # bottom center
+             xml('LineStyle',
+                 xml('width', props.get('stroke-width', 2)),
+                 KmlColorFromJson(props.get('stroke', 'f80'),
+                                  props.get('stroke-opacity', 0.5))),
+             xml('PolyStyle',
+                 xml('outline', '1'),
+                 xml('fill', '1'),
+                 KmlColorFromJson(props.get('fill', 'f80'),
+                                  props.get('fill-opacity', 0.15))))
+
+
+def KmlColorFromJson(color, opacity=1):
+  xml = xml_utils.Xml
+  color = color.replace('#', ' ').strip()
+  opacity_hex = '%02x' % (255.999*opacity)
+  if len(color) == 3:
+    return xml('color', opacity_hex + color[2]*2 + color[1]*2 + color[0]*2)
+  if len(color) == 6:
+    return xml('color', opacity_hex + color[4:6] + color[2:4] + color[0:2])
+
+
 class Template(string.Template):
   idpattern = r'[\w.][\w.@]*'
 
 
 class Kmlifier(object):
-  """A converter for CSV and XML to KML."""
+  """A converter for CSV/XML/GeoJSON to KML."""
 
-  def __init__(self, name_template, description_template, location_fields,
-               id_template, icon_url_template=None,
+  def __init__(self, root_url, name_template, description_template,
+               location_fields, id_template, icon_url_template=None,
                color_template=None, hotspot_template=None,
                join_field=None, join_data=None, conditions=None):
     """Sets up a record extractor and KML emitter.
 
     Args:
+      root_url: A base URL to use in construction of icon URLs.
       name_template: A string template, in string.Template format, for the name
           to appear in each placemark's <name> element.  Each placeholder is
           replaced with the contents of the corresponding field in the record.
-      description_template: A string template, in Python's string.Template
-          format, for the HTML description to appear in each placemark's bubble.
-          Each placeholder is replaced with the contents of the corresponding
-          field within the record.  Field values are HTML-escaped by default.
+      description_template: A string template, in string.Template format, for
+          the HTML description to appear in each placemark's bubble.  Each
+          placeholder is replaced with the contents of the corresponding field
+          within the record.  Field values are HTML-escaped by default.
           Prepend '_' to the name of a field to get the non-escaped field value
           or '__' to the name of the field to get the URL-escaped field value
           (e.g. $foo gives the HTML-escaped value, $_foo gives the raw value).
@@ -232,6 +296,7 @@ class Kmlifier(object):
           are compared as numbers if the value is parseable as a float;
           otherwise values are compared as strings.
     """
+    self.root_url = root_url
     self.name_template = Template(name_template)
     self.description_template = Template(description_template)
     self.location_fields = location_fields
@@ -279,14 +344,36 @@ class Kmlifier(object):
           self.conditions.append((field, op, value))
           self.fields.add(field)
 
+  def RecordsFromGeoJson(self, geojson_data):
+    """Extracts records from a GeoJSON string.
+
+    Args:
+      geojson_data: A GeoJSON object, serialized as a string.  See
+          http://geojson.org/geojson-spec.html#geojson-objects for details.
+    Returns:
+      The records, as a list of dictionaries containing KML Geometry and Style
+      elements in their '__geometry__' and '__style__' keys, respectively.
+    """
+    obj = json.loads(geojson_data)
+    if obj['type'] not in ['Feature', 'FeatureCollection']:
+      obj = {'type': 'Feature', 'geometry': obj}
+    records = []
+    for feature in obj.get('features', [obj]):
+      if feature.get('type') == 'Feature':
+        geometry = KmlGeometryFromJson(feature.get('geometry', {}))
+        props = feature.get('properties', {})
+        style = KmlStyleFromJson(props, self.root_url)
+        if geometry:
+          records.append(dict(props, __geometry__=geometry, __style__=style))
+    return records
+
   def RecordsFromCsv(self, csv_data, encoding='utf-8'):
     """Extracts records from a string of CSV data.
 
-    The first line of text is expected to give the field names.
-
     Args:
-      csv_data: The CSV data, as a string.
-      encoding: The string encoding of the data.
+      csv_data: The CSV data, as a string.  The first line should be a header
+          row containing the field names.
+      encoding: The string encoding of csv_data, e.g. 'utf-8'.
     Returns:
       The records, as a list of dictionaries.
     """
@@ -368,6 +455,9 @@ class Kmlifier(object):
     styles = []
     style_ids = {}
     for record in records:
+      geometry = record.pop('__geometry__', None)
+      style = record.pop('__style__', None)
+
       # Join with the join_data, if any.
       if self.join_field:
         join_record = self.join_records.get(record[self.join_field])
@@ -391,41 +481,52 @@ class Kmlifier(object):
       values.update(dict((key, HtmlEscape(record[key])) for key in record))
       description = self.description_template.substitute(**values)
 
-      # Find the latitude and longitude values.
-      lats, lons = [], []
-      for field in self.location_fields:
-        try:
-          if ',' in field:
-            [lat, lon] = map(record.get, field.split(',')[:2])
-          elif field.startswith('^'):
-            lon, lat = record[field[1:]].replace(',', ' ').split()[:2]
-          else:
-            lat, lon = record[field].replace(',', ' ').split()[:2]
-          lats.append(float(lat))
-          lons.append(float(lon))
-        except (KeyError, ValueError, TypeError):
-          continue  # skip records that don't have geolocations
+      # Get geometry information.
+      if not geometry:
+        lats, lons = [], []
+        for field in self.location_fields:
+          try:
+            if ',' in field:
+              [lat, lon] = map(record.get, field.split(',')[:2])
+            elif field.startswith('^'):
+              lon, lat = record[field[1:]].replace(',', ' ').split()[:2]
+            else:
+              lat, lon = record[field].replace(',', ' ').split()[:2]
+            lats.append(float(lat))
+            lons.append(float(lon))
+          except (KeyError, ValueError, TypeError):
+            continue  # skip records that don't have geolocations
+        if lats and lons:
+          # Take the centroid.  This is handy because, if the location might
+          # appear in e.g. one of two different fields, you can specify them
+          # both and you'll get whichever field is populated.
+          # TODO(kpy): Consider removing this feature since it's hardly used.
+          geometry = xml('Point', xml('coordinates', '%.6f,%.6f,0' % (
+              sum(lons)/len(lons), sum(lats)/len(lats))))
+
+      # Get style information.
+      if not style:
+        style = xml('Style',
+                    xml('IconStyle',
+                        xml('color', color),
+                        xml('Icon', xml('href', icon_url)),
+                        CreateHotspotElement(hotspot)))
+      key = xml_utils.Serialize(style)
+      if key not in style_ids:
+        style_ids[key] = 'style%d' % (len(style_ids) + 1)
 
       # Add a placemark.
-      if lats and lons:
-        coordinates = '%.6f,%.6f,0' % (sum(lons)/len(lons), sum(lats)/len(lats))
-        key = (icon_url, color, hotspot)
-        if key not in style_ids:
-          style_ids[key] = 'style%d' % (len(style_ids) + 1)
+      if geometry:
         placemarks.append(
             xml('Placemark',
                 id_value and {'id': id_value} or None,
                 xml('name', name),
                 xml('description', description),
-                xml('Point', xml('coordinates', coordinates)),
+                geometry,
                 xml('styleUrl', '#' + style_ids[key])))
 
-    styles = [xml('Style', {'id': style_id},
-                  xml('IconStyle',
-                      xml('color', color),
-                      xml('Icon', xml('href', icon_url)),
-                      CreateHotspotElement(hotspot)))
-              for ((icon_url, color, hotspot), style_id) in style_ids.items()]
+    styles = [xml('Style', *xml_utils.Parse(key).getchildren(), id=style_id)
+              for key, style_id in style_ids.items()]
     return xml('Document', *(styles + placemarks))
 
 
@@ -482,15 +583,19 @@ class Kmlify(base_handler.BaseHandler):
         join_data = FetchData(join_url)
 
       # Perform the conversion.
-      kmlifier = Kmlifier(name_template, description_template, location_fields,
-                          id_template, icon_url_template, color_template,
-                          hotspot_template, join_field, join_data, conditions)
+      kmlifier = Kmlifier(
+          self.request.root_url, name_template, description_template,
+          location_fields, id_template, icon_url_template, color_template,
+          hotspot_template, join_field, join_data, conditions)
       if data_type == 'xml':
         records = kmlifier.RecordsFromXml(data, record_tag, xml_wrapper_tag)
       elif data_type == 'csv':
         records = kmlifier.RecordsFromCsv(data)
+      elif data_type == 'geojson':
+        records = kmlifier.RecordsFromGeoJson(data)
       else:
-        raise ValueError('type should be "xml" or "csv", not %r' % data_type)
+        raise ValueError(
+            'type is %r, but should be "xml", "csv", or "geojson"' % data_type)
       logging.info('extracted %d records', len(records))
       records = kmlifier.FilterRecords(records)
       logging.info('conditions were met by %d records', len(records))
@@ -511,6 +616,3 @@ class Kmlify(base_handler.BaseHandler):
     self.response.headers['Cache-Control'] = (
         'public, max-age=%s, must-revalidate' % self.TTL_SECONDS)
     self.response.out.write(kmz)
-
-
-

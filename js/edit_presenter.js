@@ -72,6 +72,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
 
   function usesUrlField(type) {
     return type === cm.LayerModel.Type.KML ||
+        type === cm.LayerModel.Type.GEOJSON ||
         type === cm.LayerModel.Type.GEORSS ||
         type === cm.LayerModel.Type.TILE ||
         type === cm.LayerModel.Type.WMS ||
@@ -79,15 +80,27 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
         type === cm.LayerModel.Type.GOOGLE_SPREADSHEET;
   }
 
-  function downloadable(type) {
+  function hasDownloadOrViewLink(type) {
     return type === cm.LayerModel.Type.KML ||
+        type === cm.LayerModel.Type.GEOJSON ||
         type === cm.LayerModel.Type.GEORSS ||
-        type === cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO ||
+        type === cm.LayerModel.Type.CSV ||
+        type === cm.LayerModel.Type.GOOGLE_SPREADSHEET ||
+        type === cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO;
+  }
+
+  function usesKmlifyFields(type) {
+    return type === cm.LayerModel.Type.GEOJSON ||
         type === cm.LayerModel.Type.CSV ||
         type === cm.LayerModel.Type.GOOGLE_SPREADSHEET;
   }
 
-  function usesKmlifyFields(type) {
+  function usesKmlifyLatLonFields(type) {
+    return type === cm.LayerModel.Type.CSV ||
+        type === cm.LayerModel.Type.GOOGLE_SPREADSHEET;
+  }
+
+  function usesKmlifyStyleFields(type) {
     return type === cm.LayerModel.Type.CSV ||
         type === cm.LayerModel.Type.GOOGLE_SPREADSHEET;
   }
@@ -102,6 +115,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
 
   var layerTypeChoices = [
     {value: cm.LayerModel.Type.KML, label: 'KML'},
+    {value: cm.LayerModel.Type.GEOJSON, label: 'GeoJSON'},
     {value: cm.LayerModel.Type.GEORSS, label: 'GeoRSS'},
     {value: cm.LayerModel.Type.TILE,
      label: cm.MSG_LAYER_TYPE_TILE_SERVICE},
@@ -214,7 +228,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      tooltip: cm.MSG_MAPS_ENGINE_LITE_OR_PRO_URL_TOOLTIP},
     {key: 'suppress_download_link', label: cm.MSG_SHOW_DOWNLOAD_LINK,
      type: cm.editors.Type.CHECKBOX, checked_value: null,
-      unchecked_value: true, conditions: {'type': downloadable},
+      unchecked_value: true, conditions: {'type': hasDownloadOrViewLink},
      tooltip: cm.MSG_SHOW_DOWNLOAD_LINK_TOOLTIP},
     // TODO(romano): protect this field with a config variable
     {key: 'url_is_tile_index', label: cm.MSG_TILE_INDEX,
@@ -232,23 +246,23 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
      tooltip: cm.MSG_PLACEMARK_DESCRIPTION_TOOLTIP},
     {key: 'latitude_field', label: cm.MSG_LATITUDE_FIELD,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': usesKmlifyFields},
+     conditions: {'type': usesKmlifyLatLonFields},
      tooltip: cm.MSG_LATITUDE_FIELD_TOOLTIP},
     {key: 'longitude_field', label: cm.MSG_LONGITUDE_FIELD,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': usesKmlifyFields},
+     conditions: {'type': usesKmlifyLatLonFields},
      tooltip: cm.MSG_LONGITUDE_FIELD_TOOLTIP},
     {key: 'icon_url_template', label: cm.MSG_ICON_URL,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': usesKmlifyFields},
+     conditions: {'type': usesKmlifyStyleFields},
      tooltip: cm.MSG_ICON_URL_TOOLTIP},
     {key: 'color_template', label: cm.MSG_ICON_COLOR_TINT,
      type: cm.editors.Type.TEXT,
-     conditions: {'type': usesKmlifyFields},
+     conditions: {'type': usesKmlifyStyleFields},
      tooltip: cm.MSG_ICON_COLOR_TINT_TOOLTIP},
     {key: 'hotspot_template', label: cm.MSG_ICON_HOTSPOT,
      type: cm.editors.Type.MENU, choices: hotspotChoices,
-     conditions: {'type': usesKmlifyFields},
+     conditions: {'type': usesKmlifyStyleFields},
      tooltip: cm.MSG_ICON_HOTSPOT_TOOLTIP},
     {key: 'condition0', label: cm.MSG_FILTER_CONDITION,
      type: cm.editors.Type.TEXT,

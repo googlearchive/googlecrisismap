@@ -265,6 +265,9 @@ cm.MSG_ZOOM_TO_AREA_LINK = goog.getMsg('Zoom to area');
 /** @desc Label for a link to download a KML file. */
 cm.MSG_DOWNLOAD_KML_LINK = goog.getMsg('Download KML');
 
+/** @desc Label for a link to download a GeoJSON file. */
+cm.MSG_DOWNLOAD_GEOJSON_LINK = goog.getMsg('Download GeoJSON');
+
 /** @desc Label for a link to download a GeoRSS file. */
 cm.MSG_DOWNLOAD_GEORSS_LINK = goog.getMsg('Download GeoRSS');
 

@@ -21,7 +21,8 @@ KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
 KML_DOCUMENT_TEMPLATE = """\
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.2">
-%s</kml>
+%s
+</kml>
 """
 
 import hashlib
