@@ -13,6 +13,7 @@ goog.provide('cm.LegendTabItem');
 
 goog.require('cm');
 goog.require('cm.LegendView');
+goog.require('cm.LegendViewList');
 goog.require('cm.MapModel');
 goog.require('cm.MapTabItem');
 goog.require('cm.MetadataModel');
@@ -50,31 +51,23 @@ cm.LegendTabItem = function(mapModel, appState, config, metadataModel) {
    * @type boolean
    * @private
    */
-   this.isEnabled_ = true;
+  this.isEnabled_ = true;
 
-  this.loadLegends_();
-};
-goog.inherits(cm.LegendTabItem, cm.MapTabItem);
+  /**
+   * The legend view list watching the list of layers in the map.
+   * @type cm.LegendViewList
+   * @private
+   */
+  this.legendViewList_ = new cm.LegendViewList(this.mapModel, 'layers',
+      this.appState, this.metadataModel_);
 
-/**
- * Sets up listeners on the list of layers; adds all legend views for the
- * current layers.
- * @private
- */
-cm.LegendTabItem.prototype.loadLegends_ = function() {
-  var layers = /** @type google.maps.MVCArray */(this.mapModel.get('layers'));
-
-  cm.events.listen(layers, 'insert_at', this.update_, this);
   cm.events.listen(
-      layers, 'remove_at', function(i, layer) { this.update_(); }, this);
-  // Triggered when the Arranger rearranges the layers
-  cm.events.listen(cm.app, cm.events.MODEL_CHANGED, this.update_, this);
-  // Triggered when the set of enabled layers changes (which could change
-  // which legend is displayed first, hence the need to re-render).
-  cm.events.onChange(
-      this.appState, 'enabled_layer_ids', this.update_, this);
+      this.legendViewList_, cm.events.LEGEND_VIEW_LIST_RENDERING_CHANGED,
+      this.update_, this);
+
   this.update_();
 };
+goog.inherits(cm.LegendTabItem, cm.MapTabItem);
 
 /** @override */
 cm.LegendTabItem.prototype.addContent = function(parentElem) {
@@ -91,22 +84,40 @@ cm.LegendTabItem.prototype.getTitle = function() {
  * @private
  */
 cm.LegendTabItem.prototype.update_ = function() {
+  var hasContent = false;
   cm.ui.clear(this.legendContainer_);
-  var layers = this.mapModel.get('layers').getArray();
-  // isFirstLegend is used to tell the legend view whether it should render
-  // with the extra styling for the first legend in a larger list.  We set
-  // it to true at the beginning, then flip it to false as soon as a legend
-  // has rendered visible content.
-  var isFirstLegend = true;
-  for (var i = 0; i < layers.length; i++) {
-    var legendView = cm.LegendView.getLegendViewForLayer(
-        layers[i], this.metadataModel_, this.appState);
-    cm.ui.append(this.legendContainer_, legendView.getContent(isFirstLegend));
-    isFirstLegend = isFirstLegend && legendView.isHidden();
+
+  goog.array.forEach(this.legendViewList_.getLegendViews(), goog.bind(
+      function(legendView) {
+        var content = legendView.getContent();
+        if (!content) return;
+        cm.ui.append(this.legendContainer_, content);
+        hasContent = true;
+      }, this));
+
+  this.isEnabled_ = hasContent;
+  if (hasContent) {
+    this.markFirstLegend_();
   }
-  this.isEnabled_ = !isFirstLegend;
   if (this.tabView) {
     this.tabView.updateTabItem(this);
+  }
+};
+
+/**
+ * Locate the first legend box inside legendContainer and give it the special
+ * first-legend-box class.  Clear that class off all other legend boxes.
+ * @private
+ */
+cm.LegendTabItem.prototype.markFirstLegend_ = function() {
+  var allLegends = goog.dom.findNodes(this.legendContainer_, function(elt) {
+    return goog.dom.classes.has(elt, cm.css.TABBED_LEGEND_BOX);
+  });
+  if (allLegends) {
+    goog.dom.classes.add(allLegends[0], cm.css.FIRST_TABBED_LEGEND_BOX);
+    goog.array.forEach(allLegends.slice(1), function(elt) {
+      goog.dom.classes.remove(elt, cm.css.FIRST_TABBED_LEGEND_BOX);
+    });
   }
 };
 

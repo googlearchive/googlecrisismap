@@ -16,6 +16,7 @@
 goog.provide('cm.ArrangeCommand');
 
 goog.require('cm.Command');
+goog.require('goog.structs.Set');
 
 /**
  * A command to arrange the layers of a MapModel.
@@ -46,7 +47,9 @@ cm.ArrangeCommand = function(oldOrdering, newOrdering) {
  * @override
  */
 cm.ArrangeCommand.prototype.execute = function(appState, mapModel) {
+  cm.events.emit(cm.app, cm.events.ARRANGE_COMMAND_BEGIN);
   this.arrange_(this.newOrdering_, appState, mapModel);
+  cm.events.emit(cm.app, cm.events.ARRANGE_COMMAND_ENDED);
   return true;
 };
 
@@ -54,7 +57,9 @@ cm.ArrangeCommand.prototype.execute = function(appState, mapModel) {
  * @override
  */
 cm.ArrangeCommand.prototype.undo = function(appState, mapModel) {
+  cm.events.emit(cm.app, cm.events.ARRANGE_COMMAND_BEGIN);
   this.arrange_(this.oldOrdering_, appState, mapModel);
+  cm.events.emit(cm.app, cm.events.ARRANGE_COMMAND_ENDED);
   return true;
 };
 

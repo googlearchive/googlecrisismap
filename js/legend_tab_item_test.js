@@ -10,6 +10,8 @@
 // specific language governing permissions and limitations under the License.
 
 goog.require('cm.AboutTabItem');
+goog.require('cm.ArrangeCommand');
+goog.require('cm.CreateLayersCommand');
 goog.require('cm.LegendTabItem');
 goog.require('cm.TestBase');
 goog.require('cm.css');
@@ -180,4 +182,83 @@ LegendTabItemTest.prototype.testAnalyticsSelectionEvent = function() {
 
   tabView.tabBar_.selectTab(1);
   cm.events.emit(tabView.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+};
+
+LegendTabItemTest.prototype.testEnabledAddingFirstLayer = function() {
+  var legendTabItem = this.createLegendTabItem_('AddingFirstLayer', []);
+  expectFalse(legendTabItem.getIsEnabled());
+  // We would do this by emitting the NEW_LAYER event, but that would require
+  // bringing up the edit presenter.  Instead, we simulate the behavior
+  // of the edit presenter.
+  var newLayerJson = {
+      id: 'firstLayer',
+      title: 'The first layer',
+      legend: 'A legend',
+      type: 'KML'
+    };
+  var cmd = new cm.CreateLayersCommand([newLayerJson]);
+  cmd.execute(this.appState_, this.mapModel_);
+  expectTrue(legendTabItem.getIsEnabled());
+};
+
+LegendTabItemTest.prototype.testArrangeLayers = function() {
+  var blueLayer = this.duplicateJson(
+      BLUE_LAYER_JSON, {id: BLUE_LAYER_JSON.id + '_testArrangeLayers'});
+  var redLayer = this.duplicateJson(
+      RED_LAYER_JSON, {id: RED_LAYER_JSON.id + '_testArrangeLayers'});
+  var lockedFolder = {
+    id: 'lockedFolder',
+    title: 'Locked Folder',
+    visibility: 'DEFAULT_ON',
+    type: 'FOLDER',
+    list_item_type: 'CHECK_HIDE_CHILDREN'
+  };
+  var legendTabItem = this.createLegendTabItem_(
+      'testArrangeLayers', [blueLayer, redLayer, lockedFolder]);
+  var cmd = new cm.ArrangeCommand(
+      [{id: blueLayer.id}, {id: redLayer.id},
+       {id: lockedFolder.id, sublayerIds: []}],
+      [{id: lockedFolder.id, sublayerIds: [
+          {id: redLayer.id}, {id: blueLayer.id}]}]);
+  cmd.execute(this.appState_, this.mapModel_);
+  var content = legendTabItem.getContent();
+  var folderElem = this.getLegendElem_(content, lockedFolder);
+  expectNoDescendantOf(folderElem, withText(hasSubstr(blueLayer.title)));
+  expectDescendantOf(folderElem, withInnerHtml(sanitize(blueLayer.legend)));
+  expectNoDescendantOf(folderElem, withText(hasSubstr(redLayer.title)));
+  expectDescendantOf(folderElem, withInnerHtml(sanitize(redLayer.legend)));
+  this.assertCorrectBoxMarkedFirst_(content);
+};
+
+LegendTabItemTest.prototype.testArrangeLayersTwice = function() {
+  var blueLayer = this.duplicateJson(
+      BLUE_LAYER_JSON, {id: BLUE_LAYER_JSON.id + '_testArrangeLayersTwice'});
+  var redLayer = this.duplicateJson(
+      RED_LAYER_JSON, {id: RED_LAYER_JSON.id + '_testArrangeLayersTwice'});
+  var lockedFolder = {
+    id: 'lockedFolder_testArrangeLayersTwice',
+    title: 'Locked Folder',
+    visibility: 'DEFAULT_ON',
+    type: 'FOLDER',
+    list_item_type: 'CHECK_HIDE_CHILDREN'
+  };
+  var legendTabItem = this.createLegendTabItem_(
+      'testArrangeLayers', [blueLayer, redLayer, lockedFolder]);
+
+  var cmd = new cm.ArrangeCommand(
+      [{id: blueLayer.id}, {id: redLayer.id},
+       {id: lockedFolder.id, sublayerIds: []}],
+      [{id: lockedFolder.id, sublayerIds: [
+          {id: redLayer.id}, {id: blueLayer.id}]}]);
+  cmd.execute(this.appState_, this.mapModel_);
+
+  var cmd2 = new cm.ArrangeCommand(
+      [{id: lockedFolder.id, sublayerIds:
+        [{id: redLayer.id}, {id: blueLayer.id}]}],
+      [{id: blueLayer.id},
+       {id: lockedFolder.id, sublayerIds: [{id: redLayer.id}]}]);
+  cmd2.execute(this.appState_, this.mapModel_);
+  var content = legendTabItem.getContent();
+  expectDescendantOf(content, withText(hasSubstr(blueLayer.title)));
+  this.assertCorrectBoxMarkedFirst_(content);
 };

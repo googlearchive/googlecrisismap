@@ -132,6 +132,19 @@ cm.events.SHARE_EMAIL_FAILED = 'SHARE_EMAIL_FAILED';
  * 'Undo' */
 cm.events.UNDO_REDO_BUFFER_CHANGED = 'UNDO_REDO_BUFFER_CHANGED';
 
+/** The rendering of a legend view has changed. */
+cm.events.LEGEND_VIEW_RENDERING_CHANGED = 'LEGEND_VIEW_RENDERING_CHANGED';
+
+/** The rendering of a legend view list has changed. */
+cm.events.LEGEND_VIEW_LIST_RENDERING_CHANGED =
+    'LEGEND_VIEW_LIST_RENDERING_CHANGED';
+
+/** A cm.ArrangeCommand is about to be performed. */
+cm.events.ARRANGE_COMMAND_BEGIN = 'ARRANGE_COMMAND_BEGIN';
+
+/** A cm.ArrangeCommand has completed. */
+cm.events.ARRANGE_COMMAND_ENDED = 'ARRANGE_COMMAND_ENDED';
+
 // ==== Events emitted when the user performs an edit action ====
 
 /** The user edited the properties of an MVCObject (undoable). */
