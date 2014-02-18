@@ -44,6 +44,7 @@ class _MapReview(base_handler.BaseHandler):
     count = int(self.request.get('count') or 50)
     skip = int(self.request.get('skip') or 0)
     report_id = self.request.get('id')
+    query = self.request.get('query')
     author = self.request.get('author')
     topic_id = self.request.get('topic')
     topic_ids = []
@@ -54,6 +55,8 @@ class _MapReview(base_handler.BaseHandler):
       questions = {}
       answers = {}
       for topic in maproot['topics']:
+        if 'questions' not in topic:
+          continue
         topic_ids.append(topic['id'])
         tid = map_id + '.' + topic['id']
         for question in topic['questions']:
@@ -74,7 +77,18 @@ class _MapReview(base_handler.BaseHandler):
           tids = [map_id + '.' + topic_id]
         else:
           tids = ['%s.%s' % (map_id, topic_id) for topic_id in topic_ids]
-        reports = model.CrowdReport.GetForTopics(tids, count + 1, skip)
+        if query:
+          # Restrict the search to topics for this map.
+          # Note that the query itself can be arbitrarily complex, following
+          # the syntax at
+          # developers.google.com/appengine/docs/python/search/query_strings
+          # We don't validate the query here, and an invalid query currently
+          # will render an error page.
+          restricted_query = query + ' topic_id:(%s)' % (
+              ' OR '.join(['"%s"' % tid for tid in tids]))
+          reports = model.CrowdReport.Search(restricted_query, count + 1, skip)
+        else:
+          reports = model.CrowdReport.GetForTopics(tids, count + 1, skip)
 
       report_dicts = [{
           'id': report.id,
@@ -110,6 +124,7 @@ class _MapReview(base_handler.BaseHandler):
         'topic_id': topic_id,
         'topic_ids': topic_ids,
         'id': report_id,
+        'query': query,
         'author': author,
         'prev_url': prev_url,
         'next_url': next_url,

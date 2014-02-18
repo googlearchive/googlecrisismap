@@ -15,6 +15,8 @@
 __author__ = 'shakusa@google.com (Steve Hakusa)'
 
 import json
+import urllib
+
 import model
 import perms
 import test_utils
@@ -67,15 +69,17 @@ class MapReviewTest(test_utils.BaseTest):
     })
     self.map_object = test_utils.CreateMap(maproot_json, reviewers=['reviewer'])
     self.map_id = self.map_object.id
-    self.topic1_id = self.map_id+'.shelter'
+    self.topic1_id = self.map_id + '.shelter'
     self.answer1_id = self.topic1_id + '.q1.y'
     self.SetTime(1)
-    self.crowd_report1 = test_utils.NewCrowdReport(topic_ids=[self.topic1_id],
+    self.crowd_report1 = test_utils.NewCrowdReport(text='26 beds here',
+                                                   topic_ids=[self.topic1_id],
                                                    answer_ids=[self.answer1_id])
-    self.topic2_id = self.map_id+'.water'
+    self.topic2_id = self.map_id + '.water'
     self.answer2_id = self.topic2_id + '.q1.n'
     self.SetTime(2)
     self.crowd_report2 = test_utils.NewCrowdReport(author='http://foo.com/abc',
+                                                   text='bottled water here',
                                                    topic_ids=[self.topic2_id],
                                                    answer_ids=[self.answer2_id])
 
@@ -100,6 +104,20 @@ class MapReviewTest(test_utils.BaseTest):
                             label='zz', title='Map 1', map_id=self.map_id).put()
     with test_utils.Login('reviewer'):
       self.DoGet('/xyz.com/zz/review')
+
+  def testGetWithSearch(self):
+    with test_utils.Login('reviewer'):
+      response = self.DoGet('/.maps/' + self.map_id + '/review?query=beds')
+    self.assertTrue(self.crowd_report1.key.string_id() in response.body)
+    self.assertFalse(self.crowd_report2.key.string_id() in response.body)
+
+  def testGetWithComplexSearch(self):
+    with test_utils.Login('reviewer'):
+      response = self.DoGet(
+          '/.maps/' + self.map_id +
+          '/review?query=' + urllib.quote('here author:"http://foo.com/abc"'))
+    self.assertFalse(self.crowd_report1.key.string_id() in response.body)
+    self.assertTrue(self.crowd_report2.key.string_id() in response.body)
 
   def testGetWithTopic(self):
     with test_utils.Login('reviewer'):

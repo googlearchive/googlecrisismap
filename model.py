@@ -840,10 +840,6 @@ class CrowdReport(utils.Struct):
 
   SEARCH_INDEX_NAME = 'CrowdReportModel-spatial-index'
 
-  LOCATION_FIELD_NAME = 'location'
-  TOPIC_ID_FIELD_NAME = 'topic_id'
-  UPDATED_FIELD_NAME = 'updated'
-
   @staticmethod
   def GenerateReportId(source):
     """Generates a new, unique report ID.
@@ -960,18 +956,56 @@ class CrowdReport(utils.Struct):
     """
     query = []
     for topic_id, radius in topic_radii.items():
-      subquery = ['%s = "%s"' % (CrowdReport.TOPIC_ID_FIELD_NAME, topic_id)]
+      subquery = ['%s = "%s"' % ('topic_id', topic_id)]
       subquery.append('distance(%s, geopoint(%f, %f)) < %f' % (
-          CrowdReport.LOCATION_FIELD_NAME, center.lat, center.lon, radius))
+          'location', center.lat, center.lon, radius))
       if max_updated:
-        subquery.append('%s <= %s' % (CrowdReport.UPDATED_FIELD_NAME,
+        subquery.append('%s <= %s' % ('updated',
                                       utils.UtcToTimestamp(max_updated)))
-      query.append('(' + ' AND '.join(subquery) + ')')
+      query.append('(' + ' '.join(subquery) + ')')
 
     index = search.Index(name=CrowdReport.SEARCH_INDEX_NAME)
     results = index.search(
         search.Query(' OR '.join(query),
                      options=search.QueryOptions(limit=count, ids_only=True)))
+    ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
+    entities = ndb.get_multi(ids)
+    for entity in entities:
+      if entity:
+        yield utils.Struct.FromModel(entity)
+
+  @staticmethod
+  def Search(query, count=1000, max_updated=None):
+    """Full-text structured search over reports.
+
+    Args:
+      query: A string; a query expression with the full range of syntax
+          described at
+          developers.google.com/appengine/docs/python/search/query_strings
+          To search over a single field, append a GMail-style search
+          operator matching one of the indexed fields:
+          text, author, updated, topic_id.
+          Examples:
+              [text:"foo OR bar"] returns reports with foo or bar in the text
+              [text:"bar" author:"http://foo.com/123"] returns reports from
+                                                       http://foo.com/123 that
+                                                       mention bar
+      count: The maximum number of reports to retrieve.
+      max_updated: A datetime; if specified, only get reports that were updated
+          at or before this time.
+
+    Yields:
+      The 'count' most recently updated Report objects, in order by decreasing
+      update time, that meet the criteria:
+        - Matches the given query
+        - Has an update time equal to or before 'max_updated'
+    """
+    if max_updated:
+      query += ' (%s <= %s)' % ('updated', utils.UtcToTimestamp(max_updated))
+    index = search.Index(name=CrowdReport.SEARCH_INDEX_NAME)
+    results = index.search(
+        search.Query(query, options=search.QueryOptions(limit=count,
+                                                        ids_only=True)))
     ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
     entities = ndb.get_multi(ids)
     for entity in entities:
@@ -990,22 +1024,23 @@ class CrowdReport(utils.Struct):
                                topic_ids=topic_ids, answer_ids=answer_ids,
                                location=location or NOWHERE)
     report.put()
+    fields = [search.TextField(name='text', value=text),
+              search.TextField(name='author', value=author),
+              # We index updated as a Unix timestamp because querying on
+              # DateField is only accurate to the day. See
+              # http://developers.google.com/appengine/docs/python/search/
+              search.NumberField(name='updated', value=updated_seconds)]
+    fields.extend([search.TextField(name='topic_id', value=topic_id)
+                   for topic_id in topic_ids])
     if location:
-      fields = [search.GeoField(name=CrowdReport.LOCATION_FIELD_NAME,
-                                value=search.GeoPoint(report.location.lat,
-                                                      report.location.lon)),
-                # We index updated as a Unix timestamp because querying on
-                # DateField is only accurate to the day. See
-                # http://developers.google.com/appengine/docs/python/search/
-                search.NumberField(name=CrowdReport.UPDATED_FIELD_NAME,
-                                   value=updated_seconds)]
+      fields.append(
+          search.GeoField(name='location',
+                          value=search.GeoPoint(report.location.lat,
+                                                report.location.lon)))
 
-      fields.extend([search.TextField(name=CrowdReport.TOPIC_ID_FIELD_NAME,
-                                      value=topic_id)
-                     for topic_id in topic_ids])
-      index = search.Index(name=CrowdReport.SEARCH_INDEX_NAME)
-      index.put(search.Document(
-          doc_id=report_id, fields=fields, rank=int(updated_seconds)))
+    index = search.Index(name=CrowdReport.SEARCH_INDEX_NAME)
+    index.put(search.Document(
+        doc_id=report_id, fields=fields, rank=int(updated_seconds)))
     return utils.Struct.FromModel(report)
 
 

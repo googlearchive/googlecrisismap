@@ -27,6 +27,11 @@ specific language governing permissions and limitations under the License.
   <h3>Filters</h3>
   <table>
     <tr>
+      <td>Query:</td>
+      <td><input type="text" id="query" value="{{query}}"/></td>
+      <td><input type="button" value="Go" onclick="window.location.href='?query=' + document.getElementById('query').value"/></td>
+    </tr>
+    <tr>
       <td>ID:</td>
       <td><input type="text" id="id" value="{{id}}"/></td>
       <td><input type="button" value="Go" onclick="window.location.href='?id=' + document.getElementById('id').value"/></td>
@@ -38,7 +43,7 @@ specific language governing permissions and limitations under the License.
     </tr>
     <tr>
       <td>Topic:</td>
-      <td>{% for topic_id in topic_ids %}<a href="?topic={{topic_id}}&skip=0">{{topic_id}}</a> {% endfor %}</td>
+      <td>{% for tid in topic_ids %}<a href="?topic={{tid}}&skip=0">{{tid}}</a> {% endfor %}</td>
     </tr>
   </table>
   </p>

@@ -685,6 +685,68 @@ class CrowdReportTests(test_utils.BaseTest):
                                topic_radii={'bar': 200, 'bez': 12000},
                                max_updated=TimeAgo(hours=3, minutes=30)))
 
+  def testSearch(self):
+    """Tests CrowdReport.Search."""
+    now = datetime.datetime.utcnow()
+    def TimeAgo(hours=0, minutes=0):
+      return now - datetime.timedelta(hours=hours, minutes=minutes)
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=1)))
+    cr1 = test_utils.NewCrowdReport(topic_ids=['shelter'],
+                                    text='23 beds available')
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=2)))
+    cr2 = test_utils.NewCrowdReport(topic_ids=['food', 'water'],
+                                    text='no water')
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=3)))
+    cr3 = test_utils.NewCrowdReport(topic_ids=['shelter', 'water'],
+                                    text='45 available beds, water running low')
+
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=4)))
+    cr4 = test_utils.NewCrowdReport(topic_ids=['shelter', 'food'],
+                                    text='76 open beds, plenty of water')
+
+    self.SetTime(utils.UtcToTimestamp(now))
+
+    # pylint: disable=g-long-lambda,invalid-name
+    Search = lambda *args, **kwargs: [
+        x.effective for x in model.CrowdReport.Search(*args, **kwargs)]
+
+    # No match
+    self.assertEquals([], Search('clothing', count=1, max_updated=None))
+
+    # No match, misspelling
+    self.assertEquals([], Search('awter', count=1, max_updated=None))
+
+    # No match before max_updated
+    self.assertEquals([],
+                      Search('beds', count=1, max_updated=TimeAgo(hours=5)))
+
+    # 2 matches, return count=1
+    self.assertEquals([cr1.effective],
+                      Search('beds', count=1, max_updated=None))
+    # 3 matches
+    self.assertEquals([cr1.effective, cr3.effective, cr4.effective],
+                      Search('beds', count=10, max_updated=None))
+
+    # 3 matches, 2 excluded by max_updated
+    self.assertEquals([cr4.effective],
+                      Search('beds', count=10,
+                             max_updated=TimeAgo(hours=3, minutes=30)))
+
+    # 2 matches, multi-word query
+    self.assertEquals([cr1.effective, cr3.effective],
+                      Search('available beds', count=10, max_updated=None))
+
+    # 1 match, multi-word quoted query
+    self.assertEquals([cr3.effective],
+                      Search('"available beds"', count=10, max_updated=None))
+
+    # 2 matches, complex query
+    self.assertEquals([cr2.effective, cr3.effective],
+                      Search('(beds OR water) topic_id:water',
+                             count=10, max_updated=None))
 
 if __name__ == '__main__':
   test_utils.main()
