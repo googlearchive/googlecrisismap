@@ -60,6 +60,7 @@ def DispatchRequest(request):
 def SetupRequest(path, lang='en'):
   """Sets up a webapp2.Request object for testing."""
   request = webapp2.Request(webob.Request.blank(ROOT_URL + path).environ)
+  request.root_url = ROOT_URL
   request.root_path = ROOT_PATH
   request.lang = lang
   return request

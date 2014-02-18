@@ -289,10 +289,13 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   result['maps_api_url'] = (MAPS_API_BASE_URL + '?' +
                             urllib.urlencode(api_url_params))
 
-  if dev_mode:
-    # In developer mode only, allow an arbitrary URL for MapRoot JSON.
-    result['maproot_url'] = request.get('maproot_url', '')
+  maproot_url = request.get('maproot_url', '')
+  if dev_mode or maproot_url.startswith(request.root_url + '/'):
+    # It's always okay to fetch MapRoot JSON from a URL if it's from this app.
+    # In developer mode only, allow MapRoot JSON from arbitrary URLs.
+    result['maproot_url'] = maproot_url
 
+  if dev_mode:
     # In developer mode only, allow query params to override the result.
     # Developers can also specify map_root directly as a query param.
     for name in (
