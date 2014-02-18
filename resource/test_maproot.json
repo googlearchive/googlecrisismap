@@ -15,7 +15,7 @@
   "layers": [{
     "id": "16702544301115717071-07170133114386334500-4/1",
     "title": "Maps Engine Layer External",
-    "description": "La la la",
+    "description": "Map 'GME Testing' owned by 'Crisis Response Team' GME Account. Available at: http://goo.gl/0C4kaU",
     "legend": "<div>Sample legend content</div>",
     "visibility": "DEFAULT_ON",
     "viewport": {
@@ -29,7 +29,7 @@
     "type": "GOOGLE_MAPS_ENGINE",
     "source": {
       "google_maps_engine": {
-        "map_id": "10343636198137636421-05153758434712631099-4",
+        "map_id": "13560186249300745898-09703471281103504055-4",
         "layer_key": "layer_00001"
       }
     }
