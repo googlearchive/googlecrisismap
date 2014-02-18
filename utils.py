@@ -12,9 +12,11 @@
 
 """Utilities used throughout crisismap."""
 
+import base64
 import calendar
 from HTMLParser import HTMLParseError
 from HTMLParser import HTMLParser
+import random
 import re
 import time
 
@@ -139,3 +141,12 @@ def StripHtmlTags(value):
 def UtcToTimestamp(dt):
   """Returns a POSIX timestamp to fractions of a second for the UTC datetime."""
   return calendar.timegm(dt.utctimetuple()) + dt.microsecond / 1e6
+
+
+def MakeRandomId():
+  """Generates a random identifier made of 12 URL-safe characters."""
+  # urlsafe_b64encode encodes 12 random bytes as exactly 16 characters,
+  # which can include digits, letters, hyphens, and underscores.  Because
+  # the length is a multiple of 4, it won't have trailing "=" signs.
+  return base64.urlsafe_b64encode(
+      ''.join(chr(random.randrange(256)) for i in xrange(12)))

@@ -14,10 +14,8 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-import base64
 import datetime
 import json
-import random
 
 import cache
 import domains
@@ -560,12 +558,8 @@ class Map(object):
       elif domain.initial_domain_role == perms.Role.MAP_VIEWER:
         viewers = list(set(viewers) | domain_subjects)
 
-    # urlsafe_b64encode encodes 12 random bytes as exactly 16 characters,
-    # which can include digits, letters, hyphens, and underscores.  Because
-    # the length is a multiple of 4, it won't have trailing "=" signs.
     map_object = Map(MapModel(
-        key_name=base64.urlsafe_b64encode(
-            ''.join(chr(random.randrange(256)) for i in xrange(12))),
+        key_name=utils.MakeRandomId(),
         created=datetime.datetime.utcnow(), creator_uid=users.GetCurrent().id,
         owners=owners, editors=editors, reviewers=reviewers, viewers=viewers,
         domains=[domain.name], domain_role=domain.initial_domain_role,
@@ -610,7 +604,7 @@ class Map(object):
       order, and are unique within a particular Map but not across all Maps.)
     """
     self.AssertAccess(perms.Role.MAP_VIEWER)
-    return self.current_version and utils.StructFromModel(self.current_version)
+    return utils.StructFromModel(self.current_version)
 
   def Delete(self):
     """Marks a map as deleted (so it won't be returned by Get or GetAll)."""
@@ -837,19 +831,11 @@ class _CrowdReportModel(ndb.Model):
 
 class CrowdReport(utils.Struct):
   """Application-level object representing a crowd report."""
-
-  SEARCH_INDEX_NAME = 'CrowdReportModel-spatial-index'
+  index = search.Index('CrowdReport')
 
   @staticmethod
-  def GenerateReportId(source):
-    """Generates a new, unique report ID.
-
-    Args:
-      source: The source URL of this repository.
-
-    Returns:
-      A new unique URL under the given URL, suitable for use as a report ID.
-    """
+  def GenerateId(source):
+    """Generates a new, unique report ID (a URL under the given source URL)."""
     unique_int_id, _ = _CrowdReportModel.allocate_ids(1)
     return source.rstrip('/') + '/.reports/' + str(unique_int_id)
 
@@ -867,8 +853,8 @@ class CrowdReport(utils.Struct):
     report = _CrowdReportModel.get_by_id(report_id)
     return report and utils.Struct.FromModel(report) or None
 
-  @staticmethod
-  def GetForAuthor(author, count, offset=0):
+  @classmethod
+  def GetForAuthor(cls, author, count, offset=0):
     """Gets reports with the given author.
 
     Args:
@@ -885,10 +871,10 @@ class CrowdReport(utils.Struct):
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.author == author)
     for report in query.fetch(count, offset=offset):
-      yield utils.Struct.FromModel(report)
+      yield cls.FromModel(report)
 
-  @staticmethod
-  def GetForTopics(topic_ids, count, offset=0):
+  @classmethod
+  def GetForTopics(cls, topic_ids, count, offset=0):
     """Gets reports with any of the given topic_ids.
 
     Args:
@@ -905,10 +891,10 @@ class CrowdReport(utils.Struct):
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.topic_ids.IN(topic_ids))
     for report in query.fetch(count, offset=offset):
-      yield utils.Struct.FromModel(report)
+      yield cls.FromModel(report)
 
-  @staticmethod
-  def GetWithoutLocation(topic_ids, count, max_updated=None):
+  @classmethod
+  def GetWithoutLocation(cls, topic_ids, count, max_updated=None):
     """Gets reports with the given topic IDs that don't have locations.
 
     Args:
@@ -932,10 +918,10 @@ class CrowdReport(utils.Struct):
       query = query.filter(_CrowdReportModel.updated <= max_updated)
 
     for report in query.fetch(count):
-      yield utils.Struct.FromModel(report)
+      yield cls.FromModel(report)
 
-  @staticmethod
-  def GetByLocation(center, topic_radii, count=1000, max_updated=None):
+  @classmethod
+  def GetByLocation(cls, center, topic_radii, count=1000, max_updated=None):
     """Gets reports with the given topic IDs that are near a given location.
 
     Args:
@@ -957,25 +943,24 @@ class CrowdReport(utils.Struct):
     query = []
     for topic_id, radius in topic_radii.items():
       subquery = ['%s = "%s"' % ('topic_id', topic_id)]
-      subquery.append('distance(%s, geopoint(%f, %f)) < %f' % (
-          'location', center.lat, center.lon, radius))
+      subquery.append('distance(location, geopoint(%f, %f)) < %f' %
+                      (center.lat, center.lon, radius))
       if max_updated:
         subquery.append('%s <= %s' % ('updated',
                                       utils.UtcToTimestamp(max_updated)))
       query.append('(' + ' '.join(subquery) + ')')
 
-    index = search.Index(name=CrowdReport.SEARCH_INDEX_NAME)
-    results = index.search(
-        search.Query(' OR '.join(query),
-                     options=search.QueryOptions(limit=count, ids_only=True)))
+    results = cls.index.search(search.Query(
+        ' OR '.join(query),
+        options=search.QueryOptions(limit=count, ids_only=True)))
     ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
     entities = ndb.get_multi(ids)
     for entity in entities:
       if entity:
-        yield utils.Struct.FromModel(entity)
+        yield cls.FromModel(entity)
 
-  @staticmethod
-  def Search(query, count=1000, max_updated=None):
+  @classmethod
+  def Search(cls, query, count=1000, max_updated=None):
     """Full-text structured search over reports.
 
     Args:
@@ -1002,46 +987,41 @@ class CrowdReport(utils.Struct):
     """
     if max_updated:
       query += ' (%s <= %s)' % ('updated', utils.UtcToTimestamp(max_updated))
-    index = search.Index(name=CrowdReport.SEARCH_INDEX_NAME)
-    results = index.search(
+    results = cls.index.search(
         search.Query(query, options=search.QueryOptions(limit=count,
                                                         ids_only=True)))
     ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
     entities = ndb.get_multi(ids)
     for entity in entities:
       if entity:
-        yield utils.Struct.FromModel(entity)
+        yield cls.FromModel(entity)
 
-  @staticmethod
-  def Put(source, author, effective, text, topic_ids, answer_ids, location):
-    """Stores one crowd report."""
-    updated = datetime.datetime.utcnow()
-    updated_seconds = utils.UtcToTimestamp(updated)
-    report_id = CrowdReport.GenerateReportId(source)
-    report = _CrowdReportModel(id=report_id, source=source, author=author,
-                               effective=effective, published=updated,
-                               updated=updated, text=text,
-                               topic_ids=topic_ids, answer_ids=answer_ids,
-                               location=location or NOWHERE)
-    report.put()
-    fields = [search.TextField(name='text', value=text),
-              search.TextField(name='author', value=author),
-              # We index updated as a Unix timestamp because querying on
-              # DateField is only accurate to the day. See
-              # http://developers.google.com/appengine/docs/python/search/
-              search.NumberField(name='updated', value=updated_seconds)]
-    fields.extend([search.TextField(name='topic_id', value=topic_id)
-                   for topic_id in topic_ids])
+  @classmethod
+  def Create(cls, source, author, effective, text, topic_ids, answer_ids,
+             location):
+    """Stores one new crowd report and returns it."""
+    now = datetime.datetime.utcnow()
+    report_id = cls.GenerateId(source)
+    # We index updated as a number because DateField has only date precision;
+    # see http://developers.google.com/appengine/docs/python/search/
+    fields = [
+        search.NumberField('updated', utils.UtcToTimestamp(now)),
+        search.TextField('text', text),
+        search.TextField('author', author)
+    ] + [search.AtomField('topic_id', topic_id) for topic_id in topic_ids]
     if location:
-      fields.append(
-          search.GeoField(name='location',
-                          value=search.GeoPoint(report.location.lat,
-                                                report.location.lon)))
+      fields.append(search.GeoField(
+          'location', search.GeoPoint(location.lat, location.lon)))
 
-    index = search.Index(name=CrowdReport.SEARCH_INDEX_NAME)
-    index.put(search.Document(
-        doc_id=report_id, fields=fields, rank=int(updated_seconds)))
-    return utils.Struct.FromModel(report)
+    # Prepare all the arguments for both put() calls before this point, to
+    # minimize the possibility that one put() succeeds and the other fails.
+    model = _CrowdReportModel(id=report_id, source=source, author=author,
+                              effective=effective, published=now, updated=now,
+                              topic_ids=topic_ids, answer_ids=answer_ids,
+                              text=text, location=location or NOWHERE)
+    model.put()
+    cls.index.put(search.Document(doc_id=report_id, fields=fields))
+    return cls.FromModel(model)
 
 
 # Possible types of votes.  Each vote type is associated with a particular

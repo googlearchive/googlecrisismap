@@ -156,9 +156,9 @@ class CrowdReports(base_handler.BaseHandler):
     now = datetime.datetime.utcnow()
     if ContainsSpam(text):
       raise base_handler.Error(403, 'Crowd report text rejected as spam.')
-    model.CrowdReport.Put(source=self.request.root_url, author=author,
-                          effective=now, text=text, topic_ids=topic_ids,
-                          answer_ids=answer_ids, location=ll)
+    model.CrowdReport.Create(source=self.request.root_url, author=author,
+                             effective=now, text=text, topic_ids=topic_ids,
+                             answer_ids=answer_ids, location=ll)
 
   def ReportToDict(self, report):
     """Converts a model.CrowdReport to a dictionary for JSON serialization."""

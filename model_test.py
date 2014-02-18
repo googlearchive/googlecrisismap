@@ -508,11 +508,11 @@ class CrowdReportTests(test_utils.BaseTest):
 
   def testGetForAuthor(self):
     """Tests CrowdReport.GetForAuthor."""
-    self.SetTime(1)
+    self.SetTime(1300000001)
     cr1 = test_utils.NewCrowdReport(author='alpha@gmail.test', text='Report 1')
-    self.SetTime(2)
+    self.SetTime(1300000002)
     cr2 = test_utils.NewCrowdReport(author='alpha@gmail.test', text='Report 2')
-    self.SetTime(3)
+    self.SetTime(1300000003)
     cr3 = test_utils.NewCrowdReport(author='beta@gmail.test', text='Report 3')
 
     # pylint: disable=g-long-lambda,invalid-name
@@ -536,11 +536,11 @@ class CrowdReportTests(test_utils.BaseTest):
     topic2 = 'VB5ItphmLJ8tLPax.water'
     topic3 = 'VB5ItphmLJ8tLPax.power'
 
-    self.SetTime(1)
+    self.SetTime(1300000001)
     cr1 = test_utils.NewCrowdReport(topic_ids=[topic1], text='Report 1')
-    self.SetTime(2)
+    self.SetTime(1300000002)
     cr2 = test_utils.NewCrowdReport(topic_ids=[topic1, topic2], text='Report 2')
-    self.SetTime(3)
+    self.SetTime(1300000003)
     cr3 = test_utils.NewCrowdReport(topic_ids=[topic2, topic3], text='Report 3')
 
     # pylint: disable=g-long-lambda,invalid-name

@@ -22,9 +22,6 @@ import unittest
 import urllib
 import urlparse
 
-import webapp2
-import webob
-
 import base_handler
 import config
 import domains
@@ -33,6 +30,10 @@ import model
 import mox
 import perms
 import users
+import utils
+
+import webapp2
+import webob
 
 from google.appengine.api import datastore_types
 from google.appengine.api import taskqueue
@@ -44,8 +45,8 @@ mox.ANY = mox.IgnoreArg()
 # For tests, assume the app resides under this URL.
 ROOT_URL = 'http://app.com/root'
 ROOT_PATH = urlparse.urlsplit(ROOT_URL).path
+
 DEFAULT_DOMAIN = 'xyz.com'
-DEFAULT_RANDOM_ID = '66JxzuTOQRUjbgle'
 
 
 def DispatchRequest(request):
@@ -165,8 +166,8 @@ def NewCrowdReport(source='http://source.com/',
                    topic_ids=('map1.gas', 'map1.water'),
                    answer_ids=('map1.gas.q1.yes',), location=None):
   effective = datetime.datetime.utcnow()
-  return model.CrowdReport.Put(source, author, effective, text,
-                               topic_ids, answer_ids, location)
+  return model.CrowdReport.Create(source, author, effective, text,
+                                  topic_ids, answer_ids, location)
 
 
 class BaseTest(unittest.TestCase):
@@ -195,11 +196,17 @@ class BaseTest(unittest.TestCase):
         base_handler, 'GenerateXsrfToken', lambda uid, timestamp=None: 'XSRF')
     self.mox.stubs.Set(
         base_handler, 'ValidateXsrfToken', lambda uid, token: token == 'XSRF')
-    self.mox.stubs.Set(base_handler, 'MakeRandomId', lambda: DEFAULT_RANDOM_ID)
+    self.id_counter = 0
+    self.mox.stubs.Set(utils, 'MakeRandomId', self.MakePredictableId)
 
   def tearDown(self):
     self.mox.UnsetStubs()
     self.testbed.deactivate()
+
+  def MakePredictableId(self):
+    """A replacement for MakeRandomId() that gives predictable IDs in tests."""
+    self.id_counter += 1
+    return 'random_id_%d' % self.id_counter
 
   def DoGet(self, path, status=None):
     """Dispatches a GET request according to the routes in app.py.

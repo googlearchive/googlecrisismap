@@ -71,13 +71,13 @@ class MapReviewTest(test_utils.BaseTest):
     self.map_id = self.map_object.id
     self.topic1_id = self.map_id + '.shelter'
     self.answer1_id = self.topic1_id + '.q1.y'
-    self.SetTime(1)
+    self.SetTime(1300000000)
     self.crowd_report1 = test_utils.NewCrowdReport(text='26 beds here',
                                                    topic_ids=[self.topic1_id],
                                                    answer_ids=[self.answer1_id])
     self.topic2_id = self.map_id + '.water'
     self.answer2_id = self.topic2_id + '.q1.n'
-    self.SetTime(2)
+    self.SetTime(1300000001)
     self.crowd_report2 = test_utils.NewCrowdReport(author='http://foo.com/abc',
                                                    text='bottled water here',
                                                    topic_ids=[self.topic2_id],

@@ -97,7 +97,9 @@ class CrowdReportsTest(test_utils.BaseTest):
 
   def setUp(self):
     test_utils.BaseTest.setUp(self)
-    self.default_time_secs = 1234567890.0
+    # Sigh.  The current time must be after 2011-01-01 for search to work; see
+    # https://developers.google.com/appengine/docs/python/search/#other_document_properties
+    self.default_time_secs = 1300000000
     self.SetTime(self.default_time_secs)
     self.maxDiff = None
 
@@ -137,7 +139,7 @@ class CrowdReportsTest(test_utils.BaseTest):
         '/.api/reports',
         'topic_ids=bar&answer_ids=bar.1.1&text=report1&ll=37.1,-74.2')
 
-    report2_time = 1234567981.0
+    report2_time = report1_time + 1
     self.SetTime(report2_time)
     self.DoPost(
         '/.api/reports',
@@ -154,8 +156,7 @@ class CrowdReportsTest(test_utils.BaseTest):
     self.assertNotEqual(ids[0], ids[1])
     self.assertDictEqual(
         {u'answer_ids': [u'foo.1.2'],
-         u'author': u'http://app.com/root/.users/anonymous.%s' %
-                    test_utils.DEFAULT_RANDOM_ID,
+         u'author': u'http://app.com/root/.users/anonymous.random_id_2',
          u'author_email': None,
          u'effective': report2_time,
          u'location': [37.1, -74.2001],
@@ -166,8 +167,7 @@ class CrowdReportsTest(test_utils.BaseTest):
         reports[0])
     self.assertDictEqual(
         {u'answer_ids': [u'bar.1.1'],
-         u'author': u'http://app.com/root/.users/anonymous.%s' %
-                    test_utils.DEFAULT_RANDOM_ID,
+         u'author': u'http://app.com/root/.users/anonymous.random_id_1',
          u'author_email': None,
          u'effective': report1_time,
          u'location': [37.1, -74.2],
@@ -202,7 +202,7 @@ class CrowdReportsTest(test_utils.BaseTest):
     # max_updated excludes most recent report2
     response = self.DoGet(
         '/.api/reports?ll=37.10001,-74.2&topic_ids=foo,bar&radii=100,100'
-        '&count=2&max_updated=1234567980')
+        '&count=2&max_updated=%d' % report1_time)
     reports = json.loads(response.body)
     self.assertEquals(1, len(reports))
     self.assertEquals('report1', reports[0]['text'])

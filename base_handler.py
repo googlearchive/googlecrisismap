@@ -14,24 +14,21 @@
 
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
-import base64
 import hmac
 import httplib
 import inspect
 import json
 import logging
 import os
-import random
 import re
 import time
-
-import webapp2
 
 import config
 import domains
 import perms
 import users
 import utils
+import webapp2
 # pylint: disable=g-import-not-at-top
 try:
   import languages
@@ -140,12 +137,6 @@ def SanitizeCallback(callback):
   raise Error(httplib.BAD_REQUEST, 'Invalid callback name.')
 
 
-def MakeRandomId():
-  """Generates a random identifier made of 12 URL-safe characters."""
-  return base64.urlsafe_b64encode(
-      ''.join(chr(random.randrange(256)) for i in xrange(12)))
-
-
 class Error(Exception):
   """An error that carries an HTTP status and a message to show the user."""
 
@@ -189,7 +180,7 @@ class BaseHandler(webapp2.RequestHandler):
 
   def GetUrlForAnonymousUser(self):
     """Gets a semi-stable user URL using a randomly-generated cookie."""
-    user_token = self.request.cookies.get('CR_USER') or MakeRandomId()
+    user_token = self.request.cookies.get('CR_USER') or utils.MakeRandomId()
     self.response.set_cookie('CR_USER', user_token, max_age=14*24*3600)
     return self.request.root_url + '/.users/anonymous.' + user_token
 
