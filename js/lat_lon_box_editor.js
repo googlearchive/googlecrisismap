@@ -24,9 +24,11 @@ goog.require('cm.ui');
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
  * @param {{input_class: string,
- *          app_state: cm.AppState}} options Editor options:
+ *          app_state: cm.AppState,
+ *          hide_tile_layer_warning: boolean}} options Editor options:
  *     options.input_class: A CSS class for the input element.
  *     options.app_state: The cm.AppState from which to copy the viewport.
+ *     options.hide_tile_layer_warning: If true, hide the tile layer warning.
  * @extends cm.Editor
  * @constructor
  */
@@ -88,7 +90,9 @@ cm.LatLonBoxEditor = function(parentElem, id, options) {
    * @private
    */
   this.viewportInfo_ = cm.ui.create('div', {'class': cm.css.VIEWPORT_INFO},
-      cm.MSG_TILE_LAYER_VIEWPORT_WARNING);
+      options.hide_tile_layer_warning ?
+          undefined :
+          cm.MSG_TILE_LAYER_VIEWPORT_WARNING);
 
   cm.ui.append(parentElem,
       cm.ui.create('table',
