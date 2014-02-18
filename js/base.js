@@ -888,11 +888,11 @@ cm.MSG_LAYER_TYPE_TOOLTIP = goog.getMsg(
  */
 cm.MSG_SOURCE_URL_TOOLTIP = goog.getMsg(
     'The URL of the file, feed, spreadsheet, or map with the layer data. ' +
-    'For a Google Spreadsheet, be sure to "Publish to the Web". ' +
-    'For Google Maps tiles and TMS tiles, this is a URL template like ' +
-    'http://example.com/{X}_{Y}_{Z}.png with placeholders for X, Y, and Z ' +
-    'values.  For Bing Maps tiles, this is the tile URL without the quadkey ' +
-    'at the end.');
+    'For a Google Spreadsheet, be sure to use the URL provided by ' +
+    'File > Publish to the Web.  For Google Maps tiles and TMS tiles, ' +
+    'this is a URL template like http://example.com/{X}_{Y}_{Z}.png with ' +
+    'placeholders for X, Y, and Z values.  For Bing Maps tiles, this is ' +
+    'the tile URL without the quadkey at the end.');
 
 /**
  * @desc Tooltip for the text field for a Maps EngineLite layer's source URL.
@@ -931,18 +931,20 @@ cm.MSG_PLACEMARK_DESCRIPTION_TOOLTIP = goog.getMsg(
 );
 
 /**
- * @desc Tooltip for a text field for entering the name of the field in a data
- *     record that contains the latitude for that record.
+ * @desc Tooltip for a text field for entering the name of the column in a data
+ *     table that contains the latitude for each record.
  */
 cm.MSG_LATITUDE_FIELD_TOOLTIP = goog.getMsg(
-    'Name of the field for the latitude in degrees north of the equator.');
+    'Name of the latitude column.  This column should contain values in ' +
+    'decimal degrees from -90 to 90, where north is positive.');
 
 /**
- * @desc Tooltip for a text field for entering the name of the field in a data
- *     record that contains the longitude for that record.
+ * @desc Tooltip for a text field for entering the name of the column in a data
+ *     table that contains the longitude for each record.
  */
 cm.MSG_LONGITUDE_FIELD_TOOLTIP = goog.getMsg(
-    'Name of the field for the longitude in degrees east of Greenwich.');
+    'Name of the longitude column.  This column should contain values in ' +
+    'decimal degrees from -180 to 180, where east is positive.');
 
 /** @desc Tooltip for a text field for entering the URL of an icon image. */
 cm.MSG_ICON_URL_TOOLTIP = goog.getMsg(
