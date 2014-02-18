@@ -48,7 +48,10 @@ class MapVersionModel(db.Model):
   maproot_json = db.TextProperty()
 
   # Fields below are metadata for those with edit access, not for public
-  # display.  No updated field is needed; these objects are immutable.
+  # display.  No updated field is needed; these objects are immutable. Note
+  # that it's possible that the creator_uid is historical - that is, it
+  # represents a user whose account has been deleted - so any code that
+  # tries to resolve it must be prepared for failure.
   created = db.DateTimeProperty()
   creator_uid = db.StringProperty()
   creator = db.UserProperty()  # DEPRECATED
@@ -70,7 +73,9 @@ class MapModel(db.Model):
   # HTML description of the map.  Cached from current version for display.
   description = db.TextProperty()
 
-  # Metadata for auditing and debugging purposes.
+  # Metadata for auditing and debugging purposes. Note that all uids could
+  # be invalid; that happens when they represent a user whose account has been
+  # deleted. Any code that tries to resolve them must be prepared for failure.
   created = db.DateTimeProperty()
   creator_uid = db.StringProperty()
   creator = db.UserProperty()  # DEPRECATED
@@ -143,7 +148,9 @@ class CatalogEntryModel(db.Model):
   domain = db.StringProperty()
   label = db.StringProperty()
 
-  # Metadata about the catalog entry itself.
+  # Metadata about the catalog entry itself.  Note that all uids could
+  # be invalid; that happens when they represent a user whose account has been
+  # deleted. Any code that tries to resolve them must be prepared for failure.
   created = db.DateTimeProperty()
   creator_uid = db.StringProperty()
   creator = db.UserProperty()  # DEPRECATED

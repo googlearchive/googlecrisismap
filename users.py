@@ -114,7 +114,16 @@ def _IsDevelopmentServer():
 
 @ndb.transactional
 def _GenerateNextUid():
-  """Generates a sequentially increasing string uid, starting with '1'."""
+  """Generates a sequentially increasing string uid, starting with '1'.
+
+  It is important that the uids remain ever increasing, since users are
+  occassionally deleted.  That potentially leaves their former uid still
+  in-place in various models; we do not want that uid associated with a
+  new, different user.
+
+  Returns:
+    The newly-generated uid.
+  """
 
   class Counter(ndb.Model):
     last_used = ndb.IntegerProperty()
