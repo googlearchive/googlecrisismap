@@ -49,7 +49,7 @@ def SanitizeUrl(url):
     base_handler.Error: The URL was missing or not safe to fetch.
   """
   scheme, netloc, path, query, _ = urlparse.urlsplit(url)
-  if scheme in ['http', 'https'] and '.' in netloc:
+  if scheme in ['http', 'https']:
     return urlparse.urlunsplit((scheme, netloc, path, query, ''))
   raise base_handler.Error(httplib.BAD_REQUEST, 'Missing or invalid URL.')
 

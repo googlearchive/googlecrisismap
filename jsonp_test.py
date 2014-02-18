@@ -42,8 +42,6 @@ class JsonpTest(test_utils.BaseTest):
         httplib.BAD_REQUEST, jsonp.SanitizeUrl, 'ftp://example.net/foo')
     self.assertRaisesErrorWithStatus(
         httplib.BAD_REQUEST, jsonp.SanitizeUrl, 'example.us/foo')
-    self.assertRaisesErrorWithStatus(
-        httplib.BAD_REQUEST, jsonp.SanitizeUrl, 'http://localhost/foo')
 
   def testParseJson(self):
     """Confirms that ParseJson returns correct results and handles errors."""
