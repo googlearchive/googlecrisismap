@@ -18,6 +18,7 @@ goog.provide('cm.editors');
 goog.require('cm.CheckboxEditor');
 goog.require('cm.HtmlEditor');
 goog.require('cm.LatLonBoxEditor');
+goog.require('cm.LayerMenuEditor');
 goog.require('cm.LegendEditor');
 goog.require('cm.MenuEditor');
 goog.require('cm.NumberEditor');
@@ -29,13 +30,6 @@ goog.require('cm.ui');
 goog.require('goog.object');
 
 /**
- * A record representing an available choice that the user can select.
- * The MenuEditor and RadioEditor are configured with an array of these.
- * @typedef {{value: (string|number|null), label: string}}
- */
-cm.InputChoice;
-
-/**
  * Identifiers for each type of editor.
  * @enum {string}
  */
@@ -43,6 +37,7 @@ cm.editors.Type = {
   CHECKBOX: 'CHECKBOX',
   HTML: 'HTML',
   LAT_LON_BOX: 'LAT_LON_BOX',
+  LAYER_MENU: 'LAYER_MENU',
   LEGEND: 'LEGEND',
   MENU: 'MENU',
   NUMBER: 'NUMBER',
@@ -62,6 +57,7 @@ cm.editors.CONSTRUCTORS = goog.object.create(
   cm.editors.Type.CHECKBOX, cm.CheckboxEditor,
   cm.editors.Type.HTML, cm.HtmlEditor,
   cm.editors.Type.LAT_LON_BOX, cm.LatLonBoxEditor,
+  cm.editors.Type.LAYER_MENU, cm.LayerMenuEditor,
   cm.editors.Type.LEGEND, cm.LegendEditor,
   cm.editors.Type.MENU, cm.MenuEditor,
   cm.editors.Type.NUMBER, cm.NumberEditor,

@@ -16,6 +16,13 @@
 goog.provide('cm.Editor');
 
 /**
+ * A record representing an available choice that the user can select.
+ * The MenuEditor and RadioEditor are configured with an array of these.
+ * @typedef {{value: (string|number|null), label: string}}
+ */
+cm.InputChoice;
+
+/**
  * The base class for all editors.  An editor is an MVCObject that manages a
  * piece of UI for editing a value and exposes the value in a 'value' property.
  * The usual pattern for implementing an editor is: (a) have the constructor

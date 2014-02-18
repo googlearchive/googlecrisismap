@@ -67,18 +67,27 @@ cm.MenuEditor = function(parentElem, id, options) {
   if (this.isMultiSelect_) {
     this.selectElem.setAttribute('multiple', true);
   }
-  for (var i = 0; i < options.choices.length; i++) {
-    var choice = options.choices[i];
-    cm.ui.append(this.selectElem, cm.ui.create(
-        'option', {'name': this.elementId}, choice.label));
-    this.values.push(choice.value);
-  }
+  this.populate(options.choices);
   cm.events.listen(this.selectElem, 'change', this.updateValue_, this);
 
   // Call updateUI to correct invalid values.
   this.updateUi(this.get('value'));
 };
 goog.inherits(cm.MenuEditor, cm.Editor);
+
+/**
+ * Populates the select element and values array from the given choices.
+ * @param {Array.<cm.InputChoice>} choices Possible choices for the menu.
+ * @protected
+ */
+cm.MenuEditor.prototype.populate = function(choices) {
+  for (var i = 0; i < choices.length; i++) {
+    var choice = choices[i];
+    cm.ui.append(this.selectElem, cm.ui.create(
+        'option', {'name': this.elementId}, choice.label));
+    this.values.push(choice.value);
+  }
+};
 
 /**
  * Update the 'value' property based on the state of the menu selector.

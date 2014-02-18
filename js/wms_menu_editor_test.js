@@ -29,32 +29,14 @@ WmsMenuEditorTest.prototype.createEditor_ = function() {
   var parent = cm.ui.create('div');
   this.editor_ = new cm.WmsMenuEditor(
       parent, 'wms_editor',
-      {choices: [{value: 'x', label: 'Choice X'},
-                 {value: 'y', label: 'Choice Y'},
-                 {value: 'z', label: 'Choice Z'}],
-       wms_query_url: '/root/.wms/query'},
+      {wms_query_url: '/root/.wms/query'},
       this.draft_);
-  this.optionX_ = expectDescendantOf(parent, 'option', withText('Choice X'));
-  this.optionY_ = expectDescendantOf(parent, 'option', withText('Choice Y'));
-  this.optionZ_ = expectDescendantOf(parent, 'option', withText('Choice Z'));
-};
-
-/**
- * Expect the given select input's options to have the given values.
- * @param {Array.<boolean>} selected The expected values.
- * @private
- */
-WmsMenuEditorTest.prototype.expectSelected_ = function(selected) {
-  goog.array.forEach(selected, function(s, i) {
-    expectEq(s, this.editor_.selectElem.options[i].selected);
-  }, this);
 };
 
 /** Tests construction of the editor. */
 WmsMenuEditorTest.prototype.testConstructor = function() {
   this.createEditor_();
   expectThat(this.editor_.get('value'), elementsAre([]));
-  this.expectSelected_([false, false, false]);
 };
 
 /** Tests handling a query response from a valid WMS service. */

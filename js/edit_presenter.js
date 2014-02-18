@@ -315,7 +315,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'wms_layers', label: cm.MSG_WMS_LAYERS,
      type: cm.editors.Type.WMS_MENU,
      conditions: {'type': isType(cm.LayerModel.Type.WMS)},
-     multiple: true, choices: [], menu_class: cm.css.WMS_MENU_EDITOR,
+     multiple: true, menu_class: cm.css.WMS_MENU_EDITOR,
      wms_query_url: config['wms_query_url'],
      tooltip: cm.MSG_WMS_LAYERS_TOOLTIP},
     {key: 'tile_coordinate_type',
