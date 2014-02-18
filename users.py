@@ -205,6 +205,13 @@ def Get(uid):
     return None
 
 
+def Delete(uid):
+  """Deletes the UserModel and GoogleAccount objects for a given uid."""
+  _GetModel(uid).key.delete()
+  for google_account in _GoogleAccount.query(_GoogleAccount.uid == uid):
+    google_account.key.delete()
+
+
 def GetCurrent():
   """Returns the User object for the effective signed-in user, or None."""
   uid, ga_domain, email = _GetLoginInfo()
@@ -229,6 +236,12 @@ def GetAll():
   for model in _UserModel.query():
     if not current or model.key.id() != current.id:
       yield User.FromModel(model)
+
+
+def GetAllGoogleAccounts():
+  """Yields all the Google Account User objects."""
+  for model in _GoogleAccount.query():
+    yield utils.Struct.FromModel(model)
 
 
 def GetForEmail(email):

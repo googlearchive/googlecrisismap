@@ -525,6 +525,49 @@ class Map(object):
     return model and model.deleted != NEVER and Map(model)
 
   @staticmethod
+  def DeleteAllMapsWithNoOwner():
+    """Deletes maps that have no owners. Returns a description of each map."""
+    perms.AssertAccess(perms.Role.ADMIN)
+    deleted_map_descs = []
+    for m in Map.GetAll():
+      if not m.owners:
+        map_desc = 'Map "%s" (%s) created on %s by %s' % (
+            m.title, m.description, m.created, m.creator_uid)
+        deleted_map_descs.append(map_desc)
+        m.Delete()
+    return deleted_map_descs
+
+  @staticmethod
+  def RemoveUsers(users_to_remove):
+    """Removes users from all permissions fields in maps.
+
+    Args:
+      users_to_remove: list of users to remove.
+    Returns:
+      A list of messages describing where users were removed from.
+    """
+    msg_list = []
+    if not users_to_remove:
+      return msg_list
+    perms.AssertAccess(perms.Role.ADMIN)
+    # TODO(andriy): change this to do transactional updates of MapModels, since
+    # it's possible that while we have a map someone else can be modifying it,
+    # leading to loss of data.  Determine what other methods need to become
+    # transactional as a result (e.g. RevokePermission and similar methods).
+    for m in Map.GetAll():
+      map_users = {'Owners': m.owners, 'Editors': m.editors,
+                   'Reviewers': m.reviewers, 'Viewers': m.viewers}
+      for user in users_to_remove:
+        for role in map_users:
+          if user.id in map_users[role]:
+            msg = 'Removed user [%s] from map [%s - %s] %s' % (user.email, m.id,
+                                                               m.title, role)
+            msg_list.append(msg)
+            map_users[role].remove(user.id)
+      m.model.put()
+    return msg_list
+
+  @staticmethod
   def Create(maproot_json, domain, owners=None, editors=None, reviewers=None,
              viewers=None, world_readable=False):
     """Stores a new map with the given properties and MapRoot JSON content."""
