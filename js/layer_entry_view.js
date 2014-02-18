@@ -861,6 +861,7 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
   var type = this.model_.get('type');
   var enableOpacitySlider = type === cm.LayerModel.Type.TILE ||
       type === cm.LayerModel.Type.WMS;
+
   if (enableOpacitySlider && !this.slider_) {
     // Add an opacity slider (by default, a goog.ui.Slider goes from 0 to 100).
     this.slider_ = new goog.ui.Slider();

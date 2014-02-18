@@ -617,6 +617,7 @@ case cm.LayerModel.Type.FUSION:
         this.overlays_[id] =
             new google.maps.visualization.MapsEngineLayer(options);
       }
+
       break;
 
     case cm.LayerModel.Type.TRAFFIC:

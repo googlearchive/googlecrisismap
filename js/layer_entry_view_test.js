@@ -242,6 +242,7 @@ LayerEntryViewTest.prototype.testOpacitySliderInitializedOnReveal = function() {
            this.sliderMock_.valueStack[this.sliderMock_.valueStack.length - 2]);
 };
 
+
 /** Tests that a single-select folder get a sublayer picker. */
 LayerEntryViewTest.prototype.testSublayerPicker = function() {
   this.layerModel_.set('type', cm.LayerModel.Type.FOLDER);
