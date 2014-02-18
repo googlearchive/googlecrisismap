@@ -1061,8 +1061,7 @@ cm.MSG_GME_MAP_ID_TOOLTIP = goog.getMsg(
     'The Google Maps Engine map ID.  In <a target="_blank" href=' +
     '"https://developers.google.com/maps/documentation/javascript/' +
     'mapsenginelayer">Google Maps Engine</a>, go to <b>Map details</b> page, ' +
-    'click <b>Maps API ID: Details</b> and look for <b>Map ID</b>. ' +
-    'Add "-4" to the end of this this ID.');
+    'click <b>Maps API ID: Details</b> and look for <b>Map ID</b>.');
 
 /**
  * @desc Tooltip for the text field for a Google Maps Engine layer key.
