@@ -14,9 +14,11 @@
 function EditCommandTest() {
   this.appState_ = new google.maps.MVCObject();
   this.mapModel_ = cm.MapModel.newFromMapRoot(
-      {layers: [{id: 'layer0', type: 'KML'}]});
+      {layers: [{id: 'layer0', type: 'KML'}],
+       topics: [{id: 'topic0', title: 'Gas', layer_ids: ['layer0']}]});
   this.mapModel_.setValues({x: 4, y: 5, z: 6});
   this.mapModel_.layers.getAt(0).setValues({x: 4, y: 5, z: 6});
+  this.mapModel_.topics.getAt(0).setValues({x: 4, y: 5, z: 6});
   this.oldValues_ = {x: 1, y: null, z: undefined, map_type: 'ROADMAP'};
   this.newValues_ = {x: 7, y: null, z: undefined, map_type: 'SATELLITE'};
 }
@@ -62,4 +64,27 @@ EditCommandTest.prototype.testUndoLayer = function() {
   expectEq(1, layer.x);
   expectEq(null, layer.y);
   expectEq(6, layer.z);
+};
+
+/** Tests execute() when editing a topic object. */
+EditCommandTest.prototype.testExecuteTopic = function() {
+  var command = new cm.EditCommand(
+      this.oldValues_, this.newValues_, null, 'topic0');
+  var topic = this.mapModel_.topics.getAt(0);
+  command.execute(this.appState_, this.mapModel_);
+  expectEq(7, topic.x);
+  expectEq(null, topic.y);
+  expectEq(6, topic.z);
+};
+
+/** Tests undo() when editing a layer object. */
+EditCommandTest.prototype.testUndoTopic = function() {
+  var command = new cm.EditCommand(
+      this.oldValues_, this.newValues_, null, 'topic0');
+  var topic = this.mapModel_.topics.getAt(0);
+  command.execute(this.appState_, this.mapModel_);
+  command.undo(this.appState_, this.mapModel_);
+  expectEq(1, topic.x);
+  expectEq(null, topic.y);
+  expectEq(6, topic.z);
 };

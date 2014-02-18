@@ -19,7 +19,7 @@ goog.require('cm.Command');
 
 /**
  * A command to edit the properties of the current MapModel or of a LayerModel
- * in the current MapModel.
+ * or TopicModel in the current MapModel.
  * @param {Object} oldValues Keys and values of properties before editing.
  *     A value of null means the property was previously not present (i.e.
  *     undoing should remove the property).  A value of undefined means the
@@ -29,12 +29,15 @@ goog.require('cm.Command');
  *     the edit should remove the property).  A value of undefined means the
  *     property was unaffected (i.e. redoing will not touch the property).
  * @param {string} opt_layerId The layer ID, if the object being
- *     edited is a layer. The opt_layerId should be specified if and only
- *     if the object being edited is the MapModel.
+ *     edited is a layer. opt_layerId should be specified if and only
+ *     if the object being edited is the LayerModel.
+ * @param {string} opt_topicId The topic ID, if the object being
+ *     edited is a topic. opt_topicId should be specified if and only
+ *     if the object being edited is the TopicModel.
  * @constructor
  * @implements cm.Command
  */
-cm.EditCommand = function(oldValues, newValues, opt_layerId) {
+cm.EditCommand = function(oldValues, newValues, opt_layerId, opt_topicId) {
   /**
    * @type Object
    * @private
@@ -52,11 +55,21 @@ cm.EditCommand = function(oldValues, newValues, opt_layerId) {
    * @private
    */
   this.layerId_ = opt_layerId || null;
+
+  /**
+   * @type ?string
+   * @private
+   */
+  this.topicId_ = opt_topicId || null;
 };
 
 /** @override */
 cm.EditCommand.prototype.execute = function(appState, mapModel) {
-  var object = this.layerId_ ? mapModel.getLayer(this.layerId_) : mapModel;
+  var object = this.layerId_ ?
+      mapModel.getLayer(this.layerId_) :
+      this.topicId_ ?
+          mapModel.getTopic(this.topicId_) :
+          mapModel;
   for (var key in this.newValues_) {
     if (this.newValues_[key] !== undefined) {
       object.set(key, this.newValues_[key]);
@@ -73,7 +86,11 @@ cm.EditCommand.prototype.execute = function(appState, mapModel) {
 
 /** @override */
 cm.EditCommand.prototype.undo = function(appState, mapModel) {
-  var object = this.layerId_ ? mapModel.getLayer(this.layerId_) : mapModel;
+  var object = this.layerId_ ?
+      mapModel.getLayer(this.layerId_) :
+      this.topicId_ ?
+          mapModel.getTopic(this.topicId_) :
+          mapModel;
   for (var key in this.oldValues_) {
     if (this.oldValues_[key] !== undefined) {
       object.set(key, this.oldValues_[key]);
