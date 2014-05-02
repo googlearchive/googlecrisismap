@@ -623,6 +623,25 @@ class CrowdVoteTests(test_utils.BaseTest):
     r1 = model.CrowdReport.Get(r1.id)
     self.assertFalse(r1.hidden)
 
+    model.CrowdVote.Put(r1.id, 'voter1', None)
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertEquals(0, r1.upvote_count)
+    self.assertEquals(0, r1.downvote_count)
+
+    # Reviewer votes have a large score but still count as a single vote
+    model.CrowdVote.Put(r1.id, 'reviewer1', 'REVIEWER_DOWN')
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertTrue(r1.hidden)
+    self.assertEquals(0, r1.upvote_count)
+    self.assertEquals(1, r1.downvote_count)
+
+    # Change reviewer1's downvote to an upvote
+    model.CrowdVote.Put(r1.id, 'reviewer1', 'REVIEWER_UP')
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertFalse(r1.hidden)
+    self.assertEquals(1, r1.upvote_count)
+    self.assertEquals(0, r1.downvote_count)
+
 
 class CrowdReportTests(test_utils.BaseTest):
   """Tests the CrowdReport class."""
@@ -657,6 +676,16 @@ class CrowdReportTests(test_utils.BaseTest):
     self.assertEquals([cr1.text],
                       GetTextsForAuthor('alpha@gmail.test', count=10, offset=1))
 
+    model.CrowdReport.MarkAsReviewed(cr1.id)
+    self.assertEquals([cr2.text, cr1.text],
+                      GetTextsForAuthor('alpha@gmail.test', count=10))
+    self.assertEquals(
+        [cr1.text],
+        GetTextsForAuthor('alpha@gmail.test', count=10, reviewed=True))
+    self.assertEquals(
+        [cr2.text],
+        GetTextsForAuthor('alpha@gmail.test', count=10, reviewed=False))
+
   def testGetForTopics(self):
     """Tests CrowdReport.GetForTopics."""
     topic1 = 'VB5ItphmLJ8tLPax.gas'
@@ -685,6 +714,16 @@ class CrowdReportTests(test_utils.BaseTest):
                       GetTextsForTopics([topic1, topic3], count=1))
     self.assertEquals([cr2.text, cr1.text],
                       GetTextsForTopics([topic1, topic3], count=10, offset=1))
+
+    model.CrowdReport.MarkAsReviewed([cr3.id, cr2.id])
+    self.assertEquals([cr3.text, cr2.text, cr1.text],
+                      GetTextsForTopics([topic1, topic3], count=10))
+    self.assertEquals(
+        [cr3.text, cr2.text],
+        GetTextsForTopics([topic1, topic3], count=10, reviewed=True))
+    self.assertEquals(
+        [cr1.text],
+        GetTextsForTopics([topic1, topic3], count=10, reviewed=False))
 
   def testGetWithoutLocation(self):
     """Tests CrowdReport.GetWithoutLocation."""
@@ -909,6 +948,16 @@ class CrowdReportTests(test_utils.BaseTest):
     self.assertEquals([cr2.effective, cr3.effective],
                       Search('(beds OR water) topic_id:water',
                              count=10, max_updated=None))
+
+    # Testing the reviewed bit
+    model.CrowdReport.MarkAsReviewed(cr2.id)
+    self.assertEquals([cr2.effective],
+                      Search('(beds OR water) topic_id:water reviewed:True',
+                             count=10, max_updated=None))
+    self.assertEquals([cr3.effective],
+                      Search('(beds OR water) topic_id:water reviewed:False',
+                             count=10, max_updated=None))
+
 
 if __name__ == '__main__':
   test_utils.main()

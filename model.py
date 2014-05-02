@@ -870,6 +870,9 @@ class _CrowdReportModel(ndb.Model):
   # True if the report should be hidden because its score is too low.
   hidden = ndb.BooleanProperty(default=False)
 
+  # True if the report has been reviewed for spam content.
+  reviewed = ndb.BooleanProperty(default=False)
+
   @classmethod
   def _get_kind(cls):  # pylint: disable=g-bad-name
     return 'CrowdReportModel'  # so we can name the Python class with a _
@@ -900,13 +903,15 @@ class CrowdReport(utils.Struct):
     return report and cls.FromModel(report) or None
 
   @classmethod
-  def GetForAuthor(cls, author, count, offset=0):
+  def GetForAuthor(cls, author, count, offset=0, reviewed=None):
     """Gets reports with the given author.
 
     Args:
       author: A string matching _CrowdReportModel.author
       count: The maximum number of reports to retrieve.
       offset: The number of reports to skip, for paging cases.
+      reviewed: A boolean; if specified, only get reports whose reviewed flag
+          matches this value.  (Otherwise, include reviewed and unreviewed.)
 
     Yields:
       The 'count' most recently updated CrowdReport objects, in order by
@@ -916,17 +921,21 @@ class CrowdReport(utils.Struct):
       return
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.author == author)
+    if reviewed is not None:
+      query = query.filter(_CrowdReportModel.reviewed == reviewed)
     for report in query.fetch(count, offset=offset):
       yield cls.FromModel(report)
 
   @classmethod
-  def GetForTopics(cls, topic_ids, count, offset=0):
+  def GetForTopics(cls, topic_ids, count, offset=0, reviewed=None):
     """Gets reports with any of the given topic_ids.
 
     Args:
       topic_ids: A list of strings in the form map_id + '.' + topic_id.
       count: The maximum number of reports to retrieve.
       offset: The number of reports to skip, for paging cases.
+      reviewed: A boolean; if specified, only get reports whose reviewed flag
+          matches this value.  (Otherwise, include reviewed and unreviewed.)
 
     Yields:
       The 'count' most recently updated CrowdReport objects, in order by
@@ -936,6 +945,8 @@ class CrowdReport(utils.Struct):
       return
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.topic_ids.IN(topic_ids))
+    if reviewed is not None:
+      query = query.filter(_CrowdReportModel.reviewed == reviewed)
     for report in query.fetch(count, offset=offset):
       yield cls.FromModel(report)
 
@@ -1081,11 +1092,30 @@ class CrowdReport(utils.Struct):
         search.TextField('author', model.author),
         # A 'True'/'False' AtomField is more efficient than a 0/1 NumberField.
         search.AtomField('hidden', str(bool(model.hidden))),
+        search.AtomField('reviewed', str(bool(model.reviewed))),
     ] + [search.AtomField('topic_id', tid) for tid in model.topic_ids]
     if model.location:
       fields.append(search.GeoField(
           'location', search.GeoPoint(model.location.lat, model.location.lon)))
     return search.Document(doc_id=model.key.id(), fields=fields)
+
+  @classmethod
+  def MarkAsReviewed(cls, report_ids, reviewed=True):
+    """Mark a report as reviewed for spam.
+
+    Args:
+      report_ids: A single report ID or iterable collection of report IDs.
+      reviewed: True to mark the reports reviewed, false to mark unreviewed.
+    """
+    if isinstance(report_ids, basestring):
+      report_ids = [report_ids]
+    models = ndb.get_multi([ndb.Key(_CrowdReportModel, i) for i in report_ids])
+    documents = []
+    for model in models:
+      model.reviewed = reviewed
+      documents.append(cls._CreateSearchDocument(model))
+    ndb.put_multi(models)
+    cls.index.put(documents)
 
   @classmethod
   def UpdateScore(cls, report_id, old_vote=None, new_vote_type=None):
@@ -1113,21 +1143,24 @@ class CrowdReport(utils.Struct):
     # (b) no one votes on that report for a while afterward.  If a report is so
     # controversial that lots of conflicting votes come in quickly, being off
     # by a few votes is unlikely to sway the final hidden/unhidden outcome.
-    upvote_count = _CrowdVoteModel.query(
-        _CrowdVoteModel.report_id == report_id,
-        _CrowdVoteModel.vote_type == 'ANONYMOUS_UP'
-    ).count() + (bool(new_vote_type == 'ANONYMOUS_UP') -
-                 bool(old_vote and old_vote.vote_type == 'ANONYMOUS_UP'))
-    downvote_count = _CrowdVoteModel.query(
-        _CrowdVoteModel.report_id == report_id,
-        _CrowdVoteModel.vote_type == 'ANONYMOUS_DOWN'
-    ).count() + (bool(new_vote_type == 'ANONYMOUS_DOWN') -
-                 bool(old_vote and old_vote.vote_type == 'ANONYMOUS_DOWN'))
+    def CountVotes(vote_type):
+      return _CrowdVoteModel.query(
+          _CrowdVoteModel.report_id == report_id,
+          _CrowdVoteModel.vote_type == vote_type
+      ).count() + (bool(new_vote_type == vote_type) -
+                   bool(old_vote and old_vote.vote_type == vote_type))
+    upvote_count = CountVotes('ANONYMOUS_UP')
+    downvote_count = CountVotes('ANONYMOUS_DOWN')
+    reviewer_upvote_count = CountVotes('REVIEWER_UP')
+    reviewer_downvote_count = CountVotes('REVIEWER_DOWN')
 
-    score = upvote_count - downvote_count
+    score = (upvote_count - downvote_count +
+             # Reviewer votes count 1000x user votes
+             1000 * (reviewer_upvote_count - reviewer_downvote_count))
     hidden = score <= -2  # for now, two downvotes hide a report
     cls.PutScoreForReport(
-        report_id, upvote_count, downvote_count, score, hidden)
+        report_id, upvote_count + reviewer_upvote_count,
+        downvote_count + reviewer_downvote_count, score, hidden)
 
   @classmethod
   @ndb.transactional
@@ -1146,7 +1179,7 @@ class CrowdReport(utils.Struct):
 
 # Possible types of votes.  Each vote type is associated with a particular
 # weight, and some vote types are only available to privileged users.
-VOTE_TYPES = ['ANONYMOUS_UP', 'ANONYMOUS_DOWN']
+VOTE_TYPES = ['ANONYMOUS_UP', 'ANONYMOUS_DOWN', 'REVIEWER_UP', 'REVIEWER_DOWN']
 
 
 class _CrowdVoteModel(ndb.Model):
