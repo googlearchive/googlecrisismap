@@ -41,22 +41,6 @@ cm.MapTabItem = function(mapModel, appState, config) {
   /** @private {!Element} */
   this.content_ = cm.ui.create('div', {'class': cm.css.INNER_TAB_CONTENT});
 
-  /**
-   * The div containing the scrolling region of the tab item's content.
-   * @private {!Element}
-   */
-  this.scrollingDiv_ = cm.ui.create('div',
-                                    {'class': cm.css.SCROLLING_TAB_CONTENT});
-
-  /**
-   * An empty div for measuring the top of scrolling content.
-   * @private {!Element}
-   */
-  this.scrollTop_ = cm.ui.create('div');
-
-  /** @private {Element} */
-  this.toolbarDiv_ = this.config['enable_editing'] ? cm.ui.create('div') : null;
-
   /** @type {boolean} */
   this.isSelected = false;
 
@@ -82,29 +66,17 @@ cm.MapTabItem = function(mapModel, appState, config) {
 };
 
 /**
- * Renders the contents of the tab item in to this.content_.  By default
- * adds the toolbar (if editing), then appends both addHeader() and
- * addContent() to scrollingDiv_.
+ * Renders the header and contents of the tab item in to this.content_.
  * @private
  */
 cm.MapTabItem.prototype.render_ = function() {
   if (this.renderBegun_) return;
   this.renderBegun_ = true;
-  if (this.editingEnabled) {
-    var me = this;
-    goog.module.require('edit', 'cm.ToolbarView', function(ToolbarView) {
-      new ToolbarView(me.toolbarDiv_, me.mapModel, !!me.config['save_url'],
-                      me.config['dev_mode'], me.config['map_list_url'],
-                      cm.util.browserSupportsTouch(), me.config['diff_url']);
-    });
-    cm.ui.append(this.content_, this.toolbarDiv_);
-  }
 
   var headerElem = cm.ui.create('div', {'class': cm.css.PANEL_HEADER});
   this.addHeader(headerElem);
-  cm.ui.append(this.scrollingDiv_, headerElem);
-  this.addContent(this.scrollingDiv_);
-  cm.ui.append(this.content_, this.scrollTop_, this.scrollingDiv_);
+  cm.ui.append(this.content_, headerElem);
+  this.addContent(this.content_);
   this.renderEnded_ = true;
 };
 
@@ -185,27 +157,6 @@ cm.MapTabItem.prototype.setSelected = function(isSelected) {
 /** @override */
 cm.MapTabItem.prototype.setTabView = function(tabView) {
   this.tabView = tabView;
-};
-
-/** @override */
-cm.MapTabItem.prototype.resize = function(panelHeight, setMaxHeight) {
-  if (setMaxHeight) {
-    // Set the maxHeight and top attributes and clear the height attribute of
-    // the scrolling div.
-    this.scrollingDiv_.style.height = '';
-    this.scrollingDiv_.style.maxHeight =
-        panelHeight - this.scrollTop_.offsetTop + 'px';
-    this.scrollingDiv_.style.top = this.scrollTop_.offsetTop + 'px';
-  } else {
-    // Set the height style attribute and clear the maxHeight and top attributes
-    // of the scrolling div.
-    // The tab panel is the nearest relatively positioned parent, so the scroll
-    // top is the total height taken by elements above the scrolling div.
-    var scrollingHeight = panelHeight - this.scrollTop_.offsetTop;
-    this.scrollingDiv_.style.height = Math.max(scrollingHeight, 0) + 'px';
-    this.scrollingDiv_.style.maxHeight = '';
-    this.scrollingDiv_.style.top = '';
-  }
 };
 
 /**

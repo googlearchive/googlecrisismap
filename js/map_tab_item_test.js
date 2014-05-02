@@ -10,10 +10,7 @@
 // specific language governing permissions and limitations under the License.
 
 goog.require('cm.TestBase');
-goog.require('cm.ToolbarView');
 goog.require('cm.css');
-
-goog.require('goog.module');
 
 function MapTabItemTest() {
   cm.TestBase.call(this);
@@ -47,8 +44,6 @@ MapTabItemTest.prototype.testCreation_headerHidden = function() {
 };
 
 MapTabItemTest.prototype.testCreation_editingEnabled = function() {
-  // Avoids the async load of the edit module.
-  goog.module.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
   var item = this.createMapTabItem_('MapTabItemTest.testCreation',
       {'draft_mode': true, 'enable_editing': true});
   var content = item.getContent();

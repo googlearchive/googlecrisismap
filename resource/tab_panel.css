@@ -84,20 +84,20 @@ specific language governing permissions and limitations under the License.
   margin-bottom: -2px;
 }
 
-.cm-scrolling-tab-content {
+.cm-tab-content {
   overflow-y: auto;
   -webkit-overflow-scrolling:touch;
 }
 
-.cm-scrolling-tab-content::-webkit-scrollbar {
+.cm-tab-content::-webkit-scrollbar {
   -webkit-appearance: none;
 }
 
-.cm-scrolling-tab-content::-webkit-scrollbar:vertical {
+.cm-tab-content::-webkit-scrollbar:vertical {
   width: 12px;
 }
 
-.cm-scrolling-tab-content::-webkit-scrollbar-thumb {
+.cm-tab-content::-webkit-scrollbar-thumb {
   border-radius: 6px;
   border: 2px solid #fff;
   background-color: #777;
@@ -143,10 +143,6 @@ specific language governing permissions and limitations under the License.
 .cm-touch .cm-chevron-up, .cm-touch .cm-chevron-down {
   width: 42px;
   height: 42px;
-}
-
-.cm-tab-content-collapsed {
-  display: none;
 }
 
 .cm-tab-panel-below {

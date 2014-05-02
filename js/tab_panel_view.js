@@ -68,7 +68,7 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
   this.parentElem_ = parentElem;
 
   /** @private {!cm.TabView} The tab view we use to render. */
-  this.tabView_ = new cm.TabView();
+  this.tabView_ = new cm.TabView(this.mapModel_, this.config_);
 
   /** @private {cm.DetailsTabItem} The tab item for feature details. */
   this.detailsTab_ = null;
@@ -150,13 +150,6 @@ cm.TabPanelView.prototype.resize = function(maxPanelHeight, below) {
       cm.TabPanelView.TabPosition.LEFT : cm.TabPanelView.TabPosition.RIGHT;
   goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_BELOW, below);
 
-  if (below && this.expanded_) {
-    this.parentElem_.style.height = maxPanelHeight + 'px';
-    this.parentElem_.style.maxHeight = '';
-  } else {
-    this.parentElem_.style.height = '';
-    this.parentElem_.style.maxHeight = maxPanelHeight + 'px';
-  }
   this.tabView_.resize(maxPanelHeight, below);
   this.updateExpandCollapseButton_(this.expanded_);
 
@@ -174,15 +167,17 @@ cm.TabPanelView.prototype.resize = function(maxPanelHeight, below) {
  * @private
  */
 cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
-  this.tabView_.setExpanded(shouldExpand);
-  goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_EXPANDED,
-                          shouldExpand);
+  // If the state changed, update the UI and emit a resize event.
+  if (this.expanded_ != shouldExpand) {
+    this.tabView_.setExpanded(shouldExpand);
+    this.updateExpandCollapseButton_(shouldExpand);
+    this.expanded_ = shouldExpand;
 
-  this.updateExpandCollapseButton_(shouldExpand);
-  this.expanded_ = shouldExpand;
-
-  // Trigger adjustments to the tab panel height in initialize.js
-  cm.events.emit(cm.app, 'resize');
+    // Recompute sizes only if the tab panel is below.
+    if (this.below_) {
+      cm.events.emit(cm.app, 'resize');
+    }
+  }
 
   // Trigger viewport adjustment on first collapse.
   if (!this.firstExpandCollapseDone_) {

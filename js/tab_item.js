@@ -62,12 +62,3 @@ cm.TabItem.prototype.setSelected = function(isSelected) {};
  * @param {cm.TabView} tabView The TabView to which the receiver has been added.
  */
 cm.TabItem.prototype.setTabView = function(tabView) {};
-
-/**
- * Called by TabView when the TabItem should resize its content to fit
- * within the given panelHeight.
- * @param {number} panelHeight The target panel height.
- * @param {boolean} setMaxHeight If true, only enforces the content's maximum
- *     height. If false, sizes the content's height to equal the panel height.
- */
-cm.TabItem.prototype.resize = function(panelHeight, setMaxHeight) {};

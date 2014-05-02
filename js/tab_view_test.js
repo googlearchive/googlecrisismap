@@ -9,6 +9,7 @@
 // OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 // specific language governing permissions and limitations under the License.
 
+goog.require('cm.ToolbarView');
 goog.require('cm.css');
 
 // TODO(rew): These class names should all be replaced with CrisisMap-specific
@@ -20,6 +21,8 @@ DISABLED_TAB_CLASS = 'goog-tab-disabled';
 
 function TabViewTest() {
   cm.TestBase.call(this);
+  this.mapModel_ = cm.MapModel.newFromMapRoot({});
+  this.config_ = undefined;
 }
 TabViewTest.prototype = new cm.TestBase();
 registerTestSuite(TabViewTest);
@@ -86,7 +89,7 @@ TabViewTest.TestTabItem.prototype.analyticsSelectionEvent = function() {
 
 TabViewTest.prototype.initializeTabView_ = function(opt_numTabs) {
   this.parent_ = new FakeElement('div');
-  this.tabView_ = new cm.TabView();
+  this.tabView_ = new cm.TabView(this.mapModel_, this.config_);
   // Holds the list of TestTabItems that have been added to the tabView; its
   // ordering matches the order of tabs in the tabView.
   this.tabs_ = [];
@@ -107,6 +110,26 @@ TabViewTest.prototype.testCreation = function() {
   expectDescendantOf(
       this.parent_, withClass(TabViewTest.TestTabItem.TEST_CLASS));
   expectEq(3, allDescendantsOf(this.tabBarElem_, withClass(TAB_CLASS)).length);
+};
+
+TabViewTest.prototype.testCreation_editingEnabled = function() {
+  // Create a fake constructor and provide it instead of the real one.
+  var fakeToolbarCtor = function(el) {
+    cm.ui.append(el, 'fake toolbar');
+  };
+  goog.module.provide('edit', 'cm.ToolbarView', fakeToolbarCtor);
+
+  this.expectEvent(cm.app, 'resize');
+  this.config_ = {'enable_editing': true};
+  this.initializeTabView_();
+
+  var childNodes = this.parent_.childNodes;
+  expectThat(childNodes[0],
+      isElement(goog.dom.TagName.DIV, withClass(cm.css.TAB_BAR_CONTAINER)));
+  expectThat(childNodes[1],
+      isElement(goog.dom.TagName.DIV, withText('fake toolbar')));
+  expectThat(childNodes[2],
+      isElement(goog.dom.TagName.DIV, withClass(cm.css.TAB_CONTENT)));
 };
 
 TabViewTest.prototype.testAppendTabItem = function() {

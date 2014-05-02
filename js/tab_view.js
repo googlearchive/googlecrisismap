@@ -16,14 +16,30 @@ goog.require('cm.TabItem');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.array');
+goog.require('goog.module');
 
 /**
  * An UI element for a group of tabs and a content region for their associated
  * content; individual tabs are implemented as cm.TabItems then added to the
  * tab view.  Used in the tabbed panel.
+ * @param {!cm.MapModel} mapModel The map model for which to create the tab
+ *     view.
+ * @param {Object=} opt_config Configuration settings.  These fields are used:
+ *     enable_editing: Allow any editing at all?  If true, the following fields
+ *         are also used:
+ *         save_url: The URL to post to upon save
+ *         dev_mode: Enable development mode?
+ *         map_list_url: The URL to go to the list of maps
+ *         diff_url: The URL to go to see the diff in the map model.
  * @constructor
  */
-cm.TabView = function() {
+cm.TabView = function(mapModel, opt_config) {
+  /** @private {!cm.MapModel} The map model. */
+  this.mapModel_ = mapModel;
+
+  /** @private {!Object} The client configuration. */
+  this.config_ = opt_config || {};
+
   /**
    * The view for the tab bar; the tab bar does not hold the tabs themselves
    * but it tracks the tabs in the same order as this.tabItems_, below, so
@@ -49,6 +65,12 @@ cm.TabView = function() {
   this.tabItems_ = [];
 
   /**
+   * The element containing the editing toolbar if editing is enabled.
+   * @private {?Element}
+   */
+  this.toolbarElem_ = null;
+
+  /**
    * The element where we display the content of the currently selected tab.
    * @type Element
    * @private
@@ -67,11 +89,31 @@ cm.TabView.NO_SELECTION = -1;
 cm.TabView.prototype.render = function(parent) {
   this.tabBar_.render(parent);
 
+  if (this.config_['enable_editing']) {
+    this.toolbarElem_ = cm.ui.create('div');
+    cm.ui.append(parent, this.toolbarElem_);
+    goog.module.require('edit', 'cm.ToolbarView',
+                        goog.bind(this.toolbarViewHandler_, this));
+  }
+
   // Add the tab content.
   cm.ui.append(parent, this.contentElem_);
 
   cm.events.listen(this.tabBar_, cm.TabBar.TAB_SELECTED,
                    this.handleTabSelected_, this);
+};
+
+/**
+ * Callback for loading cm.ToolbarView from edit module.
+ * @param {Function} toolbarViewCtor The cm.ToolbarView constructor.
+ * @private
+ */
+cm.TabView.prototype.toolbarViewHandler_ = function(toolbarViewCtor) {
+  new toolbarViewCtor(
+       this.toolbarElem_, this.mapModel_, !!this.config_['save_url'],
+       this.config_['dev_mode'], this.config_['map_list_url'],
+       cm.util.browserSupportsTouch(), this.config_['diff_url']);
+  cm.events.emit(cm.app, 'resize');
 };
 
 /**
@@ -86,20 +128,22 @@ cm.TabView.prototype.addButton = function(button) {
 /**
  * Resize tab content to not exceed the given maximum height.
  * @param {number} maxPanelHeight The maximum height the panel can reach.
- * @param {boolean} below Whether or not the tab bar is below the map.
+ * @param {boolean} below Whether the tab panel is below the map.
  */
 cm.TabView.prototype.resize = function(maxPanelHeight, below) {
-  var selectedTabItem = this.tabItems_[this.selectedTabIndex_];
-  selectedTabItem.resize(maxPanelHeight, !below);
-};
+  var contentOffset = this.tabBar_.getHeight();
+  if (this.toolbarElem_) {
+    contentOffset += goog.style.getSize(this.toolbarElem_).height;
+  }
 
-/**
- * Fix the preferred height of the panel content so that it does not change on
- * tab selection but does change on window resize.
- * @param {number} height The new content panel height.
- */
-cm.TabView.prototype.setHeight = function(height) {
-  this.contentElem_.style.height = height - this.tabBar_.getHeight() + 'px';
+  var height = maxPanelHeight - contentOffset + 'px';
+  if (below) {
+    this.contentElem_.style.height = height;
+    this.contentElem_.style.maxHeight = '';
+  } else {
+    this.contentElem_.style.height = '';
+    this.contentElem_.style.maxHeight = height;
+  }
 };
 
 /**
@@ -108,8 +152,10 @@ cm.TabView.prototype.setHeight = function(height) {
  *   collapse it.
  */
 cm.TabView.prototype.setExpanded = function(expand) {
-  goog.dom.classes.enable(this.contentElem_, cm.css.TAB_CONTENT_COLLAPSED,
-                          !expand);
+  goog.style.setElementShown(this.contentElem_, expand);
+  if (this.toolbarElem_) {
+    goog.style.setElementShown(this.toolbarElem_, expand);
+  }
 };
 
 /**
