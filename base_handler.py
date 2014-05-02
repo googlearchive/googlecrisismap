@@ -160,6 +160,9 @@ class BaseHandler(webapp2.RequestHandler):
       corresponding route's path pattern (see the routing table in main.py).
   """
 
+  # In derived classes, set this to allow the page to be rendered in a frame.
+  embeddable = False
+
   # These are used in RenderTemplate, so ensure they always exist.
   xsrf_token = ''
   xsrf_tag = ''
@@ -236,6 +239,10 @@ class BaseHandler(webapp2.RequestHandler):
           self.request.get('hl'), self.request.headers.get('accept-language'))
       self.request.root_path = root_path
       self.request.root_url = self.request.host_url + root_path
+
+      # To prevent clickjacking attacks, disable framing by default.
+      if not self.embeddable:
+        self.response.headers['X-Frame-Options'] = 'DENY'
 
       # Call the handler, making nice pages for errors derived from Error.
       method(**kwargs)

@@ -187,6 +187,10 @@ class MapTest(test_utils.BaseTest):
     self.assertEquals('&amp;&#123;&#xf8;', maps.ToPlainText(
         '&amp;&#123;&#xf8;'))
 
+  def testEmbeddable(self):
+    response = self.DoGet('/empty')
+    self.assertFalse(response.headers.get('X-Frame-Options'))
+
 
 class MapListTest(test_utils.BaseTest):
   """Tests for the map listing pages served by maps.py."""
@@ -211,6 +215,11 @@ class MapListTest(test_utils.BaseTest):
       self.assertTrue('.maps/' + m1.id not in result, result)
       self.assertTrue('Arf' in result, result)
       self.assertTrue('.maps/' + m2.id in result, result)
+
+  def testClickjackingPrevention(self):
+    with test_utils.Login('viewer'):
+      response = self.DoGet('/.maps')
+      self.assertEquals('DENY', response.headers.get('X-Frame-Options'))
 
 
 if __name__ == '__main__':

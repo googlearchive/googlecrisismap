@@ -309,6 +309,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
 
 class MapByLabel(base_handler.BaseHandler):
   """Handler for displaying a published map by its domain and label."""
+  embeddable = True
 
   def Get(self, label, domain=None):  # pylint: disable=g-bad-name
     """Displays a published map by its domain and publication label."""
@@ -356,6 +357,7 @@ def ToPlainText(desc):
 
 class MapById(base_handler.BaseHandler):
   """Handler for displaying a map by its map ID."""
+  embeddable = True
 
   def Get(self, map_id, domain=None):  # pylint: disable=g-bad-name
     """Displays a map in draft mode by its map ID."""
