@@ -38,6 +38,7 @@ goog.provide('cm.LegendView');
 goog.provide('cm.LegendViewList');
 
 goog.require('cm');
+goog.require('cm.LayerEntryView');
 goog.require('cm.LayerModel');
 goog.require('cm.MetadataModel');
 goog.require('goog.array');
@@ -51,16 +52,20 @@ goog.require('goog.string');
  * instantiated.
  * @param {!cm.LayerModel} layerModel The model for the layer whose legend is
  *     to be rendered
+ * @param {cm.MetadataModel} metadataModel The metadata model for layers.
  * @param {!cm.AppState} appState The app state where the current state for the
  *     layer can be found.
  * @constructor
  */
-cm.LegendView = function(layerModel, appState) {
+cm.LegendView = function(layerModel, metadataModel, appState) {
   /** @private {!cm.LayerModel} */
   this.layerModel_ = layerModel;
 
   /** @private {!cm.AppState} */
   this.appState_ = appState;
+
+  /** @private {cm.MetadataModel} */
+  this.metadataModel_ = metadataModel;
 
   /** @private {!Element} */
   this.parentElem_ = cm.ui.create('div');
@@ -68,10 +73,12 @@ cm.LegendView = function(layerModel, appState) {
   /** @private {!Element} */
   this.titleElem_ = cm.ui.create('span', {'class': cm.css.LAYER_TITLE});
 
-
   /** @private {!Element} */
   this.legendElem_ = cm.ui.create(
       'div', {'class': cm.css.TABBED_LEGEND_CONTENT});
+
+  /** @private {!Element} */
+  this.timeElem_ = cm.ui.create('div', {'class': cm.css.TIMESTAMP});
 
   /**
    * Tracks the current zoom level of the map; this is also available
@@ -121,6 +128,7 @@ cm.LegendView.prototype.getContent = function() {
   }
   if (this.needsRender_) {
     this.updateTitle_();
+    this.updateTime_();
     this.updateLegend_();
     this.render();
     this.needsRender_ = false;
@@ -298,7 +306,21 @@ cm.LegendView.prototype.updateTitle_ = function() {
 
 
 /**
- *Updates the legend DOM element from the layer model.
+ * Updates the timestamp DOM element from the metadata model.
+ * @private
+ */
+cm.LegendView.prototype.updateTime_ = function() {
+  cm.ui.clear(this.timeElem_);
+  var timeSec = this.metadataModel_.getUpdateTime(this.layerModel_);
+  if (timeSec) {
+    var message = cm.LayerEntryView.getLastUpdatedText(timeSec);
+    cm.ui.append(this.timeElem_, message);
+  }
+};
+
+
+/**
+ * Updates the legend DOM element from the layer model.
  * @private
  */
 cm.LegendView.prototype.updateLegend_ = function() {
@@ -572,8 +594,7 @@ cm.LegendViewList.prototype.getLegendViews = function() {
  * @private
  */
 cm.SimpleLegendView_ = function(layerModel, metadataModel, appState) {
-  cm.LegendView.call(this, layerModel, appState);
-  this.metadataModel_ = metadataModel;
+  cm.LegendView.call(this, layerModel, metadataModel, appState);
 
   /**
    * Listener for updates on our layer's metadata
@@ -603,9 +624,10 @@ cm.SimpleLegendView_.prototype.render = function() {
   cm.ui.clear(this.parentElem_);
   goog.dom.classes.enable(this.parentElem_, cm.css.TABBED_LEGEND_BOX, drawBox);
   if (drawBox) {
-    cm.ui.append(this.parentElem_, this.titleElem_, this.legendElem_);
+    cm.ui.append(
+        this.parentElem_, this.titleElem_, this.timeElem_, this.legendElem_);
   } else {
-    cm.ui.append(this.parentElem_, this.legendElem_);
+    cm.ui.append(this.parentElem_, this.timeElem_, this.legendElem_);
   }
 };
 
@@ -654,7 +676,7 @@ cm.SimpleLegendView_.prototype.isHidden = function() {
  * @private
  */
 cm.FolderLegendView_ = function(layerModel, metadataModel, appState) {
-  cm.LegendView.call(this, layerModel, appState);
+  cm.LegendView.call(this, layerModel, metadataModel, appState);
 
   /**
    * The list of cm.LegendViews for the sublayers of our folder.

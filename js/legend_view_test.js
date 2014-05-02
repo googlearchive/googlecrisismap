@@ -88,6 +88,11 @@ LegendViewContainer.prototype.render = function() {
 function SimpleLegendViewTest() {
   cm.TestBase.call(this);
   this.metadataModel_ = new cm.MetadataModel();
+
+  // Stub out the time formatting function from LayerEntryView.
+  this.setForTest_('cm.LayerEntryView.getLastUpdatedText', function(time) {
+    return time.toString();
+  });
 }
 SimpleLegendViewTest.prototype = new cm.TestBase();
 registerTestSuite(SimpleLegendViewTest);
@@ -130,6 +135,9 @@ SimpleLegendViewTest.prototype.validateRenderingMatchesLayerModel_ = function(
   expectDescendantOf(legendBox, withText(this.layerModel_.get('title')));
   expectDescendantOf(
       legendBox, withInnerHtml(this.layerModel_.get('legend').getHtml()));
+  var time = this.metadataModel_.getUpdateTime(this.layerModel_) || '';
+  expectDescendantOf(
+      legendBox, withClass(cm.css.TIMESTAMP), withText(time.toString()));
 };
 
 
@@ -193,6 +201,15 @@ SimpleLegendViewTest.prototype.testUpdatesOnTitleChange = function() {
       SIMPLE_LAYER, 'testUpdatesOnTitleChange'));
   this.layerModel_.set('title', 'testUpdatesOnTitleChange');
   this.validateRenderingMatchesLayerModel_(container.legendContent);
+};
+
+
+/** Verifies a legend view updates when its layer's update time changes. */
+SimpleLegendViewTest.prototype.testUpdatesOnTimeChange = function() {
+  var legendView = this.createLegendView_(
+      SIMPLE_LAYER, 'testUpdatesOnTimeChange');
+  this.metadataModel_.setUpdateTime(this.layerModel_, 1000);
+  this.validateRenderingMatchesLayerModel_(legendView.getContent());
 };
 
 

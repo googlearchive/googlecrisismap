@@ -48,13 +48,6 @@ cm.LayerEntryView = function(
     parentElem, model, metadataModel, appState, opt_config, opt_index,
     opt_includeLegend) {
   /**
-   * @type goog.i18n.DateTimeFormat
-   * @private
-   */
-  this.dateFormatter_ = new goog.i18n.DateTimeFormat(
-      goog.i18n.DateTimeFormat.Format.MEDIUM_DATE);
-
-  /**
    * @type cm.LayerModel
    * @private
    */
@@ -560,14 +553,7 @@ cm.LayerEntryView.prototype.updateTime_ = function() {
   var message = '';
   var time = this.metadataModel_.getUpdateTime(this.model_);
   if (time) {
-    // Convert time in seconds to time in milliseconds.
-    var date = new Date(time * 1000);
-    // For times more than 24 hours ago, we supply a custom string in the form
-    // "Month Day, Year" instead of the getDateString "long" default, which
-    // includes the day of the week as well.
-    var dateMsg = this.dateFormatter_.format(date);
-    message = cm.getMsgLastUpdatedTime(
-        goog.date.relative.getDateString(date, undefined, dateMsg));
+    message = cm.LayerEntryView.getLastUpdatedText(time);
   }
   cm.ui.setText(this.timeElem_, message);
 };
@@ -982,4 +968,31 @@ cm.LayerEntryView.prototype.dispose = function() {
   if (this.metadataListener_) {
     cm.events.unlisten(this.metadataListener_);
   }
+};
+
+/**
+ * Class-level date formatter for layer views.
+ * @type {goog.i18n.DateTimeFormat}
+ * @private
+ */
+cm.LayerEntryView.dateFormatter_ = new goog.i18n.DateTimeFormat(
+      goog.i18n.DateTimeFormat.Format.MEDIUM_DATE);
+
+/**
+ * Static method for getting a "last updated" message with a formatted date.
+ * @param {number} timeSec The time in epoch seconds. The MetadataModel stores
+ *     modification times in seconds, so that's what we expect here.
+ * @return {string} A string with the formatted date inserted into the
+ *     "last updated" message template.
+ */
+cm.LayerEntryView.getLastUpdatedText = function(timeSec) {
+  // Convert time in seconds to time in milliseconds.
+  var date = new Date(timeSec * 1000);
+
+  // For times more than 24 hours ago, we supply a custom string in the form
+  // "Month Day, Year" instead of the getDateString "long" default, which
+  // includes the day of the week as well.
+  var dateMsg = cm.LayerEntryView.dateFormatter_.format(date);
+  return cm.getMsgLastUpdatedTime(
+      goog.date.relative.getDateString(date, undefined, dateMsg));
 };
