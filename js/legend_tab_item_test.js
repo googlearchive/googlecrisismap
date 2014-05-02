@@ -76,9 +76,9 @@ registerTestSuite(LegendTabItemTest);
  * @private
  */
 LegendTabItemTest.prototype.createLegendTabItem_ = function(
-    uniqueId, opt_LayerDescs) {
-  if (opt_LayerDescs) {
-    this.layerDescs_ = opt_LayerDescs;
+    uniqueId, opt_layerDescs) {
+  if (opt_layerDescs) {
+    this.layerDescs_ = opt_layerDescs;
   } else {
     var blueLayer = this.duplicateJson(
         BLUE_LAYER, {id: BLUE_LAYER.id + '_' + uniqueId});
