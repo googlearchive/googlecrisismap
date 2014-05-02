@@ -21,6 +21,7 @@ goog.require('cm');
 goog.require('cm.ExtraView');
 goog.require('cm.css');
 goog.require('cm.ui');
+goog.require('goog.dom.classes');
 goog.require('goog.object');
 
 

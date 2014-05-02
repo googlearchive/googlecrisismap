@@ -23,6 +23,7 @@ goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.array');
+goog.require('goog.dom.classes');
 
 /**
  * A list of draggable layers and folders. When the user requests to arrange

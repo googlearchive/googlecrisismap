@@ -18,6 +18,7 @@ goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('cm.xhr');
+goog.require('goog.dom.classes');
 
 /** Regex for verifying email addresses on a shallow level. */
 var EMAIL_PATTERN = '^(.+)@(.+)$';

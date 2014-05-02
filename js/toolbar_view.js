@@ -21,6 +21,7 @@ goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('cm.xhr');
 goog.require('goog.dom');
+goog.require('goog.dom.classes');
 goog.require('goog.format.JsonPrettyPrinter');
 goog.require('goog.json');
 goog.require('goog.string');

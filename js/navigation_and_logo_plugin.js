@@ -17,6 +17,7 @@ goog.provide('cm.NavigationAndLogoPlugin');
 
 goog.require('MIN_DOCUMENT_WIDTH_FOR_SIDEBAR');
 goog.require('cm.ExtraViewsPlugin');
+goog.require('goog.dom.classes');
 
 /**
  * This ExtraViewPlugin instantiates, configures, and lays out the optional

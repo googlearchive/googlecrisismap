@@ -19,6 +19,7 @@ goog.require('cm.MapTabItem');
 goog.require('cm.MetadataModel');
 goog.require('cm.TabItem');
 goog.require('cm.events');
+goog.require('goog.dom.classes');
 
 
 

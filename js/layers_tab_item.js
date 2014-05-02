@@ -19,6 +19,7 @@ goog.require('cm.TabItem');
 goog.require('cm.events');
 goog.require('cm.layerFilter');
 
+goog.require('goog.dom.classes');
 goog.require('goog.i18n.MessageFormat');
 
 /**

@@ -20,6 +20,7 @@ goog.require('cm.MetadataModel');
 goog.require('cm.TabItem');
 goog.require('cm.TabView');
 goog.require('cm.events');
+goog.require('goog.dom.classes');
 
 /** If panel height is too small, the crowd report form will open in a popup. */
 var MIN_PANEL_HEIGHT_FOR_EMBEDDED_FORM = 450;

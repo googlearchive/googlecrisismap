@@ -30,6 +30,7 @@ goog.require('cm.ui');
 goog.require('cm.util');
 goog.require('goog.array');
 goog.require('goog.dom');
+goog.require('goog.dom.classes');
 goog.require('goog.events.EventType');
 goog.require('goog.i18n.MessageFormat');
 goog.require('goog.module');

@@ -13,6 +13,7 @@ goog.provide('cm.MapTabItem');
 
 goog.require('cm.MapPicker');
 goog.require('cm.TabItem');
+goog.require('goog.dom.classes');
 
 
 /**

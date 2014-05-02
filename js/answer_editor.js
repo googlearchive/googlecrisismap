@@ -21,6 +21,7 @@ goog.require('cm.editors');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.array');
+goog.require('goog.dom.classes');
 
 /**
  * An editor for an answer to a topic question.

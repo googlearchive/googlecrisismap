@@ -22,6 +22,7 @@ goog.require('cm.TopicModel');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
+goog.require('goog.dom.classes');
 goog.require('goog.ui.Tooltip');
 
 /**

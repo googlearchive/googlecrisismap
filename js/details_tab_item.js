@@ -16,6 +16,7 @@ goog.require('cm.CrowdView');
 goog.require('cm.MapTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.ui');
+goog.require('goog.dom.classes');
 
 /**
  * The Details tab in the tab panel.

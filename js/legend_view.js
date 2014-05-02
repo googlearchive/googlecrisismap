@@ -42,6 +42,7 @@ goog.require('cm.LayerEntryView');
 goog.require('cm.LayerModel');
 goog.require('cm.MetadataModel');
 goog.require('goog.array');
+goog.require('goog.dom.classes');
 goog.require('goog.string');
 
 
