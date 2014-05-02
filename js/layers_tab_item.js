@@ -23,8 +23,8 @@ goog.require('goog.i18n.MessageFormat');
 
 /**
  * Produces the Layers tab in the tab panel.
- * @param {cm.MapModel} mapModel The model for the map being displayed.
- * @param {cm.AppState} appState The application state model.
+ * @param {!cm.MapModel} mapModel The model for the map being displayed.
+ * @param {!cm.AppState} appState The application state model.
  * @param {Object} config A dictionary of configuration options.
  * @param {cm.MetadataModel} metadataModel The metadata model for layers.
  * @extends cm.MapTabItem

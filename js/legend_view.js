@@ -10,11 +10,11 @@
 // specific language governing permissions and limitations under the License.
 
 /**
- * Provides LegendView, which displays the legend for a particular LayerModel,
- * and LegendViewList, which monitors an MVCArray of LayerModels, and maintains
- * a matching list of LegendViews.  LegendViewList is used by the legends tab
- * to watch all layers for a map, and by the folder legend implementation, to
- * watch all sublayers in the folder.
+ * @fileoverview Provides LegendView, which displays the legend for a particular
+ * LayerModel, and LegendViewList, which monitors an MVCArray of LayerModels,
+ * and maintains a matching list of LegendViews.  LegendViewList is used by the
+ * legends tab to watch all layers for a map, and by the folder legend
+ * implementation, to watch all sublayers in the folder.
  *
  * To use LegendView, instantiate from the appropriate LayerModel and the global
  * AppState.  Call legendView.getContent() to retrieve the LegendView's DOM
@@ -43,46 +43,33 @@ goog.require('cm.MetadataModel');
 goog.require('goog.array');
 goog.require('goog.string');
 
+
+
 /**
  * A LegendView displays the legend for a single layer.  Abstract superclass;
  * cm.LegendView.getLegendViewForLayer() below ensures the correct subclass is
  * instantiated.
- * @param {cm.LayerModel} layerModel The model for the layer whose legend is
- *   to be rendered
- * @param {cm.AppState} appState The app state where the current state for the
- *   layer can be found.
+ * @param {!cm.LayerModel} layerModel The model for the layer whose legend is
+ *     to be rendered
+ * @param {!cm.AppState} appState The app state where the current state for the
+ *     layer can be found.
  * @constructor
  */
 cm.LegendView = function(layerModel, appState) {
-  /**
-   * @type cm.LayerModel
-   * @private
-   */
+  /** @private {!cm.LayerModel} */
   this.layerModel_ = layerModel;
 
-  /**
-   * @type cm.AppState
-   * @private
-   */
+  /** @private {!cm.AppState} */
   this.appState_ = appState;
 
-  /**
-   * @type Element
-   * @private
-   */
+  /** @private {!Element} */
   this.parentElem_ = cm.ui.create('div');
 
-  /**
-   * @type Element
-   * @private
-   */
+  /** @private {!Element} */
   this.titleElem_ = cm.ui.create('span', {'class': cm.css.LAYER_TITLE});
 
 
-  /**
-   * @type Element
-   * @private
-   */
+  /** @private {!Element} */
   this.legendElem_ = cm.ui.create(
       'div', {'class': cm.css.TABBED_LEGEND_CONTENT});
 
@@ -91,23 +78,20 @@ cm.LegendView = function(layerModel, appState) {
    * direct from the mapView, so it might be better to get it from
    * there.  Historically, the legend and layer entry views have always
    * relied on events to get it, so we leave it that way for now.
-   * @type ?number
-   * @private
+   * @private {?number}
    */
   this.currentZoomLevel_ = null;
 
   /**
    * Whether we need to be rendered.  I.e. whether the contents of
    * parentElem_ are currently up-to-date with the layer.
-   * @type boolean
-   * @private
+   * @private {boolean}
    */
   this.needsRender_ = true;
 
   /**
    * Whether our listeners have been created.
-   * @type boolean
-   * @private
+   * @private {boolean}
    */
   this.listenersSetup_ = false;
 
@@ -115,18 +99,16 @@ cm.LegendView = function(layerModel, appState) {
    * Whether we reported ourselves as hidden when last we rendered. This
    * value must be ignored until our first rendering (indicated by whether_
    * listenersSetup_ is true); after that, isHidden_ has a valid value.
-   * @type boolean
-   * @private
+   * @private {boolean}
    */
   this.isHidden_ = true;
 };
 
-// Public interface for clients
 
 /**
  * Returns the element for the legend, ready to be inserted into the DOM, or
- *  null if the legend currently is empty or otherwise should not be displayed.
- * @return {?Element}
+ * null if the legend currently is empty or otherwise should not be displayed.
+ * @return {Element}
  */
 cm.LegendView.prototype.getContent = function() {
   if (!this.listenersSetup_) {
@@ -146,12 +128,12 @@ cm.LegendView.prototype.getContent = function() {
   return this.parentElem_;
 };
 
+
 /** Called when the parent folder's rendering changes. */
 cm.LegendView.prototype.parentRenderingChanged = function() {
   this.renderingChanged();
 };
 
-// Methods to be overridden by subclasses
 
 /**
  * Sets up any needed listeners prior to rendering.
@@ -159,8 +141,7 @@ cm.LegendView.prototype.parentRenderingChanged = function() {
  */
 cm.LegendView.prototype.setupListeners = function() {
   cm.events.onChange(
-      this.layerModel_, ['min_zoom', 'max_zoom'], this.updateHidden,
-      this);
+      this.layerModel_, ['min_zoom', 'max_zoom'], this.updateHidden, this);
 
   cm.events.onChange(this.layerModel_, 'title', this.renderingChanged, this);
   cm.events.onChange(this.layerModel_, 'legend', this.renderingChanged, this);
@@ -172,6 +153,7 @@ cm.LegendView.prototype.setupListeners = function() {
       this.appState_, 'enabled_layer_ids', this.updateHidden, this);
 };
 
+
 /**
  * Renders content into this.parentElem_. Only called if isHidden() returns
  * false.
@@ -179,8 +161,9 @@ cm.LegendView.prototype.setupListeners = function() {
  */
 cm.LegendView.prototype.render = function() {};
 
+
 /**
- * An abstract method that returns whether the legend should be hidden.
+ * Returns whether the legend should be hidden; subclasses should override.
  * Subclasses can use isEnabled(), isInZoomRange() and isEmpty() to implement
  * the necessary logic.
  * @return {boolean}
@@ -188,24 +171,27 @@ cm.LegendView.prototype.render = function() {};
  */
 cm.LegendView.prototype.isHidden = function() { return false; };
 
+
 /**
  * Returns the string to be used as the title of the legend; by default,
  * the title of the layer from the model.
  * @return {string} The title for the legend.
  */
 cm.LegendView.prototype.titleString = function() {
-  return /** @type string */(this.layerModel_.get('title'));
+  return /** @type {string} */(this.layerModel_.get('title'));
 };
 
 // Helper methods available to subclasses.
+
 
 /**
  * Whether the layer's legend is empty.
  * @return {boolean}
  */
 cm.LegendView.prototype.isEmpty = function() {
-  return /** @type cm.Html */(this.layerModel_.get('legend')).isEmpty();
+  return /** @type {cm.Html} */(this.layerModel_.get('legend')).isEmpty();
 };
+
 
 /**
  * Whether this legend's layer is currently enabled.
@@ -214,8 +200,9 @@ cm.LegendView.prototype.isEmpty = function() {
  */
 cm.LegendView.prototype.isEnabled = function() {
   return this.appState_.getLayerEnabled(
-      /** @type string */(this.layerModel_.get('id')));
+      /** @type {string} */(this.layerModel_.get('id')));
 };
+
 
 /**
  * Whether the map is currently zoomed within the bounds specified
@@ -235,8 +222,8 @@ cm.LegendView.prototype.isInZoomRange = function() {
  * In all other cases, it should.  Because legend views sometimes need to ask
  * about their own rendering and sometimes about their children, there are two
  * instance methods below that call through to this routine.
- * @param {?cm.LayerModel} parentLayer The parent of the layer whose behavior
- *   is being queried.
+ * @param {cm.LayerModel} parentLayer The parent of the layer whose behavior
+ *     is being queried.
  * @return {boolean} Whether a child of parentLayer should draw a box.
  * @private
  */
@@ -252,6 +239,7 @@ cm.LegendView.shouldDrawBoxHelper_ = function(parentLayer) {
   return (parentLayer.get('folder_type') === cm.LayerModel.FolderType.UNLOCKED);
 };
 
+
 /**
  * Helper method to determine whether the legendView should draw a box around
  * itself.
@@ -260,19 +248,21 @@ cm.LegendView.shouldDrawBoxHelper_ = function(parentLayer) {
  */
 cm.LegendView.prototype.shouldDrawBox = function() {
   return cm.LegendView.shouldDrawBoxHelper_(
-      /**@type ?cm.LayerModel*/(this.layerModel_.get('parent')));
+      /** @type {?cm.LayerModel} */(this.layerModel_.get('parent')));
 };
 
+
 /**
- * Helper method to determine whether the children of the legendView should
- * draw a box around themselves.
+ * Determines whether the children of the legendView should draw a box around
+ * themselves.
  * @return {boolean} whether the receiver's children should draw boxes when
- *   rendering
+ *     rendering
  * @protected
  */
 cm.LegendView.prototype.childrenShouldDrawBox = function() {
   return cm.LegendView.shouldDrawBoxHelper_(this.layerModel_);
 };
+
 
 /** Announces that the legend view's rendering has been changed. */
 cm.LegendView.prototype.renderingChanged = function() {
@@ -281,10 +271,11 @@ cm.LegendView.prototype.renderingChanged = function() {
   cm.events.emit(this, cm.events.LEGEND_VIEW_RENDERING_CHANGED);
 };
 
+
 /**
- * Helper method for when only the legend's visibility may have changed; it
- * compares against the last reported state and emits a rendering changed event
- * iff so.
+ * Compares against the legend's last reported visiblity state and emits a
+ * rendering changed event if and only if it has changed.  Intended as a helper
+ * method for when only the legend's visibility may have changed.
  * @protected
  */
 cm.LegendView.prototype.updateHidden = function() {
@@ -295,51 +286,62 @@ cm.LegendView.prototype.updateHidden = function() {
 
 // Private methods
 
-/** @private Updates the title DOM element from the layer model. */
+
+/**
+ * Updates the title DOM element from the layer model.
+ * @private
+ */
 cm.LegendView.prototype.updateTitle_ = function() {
   cm.ui.clear(this.titleElem_);
   cm.ui.append(this.titleElem_, this.titleString());
 };
 
-/** @private Updates the legend DOM element from the layer model. */
+
+/**
+ *Updates the legend DOM element from the layer model.
+ * @private
+ */
 cm.LegendView.prototype.updateLegend_ = function() {
   cm.ui.clear(this.legendElem_);
-  var legendHtml = /** @type cm.Html */(this.layerModel_.get('legend'));
+  var legendHtml = /** @type {cm.Html} */(this.layerModel_.get('legend'));
   legendHtml.pasteInto(this.legendElem_);
 };
 
+
 /**
- * Respond to changes in the zoom level of the map; in particular, check
- * if our layer is now outside its min/max zoom bounds and if so, remove
+ * Responds to changes in the zoom level of the map; in particular, checks
+ * if our layer is now outside its min/max zoom bounds and if so, removes
  * the legend from the map.
- * @param {Object} e The event
+ * @param {{zoom: !number}} e The zoom event
  * @private
  */
 cm.LegendView.prototype.handleZoomLevelChanged_ = function(e) {
-  this.currentZoomLevel_ = /** @type number */(e.zoom);
+  this.currentZoomLevel_ = /** @type {number} */(e.zoom);
   this.updateHidden();
 };
 
+
 /**
  * Maps layer IDs to the associated legend views.
- * @type Object.<cm.LegendView>
- * @private
+ * @private {!Object.<string, cm.LegendView>}
  */
 cm.LegendView.legendViews_ = {};
 
+
 /**
  * Returns the legend view for the given layer, constructing it if necessary.
- * @param {cm.LayerModel} layerModel The model for the layer whose legend is
- *   being rendered
- * @param {cm.MetadataModel} metadataModel The metadata model to use to
- *   register for source data changes.
- * @param {cm.AppState} appState The app state where the current state for the
- *   layer can be found.
- * @return {cm.LegendView} The legend view for the given layer.
+ * @param {!cm.LayerModel} layerModel The model for the layer whose legend is
+ *     being rendered
+ * @param {!cm.MetadataModel} metadataModel The metadata model to use to
+ *     register for source data changes.
+ * @param {!cm.AppState} appState The app state where the current state for the
+ *     layer can be found.
+ * @return {!cm.LegendView} The legend view for the given layer.
  */
 cm.LegendView.getLegendViewForLayer =
     function(layerModel, metadataModel, appState) {
-  var legendView = cm.LegendView.legendViews_[layerModel.get('id')];
+  var layerId = /** @type {string} */(layerModel.get('id'));
+  var legendView = cm.LegendView.legendViews_[layerId];
   if (!legendView) {
     if (layerModel.get('type') === cm.LayerModel.Type.FOLDER) {
       legendView = new cm.FolderLegendView_(
@@ -348,110 +350,101 @@ cm.LegendView.getLegendViewForLayer =
       legendView = new cm.SimpleLegendView_(
           layerModel, metadataModel, appState);
     }
-    cm.LegendView.legendViews_[layerModel.get('id')] = legendView;
+    cm.LegendView.legendViews_[layerId] = legendView;
   }
   return legendView;
 };
 
+
+
 /**
  * Watches a list of layers and maintains the equivalent list of legends,
  * emitting an event when changes that effect the display are made.
- * @param {google.maps.MVCObject} source The object that owns the list of
- *   layers.
- * @param {string} property The property on source to observe.  Its value must
- *   be an MVCArray.
- * @param {cm.AppState} appState The global appState
- * @param {cm.MetadataModel} metadataModel The metadataModel
+ * @param {!google.maps.MVCObject} source The object that owns the list of
+ *     layers.
+ * @param {!string} property The property on source to observe.  Its value must
+ *     be an MVCArray.
+ * @param {!cm.AppState} appState The global appState
+ * @param {!cm.MetadataModel} metadataModel The metadataModel
  * @constructor
  */
 cm.LegendViewList = function(source, property, appState, metadataModel) {
   /**
    * The MVCObject that owns the array to which we are listening.  In practice,
    * this will either be a cm.MapModel or a folder type cm.LayerModel.
-   * @type google.maps.MVCObject
-   * @private
+   * @private {!google.maps.MVCObject}
    */
   this.source_ = source;
 
   /**
    * The property on this.source_ where the MVCArray of LayerModels is kept.
    * For maps, it will be 'layers'; for folders it will be 'sublayers'.
-   * @type string
-   * @private
+   * @private {!string}
    */
   this.property_ = property;
 
-  /**
-   * The global appState.
-   * @type cm.AppState
-   * @private
-   */
+  /** @private {!cm.AppState} */
   this.appState_ = appState;
 
   /**
    * The global metadata model.  Unfortunately, we need this to construct new
    * LegendViews; otherwise, it is unused.
-   * @type cm.MetadataModel
-   * @private
+   * @private {!cm.MetadataModel}
    */
   this.metadataModel_ = metadataModel;
 
   /**
    * The MVCArray of layer models that we are watching.
-   * @type ?google.maps.MVCArray
-   * @private
+   * @private {google.maps.MVCArray}
    */
   this.layers_ = null;
 
   /**
    * The array of legend views, ordered to match this.layers_.
-   * @type Array
-   * @private
+   * @private {Array.<cm.LegendView>}
    */
   this.legendViews_ = [];
 
   /**
    * The array of listeners to each of the legend views in this.legendViews_.
    * Its ordering matches this.legendViews_.
-   * @type Array.<cm.events.ListenerToken>
-   * @private
+   * @private {Array.<cm.events.ListenerToken>}
    */
   this.legendViewListeners_ = [];
 
   /**
    * Listeners on this.layers_.  These must be unlistened and replaced when
    * this.layers_ changes.
-   * @type Array.<cm.events.ListenerToken>
-   * @private
+   * @private {Array.<cm.events.ListenerToken>}
    */
   this.layersListeners_ = [];
 
   /**
-   * Whether we are in the middle of an cm.ArrangeCommand, which rearranges
+   * Whether the app is in the middle of an cm.ArrangeCommand, which rearranges
    * all the layers associated with a map in a bulk fashion.  In the midst of
    * that transformation, the tree of layers is often not well-formed, with the
    * same sublayer potentially appearing in two different parent's lists of
-   * children.  So instead, we record when the command is in progress, and
-   * suspend all notifications until it completes.
-   * @type boolean
-   * @private
+   * children.  To avoid the intermediate states, records when such a command is
+   * in progress, and suspends all notifications until it completes.
+   * @private {boolean}
    */
-  this.arranging_ = false;
+  this.isArranging_ = false;
 
   this.buildLegendViews_();
 
   cm.events.onChange(source, property, this.resetLegendViews_, this);
   cm.events.listen(cm.app, cm.events.ARRANGE_COMMAND_BEGIN, function() {
-        this.arranging_ = true;
+    this.isArranging_ = true;
   }, this);
   cm.events.listen(cm.app, cm.events.ARRANGE_COMMAND_ENDED, function() {
-    this.arranging_ = false;
+    this.isArranging_ = false;
     this.resetLegendViews_();
   }, this);
 };
 
+
 /**
- * Unlisten from all listeners that were associated with the MVCArray of
+ * Unlistens from all listeners that were associated with the MVCArray of
  * legendViews.  Used when the original array was discarded and replaced
  * by a different one.
  * @private
@@ -465,15 +458,17 @@ cm.LegendViewList.prototype.unlisten_ = function() {
   }, this));
 };
 
+
 /**
- * Notify any listeners that the list's rendering has changed.
+ * Notifies any listeners that the list's rendering has changed.
  * @private
  */
 cm.LegendViewList.prototype.renderingChanged_ = function() {
-  if (!this.arranging_) {
+  if (!this.isArranging_) {
     cm.events.emit(this, cm.events.LEGEND_VIEW_LIST_RENDERING_CHANGED);
   }
 };
+
 
 /**
  * Completely resets all state and all listeners from the source MVCObject.
@@ -482,7 +477,7 @@ cm.LegendViewList.prototype.renderingChanged_ = function() {
  * @private
  */
 cm.LegendViewList.prototype.resetLegendViews_ = function() {
-  if (this.arranging_) return;
+  if (this.isArranging_) return;
   this.unlisten_();
   this.layers_ = null;
   this.legendViews_ = [];
@@ -492,9 +487,10 @@ cm.LegendViewList.prototype.resetLegendViews_ = function() {
   this.renderingChanged_();
 };
 
+
 /**
- * Helper to setup and return the correct listener for a legend view.
- * @param {cm.LegendView} legendView
+ * Sets up and returns the correct listener for a legend view.
+ * @param {!cm.LegendView} legendView
  * @return {cm.events.ListenerToken|Array.<cm.events.ListenerToken>}
  * @private
  */
@@ -503,18 +499,23 @@ cm.LegendViewList.prototype.listenToLegendView_ = function(legendView) {
                           this.renderingChanged_, this);
 };
 
-/** @private Builds the list of legend views. */
+
+/**
+ * Builds the list of legend views.
+ * @private
+ */
 cm.LegendViewList.prototype.buildLegendViews_ = function() {
-  this.layers_ = /**@type google.maps.MVCArray*/(this.source_.get(
+  this.layers_ = /** @type {google.maps.MVCArray} */(this.source_.get(
       this.property_));
   this.layers_.forEach(goog.bind(function(layer, i) {
     var legendView = cm.LegendView.getLegendViewForLayer(
         layer, this.metadataModel_, this.appState_);
     this.legendViews_.push(legendView);
     this.legendViewListeners_.push(this.listenToLegendView_(legendView));
-    }, this));
+  }, this));
   this.setupListeners_();
 };
+
 
 /**
  * Sets up the listeners necessary to monitor the MVCArray of layers.
@@ -523,7 +524,7 @@ cm.LegendViewList.prototype.buildLegendViews_ = function() {
 cm.LegendViewList.prototype.setupListeners_ = function() {
   this.layersListeners_.push(cm.events.listen(
       this.layers_, 'insert_at', function(i) {
-        if (this.arranging_) return;
+        if (this.isArranging_) return;
         var legendView = cm.LegendView.getLegendViewForLayer(
             this.layers_.getAt(i), this.metadataModel_, this.appState_);
         this.legendViews_.splice(i, 0, legendView);
@@ -535,7 +536,7 @@ cm.LegendViewList.prototype.setupListeners_ = function() {
       }, this));
   this.layersListeners_.push(cm.events.listen(
       this.layers_, 'remove_at', function(i, layer) {
-        if (this.arranging_) return;
+        if (this.isArranging_) return;
         var legendView = this.legendViews_[i];
         cm.events.unlisten(this.legendViewListeners_[i], this);
         this.legendViews_.splice(i, 1);
@@ -546,24 +547,27 @@ cm.LegendViewList.prototype.setupListeners_ = function() {
       }, this));
 };
 
+
 /**
  * Returns an array of the actual legend views. The order of the array matches
  * the order of the layers in the MVCArray being watched.
- * @return {Array.<cm.LegendView>}
+ * @return {Array.<!cm.LegendView>}
  */
 cm.LegendViewList.prototype.getLegendViews = function() {
   return this.legendViews_;
 };
 
+
+
 /**
  * Renders the legend for a layer that is not a folder.
- * @param {cm.LayerModel} layerModel The model for the layer whose legend
- *   will be rendered.
- * @param {cm.MetadataModel} metadataModel The global metadata model object
- *   for tracking changes to the layer's data.
- * @param {cm.AppState} appState The global appState object for tracking
- *   when the layer is turned on and off.
- * @extends cm.LegendView
+ * @param {!cm.LayerModel} layerModel The model for the layer whose legend
+ *     will be rendered.
+ * @param {!cm.MetadataModel} metadataModel The global metadata model object
+ *     for tracking changes to the layer's data.
+ * @param {!cm.AppState} appState The global appState object for tracking
+ *     when the layer is turned on and off.
+ * @extends {cm.LegendView}
  * @constructor
  * @private
  */
@@ -573,13 +577,12 @@ cm.SimpleLegendView_ = function(layerModel, metadataModel, appState) {
 
   /**
    * Listener for updates on our layer's metadata
-   * @type ?cm.events.ListenerToken
-   * @private
+   * @private {cm.events.ListenerToken}
    */
   this.metadataListener_ = null;
-
 };
 goog.inherits(cm.SimpleLegendView_, cm.LegendView);
+
 
 /** @override */
 cm.SimpleLegendView_.prototype.setupListeners = function() {
@@ -589,6 +592,7 @@ cm.SimpleLegendView_.prototype.setupListeners = function() {
   cm.events.onChange(this.layerModel_, 'parent', this.renderingChanged, this);
   this.updateMetadataListener_();
 };
+
 
 /** @override */
 cm.SimpleLegendView_.prototype.render = function() {
@@ -605,9 +609,10 @@ cm.SimpleLegendView_.prototype.render = function() {
   }
 };
 
+
 /**
- * Update the metadata listener due to a change in the layer's source URL.
- * This can mean the layer is empty, so we update our hidden status, too.
+ * Updates the metadata listener due to a change in the layer's source URL.
+ * This can mean the layer is empty, so updates the legend's hidden status, too.
  * @private
  */
 cm.SimpleLegendView_.prototype.updateMetadataListener_ = function() {
@@ -619,6 +624,7 @@ cm.SimpleLegendView_.prototype.updateMetadataListener_ = function() {
 
   this.updateHidden();
 };
+
 
 /** @override */
 cm.SimpleLegendView_.prototype.isHidden = function() {
@@ -634,14 +640,16 @@ cm.SimpleLegendView_.prototype.isHidden = function() {
       this.isEmpty() || !!this.metadataModel_.isEmpty(this.layerModel_));
 };
 
+
+
 /**
  * LegendView subclass for rendering unlocked or single-select folders
- * @param {cm.LayerModel} layerModel The model for the layer whose legend
- *   will be rendered
- * @param {cm.MetadataModel} metadataModel The global metadata model object
- *   for tracking changes to the layer's data.
- * @param {cm.AppState} appState The global appState object.
- * @extends cm.LegendView
+ * @param {!cm.LayerModel} layerModel The model for the layer whose legend
+ *     will be rendered
+ * @param {!cm.MetadataModel} metadataModel The global metadata model object
+ *     for tracking changes to the layer's data.
+ * @param {!cm.AppState} appState The global appState object.
+ * @extends {cm.LegendView}
  * @constructor
  * @private
  */
@@ -652,13 +660,13 @@ cm.FolderLegendView_ = function(layerModel, metadataModel, appState) {
    * The list of cm.LegendViews for the sublayers of our folder.
    * The LegendViews are constructed immediately, but are not rendered
    * until the FolderLegendView is asked to render.
-   * @type cm.LegendViewList
-   * @private
+   * @private {cm.LegendViewList}
    */
   this.sublayerLegendViews_ = new cm.LegendViewList(
       layerModel, 'sublayers', appState, metadataModel);
 };
 goog.inherits(cm.FolderLegendView_, cm.LegendView);
+
 
 /** @override */
 cm.FolderLegendView_.prototype.setupListeners = function() {
@@ -679,10 +687,11 @@ cm.FolderLegendView_.prototype.setupListeners = function() {
       this.renderingChanged, this);
 };
 
+
 /**
- * Handler for when the folder changes its type (e.g. from locked to unlocked
- * or single-select).  Notifies the sublegends that their rendering may have
- * changed.
+ * Notifies the sublegends that their rendering may have changed. Used as the
+ * handler for when the folder changes its type (e.g. from locked to unlocked
+ * or single-select).
  * @private
  */
 cm.FolderLegendView_.prototype.handleFolderTypeChanged_ = function() {
@@ -692,21 +701,23 @@ cm.FolderLegendView_.prototype.handleFolderTypeChanged_ = function() {
   this.renderingChanged();
 };
 
+
 /** @override */
 cm.FolderLegendView_.prototype.parentRenderingChanged = function() {
   this.handleFolderTypeChanged_();
 };
 
+
 /**
- * Convenience function returning the type of the folder for this legend's
- * layer.
- * @return {?cm.LayerModel.FolderType}
+ * Returns the type of the folder for this legend's layer.
+ * @return {cm.LayerModel.FolderType}
  * @private
  */
 cm.FolderLegendView_.prototype.folderType_ = function() {
-  return /** @type cm.LayerModel.FolderType */(this.layerModel_.get(
+  return /** @type {cm.LayerModel.FolderType} */(this.layerModel_.get(
       'folder_type')) || null;
 };
+
 
 /** @override */
 cm.FolderLegendView_.prototype.render = function() {
@@ -718,13 +729,13 @@ cm.FolderLegendView_.prototype.render = function() {
   this.renderOwnLegend_();
 
   // Render the sublayers
-  goog.array.forEach(
-      this.sublayerLegendViews_.getLegendViews(), goog.bind(
-          function(sublayer) {
-            var content = sublayer.getContent();
-            content && cm.ui.append(this.parentElem_, content);
-          }, this));
+  goog.array.forEach(this.sublayerLegendViews_.getLegendViews(), goog.bind(
+      function(sublayer) {
+        var content = sublayer.getContent();
+        content && cm.ui.append(this.parentElem_, content);
+      }, this));
 };
+
 
 /**
  * Renders into this.parentElem_ any legend associated with the folder layer
@@ -754,6 +765,7 @@ cm.FolderLegendView_.prototype.renderOwnLegend_ = function() {
   cm.ui.append(legendBox, this.legendElem_);
 };
 
+
 /** @override */
 cm.FolderLegendView_.prototype.isHidden = function() {
   if (!this.isEnabled()) return true;
@@ -769,6 +781,7 @@ cm.FolderLegendView_.prototype.isHidden = function() {
   return !sublayersHaveContent;
 };
 
+
 /** @override */
 cm.FolderLegendView_.prototype.titleString = function() {
   if (this.folderType_() === cm.LayerModel.FolderType.SINGLE_SELECT &&
@@ -781,11 +794,12 @@ cm.FolderLegendView_.prototype.titleString = function() {
   }
 };
 
+
 /**
- * Helper function to locate and return the sublayer of a single-select
- * folder that's currently selected. The caller needs to ensure that
- * this.sublayerLegendViews_ is non-empty.
- * @return {cm.LegendView} The legend view for the currently selected sublayer.
+ * Locates and returns the sublayer of a single-select folder that's currently
+ * selected. The caller needs to ensure that this.sublayerLegendViews_ is
+ * non-empty.
+ * @return {!cm.LegendView} The legend view for the currently selected sublayer.
  * @private
  */
 cm.FolderLegendView_.prototype.selectedLegendView_ = function() {

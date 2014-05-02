@@ -19,8 +19,8 @@ goog.require('cm.ui');
 
 /**
  * The Details tab in the tab panel.
- * @param {cm.MapModel} mapModel The model for the map being displayed.
- * @param {cm.AppState} appState The application state model.
+ * @param {!cm.MapModel} mapModel The model for the map being displayed.
+ * @param {!cm.AppState} appState The application state model.
  * @param {Object} config A dictionary of configuration options.
  * @extends cm.MapTabItem
  * @implements cm.TabItem

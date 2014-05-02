@@ -29,10 +29,10 @@ var MIN_PANEL_HEIGHT_FOR_EMBEDDED_FORM = 450;
  * @param {Element} frameElem The frame element surrounding the entire UI.
  * @param {Element} parentElem The DOM element in which to create the panel.
  * @param {Element} mapContainer The map container to put the expand button on.
- * @param {cm.MapModel} mapModel The map model for which to create the panel
+ * @param {!cm.MapModel} mapModel The map model for which to create the panel
  *     view.
- * @param {cm.MetadataModel} metadataModel The metadata model.
- * @param {cm.AppState} appState The application state model.
+ * @param {!cm.MetadataModel} metadataModel The metadata model.
+ * @param {!cm.AppState} appState The application state model.
  * @param {boolean} below Whether to position the tab panel below the map.
  * @param {boolean} expand Whether the panel should initially be expanded.
  * @param {Object=} opt_config Configuration settings.  These fields are used:
@@ -52,40 +52,22 @@ var MIN_PANEL_HEIGHT_FOR_EMBEDDED_FORM = 450;
 cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
                            metadataModel, appState, below, expand,
                            opt_config) {
-  /** The map model
-   * @type cm.MapModel
-   * @private
-   */
+  /** @private {!cm.MapModel} The map model */
   this.mapModel_ = mapModel;
 
-  /**
-   * @type cm.AppState
-   * @private
-   */
+  /** @private {!cm.AppState} */
   this.appState_ = appState;
 
-  /**
-   * @type !Object
-   * @private
-   */
+  /** @private {!Object} */
   this.config_ = opt_config || {};
 
-  /**
-   * @type cm.MetadataModel
-   * @private
-   */
+  /** @private {!cm.MetadataModel} */
   this.metadataModel_ = metadataModel;
 
-  /** The view's parent element.
-   * @type Element
-   * @private
-   */
+  /** @private {Element} The view's parent element. */
   this.parentElem_ = parentElem;
 
-  /** The tab view we use to render.
-   * @type cm.TabView
-   * @private
-   */
+  /** @private {!cm.TabView} The tab view we use to render. */
   this.tabView_ = new cm.TabView();
 
   /** @private {cm.DetailsTabItem} The tab item for feature details. */
@@ -99,34 +81,27 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
 
   /**
    * Where the tab bar is positioned relative to the map.
-   * @type cm.TabPanelView.TabPosition
-   * @private
+   * @private {cm.TabPanelView.TabPosition}
    */
   this.tabPosition_ = below ? cm.TabPanelView.TabPosition.BELOW :
       (this.config_['panel_side'] === 'left') ?
       cm.TabPanelView.TabPosition.LEFT : cm.TabPanelView.TabPosition.RIGHT;
   goog.dom.classes.enable(this.parentElem_, cm.css.TAB_PANEL_BELOW, below);
 
-  /**
-   * Whether the panel is currently expanded.
-   * @type boolean
-   * @private
-   */
+  /** @private {boolean} Whether the panel is currently expanded. */
   this.expanded_;
 
   /**
    * The upward or downward pointing chevron button for expanding or
    * collapsing the tab panel.
-   * @type Element
-   * @private
+   * @private {Element}
    */
   this.expandCollapseButton_;
 
   /**
    * Whether the tab panel state has been toggled at least once by the
    * user (either from collapsed to expanded or vice versa).
-   * @type boolean
-   * @private
+   * @private {boolean}
    */
   this.firstExpandCollapseDone_;
 

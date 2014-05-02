@@ -21,63 +21,62 @@ goog.require('cm.TabItem');
 goog.require('cm.events');
 
 
+
 /**
- * Produces the Legend tab in the tab panel.
- * @param {cm.MapModel} mapModel The model for the map being displayed.
- * @param {cm.AppState} appState The application state model.
+ * Produces the Legend tab in the tab panel.  The LegendTabItem maintains
+ * a LegendViewList that keeps a list of legends in sync with the list of
+ * layers in the map model.  Each legend provides a LegendView to the
+ * LegendViewList.  On update, the LegendTabItem grabs the LegendViews from
+ * the LegendViewList and adds them to the containing element.
+ * @param {!cm.MapModel} mapModel The model for the map being displayed.
+ * @param {!cm.AppState} appState The application state model.
  * @param {Object} config A dictionary of configuration options.
- * @param {cm.MetadataModel} metadataModel The metadata model for layers.
- * @extends cm.MapTabItem
- * @implements cm.TabItem
+ * @param {!cm.MetadataModel} metadataModel The metadata model for layers.
+ * @extends {cm.MapTabItem}
+ * @implements {cm.TabItem}
  * @constructor
  */
 cm.LegendTabItem = function(mapModel, appState, config, metadataModel) {
   cm.MapTabItem.call(this, mapModel, appState, config);
 
-  /**
-   * @type cm.MetadataModel
-   * @private
-   */
+  /** @private {cm.MetadataModel} */
   this.metadataModel_ = metadataModel;
 
-  /**
-   * @type Element
-   * @private
-   */
+  /** @private {!Element} */
   this.legendContainer_ = cm.ui.create('div');
 
   /**
    * Whether the tab item is currently enabled; set in update_()
-   * @type boolean
-   * @private
+   * @private {boolean}
    */
   this.isEnabled_ = true;
 
   /**
    * The legend view list watching the list of layers in the map.
-   * @type cm.LegendViewList
-   * @private
+   * @private {!cm.LegendViewList}
    */
   this.legendViewList_ = new cm.LegendViewList(this.mapModel, 'layers',
       this.appState, this.metadataModel_);
 
-  cm.events.listen(
-      this.legendViewList_, cm.events.LEGEND_VIEW_LIST_RENDERING_CHANGED,
-      this.update_, this);
+  cm.events.listen(this.legendViewList_,
+      cm.events.LEGEND_VIEW_LIST_RENDERING_CHANGED, this.update_, this);
 
   this.update_();
 };
 goog.inherits(cm.LegendTabItem, cm.MapTabItem);
+
 
 /** @override */
 cm.LegendTabItem.prototype.addContent = function(parentElem) {
   parentElem.appendChild(this.legendContainer_);
 };
 
+
 /** @override */
 cm.LegendTabItem.prototype.getTitle = function() {
   return cm.MSG_LEGEND_TAB_LABEL;
 };
+
 
 /**
  * Updates the content of legendContainer to contain all legend views.
@@ -87,13 +86,13 @@ cm.LegendTabItem.prototype.update_ = function() {
   var hasContent = false;
   cm.ui.clear(this.legendContainer_);
 
-  goog.array.forEach(this.legendViewList_.getLegendViews(), goog.bind(
+  goog.array.forEach(this.legendViewList_.getLegendViews(),
       function(legendView) {
         var content = legendView.getContent();
         if (!content) return;
         cm.ui.append(this.legendContainer_, content);
         hasContent = true;
-      }, this));
+      }, this);
 
   this.isEnabled_ = hasContent;
   if (hasContent) {
@@ -104,9 +103,10 @@ cm.LegendTabItem.prototype.update_ = function() {
   }
 };
 
+
 /**
- * Locate the first legend box inside legendContainer and give it the special
- * first-legend-box class.  Clear that class off all other legend boxes.
+ * Locates the first legend box inside legendContainer and gives it the special
+ * first-legend-box class.  Clears that class off all other legend boxes.
  * @private
  */
 cm.LegendTabItem.prototype.markFirstLegend_ = function() {
@@ -121,10 +121,12 @@ cm.LegendTabItem.prototype.markFirstLegend_ = function() {
   }
 };
 
+
 /** @override */
 cm.LegendTabItem.prototype.getIsEnabled = function() {
   return this.isEnabled_;
 };
+
 
 /** @override */
 cm.LegendTabItem.prototype.analyticsSelectionEvent = function() {

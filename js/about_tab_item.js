@@ -19,8 +19,8 @@ goog.require('cm.ui');
 
 /**
  * Produces the About tab in the tab panel.
- * @param {cm.MapModel} mapModel The model for the map being displayed.
- * @param {cm.AppState} appState The application state model.
+ * @param {!cm.MapModel} mapModel The model for the map being displayed.
+ * @param {!cm.AppState} appState The application state model.
  * @param {Object} config A dictionary of configuration options.
  * @extends cm.MapTabItem
  * @implements cm.TabItem
@@ -57,7 +57,6 @@ cm.AboutTabItem.prototype.addContent = function(parentElem) {
   cm.ui.append(parentElem, this.descElem_, panelLinks);
 };
 
-/* Various handlers */
 
 /**
  * Respond to a description change in the map model.

@@ -674,9 +674,9 @@ cm.Map.prototype.constructButtons_ = function(preview, appState) {
 };
 
 /**
- * @param {cm.AppState} appState
- * @param {cm.MapModel} mapModel
- * @param {cm.MetadataModel} metadataModel
+ * @param {!cm.AppState} appState
+ * @param {!cm.MapModel} mapModel
+ * @param {!cm.MetadataModel} metadataModel
  * @private
  */
 cm.Map.prototype.constructPanelView_ = function(appState, mapModel,

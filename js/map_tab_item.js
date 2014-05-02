@@ -19,90 +19,65 @@ goog.require('cm.TabItem');
  * Superclass for tabs in the tab panel that require a map model.
  * Subclasses must define getTitle and getIcon.  If they can be disabled,
  * they should override getIsEnabled.
- * @param {cm.MapModel} mapModel The model of the map being rendered
- * @param {cm.AppState} appState The application state model.
+ * @param {!cm.MapModel} mapModel The model of the map being rendered
+ * @param {!cm.AppState} appState The application state model.
  * @param {Object} config Configuration options, largely for editing
  * @implements cm.TabItem
  * @constructor
  */
 cm.MapTabItem = function(mapModel, appState, config) {
-  /**
-   * @type cm.MapModel
-   * @protected
-   */
+  /** @protected {!cm.MapModel} */
   this.mapModel = mapModel;
 
-  /**
-   * @type cm.AppState
-   * @protected
-   */
+  /** @protected {!cm.AppState} */
   this.appState = appState;
 
-  /**
-   * @type Object
-   * @protected
-   */
+  /** @protected {Object} */
   this.config = config || {};
 
-  /**
-   * @type ?cm.TabView
-   * @protected
-   */
+  /** @protected {cm.TabView} */
   this.tabView = null;
 
-  /**
-   * @type Element
-   * @private
-   */
+  /** @private {!Element} */
   this.content_ = cm.ui.create('div', {'class': cm.css.INNER_TAB_CONTENT});
 
   /**
    * The div containing the scrolling region of the tab item's content.
-   * @type Element
-   * @private
+   * @private {!Element}
    */
   this.scrollingDiv_ = cm.ui.create('div',
                                     {'class': cm.css.SCROLLING_TAB_CONTENT});
 
   /**
    * An empty div for measuring the top of scrolling content.
-   * @type Element
-   * @private
+   * @private {!Element}
    */
   this.scrollTop_ = cm.ui.create('div');
 
-  /**
-   * @type ?Element
-   * @private
-   */
+  /** @private {Element} */
   this.toolbarDiv_ = this.config['enable_editing'] ? cm.ui.create('div') : null;
 
-  /** @type boolean */
+  /** @type {boolean} */
   this.isSelected = false;
 
-  /** @type boolean */
+  /** @type {boolean} */
   this.editingEnabled = this.config['enable_editing'];
 
   /**
    * Flag that suppresses render_ from being called more than once by
    * different event handlers.
-   * @type {boolean}
-   * @private_
+   * @private {boolean}
    */
   this.renderBegun_ = false;
 
   /**
    * Flag that suppresses promptRelayout from being called before
    * rendering is complete.
-   * @type {boolean}
-   * @private_
+   * @private {boolean}
    */
   this.renderEnded_ = false;
 
-  /**
-   * @type Element
-   * @private
-   */
+  /** @private Element */
   this.mapTitleElem_;
 };
 
