@@ -625,6 +625,9 @@ cm.MSG_UNTITLED_LAYER = goog.getMsg('Untitled Layer');
 /** @desc Link text to add a new folder to the map. */
 cm.MSG_ADD_NEW_FOLDER = goog.getMsg('Add folder');
 
+/** @desc Link text to edit topics for which the map is related. */
+cm.MSG_EDIT_TOPICS = goog.getMsg('Edit topics');
+
 /** @desc Link text to return to map list. */
 cm.MSG_BACK_TO_MAP_LIST = goog.getMsg('Back to map list');
 

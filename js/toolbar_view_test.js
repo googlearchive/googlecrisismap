@@ -169,6 +169,17 @@ ToolbarViewTest.prototype.testDiffJsonLink = function() {
   expectDescendantOf(diffPopup, withInnerHtml(sanitize('Catalog diff')));
 };
 
+/** Verifies that the 'Edit topics' link works properly. */
+ToolbarViewTest.prototype.testEditTopicsLink = function() {
+  var link = expectDescendantOf(this.parent_, withText('Edit topics'));
+  var eventEmitted = false;
+  cm.events.listen(cm.app, cm.events.EDIT_TOPICS, function() {
+    eventEmitted = true;
+  });
+  cm.events.emit(link, 'click');
+  expectTrue(eventEmitted);
+};
+
 /** Verifies the beforeunload handler when there are no changes to be saved.*/
 ToolbarViewTest.prototype.testBeforeUnload = function() {
   var str = window.onbeforeunload();

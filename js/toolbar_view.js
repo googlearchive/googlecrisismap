@@ -162,6 +162,10 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
     cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT, diffJsonLink);
   }
 
+  var editTopicsLink = cm.ui.createLink(cm.MSG_EDIT_TOPICS);
+  cm.events.forward(editTopicsLink, 'click', cm.app, cm.events.EDIT_TOPICS);
+  cm.ui.append(editToolbarElem, cm.ui.SEPARATOR_DOT, editTopicsLink);
+
   toolbarElem.appendChild(editToolbarElem);
   parentElem.appendChild(toolbarElem);
 };
