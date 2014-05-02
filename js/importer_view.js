@@ -134,7 +134,7 @@ cm.ImporterView = function(apiMapsUrl) {
   var closeBtn;
 
   this.popup_ = cm.ui.create('div', {'class': [cm.css.IMPORTER, cm.css.POPUP]},
-      this.headerElem_ = cm.ui.create('div', {'class': cm.css.IMPORTER_HEADER},
+      this.headerElem_ = cm.ui.create('div', undefined,
           cm.ui.create('h2', {}, cm.MSG_IMPORT_TITLE),
           newLayerLink = cm.ui.createLink(cm.MSG_CREATE_NEW_LAYER)),
       this.layerListElem_ = cm.ui.create('div',
@@ -147,7 +147,7 @@ cm.ImporterView = function(apiMapsUrl) {
               {'class': [cm.css.BUTTON, cm.css.SUBMIT]},
               cm.MSG_IMPORTER_SUBMIT),
           closeBtn = cm.ui.create('button', {'class': cm.css.BUTTON},
-              cm.MSG_IMPORTER_CANCEL)));
+              cm.MSG_CANCEL)));
 
   cm.events.listen(newLayerLink, 'click', this.handleNewLayer_, this);
   cm.events.listen(this.submitBtn_, 'click', this.handleOk_, this);
@@ -159,7 +159,6 @@ cm.ImporterView = function(apiMapsUrl) {
 
 /**
  * Number of milliseconds to keep cached maps for before refreshing.
- * @const
  * @type {number}
  * @private
  */
@@ -167,7 +166,6 @@ cm.ImporterView.MAPS_CACHE_TTL_MS_ = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Fraction of the window size that the importer expand to, at maximum.
- * @const
  * @type {number}
  * @private
  */
@@ -177,7 +175,6 @@ cm.ImporterView.MAX_HEIGHT_ = 0.9;
  * The maximum width or height of layer previews. The larger dimension will be
  * equal to this, while the other dimension will depend on the aspect ratio
  * given by the viewport of the layer, or its map.
- * @const
  * @type {number}
  * @private
  */
@@ -186,12 +183,11 @@ cm.ImporterView.PREVIEW_MAX_LENGTH_PX_ = 300;
 /**
  * Total number of pixels from element CSS properties that contribute to the
  * popup's total height.
- * @const
  * @type {number}
  * @private
  */
 cm.ImporterView.TOTAL_EXTRA_HEIGHT_ =
-    1 + 20 +      // cm-popup top border and padding, respectively
+    1 + 24 +      // cm-popup top border and padding, respectively
     8 +           // cm-importer-header bottom margin
     12 +          // cm-select-count top margin
     11 + 29 + 5 + // cm-button-area top margin, height, and bottom margin
@@ -209,8 +205,9 @@ cm.ImporterView.prototype.openImporter = function() {
   cm.ui.showPopup(this.popup_);
   this.handleResize_();
   this.windowResizeListener_ = /** @type {cm.events.ListenerToken} */
-      (cm.events.listen(window, 'resize',
-          goog.bind(this.handleResize_, this, cm.ui.document.body)));
+        (cm.events.listen(window, 'resize',
+            // Fails on IE8 if you do not bind cm.ui.document.body here
+            goog.bind(this.handleResize_, this, cm.ui.document.body)));
 
   if (this.maps_ &&
       (new Date()).getTime() - this.mapsLoadedTimestampMs_ <

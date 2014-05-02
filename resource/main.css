@@ -916,19 +916,12 @@ input[type=checkbox]:checked::after {
   width: 375px;
   max-width: 375px;
 }
-.cm-importer-header {
-  margin-bottom: 8px;
-}
-.cm-importer h2 {
-  margin-top: 0;
-  margin-bottom: 4px;
-}
 .cm-importer-list {
   border: 1px grey inset;
   overflow: auto;
   position: relative;
 }
-.cm-layer-item {
+.cm-layer-item, .cm-topic-item {
   position: relative;
   border-bottom: 1px solid #ebebeb;
   width: 100%;
@@ -1062,6 +1055,20 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 }
 .cm-importer .cm-button-area {
   margin-top: 11px !important;
+}
+
+/* Topic selector */
+.cm-topic-selector-title {
+  padding-right: 20px;
+}
+.cm-topic-selector-list {
+  padding: 4px 8px;
+}
+.cm-topic-item .cm-close-button {
+  margin: 2px;
+}
+.cm-topic-item:hover {
+  background: #efefef;
 }
 
 /* Tooltips */

@@ -220,9 +220,6 @@ cm.MSG_LOADING = goog.getMsg('Loading...');
  */
 cm.MSG_IMPORTER_SUBMIT = goog.getMsg('Import selected layers');
 
-/** @desc Label for the Cancel button on the importer dialog. */
-cm.MSG_IMPORTER_CANCEL = goog.getMsg('Cancel');
-
 /** @desc Link to go back to the "Create new layer" dialog. */
 cm.MSG_CREATE_NEW_LAYER = goog.getMsg('\xab Back');
 
@@ -249,6 +246,21 @@ cm.MSG_LAYERS_SELECTED = goog.getMsg('{SELECTED, plural, ' +
 /** @desc Tooltip text for folder previews that have no visible layers. */
 cm.MSG_NO_PREVIEW =
     goog.getMsg('This folder has no layers visible by default.');
+
+
+// TopicsEditor view
+
+/**
+ * @desc Link to edit an existing topic data structure, where the user can
+ * pose questions relating to layers on the map.
+ */
+cm.MSG_SELECT_TOPIC = goog.getMsg('Select a topic to edit.');
+
+/**
+ * @desc Link to create a new topic data structure, where the user can pose
+ * questions relating to layers on the map.
+ */
+cm.MSG_CREATE_NEW_TOPIC = goog.getMsg('Create new topic');
 
 
 // Layers button
