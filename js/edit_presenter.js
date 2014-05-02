@@ -208,14 +208,6 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     mapTypeChoices.push({value: cm.MapModel.Type.OSM, label: 'OpenStreetMap'});
   }
 
-  // Create footer content postfix to mimic actual Crisis Map footer.
-  // TODO(user): Ideally, footerPostfix would be contained elsewhere
-  //     (intialize or footer_view), but since it's small, we'll hard code
-  //     it until we find the best place it.
-  var footerPreviewPostfix = cm.ui.create('span', {},
-      cm.ui.SEPARATOR_DOT, cm.ui.createLink(cm.MSG_HELP),
-      cm.ui.SEPARATOR_DOT, cm.ui.createLink(cm.MSG_REPORT_ABUSE));
-
   // Fields that are editable in the map inspector.  Items in this array
   // must have distinct 'key' strings.
   var mapFields = [
@@ -223,7 +215,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {key: 'description', label: cm.MSG_DESCRIPTION, type: cm.editors.Type.HTML,
      preview_class: cm.css.MAP_DESCRIPTION},
     {key: 'footer', label: cm.MSG_FOOTER, type: cm.editors.Type.HTML,
-     preview_class: cm.css.FOOTER, preview_postfix: footerPreviewPostfix},
+     preview_class: cm.css.FOOTER},
     {key: 'viewport', label: cm.MSG_DEFAULT_VIEWPORT,
      type: cm.editors.Type.LAT_LON_BOX, app_state: appState},
     {key: 'map_type', label: cm.MSG_DEFAULT_BASE_MAP,

@@ -78,15 +78,17 @@ specific language governing permissions and limitations under the License.
 
 .cm-tab-content {
   overflow-x: visible;
+  overflow-y: auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+.cm-tab-content .cm-panel-links a {
+  display: inline-block;
+  margin: 0 20px 0 0;
 }
 
 .cm-tab-content input[type=checkbox] {
   margin-bottom: -2px;
-}
-
-.cm-tab-content {
-  overflow-y: auto;
-  -webkit-overflow-scrolling:touch;
 }
 
 .cm-tab-content::-webkit-scrollbar {

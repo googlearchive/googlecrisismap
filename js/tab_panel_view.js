@@ -64,6 +64,9 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
   /** @private {!cm.MetadataModel} */
   this.metadataModel_ = metadataModel;
 
+  /** @private {Element} */
+  this.frameElem_ = frameElem;
+
   /** @private {Element} The view's parent element. */
   this.parentElem_ = parentElem;
 
@@ -263,7 +266,7 @@ cm.TabPanelView.prototype.createTabs_ = function() {
   var firstTab = null;
   if (!this.config_['hide_panel_header']) {
     var aboutTab = new cm.AboutTabItem(
-        this.mapModel_, this.appState_, this.config_);
+        this.mapModel_, this.appState_, this.config_, this.frameElem_);
     this.tabView_.appendTabItem(aboutTab);
     firstTab = aboutTab;
   }

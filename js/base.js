@@ -487,7 +487,7 @@ cm.MSG_DRAFT_TOOLTIP = goog.getMsg(
     'This is an unpublished version of this map.');
 
 /** @desc Label for a link that resets the map to its default view. */
-cm.MSG_RESET_VIEW_LINK = goog.getMsg('Reset to default view');
+cm.MSG_RESET_VIEW_LINK = goog.getMsg('Reset view');
 
 /**
  * @desc Placeholder text for an input for entering a layer filter query.

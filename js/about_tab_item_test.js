@@ -45,6 +45,9 @@ AboutTabItemTest.prototype.testCreation = function() {
   var content = about.getContent();
   expectDescendantOf(content, withText(hasSubstr(titleStr)));
   expectDescendantOf(content, withText(hasSubstr(descStr)));
+  expectDescendantOf(content, 'a', withText(cm.MSG_RESET_VIEW_LINK));
+  expectDescendantOf(content, 'a', withText(cm.MSG_HELP));
+  expectDescendantOf(content, 'a', withText(cm.MSG_REPORT_ABUSE));
 };
 
 AboutTabItemTest.prototype.testCreation_editingEnabled = function() {
@@ -53,7 +56,8 @@ AboutTabItemTest.prototype.testCreation_editingEnabled = function() {
   var about = this.createAboutTabItem_(
       'AboutTabItemTest.testCreation', null,
       {'draft_mode': true, 'enable_editing': true});
-  expectDescendantOf(about.getContent(), withText(cm.MSG_RESET_VIEW_LINK));
+  expectDescendantOf(
+      about.getContent(), 'a', withText(cm.MSG_SET_DEFAULT_VIEW_LINK));
 };
 
 /** Tests that the 'reset view' link is present and works. */

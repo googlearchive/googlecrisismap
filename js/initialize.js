@@ -522,9 +522,8 @@ cm.Map.prototype.resizeTabPanel_ = function() {
 
   var maxPanelHeight;
   if (narrow) {
-    maxPanelHeight = Math.min(
-        BOTTOM_TAB_PANEL_HEIGHT_FRACTION * this.frameElem_.offsetHeight,
-        this.frameElem_.offsetHeight - this.footerElem_.offsetHeight);
+    maxPanelHeight = (
+        BOTTOM_TAB_PANEL_HEIGHT_FRACTION * this.frameElem_.offsetHeight);
   } else {
     // When panel is on left or right, leave 5px top and bottom margins.
     // When panel is on right, lave an additional 15px bottom margin for

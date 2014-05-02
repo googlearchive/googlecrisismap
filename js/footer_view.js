@@ -16,15 +16,10 @@
 goog.provide('cm.FooterView');
 
 goog.require('cm');
-goog.require('cm.AboutPopup');
 goog.require('cm.Html');
 goog.require('cm.MapModel');
 goog.require('cm.ui');
 goog.require('goog.Uri');
-
-// URL for the support form for reporting abuse.
-var REPORT_ABUSE_BASE_URL =
-    'https://support.google.com/crisismaps/contact/abuse';
 
 /**
  * The footer below the map in the UI, which includes some custom text from the
@@ -65,18 +60,8 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
     uri.removeParameter('embedded');
     var fullMapLink = cm.ui.createLink(cm.MSG_FULL_MAP_LINK, '' +
         uri, '_blank');
-    cm.ui.append(parentElem, fullMapLink, cm.ui.SEPARATOR_DOT);
+    cm.ui.append(parentElem, cm.ui.SEPARATOR_DOT, fullMapLink);
   }
-
-  var helpLink = cm.ui.createLink(cm.MSG_HELP);
-  var helpPopup = new cm.AboutPopup(popupContainer);
-  helpLink.onclick = goog.bind(helpPopup.show, helpPopup);
-  cm.ui.append(parentElem, helpLink);
-
-  var reportAbuseUri = new goog.Uri(REPORT_ABUSE_BASE_URL);
-  reportAbuseUri.setParameterValue('url', uri.toString());
-  cm.ui.append(parentElem, cm.ui.SEPARATOR_DOT, cm.ui.createLink(
-      cm.MSG_REPORT_ABUSE, reportAbuseUri.toString(), '_blank'));
 
   // Show the language selector only on published maps.
   var langs = footerParams['langs'];
@@ -110,10 +95,6 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
 cm.FooterView.prototype.updateFooter_ = function() {
   var footer = /** @type cm.Html */(this.mapModel_.get('footer'));
   (footer || cm.Html.EMPTY).pasteInto(this.footerSpan_);
-  // Append a separator dot to footer content if it exists.
-  if (!footer.isEmpty()) {
-    cm.ui.append(this.footerSpan_, cm.ui.SEPARATOR_DOT);
-  }
 };
 
 /**

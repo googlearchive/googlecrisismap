@@ -42,7 +42,6 @@ FooterViewTest.prototype.testConstructor = function() {
   this.setForTest_('cm.Html.sanitize_', function(x) { return x; });
   var parent = this.createView_();
   expectDescendantOf(parent, 'span', withText('Published by Descartes'));
-  expectDescendantOf(parent, 'a', withText(cm.MSG_HELP));
   expectDescendantOf(parent, 'select', withValue(''));
 };
 

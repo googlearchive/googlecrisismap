@@ -12,28 +12,36 @@
 goog.provide('cm.AboutTabItem');
 
 goog.require('cm');
+goog.require('cm.AboutPopup');
 goog.require('cm.MapModel');
 goog.require('cm.MapTabItem');
 goog.require('cm.TabItem');
 goog.require('cm.ui');
+goog.require('goog.Uri');
+
+// URL for the support form for reporting abuse.
+var REPORT_ABUSE_BASE_URL =
+    'https://support.google.com/crisismaps/contact/abuse';
 
 /**
  * Produces the About tab in the tab panel.
  * @param {!cm.MapModel} mapModel The model for the map being displayed.
  * @param {!cm.AppState} appState The application state model.
  * @param {Object} config A dictionary of configuration options.
+ * @param {Element} popupContainer The DOM element on which to center the
+ *     "Help" popup window.
  * @extends cm.MapTabItem
  * @implements cm.TabItem
  * @constructor
  */
-cm.AboutTabItem = function(mapModel, appState, config) {
+cm.AboutTabItem = function(mapModel, appState, config, popupContainer) {
   cm.MapTabItem.call(this, mapModel, appState, config);
 
-  /**
-   * @type Element
-   * @private
-   */
+  /** @private {Element} */
   this.descElem_;
+
+  /** @private {!cm.AboutPopup} */
+  this.helpPopup_ = new cm.AboutPopup(popupContainer);
 };
 goog.inherits(cm.AboutTabItem, cm.MapTabItem);
 
@@ -47,12 +55,24 @@ cm.AboutTabItem.prototype.addContent = function(parentElem) {
   var panelLinks = cm.ui.create('div', {'class': cm.css.PANEL_LINKS});
   if (this.editingEnabled) {
     var setDefaultView = cm.ui.createLink(cm.MSG_SET_DEFAULT_VIEW_LINK);
-    cm.ui.append(panelLinks, setDefaultView, cm.ui.create('br'));
+    cm.ui.append(panelLinks, setDefaultView);
     cm.events.listen(setDefaultView, 'click', this.handleSetDefaultView_, this);
   }
   var resetViewLink = cm.ui.createLink(cm.MSG_RESET_VIEW_LINK);
   cm.ui.append(panelLinks, resetViewLink);
   cm.events.listen(resetViewLink, 'click', this.handleResetView_, this);
+
+  var helpLink = cm.ui.createLink(cm.MSG_HELP);
+  cm.events.listen(
+      helpLink, 'click', goog.bind(this.helpPopup_.show, this.helpPopup_));
+  cm.ui.append(panelLinks, helpLink);
+
+  var uri = new goog.Uri(goog.global.location);
+  var reportAbuseUri = new goog.Uri(REPORT_ABUSE_BASE_URL);
+  reportAbuseUri.setParameterValue('url', uri.toString());
+  cm.ui.append(
+      panelLinks, cm.ui.createLink(
+          cm.MSG_REPORT_ABUSE, reportAbuseUri.toString(), '_blank'));
 
   cm.ui.append(parentElem, this.descElem_, panelLinks);
 };
