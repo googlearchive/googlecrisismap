@@ -84,9 +84,9 @@ class _MapReview(base_handler.BaseHandler):
     skip = int(self.request.get('skip') or 0)
     reviewed = NoneIfTrueElseFalse(self.request.get('reviewed'))
     hidden = self.request.get('hidden').lower() in ['true', 'yes', '1'] or None
-    report_id = self.request.get('id')
-    query = self.request.get('query')
-    author = self.request.get('author') or None
+    report_id = self.request.get('id', '').strip()
+    query = self.request.get('query', '').strip()
+    author = self.request.get('author', '').strip() or None
     topic_id = self.request.get('topic')
     topic_ids = []
     report_dicts = []
