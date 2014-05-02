@@ -30,7 +30,7 @@ goog.require('goog.dom');
  * http://code.google.com/apis/analytics/docs/gaJS/gaJSApi_gaq.html
  * @type Array.<Array.<string>>
  */
-var _gaq = _gaq || [];  // Google Analytics command queue
+var _gaq = goog.global['_gaq'] = goog.global['_gaq'] || [];
 
 /**
  * Interface to Google Analytics operations.
