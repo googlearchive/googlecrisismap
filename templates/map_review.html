@@ -70,9 +70,9 @@ specific language governing permissions and limitations under the License.
       <td>Hidden:</td>
       <td colspan=2>
         {% if hidden %}
-          <a href="#" onclick="reload({'hidden': ''})">All</a> | Hidden only
+          <a href="#" onclick="reload({'hidden': '', 'skip': '0'})">All</a> | Hidden only
         {% else %}
-          All | <a href="#" onclick="reload({'hidden': 'true'})">Hidden only</a>
+          All | <a href="#" onclick="reload({'hidden': 'true', 'skip': '0'})">Hidden only</a>
         {% endif %}
       </td>
     </tr>
@@ -80,9 +80,9 @@ specific language governing permissions and limitations under the License.
       <td>Review status:</td>
       <td colspan=2>
         {% if reviewed %}
-          All | <a href="#" onclick="reload({'reviewed': ''})">Unreviewed only</a>
+          All | <a href="#" onclick="reload({'reviewed': '', 'skip': '0'})">Unreviewed only</a>
         {% else %}
-          <a href="#" onclick="reload({'reviewed': 'true'})">All</a> | Unreviewed only
+          <a href="#" onclick="reload({'reviewed': 'true', 'skip': '0'})">All</a> | Unreviewed only
         {% endif %}
       </td>
     </tr>
