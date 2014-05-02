@@ -20,6 +20,7 @@ import json
 import base_handler
 import config
 import model
+import protect
 import utils
 
 from google.appengine.ext import ndb
@@ -157,22 +158,29 @@ class CrowdReports(base_handler.BaseHandler):
     """Adds a crowd report.
 
     The accepted form parameters are:
-      author: URL identifying the author of the report.
-      topic_ids: Comma-separated list of topic IDs.
-      answer_ids: Comma-separated list of answer IDs.
-      ll: Optional latitude and longitude (two floats separated by a comma).
-      text: Text of the report.
+      cm-ll: Optional latitude and longitude (two floats separated by a comma).
+      cm-text: Text of the report.
+      cm-topic-ids: Comma-separated list of topic IDs.
+      cm-answer-ids: Comma-separated list of answer IDs.
     """
+    # The form parameter names all start with "cm-" because our form protection
+    # mechanism uses the DOM element IDs as parameter names, and we prefix our
+    # element IDs with "cm-" to avoid collision.  See protect.py and xhr.js.
+    if not protect.Verify(
+        self.request, ['cm-topic-ids', 'cm-answer-ids', 'cm-ll', 'cm-text']):
+      raise base_handler.ApiError(403, 'Unauthorized crowd report.')
+
     author = self.GetCurrentUserUrl()
-    topic_ids = self.request.get('topic_ids', '').split(',')
-    answer_ids = self.request.get('answer_ids', '').split(',')
+    topic_ids = self.request.get('cm-topic-ids', '').split(',')
+    answer_ids = self.request.get('cm-answer-ids', '').split(',')
     topic_ids = [i.strip() for i in topic_ids if i.strip()]
     answer_ids = [i.strip() for i in answer_ids if i.strip()]
-    ll = ParseGeoPt(self.request.get('ll'))
-    text = self.request.get('text', '')
+    ll = ParseGeoPt(self.request.get('cm-ll'))
+    text = self.request.get('cm-text', '')
     now = datetime.datetime.utcnow()
     if ContainsSpam(text):
-      raise base_handler.Error(403, 'Crowd report text rejected as spam.')
+      # TODO(kpy): Consider applying a big downvote here instead of a 403.
+      raise base_handler.ApiError(403, 'Crowd report text rejected as spam.')
     model.CrowdReport.Create(source=self.request.root_url, author=author,
                              effective=now, text=text, topic_ids=topic_ids,
                              answer_ids=answer_ids, location=ll)
@@ -214,11 +222,15 @@ class CrowdVotes(base_handler.BaseHandler):
   def Post(self):
     """Stores a vote on a report, replacing any existing vote by this user.
 
-    The query parameters are report_id, which identifies the report, and type,
-    which is a vote code: 'u' or 'd' or '', where '' causes any previously cast
-    vote by this user on this report to be removed.
+    The query parameters are cm-report-id, which identifies the report, and
+    cm-vote-code, which is a vote code: 'u' or 'd' or '', where '' causes any
+    previously cast vote by this user on this report to be removed.
     """
+    if not protect.Verify(
+        self.request, ['cm-report-id', 'cm-vote-code']):
+      raise base_handler.ApiError(403, 'Unauthorized crowd vote.')
+
     voter = self.GetCurrentUserUrl()
-    report_id = self.request.get('report_id', '')
-    vote_type = VOTE_TYPES_BY_CODE.get(self.request.get('type'))
+    report_id = self.request.get('cm-report-id', '')
+    vote_type = VOTE_TYPES_BY_CODE.get(self.request.get('cm-vote-code'))
     model.CrowdVote.Put(report_id, voter, vote_type)

@@ -19,10 +19,10 @@ goog.require('cm.MapModel');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
+goog.require('cm.xhr');
 goog.require('goog.dom');
 goog.require('goog.format.JsonPrettyPrinter');
 goog.require('goog.json');
-goog.require('goog.net.XhrIo');
 goog.require('goog.string');
 
 /* TODO(rew): This link needs to be updated when the draft document is
@@ -220,9 +220,10 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
     // Request diffs and show them.
     var loading = cm.ui.create('span', {}, 'Loading diff...');
     cm.ui.append(popup, loading);
-    goog.net.XhrIo.send(opt_diffUrl, function(e) {
+    cm.xhr.postJson(opt_diffUrl, {'new_json': mapModel.toMapRoot()},
+                    function(ok, result) {
       cm.ui.remove(loading);
-      if (e.target.isSuccess()) {
+      if (ok) {
         // Stored diffs, along with method to show one based on the select
         // element's current selection. Used by select element, as well as
         // diff link.
@@ -245,9 +246,8 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
             cm.ui.create('br'), cm.ui.create('br'),
             contentElem);
 
-        var response = e.target.getResponseJson();
-        htmlDiffs = [response['saved_diff']];
-        goog.array.forEach(response['catalog_diffs'], function(entry) {
+        htmlDiffs = [result['saved_diff']];
+        goog.array.forEach(result['catalog_diffs'], function(entry) {
           cm.ui.append(diffSelectElem,
               cm.ui.create('option', {}, entry['name']));
           htmlDiffs.push(entry['diff']);
@@ -264,9 +264,7 @@ cm.ToolbarView.prototype.handleDiffJsonClick_ =
             contentElem);
       }
       cm.events.listen(showJsonLink, 'click', showJson);
-
-    }, 'POST', 'new_json=' + encodeURIComponent(
-        goog.json.serialize(mapModel.toMapRoot())));
+    });
   } else {
     // No map ID; just show the JSON.
     cm.ui.append(popup, contentElem);

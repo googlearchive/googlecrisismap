@@ -120,22 +120,16 @@ ToolbarViewTest.prototype.testShowJsonLink = function() {
 /** Verifies that the 'Diff/Show JSON' link works properly. */
 ToolbarViewTest.prototype.testDiffJsonLink = function() {
   // Test the toolbar view with a map ID; should offer diffs and JSON.
-  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
-  expectCall(goog.net.XhrIo.send)('/root/.diff/xyz',
-      _, 'POST', 'new_json=%7B%22foo%22%3A%22bar%22%7D')
-      .willOnce(function(url, callback) {
-        callback({'target': {
-          'isSuccess': function() { return true; },
-          'getResponseJson': function() {
-            return {
-              'saved_diff': 'Saved diff',
-              'catalog_diffs': [{'name': 'Name 1', 'diff': 'Catalog diff'}]
-            };
-          }
-        }});
+  this.setForTest_('cm.xhr.postJson', createMockFunction());
+  expectCall(cm.xhr.postJson)('/root/.diff/xyz', {'new_json': {'x': 'y'}}, _)
+      .willOnce(function(url, params, callback) {
+        callback(true, {
+          'saved_diff': 'Saved diff',
+          'catalog_diffs': [{'name': 'Name 1', 'diff': 'Catalog diff'}]
+        });
       });
 
-  var mapRoot = {'foo': 'bar'};
+  var mapRoot = {'x': 'y'};
   stub(this.mapModel_.toMapRoot)().is(mapRoot);
   var diffPopup = null;
   this.setForTest_('cm.ui.showPopup', function(popup) {

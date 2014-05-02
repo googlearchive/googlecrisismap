@@ -15,7 +15,11 @@ goog.require('cm.css');
 
 function EditPresenterTest() {
   cm.TestBase.call(this);
-  this.config_ = {legend_url: '/root/.legend', api_maps_url: '/root/.api/maps'};
+  this.config_ = {
+    legend_url: '/root/.legend',
+    api_maps_url: '/root/.api/maps',
+    save_url: '/root/.api/maps/m1?xsrf=abc'
+  };
 }
 EditPresenterTest.prototype = new cm.TestBase();
 registerTestSuite(EditPresenterTest);
@@ -324,4 +328,14 @@ EditPresenterTest.prototype.testSetDefaultView = function() {
   var presenter = new cm.EditPresenter(null, null, null);
   cm.events.emit(cm.app, cm.events.DEFAULT_VIEW_SET,
       {oldDefault: oldDefault, newDefault: newDefault});
+};
+
+/** Tests that the EditPresenter handles a SAVE event by saving the map. */
+EditPresenterTest.prototype.testSaveEvent = function() {
+  this.setForTest_('cm.xhr.postJson', createMockFunction());
+  expectCall(cm.xhr.postJson)(this.config_['save_url'], {'json': [1, 2, 3]}, _);
+
+  var presenter = new cm.EditPresenter(null, null, null, this.config_);
+  cm.events.emit(cm.app, cm.events.SAVE,
+      {model: {toMapRoot: function() { return [1, 2, 3]; }}});
 };

@@ -229,6 +229,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
       'login_url': users.GetLoginUrl(request.url),
       'logout_url': users.GetLogoutUrl(request.url),
       'map_picker_items': map_picker_items,
+      'protect_url': root + '/.protect',
       'report_query_url': root + '/.api/reports',
       'report_post_url': root + '/.api/reports' + xsrf_qs,
       'vote_post_url': root + '/.api/votes' + xsrf_qs,

@@ -17,7 +17,7 @@ goog.provide('cm.ShareEmailView');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
-goog.require('goog.net.XhrIo');
+goog.require('cm.xhr');
 
 /** Regex for verifying email addresses on a shallow level. */
 var EMAIL_PATTERN = '^(.+)@(.+)$';
@@ -205,14 +205,12 @@ cm.ShareEmailView.prototype.handleShare_ = function() {
   } else if (this.owner_.checked) {
     permission = this.owner_.value;
   }
-  var postArgs = 'role=' + encodeURIComponent(permission) +
-                 '&recipient=' + encodeURIComponent(recipientEmail) +
-                 '&message=' + encodeURIComponent(messageText);
-  goog.net.XhrIo.send(this.shareUrl_, function(e) {
-      var success = (e.target.getStatus() === 201);
-      cm.events.emit(cm.app, success ? cm.events.SHARE_EMAIL_SENT :
-                     cm.events.SHARE_EMAIL_FAILED);
-    }, 'POST', postArgs);
+  cm.xhr.post(this.shareUrl_, {
+    'role': permission, 'recipient': recipientEmail, 'message': messageText
+  }, function(ok) {
+    cm.events.emit(
+        cm.app, ok ? cm.events.SHARE_EMAIL_SENT : cm.events.SHARE_EMAIL_FAILED);
+  });
   cm.ui.remove(this.popup_);
 };
 

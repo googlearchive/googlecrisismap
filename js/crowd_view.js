@@ -17,11 +17,11 @@ goog.require('cm.MapModel');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('cm.util');
+goog.require('cm.xhr');
 
 goog.require('goog.array');
 goog.require('goog.dom.classes');
 goog.require('goog.net.Jsonp');
-goog.require('goog.net.XhrIo');
 goog.require('goog.object');
 goog.require('goog.string');
 
@@ -34,6 +34,7 @@ goog.require('goog.string');
  * @constructor
  */
 cm.CrowdView = function(parentElem, mapModel, config) {
+  this.protectUrl_ = config['protect_url'];
   this.reportQueryUrl_ = config['report_query_url'];
   this.reportPostUrl_ = config['report_post_url'];
   this.votePostUrl_ = config['vote_post_url'];
@@ -60,6 +61,24 @@ cm.CrowdView = function(parentElem, mapModel, config) {
 
   /** @private {Element} The text field for entering a comment with a report. */
   this.textInput_;
+
+  /** @private {boolean} True after comment form protection is initialized. */
+  this.isProtectionReady_ = false;
+
+  /** @private {Element} Hidden field for the 'cm-ll' form parameter. */
+  this.llInput_;
+
+  /** @private {Element} Hidden field for the 'cm-topic-ids' form parameter. */
+  this.topicIdsInput_;
+
+  /** @private {Element} Hidden field for the 'cm-answer-ids' form parameter. */
+  this.answerIdsInput_;
+
+  /** @private {Element} Hidden field for the 'cm-report-id' form parameter. */
+  this.reportIdInput_;
+
+  /** @private {Element} Hidden field for the 'cm-vote-code' form parameter. */
+  this.voteCodeInput_;
 
   /** @private {Element} The button for submitting the report form. */
   this.submitBtn_;
@@ -124,6 +143,10 @@ cm.CrowdView.prototype.close = function() {
  * @private
  */
 cm.CrowdView.prototype.updateSubmitButton_ = function() {
+  if (!this.isProtectionReady_) {
+    this.submitBtn_.disabled = true;
+    return;
+  }
   var anyAnswer = false;
   for (var qid in this.selectedAnswerIds_) {
     anyAnswer = anyAnswer || this.selectedAnswerIds_[qid];
@@ -150,6 +173,8 @@ cm.CrowdView.prototype.makeAnswerButtons_ = function(topicId, question) {
         goog.dom.classes.enable(b, cm.css.SELECTED, b === button);
       });
       self.selectedAnswerIds_[qid] = answerTitleAndId.id;
+      self.answerIdsInput_.value = (cm.util.removeNulls(
+          goog.object.getValues(self.selectedAnswerIds_)) || []).join(',');
       cm.Analytics.logAction(
           cm.Analytics.CrowdReportFormAction.ANSWER_BUTTON_CLICKED,
           self.layerId_);
@@ -181,17 +206,17 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
   cm.ui.append(parentElem, cm.ui.create('h2', {}, cm.MSG_CITIZEN_REPORTS));
 
   // Prompt bubble
-  var bubble;
+  var bubble, form, closeBtn;
   cm.ui.append(parentElem,
       bubble = cm.ui.create('div', [cm.css.CROWD_BUBBLE, cm.css.COLLAPSED],
           cm.ui.create('div', cm.css.CROWD_BUBBLE_TAIL),
           cm.ui.create('div', cm.css.CROWD_REPORT_PROMPT,
               cm.ui.create('div', cm.css.CROWD_MORE),
-              cm.ui.create('div', {}, cm.MSG_CROWD_REPORT_PROMPT))));
+              cm.ui.create('div', {}, cm.MSG_CROWD_REPORT_PROMPT)),
+          form = cm.ui.create('div', cm.css.CROWD_REPORT_FORM,
+              closeBtn = cm.ui.create('div', cm.css.CLOSE_BUTTON))));
 
   // Questions and their answer buttons
-  var closeBtn = cm.ui.create('div', cm.css.CLOSE_BUTTON);
-  var form = cm.ui.create('div', cm.css.CROWD_REPORT_FORM, closeBtn);
   goog.array.forEach(topics, function(topic) {
     var topicId = mapId + '.' + topic.get('id');
     var questions = /** @type Array.<Object> */(topic.get('questions'));
@@ -210,7 +235,8 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
   cm.ui.append(form,
       cm.ui.create('div', cm.css.REPORT_TEXT,
           self.textInput_ = cm.ui.create(
-              'input', {'type': 'text', 'placeholder': cm.MSG_ENTER_COMMENT})),
+              'input', {'type': 'text', 'id': 'cm-text',
+                        'placeholder': cm.MSG_ENTER_COMMENT})),
       cm.ui.create('div', cm.css.BUTTON_AREA,
           self.submitBtn_ = cm.ui.create(
               'input', {'type': 'submit', 'value': cm.MSG_POST,
@@ -221,13 +247,13 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
 
   // Form opening and closing behaviour
   function openForm(event) {
+    goog.dom.classes.remove(form, cm.css.HIDDEN);
+    goog.dom.classes.enable(form, cm.css.POPUP, self.formPopupEnabled_);
     if (self.formPopupEnabled_) {
       goog.dom.classes.swap(bubble, cm.css.EXPANDED, cm.css.COLLAPSED);
-      goog.dom.classes.add(form, cm.css.POPUP);
       cm.ui.remove(form);
       cm.ui.showPopup(form);
     } else {
-      goog.dom.classes.remove(form, cm.css.POPUP);
       cm.ui.append(bubble, form);
       goog.dom.classes.swap(bubble, cm.css.COLLAPSED, cm.css.EXPANDED);
     }
@@ -235,16 +261,14 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
 
   function closeForm(event) {
     goog.dom.classes.swap(bubble, cm.css.EXPANDED, cm.css.COLLAPSED);
-    cm.ui.remove(form);
+    cm.ui.append(bubble, form);
 
     goog.array.forEach(cm.ui.getAllByClass(cm.css.BUTTON, form),
         function(b) { goog.dom.classes.remove(b, cm.css.SELECTED); });
     self.selectedAnswerIds_ = {};
     self.textInput_.value = '';
     self.submitBtn_.disabled = true;
-
-    // so click-to-expand doesn't kick in
-    if (event) {
+    if (event) {  // prevent the click from immediately re-expanding the bubble
       event.stopPropagation && event.stopPropagation();
       event.cancelBubble = true;  // for IE 8
     }
@@ -269,19 +293,40 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
       }, 1); }
   );
 
+  // Hidden fields for other submitted information
+  cm.ui.append(parentElem,
+      this.llInput_ = cm.ui.create('input', {'type': 'hidden', 'id': 'cm-ll'}),
+      this.topicIdsInput_ = cm.ui.create(
+          'input', {'type': 'hidden', 'id': 'cm-topic-ids'}),
+      this.answerIdsInput_ = cm.ui.create(
+          'input', {'type': 'hidden', 'id': 'cm-answer-ids'}),
+      this.reportIdInput_ = cm.ui.create(
+          'input', {'type': 'hidden', 'id': 'cm-report-id'}),
+      this.voteCodeInput_ = cm.ui.create(
+          'input', {'type': 'hidden', 'id': 'cm-vote-code'})
+  );
+
   // Submission behaviour
-  var latLng = self.position_.lat() + ',' + self.position_.lng();
+  cm.xhr.protectInputs(
+      self.protectUrl_, self.reportPostUrl_,
+      ['cm-ll', 'cm-text', 'cm-topic-ids', 'cm-answer-ids'],
+      function() {
+        self.isProtectionReady_ = true;
+        self.updateSubmitButton_();
+      }
+  );
+  cm.xhr.protectInputs(
+      self.protectUrl_, self.votePostUrl_, ['cm-report-id', 'cm-vote-code']);
+
+  self.llInput_.value = self.position_.lat() + ',' + self.position_.lng();
   var topicIds = goog.array.map(
       topics, function(topic) { return mapId + '.' + topic.get('id'); });
+  self.topicIdsInput_.value = topicIds.join(',');
+
   function submitForm(event) {
-    var answerIds = cm.util.removeNulls(
-        goog.object.getValues(self.selectedAnswerIds_)) || [];
-    goog.net.XhrIo.send(self.reportPostUrl_, function(e) {
+    cm.xhr.post(self.reportPostUrl_, {}, function() {
       self.loadReports_(self.reportDisplayDiv_);
-    }, 'POST', 'll=' + encodeURIComponent(latLng) +
-               '&topic_ids=' + encodeURIComponent(topicIds.join(',')) +
-               '&answer_ids=' + encodeURIComponent(answerIds.join(',')) +
-               '&text=' + encodeURIComponent(self.textInput_.value));
+    });
     cm.Analytics.logAction(
         cm.Analytics.CrowdReportFormAction.POST_CLICKED, self.layerId_);
     closeForm(event);
@@ -370,24 +415,6 @@ cm.CrowdView.prototype.renderVotingUi_ = function(report) {
   var otherDowns = report['downvote_count'] - (vote == 'd' ? 1 : 0);
   var upBtn, upLabel, downBtn, downLabel;
 
-  function updateUi() {
-    goog.dom.classes.enable(upBtn, cm.css.SELECTED, vote === 'u');
-    goog.dom.classes.enable(downBtn, cm.css.SELECTED, vote === 'd');
-    cm.ui.setText(upLabel, (otherUps + (vote === 'u' ? 1 : 0)) || '');
-    cm.ui.setText(downLabel, (otherDowns + (vote === 'd' ? 1 : 0)) || '');
-  }
-
-  function setVote(newVote) {
-    vote = newVote;
-    updateUi();
-    goog.net.XhrIo.send(
-        self.votePostUrl_, function(e) { }, 'POST',
-        'report_id=' + encodeURIComponent(report['id']) + '&type=' + vote);
-    cm.Analytics.logAction(
-        cm.Analytics.CrowdReportFormAction.VOTE_BUTTON_CLICKED,
-        self.layerId_, (vote == 'u') ? 1 : (vote == 'd') ? -1 : 0);
-  }
-
   var result = cm.ui.create('div', cm.css.REPORT_VOTE,
       cm.MSG_HELPFUL_QUESTION,
       upBtn = cm.ui.create('span', {
@@ -401,6 +428,25 @@ cm.CrowdView.prototype.renderVotingUi_ = function(report) {
       }),
       downLabel = cm.ui.create('span', [cm.css.VOTE_COUNT])
   );
+
+  function updateUi() {
+    goog.dom.classes.enable(upBtn, cm.css.SELECTED, vote === 'u');
+    goog.dom.classes.enable(downBtn, cm.css.SELECTED, vote === 'd');
+    cm.ui.setText(upLabel, (otherUps + (vote === 'u' ? 1 : 0)) || '');
+    cm.ui.setText(downLabel, (otherDowns + (vote === 'd' ? 1 : 0)) || '');
+  }
+
+  function setVote(newVote) {
+    vote = newVote;
+    updateUi();
+    self.reportIdInput_.value = report['id'];
+    self.voteCodeInput_.value = vote;
+    cm.xhr.post(self.votePostUrl_);
+    cm.Analytics.logAction(
+        cm.Analytics.CrowdReportFormAction.VOTE_BUTTON_CLICKED,
+        self.layerId_, (vote == 'u') ? 1 : (vote == 'd') ? -1 : 0);
+  }
+
   updateUi();
   cm.events.listen(upBtn, 'click', function() {
     setVote((vote === 'u') ? '' : 'u');

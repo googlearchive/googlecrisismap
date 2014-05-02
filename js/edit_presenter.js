@@ -48,7 +48,7 @@ goog.require('cm.WmsMenuEditor');
 goog.require('cm.css');
 goog.require('cm.editors');
 goog.require('cm.events');
-goog.require('goog.net.XhrIo');
+goog.require('cm.xhr');
 
 /**
  * The map of editors, by type, available to the EditPresenter.
@@ -607,12 +607,10 @@ cm.EditPresenter.prototype.handleRedo = function(appState, mapModel) {
  * @param {Object} event The SAVE event (which should have a 'model' property).
  */
 cm.EditPresenter.prototype.handleSave = function(event) {
-  var json = goog.json.serialize(event.model.toMapRoot());
-  goog.net.XhrIo.send(this.saveUrl_, function(e) {
-    var success = (e.target.getStatus() === 201);
-    cm.events.emit(cm.app,
-                   success ? cm.events.SAVE_DONE : cm.events.SAVE_FAILED);
-  }, 'POST', 'json=' + encodeURIComponent(json));
+  cm.xhr.postJson(this.saveUrl_, {'json': event.model.toMapRoot()},
+                  function(ok) {
+    cm.events.emit(cm.app, ok ? cm.events.SAVE_DONE : cm.events.SAVE_FAILED);
+  });
 };
 
 /**

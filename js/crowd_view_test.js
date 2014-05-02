@@ -144,9 +144,8 @@ CrowdViewTest.prototype.voteOnReports = function() {
       r, withClass(cm.css.VOTE_COUNT), withText('3'));
 
   // Switch from a downvote to an upvote.
-  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
-  expectCall(goog.net.XhrIo.send)(
-      this.config_.vote_post_url, _, 'POST', 'report_id=r1&type=u');
+  this.setForTest_('cm.xhr.post', createMockFunction());
+  expectCall(cm.xhr.post)(this.config_.vote_post_url);
   cm.events.emit(upBtn, 'click');
   expectThat(upCount, withText('6'));
   expectThat(downCount, withText('2'));
@@ -179,13 +178,8 @@ CrowdViewTest.prototype.submitReport = function() {
   expectDescendantOf(q, withClass(cm.css.BUTTON), withText('Not sure'));
 
   // Set up a mock to expect a report submission.
-  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
-  expectCall(goog.net.XhrIo.send)(this.config_.report_post_url, _, 'POST',
-      'll=' + encodeURIComponent('3,4') +
-      '&topic_ids=' + encodeURIComponent('map1.shelter') +
-      '&answer_ids=' +
-          encodeURIComponent('map1.shelter.q1.y,map1.shelter.q2.n') +
-      '&text=' + encodeURIComponent('A new comment'));
+  this.setForTest_('cm.xhr.post', createMockFunction());
+  expectCall(cm.xhr.post)(this.config_.report_post_url, {}, _);
 
   // Submit a new report.
   cm.events.emit(q1yes, 'click');
@@ -194,4 +188,10 @@ CrowdViewTest.prototype.submitReport = function() {
   textInput.value = 'A new comment';
   cm.events.emit(expectDescendantOf(form, 'input', withValue('Post')),
                  'click', {'stopPropagation': function() { }});
+
+  // Verify the contents of the report.
+  expectEq('3,4', cm.ui.get('cm-ll').value);
+  expectEq('map1.shelter', cm.ui.get('cm-topic-ids').value);
+  expectEq('map1.shelter.q1.y,map1.shelter.q2.n',
+           cm.ui.get('cm-answer-ids').value);
 };

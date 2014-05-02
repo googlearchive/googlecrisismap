@@ -145,6 +145,11 @@ class Error(Exception):
     self.status = status
 
 
+class ApiError(Error):
+  """An error that carries an HTTP status and a message to emit as text."""
+  pass
+
+
 class BaseHandler(webapp2.RequestHandler):
   """Base class for request handlers.
 
@@ -267,6 +272,10 @@ class BaseHandler(webapp2.RequestHandler):
               message='That publication label is owned '
               'by someone else; you can\'t replace or delete it.')
       }))
+    except ApiError as exception:
+      self.response.set_status(exception.status, message=exception.message)
+      self.response.headers['Content-Type'] = 'text/plain'
+      self.response.out.write(exception.message + '\n')
     except Error as exception:
       self.response.set_status(exception.status, message=exception.message)
       self.response.out.write(self.RenderTemplate('error.html', {

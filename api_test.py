@@ -19,6 +19,7 @@ import json
 import base_handler
 import config
 import model
+import protect
 import test_utils
 
 
@@ -102,6 +103,9 @@ class CrowdReportsTest(test_utils.BaseTest):
     self.default_time_secs = 1300000000
     self.SetTime(self.default_time_secs)
     self.maxDiff = None
+    # testSignatureRequired checks that protection is enabled, but the details
+    # of the protection mechanism are tested in protect_test.py, not here.
+    self.SetForTest(protect, 'Verify', lambda request, keys: True)
 
   def tearDown(self):
     test_utils.BaseTest.tearDown(self)
@@ -110,9 +114,12 @@ class CrowdReportsTest(test_utils.BaseTest):
     with test_utils.EnvContext(USER_ID='123456789',
                                USER_EMAIL='alice@alpha.test',
                                USER_ORGANIZATION='alpha.test'):
-      self.DoPost('/.api/reports',
-                  'topic_ids=foo,bar&answer_ids=foo.1.1,bar.1.1&text=report1'
-                  '&xsrf_token=XSRF')  # XSRF check is stubbed in test_utils
+      self.DoPost('/.api/reports', {
+          'cm-topic-ids': 'foo,bar',
+          'cm-answer-ids': 'foo.1.1,bar.1.1',
+          'cm-text': 'report1',
+          'xsrf_token': 'XSRF'
+      })  # XSRF check is stubbed in test_utils
 
     response = self.DoGet('/.api/reports?topic_ids=foo')
 
@@ -134,18 +141,34 @@ class CrowdReportsTest(test_utils.BaseTest):
          u'downvote_count': 0},
         reports[0])
 
+  def testSignatureRequired(self):
+    """Ensure that the crowd report posting API is protected."""
+    self.SetForTest(protect, 'Verify', lambda request, keys: False)
+    self.DoPost('/.api/reports', {
+        'cm-topic-ids': 'bar',
+        'cm-answer-ids': 'bar.1.1',
+        'cm-text': 'report1',
+        'cm-ll': '37.1,-74.2'
+    }, 403)  # should be rejected by protect.Verify
+
 
   def testAnonymousMultipleReportsWithLatLng(self):
     report1_time = self.default_time_secs
-    self.DoPost(
-        '/.api/reports',
-        'topic_ids=bar&answer_ids=bar.1.1&text=report1&ll=37.1,-74.2')
+    self.DoPost('/.api/reports', {
+        'cm-topic-ids': 'bar',
+        'cm-answer-ids': 'bar.1.1',
+        'cm-text': 'report1',
+        'cm-ll': '37.1,-74.2'
+    })
 
     report2_time = report1_time + 1
     self.SetTime(report2_time)
-    self.DoPost(
-        '/.api/reports',
-        'topic_ids=foo&answer_ids=foo.1.2&text=report2&ll=37.1,-74.2001')
+    self.DoPost('/.api/reports', {
+        'cm-topic-ids': 'foo',
+        'cm-answer-ids': 'foo.1.2',
+        'cm-text': 'report2',
+        'cm-ll': '37.1,-74.2001'
+    })
 
     response = self.DoGet(
         '/.api/reports?ll=37.10001,-74.2&topic_ids=foo,bar&radii=100,100')
@@ -221,17 +244,30 @@ class CrowdReportsTest(test_utils.BaseTest):
 
   def testSpammyReport(self):
     config.Set('crowd_report_spam_phrases', ['rabbits', 'fluffy cats'])
-    self.DoPost('/.api/reports', 'll=10,10&topic_ids=foo&text=no+spam+words')
+    self.DoPost('/.api/reports', {
+        'cm-ll': '10,10',
+        'cm-topic-ids': 'foo',
+        'cm-text': 'no spam words'
+    })
 
     # Verify case-insensitive match for a single word.
-    self.DoPost('/.api/reports',
-                'll=20,20&topic_ids=foo&text=i+love+Rabbits', status=403)
+    self.DoPost('/.api/reports', {
+        'cm-ll': '20,20',
+        'cm-topic-ids': 'foo',
+        'cm-text': 'i love Rabbits'
+    }, status=403)
 
     # Verify case-insensitive match for a phrase.
-    self.DoPost('/.api/reports',
-                'll=10,10&topic_ids=foo&text=i+love+cats')  # okay
-    self.DoPost('/.api/reports',
-                'll=20,20&topic_ids=foo&text=what+FLUFFY++cats', status=403)
+    self.DoPost('/.api/reports', {
+        'cm-ll': '10,10',
+        'cm-topic-ids': 'foo',
+        'cm-text': 'i love cats'  # okay
+    })
+    self.DoPost('/.api/reports', {
+        'cm-ll': '20,20',
+        'cm-topic-ids': 'foo',
+        'cm-text': 'what FLUFFY  cats'  # matches a spam phrase
+    }, status=403)
 
     # Confirm that none of the spammy reports were stored.
     response = self.DoGet('/.api/reports?ll=20,20&topic_ids=foo&radii=1000')
@@ -245,20 +281,36 @@ class CrowdReportsTest(test_utils.BaseTest):
 class CrowdVotesTest(test_utils.BaseTest):
   """Tests for the crowd voting endpoint."""
 
+  def setUp(self):
+    test_utils.BaseTest.setUp(self)
+    # testSignatureRequired checks that protection is enabled, but the details
+    # of the protection mechanism are tested in protect_test.py, not here.
+    self.SetForTest(protect, 'Verify', lambda request, keys: True)
+
+  def testSignatureRequired(self):
+    """Ensure that the crowd vote posting API is protected."""
+    self.SetForTest(protect, 'Verify', lambda request, keys: False)
+    self.DoPost('/.api/votes', {
+        'cm-report-id': '1', 'cm-vote-code': 'u'
+    }, 403)  # should be rejected by protect.Verify
+
   def testVote(self):
     with self.NewCookieJar():
       response = self.DoGet('/.api/votes?report_id=1')
       self.assertEquals(None, json.loads(response.body))
 
-      response = self.DoPost('/.api/votes', 'report_id=1&type=u')
+      response = self.DoPost(
+          '/.api/votes', {'cm-report-id': '1', 'cm-vote-code': 'u'})
       response = self.DoGet('/.api/votes?report_id=1')
       self.assertEquals('u', json.loads(response.body))
 
-      response = self.DoPost('/.api/votes', 'report_id=1&type=d')
+      response = self.DoPost(
+          '/.api/votes', {'cm-report-id': '1', 'cm-vote-code': 'd'})
       response = self.DoGet('/.api/votes?report_id=1')
       self.assertEquals('d', json.loads(response.body))
 
-      response = self.DoPost('/.api/votes', 'report_id=1&type=')
+      response = self.DoPost(
+          '/.api/votes', {'cm-report-id': '1', 'cm-vote-code': ''})
       response = self.DoGet('/.api/votes?report_id=1')
       self.assertEquals(None, json.loads(response.body))
 
