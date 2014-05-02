@@ -208,7 +208,7 @@ class _MapReview(base_handler.BaseHandler):
 
     return topic_ids, [{
         'id': report.id,
-        'url': '../%s?lat=%.5f&lng=%.5f&z=17' % (
+        'url': '../%s?ll=%.5f,%.5f&z=17' % (
             map_id, report.location.lat, report.location.lon),
         'author': (('%s/.users/' % self.request.root_url) in report.author and
                    report.author.split('/')[-1] or report.author),

@@ -1266,21 +1266,27 @@ MapViewTest.prototype.matchViewportNorthSouthOutOfRange = function() {
 MapViewTest.prototype.testAdjustViewportFromUri = function() {
   var mapView = this.newMapView_(false);
 
-  // If lat is specified without a valid lng, the viewport should not be set.
+  // If ll doesn't specify numbers, the center should not be set.
   var uri = new goog.Uri('');
-  uri.setParameterValue('lat', '20');
+  uri.setParameterValue('ll', 'abc');
+  mapView.adjustViewportFromUri(uri);
+  expectEq(new google.maps.LatLng(0, 0), mapView.get('center'));
+  expectEq(0, mapView.get('zoom'));
+
+  // If ll doesn't specify two numbers, the center should not be set.
+  uri.setParameterValue('ll', '123');
   mapView.adjustViewportFromUri(uri);
   expectEq(new google.maps.LatLng(0, 0), mapView.get('center'));
   expectEq(0, mapView.get('zoom'));
 
   // Center should not update if lat or lng is not a number.
-  uri.setParameterValue('lng', 'alpha');
+  uri.setParameterValue('ll', '12,abc');
   mapView.adjustViewportFromUri(uri);
   expectEq(new google.maps.LatLng(0, 0), mapView.get('center'));
   expectEq(0, mapView.get('zoom'));
 
-  // With valid lat and lng but no zoom, only the center should be set.
-  uri.setParameterValue('lng', '10');
+  // With valid ll but no zoom, only the center should be set.
+  uri.setParameterValue('ll', '20,10');
   mapView.adjustViewportFromUri(uri);
   expectEq(new google.maps.LatLng(20, 10), mapView.get('center'));
   expectEq(0, mapView.get('zoom'));

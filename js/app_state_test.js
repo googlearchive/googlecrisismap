@@ -249,7 +249,7 @@ AppStateTest.prototype.testGetUri = function() {
   // Provide a fake location URL that includes some pre-existing parameters.
   this.setForTest_('goog.global.location',
                    'http://app.com/root/foo' +
-                   '?lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9');
+                   '?ll=1,2&llbox=3,4,5,6&z=7&t=8&layers=9');
 
   // Add state to the app state.
   this.appState_.set('map_type', cm.MapModel.Type.SATELLITE);
@@ -274,7 +274,7 @@ AppStateTest.prototype.testGetUri = function() {
   // Include the 'base' parameter in the location.
   this.setForTest_('goog.global.location',
                    'http://app.com/root?' +
-                   'crisis=foo&lat=1&lng=2&llbox=3,4,5,6&z=7&t=8&layers=9&' +
+                   'crisis=foo&ll=1,2&llbox=3,4,5,6&z=7&t=8&layers=9&' +
                    'base=http://elsewhere.org/whatever');
 
   expectEq('http://elsewhere.org/whatever' +

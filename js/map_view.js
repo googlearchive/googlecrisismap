@@ -849,10 +849,10 @@ cm.MapView.prototype.updateVisibility_ = function() {
 };
 
 /**
- * Adjust the map viewport based on the 'llbox', 'lat', 'lng', and 'z'
- * parameters in a URI.  'lat' and 'lng' set the center of the map without
- * changing the zoom level; 'z' sets the zoom level without changing the
- * center; and if 'llbox' is present it overrides all the other parameters.
+ * Adjust the map viewport based on the 'llbox', 'll', and 'z' parameters in
+ * a URI.  'll' sets the center of the map without changing the zoom level;
+ * 'z' sets the zoom level without changing the center; and if 'llbox' is
+ * present it overrides all the other parameters.
  * @param {!goog.Uri|!Location|string} uriOrString The URI whose params to use.
  */
 cm.MapView.prototype.adjustViewportFromUri = function(uriOrString) {
@@ -865,20 +865,17 @@ cm.MapView.prototype.adjustViewportFromUri = function(uriOrString) {
     return;
   }
 
-  // If 'lat' and 'lng' are both present, adjust the center.
-  function toNumberOrNan(value) {
-    return value ? value - 0 : NaN;
-  }
-  var lat = toNumberOrNan(uri.getParameterValue('lat'));
-  var lng = toNumberOrNan(uri.getParameterValue('lng'));
-  if (isFinite(lat) && isFinite(lng)) {
-    this.set('center', new google.maps.LatLng(lat, lng));
+  // If 'll' is present, adjust the center.
+  var ll = (uri.getParameterValue('ll') || '').split(',');
+  var lat = ll[0] - 0, lon = ll[1] - 0;
+  if (ll.length === 2 && isFinite(lat) && isFinite(lon)) {
+    this.set('center', new google.maps.LatLng(lat, lon));
   }
 
   // If 'zoom' is present, adjust the zoom level.
-  var zoom = toNumberOrNan(uri.getParameterValue('z'));
-  if (isFinite(zoom)) {
-    this.set('zoom', zoom);
+  var zoom = uri.getParameterValue('z');
+  if (zoom && isFinite(zoom - 0)) {
+    this.set('zoom', zoom - 0);
   }
 };
 
