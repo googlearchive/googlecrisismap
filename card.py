@@ -266,8 +266,7 @@ class CardBase(base_handler.BaseHandler):
           'lang': lang,
           'url_no_unit': RemoveParamsFromUrl(self.request.url, 'unit'),
           'config_json': json.dumps({
-              'url_no_ll': RemoveParamsFromUrl(self.request.url, 'll'),
-              'size_callback': self.request.get('cb', '')
+              'url_no_ll': RemoveParamsFromUrl(self.request.url, 'll')
           })
       }))
 
@@ -277,7 +276,6 @@ class CardBase(base_handler.BaseHandler):
 
 class CardByIdAndTopic(CardBase):
   """Produces a card given a map ID and topic ID."""
-  # TODO(kpy): Show error messages in a friendly and readable way in a card.
 
   def Get(self, map_id, topic_id, user=None):
     map_object = model.Map.Get(map_id)
