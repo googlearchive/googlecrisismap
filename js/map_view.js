@@ -585,7 +585,7 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
       }
       break;
 
-case cm.LayerModel.Type.FUSION:
+    case cm.LayerModel.Type.FUSION:
       this.overlays_[id] = new google.maps.FusionTablesLayer({
         'query': {
           'select': layer.get('ft_select'),
@@ -656,17 +656,9 @@ case cm.LayerModel.Type.FUSION:
       var featureData = cm.MapView.getFeatureData_(id, event);
       if (this.config_['use_details_tab']) {
         if (featureData) {
-          cm.events.emit(this, cm.events.SELECT_FEATURE, featureData);
-          // (34, 34) is the center of the highlight icon.
-          var anchor = new google.maps.Point(34, 34);
-          this.highlight_.setIcon({
-            url: this.config_['static_content_url'] + '/' + HIGHLIGHT_ICON,
-            anchor: anchor});
-          this.highlight_.setPosition(featureData.position);
-          this.highlight_.setMap(this.map_);
+          this.selectFeature_(featureData);
         } else {
-          cm.events.emit(this, cm.events.DESELECT_FEATURE);
-          this.highlight_.setMap(null);
+          this.deselectFeature_();
         }
       } else {
         this.infoWindow_.close();
@@ -688,6 +680,33 @@ case cm.LayerModel.Type.FUSION:
       }
     }, this);
   }
+};
+
+/**
+ * Fires a SELECT_FEATURE event from this map view and highlights the click
+ * position on the map.
+ * @param {cm.events.FeatureData} featureData The feature to select.
+ * @private
+ */
+cm.MapView.prototype.selectFeature_ = function(featureData) {
+  cm.events.emit(this, cm.events.SELECT_FEATURE, featureData);
+  // (34, 34) is the center of the highlight icon.
+  var anchor = new google.maps.Point(34, 34);
+  this.highlight_.setIcon(/** @type google.maps.Icon */({
+    url: this.config_['static_content_url'] + '/' + HIGHLIGHT_ICON,
+    anchor: anchor}));
+  this.highlight_.setPosition(featureData.position);
+  this.highlight_.setMap(this.map_);
+};
+
+/**
+ * Fires a DESELECT_FEATURE event from this map view and hides the click
+ * position highlight.
+ * @private
+ */
+cm.MapView.prototype.deselectFeature_ = function() {
+  cm.events.emit(this, cm.events.DESELECT_FEATURE);
+  this.highlight_.setMap(null);
 };
 
 /**
