@@ -44,7 +44,10 @@ SublayerPickerTest.prototype.testMenuSelect = function() {
   var selected = 'sub1';
   cm.events.listen(this.sublayerPicker_, cm.events.SELECT_SUBLAYER,
     function(event) { selected = event.id; });
-  this.captureAnalyticsLogs_();
+  this.expectLogAction(
+      cm.Analytics.LayersTabAction.SUBLAYER_SELECTED, 'sub2');
+  this.expectLogAction(
+      cm.Analytics.LayersTabAction.SUBLAYER_SELECTED, 'sub1');
 
   // Select a new sublayer.
   this.select_.value = 'sub2';
@@ -55,13 +58,6 @@ SublayerPickerTest.prototype.testMenuSelect = function() {
   this.select_.value = 'sub1';
   cm.events.emit(this.sublayerPicker_.select_, 'change');
   expectEq('sub1', selected);
-
-  var sublayer_logs = this.analyticsLogs_().filter(function(x) {
-    return x.action === cm.Analytics.LayersTabAction.SUBLAYER_SELECTED;
-  });
-  expectThat(
-      goog.array.map(sublayer_logs, function(act) {return act.layerId;}),
-      elementsAre(['sub2', 'sub1']));
 };
 
 /**

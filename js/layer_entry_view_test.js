@@ -179,7 +179,7 @@ LayerEntryViewTest.prototype.testOpacitySlider = function() {
   // Test that the slider's 'change' event fires a CHANGE_OPACITY event with the
   // correct opacity.  Also expect the corresponding analytics log
   this.expectLogAction(cm.Analytics.LayersTabAction.OPACITY_SLIDER_MOVED,
-                       this.layerModel_.get('id'));
+                       this.layerModel_.get('id'), 1, 50);
   var changeOpacityEmitted = false;
   var opacity;
   cm.events.listen(cm.app, cm.events.CHANGE_OPACITY, function(e) {

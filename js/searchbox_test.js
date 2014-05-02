@@ -49,8 +49,7 @@ SearchboxTest.prototype.autocompletePlaceChangedViewport = function() {
   expectCall(this.marker_.setMap)(null);
   expectCall(this.map_.fitBounds)(viewport);
 
-  this.expectLogAction(cm.Analytics.MapAction.SEARCH_QUERY_ENTERED, null);
-
+  this.expectLogAction(cm.Analytics.MapAction.SEARCH_QUERY_ENTERED, null, 1, 0);
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };
 
@@ -66,6 +65,7 @@ SearchboxTest.prototype.autocompletePlaceChangedLocation = function() {
   expectCall(this.map_.setZoom)(15);
   expectCall(this.marker_.setOptions)({'position': location, 'map': this.map_});
 
+  this.expectLogAction(cm.Analytics.MapAction.SEARCH_QUERY_ENTERED, null, 1, 1);
   cm.events.emit(this.autocomplete_, 'place_changed', place);
 };
 

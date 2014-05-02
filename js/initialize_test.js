@@ -13,6 +13,7 @@
 
 goog.require('cm.Html');
 goog.require('goog.module');
+goog.require('goog.testing.MockClock');
 
 function InitializeTest() {
   cm.TestBase.call(this);
@@ -127,19 +128,31 @@ MapTest.prototype.testTabbedCollapsed = function() {
 
 /** Test the analytics time logging. */
 MapTest.prototype.testTimeLogging = function() {
-  var fakeNow = new Date(2013, 0, 1).getTime();
-  var mockGoogNow = createMockFunction();
-  this.setForTest_('goog.now', mockGoogNow);
-  expectCall(mockGoogNow)().willRepeatedly(returnWith(fakeNow));
+  var clock = new goog.testing.MockClock(true);
+  clock.tick();
+  this.expectLogTime('page', 'load', 1);
 
-  var mockLogTime = createMockFunction();
-  this.setForTest_('cm.Analytics.logTime', mockLogTime);
-  expectCall(mockLogTime)('page', 'load', 1000);
-
-  goog.global['cmStartTimeMs'] = fakeNow + 1000;
+  goog.global['cmStartTimeMs'] = clock.getCurrentTime();
+  clock.tick();
   new cm.Map(this.frame_);
+  clock.uninstall();
+};
 
-  // Test a start time in the past to verify that we don't log bad data.
-  goog.global['cmStartTimeMs'] = fakeNow - 1000;
+/** Test the analytics time logging with a time that shouldnt be logged. */
+MapTest.prototype.testTimeLoggingBadTime = function() {
+  var clock = new goog.testing.MockClock(true);
+  clock.tick();
+  this.setForTest_('cm.Analytics.logTime', createMockFunction());
+
+  // Test a start time > the current time to verify we don't log bad data.
+  goog.global['cmStartTimeMs'] = clock.getCurrentTime() + 1;
+  new cm.Map(this.frame_);
+  clock.uninstall();
+};
+
+/** Test analytics action logging. */
+MapTest.prototype.testActionLogging = function() {
+  this.expectLogAction(cm.Analytics.PassiveAction.PAGE_LOADED, null);
+  this.expectLogAction(cm.Analytics.PassiveAction.MAP_ZOOM_CHANGED, null, 1, _);
   new cm.Map(this.frame_);
 };

@@ -898,7 +898,7 @@ cm.LayerEntryView.prototype.updateSliderVisibility_ = function() {
             var level = /** @type number */(this.slider_.getValue());
             cm.Analytics.logAction(
                 cm.Analytics.LayersTabAction.OPACITY_SLIDER_MOVED,
-                layerId, level * 100);
+                layerId, level);
           }, this)
     ];
   } else if (!enableOpacitySlider && this.slider_) {

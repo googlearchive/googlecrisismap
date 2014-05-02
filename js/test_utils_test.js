@@ -159,15 +159,96 @@ TestUtilsTest.prototype.match = function() {
                                    [new Foo('abc'), {x: new Foo('def')}]));
 };
 
-/** Tests the cm.TestBase.expectLogAction function. */
-TestUtilsTest.prototype.testExpectLogAction = function() {
-  this.expectLogAction('foo', 'layer1');
-  // We store only one expectation per action, so this will overwrite the
-  // expecation for action 'foo'.
-  this.expectLogAction('foo', 'layer1', 2, 42);
-  this.expectLogAction('bar', 'layer2');
+/** Tests containsExactly matcher. */
+TestUtilsTest.prototype.testContainsExactly = function() {
+  var pred = containsExactly('foo', 0).predicate;
+  expectTrue(pred(['bar']));
+  expectEq('which contains \'foo\' 1 times', pred(['foo', 'bar']));
 
-  cm.Analytics.logAction('foo', 'layer1', 42);
-  cm.Analytics.logAction('foo', 'layer1', 42);
+  pred = containsExactly('foo', 2).predicate;
+  expectEq('which contains \'foo\' 0 times', pred(['bar', 'baz']));
+  expectEq('which contains \'foo\' 1 times', pred(['foo', 'bar']));
+  expectTrue(pred(['foo', 'foo']));
+
+  pred = containsExactly(containsRegExp(/foo/)).predicate;
+  expectEq(
+      'which contains an element that partially matches regex: /foo/ 0 times',
+      pred(['bar']));
+  expectTrue(pred(['bar', 'food']));
+
+  pred = containsExactly(greaterThan(0)).predicate;
+  expectEq(
+      'which contains an element that is greater than 0 0 times', pred([0]));
+  expectTrue(pred([0, 1]));
+};
+
+/** Tests cm.TestBase.createCallCapturer. */
+TestUtilsTest.prototype.testCallCapturer = function() {
+  var cc = cm.TestBase.createCallCapturer();
+  cc('foo');
+  cc('foo', 'bar');
+  cc('foo', null, 'baz');
+
+  var expectedCalls = [
+    ['foo'],
+    ['foo', 'bar'],
+    ['foo', null, 'baz']
+  ];
+
+  expectThat(cc.calls, recursivelyEquals(expectedCalls));
+};
+
+/** Tests cm.TestBase.expectLogAction handles different sets of args. */
+TestUtilsTest.prototype.testExpectLogActionArguments = function() {
+  this.expectLogAction('foo', 'layer1');
+  this.expectLogAction('foo', 'layer1', null, 'foo');
+  this.expectLogAction('foo', 'layer1', null, 0);
+  this.expectLogAction(
+      containsRegExp(/bar/), isNull, null, greaterOrEqual(0));
+
+  cm.Analytics.logAction('foo', 'layer1');
+  cm.Analytics.logAction('foo', 'layer1', 'foo');
+  cm.Analytics.logAction('foo', 'layer1', 0);
+  cm.Analytics.logAction('foobar', null, 1);
+};
+
+/** Tests cm.TestBase.expectLogAction handles multiple calls per expectation. */
+TestUtilsTest.prototype.testExpectLogActionCount = function() {
+  this.expectLogAction('bar', 'layer1');
+  this.expectLogAction('bar', 'layer2', 2);
+  this.expectLogAction('bar', 'layer3', cm.TestBase.AT_LEAST_ONCE);
+
+  cm.Analytics.logAction('bar', 'layer1');
   cm.Analytics.logAction('bar', 'layer2');
+  cm.Analytics.logAction('bar', 'layer2');
+  cm.Analytics.logAction('bar', 'layer3');
+  cm.Analytics.logAction('bar', 'layer3');
+};
+
+/** Tests cm.TestBase.expectLogTime handles different sets of args. */
+TestUtilsTest.prototype.testExpectLogTimeArguments = function() {
+  this.expectLogTime('foo', 'var1', 1000);
+  this.expectLogTime('foo', 'var1', 1000, null, 'label');
+  this.expectLogTime('foo', 'var1', 1000, null, 'label', 50);
+  this.expectLogTime('foo', 'var1', 1000, null, null, 50);
+  this.expectLogTime(containsRegExp(/bar/), isNull, greaterOrEqual(0));
+
+  cm.Analytics.logTime('foo', 'var1', 1000);
+  cm.Analytics.logTime('foo', 'var1', 1000, 'label');
+  cm.Analytics.logTime('foo', 'var1', 1000, 'label', 50);
+  cm.Analytics.logTime('foo', 'var1', 1000, null, 50);
+  cm.Analytics.logTime('foobar', null, 1);
+};
+
+/** Tests cm.TestBase.expectLogTime handles multiple calls per expectation. */
+TestUtilsTest.prototype.testExpectLogTimeMultipleTimes = function() {
+  this.expectLogTime('bar', 'var1', 1000);
+  this.expectLogTime('bar', 'var2', 1000, 2);
+  this.expectLogTime('bar', 'var3', 1000, cm.TestBase.AT_LEAST_ONCE);
+
+  cm.Analytics.logTime('bar', 'var1', 1000);
+  cm.Analytics.logTime('bar', 'var2', 1000);
+  cm.Analytics.logTime('bar', 'var2', 1000);
+  cm.Analytics.logTime('bar', 'var3', 1000);
+  cm.Analytics.logTime('bar', 'var3', 1000);
 };
