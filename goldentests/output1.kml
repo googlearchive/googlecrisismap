@@ -20,7 +20,7 @@
   </Placemark>
   <Placemark id="2">
     <name>Main High School</name>
-    <description>&lt;b&gt;Place:&lt;/b&gt;Main High School</description>
+    <description>&lt;b&gt;Place:&lt;/b&gt;Main High School&#176;</description>
     <Point>
       <coordinates>80.530000,29.840000,0</coordinates>
     </Point>

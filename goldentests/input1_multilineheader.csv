@@ -1,0 +1,6 @@
+Fill in the following fields,Must include Latitude and Longitude!,,,,,
+Id,Timestamp,Latitude,Longitude,Details,,
+,,,,Name,Contact Number,Description
+The ID,Now,lat coord,lon coord,school name,school contact no,school desc as html
+1,,30.28,78.98,Main Elementary,555-555-5555,<b>Place:</b>Main Elementary
+2,,29.84,80.53,Main High School,222-222-2222,<b>Place:</b>Main High School°

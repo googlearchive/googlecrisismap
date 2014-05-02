@@ -76,6 +76,17 @@ class KmlifyTests(test_utils.BaseTest):
                           {'loc': 'Latitude,Longitude', 'name': '$Name',
                            'desc': '$_Description', 'id': '$Id'})
 
+  def testTrailingEmptyColumnCsv(self):
+    self.DoGoldenFileTest('csv', 'input1_trailingemptycolumn.csv',
+                          'output1.kml',
+                          {'loc': 'Latitude,Longitude', 'name': '$Name',
+                           'desc': '$_Description', 'id': '$Id'})
+
+  def testMultiLineHeaderCsv(self):
+    self.DoGoldenFileTest('csv', 'input1_multilineheader.csv', 'output1.kml',
+                          {'loc': 'Latitude,Longitude', 'name': '$Name',
+                           'desc': '$_Description', 'id': '$Id'})
+
   def testSimpleGeoJson(self):
     self.DoGoldenFileTest('geojson', 'input2.geojson', 'output2.kml',
                           {'name': '$name', 'desc': '$_description'})

@@ -52,16 +52,20 @@ OPERATORS = {
 }
 
 
-def Stringify(text):
+def Stringify(text, html=False):
   if text is None:
     return ''
   if isinstance(text, unicode):
+    # For HTML, encode non-ascii chars to XML char refs
+    # For URLs, encode non-ascii chars as utf-8
+    if html:
+      return text.encode('ascii', errors='xmlcharrefreplace')
     return text.encode('utf-8')
   return str(text)
 
 
 def HtmlEscape(text):
-  return Stringify(text).replace(
+  return Stringify(text, html=True).replace(
       '&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
@@ -142,13 +146,16 @@ def NormalizeRecord(record):
   return dict((NormalizeFieldName(key), record[key].strip()) for key in record)
 
 
+def Decode(s, encoding):
+  try:
+    return s.decode(encoding)
+  except UnicodeDecodeError:
+    return s.decode('latin-1')
+
+
 def DecodeRecord(record, encoding):
-  def Decode(s):
-    try:
-      return s.decode(encoding)
-    except UnicodeDecodeError:
-      return s.decode('latin-1')
-  return dict((Decode(key), Decode(value)) for key, value in record.items())
+  return dict((Decode(key, encoding), Decode(value, encoding))
+              for key, value in record.items())
 
 
 def GetText(element):
@@ -322,7 +329,8 @@ class Kmlifier(object):
     for field in location_fields:
       if field.startswith('^'):
         field = field[1:]
-      self.fields.update(map(str, field.split(',')))
+      self.location_fields_cleaned = map(str, field.split(','))
+      self.fields.update(self.location_fields_cleaned)
     # TODO(arb): add a test for this - have a join column, don't mention it
     # anywhere else in the URL.
     if self.join_field:
@@ -371,14 +379,63 @@ class Kmlifier(object):
     """Extracts records from a string of CSV data.
 
     Args:
-      csv_data: The CSV data, as a string.  The first line should be a header
-          row containing the field names.
+      csv_data: The CSV data, as a string. There should be a header, 1 or 2
+          rows of which should contain the field names.
       encoding: The string encoding of csv_data, e.g. 'utf-8'.
     Returns:
       The records, as a list of dictionaries.
     """
+    logging.info('Looking for: %s', self.fields)
+    csv_file = StringIO.StringIO(csv_data)
+    fieldnames = self.FindCsvFieldnames(csv_file, encoding)
+    logging.info('CSV fieldnames: %s', fieldnames)
     return [NormalizeRecord(DecodeRecord(record, encoding))
-            for record in csv.DictReader(StringIO.StringIO(csv_data))]
+            for record in csv.DictReader(csv_file, fieldnames=fieldnames)]
+
+  def FindCsvFieldnames(self, csv_file, encoding):
+    """Finds a suitable set of fieldnames to map fields to CSV columns.
+
+    Field names are taken from the first row with cells that match the
+    latitude, longitude fields specified in self.location_fields.
+    If that row contains empty cells, the algorithm presumes that field
+    names span multiple rows, and it searches the following row for fields in
+    self.fields.  If found, they are copied into the return value.
+
+    Note that the current implementation does not support the case where
+    self.location_fields are in the second row of field definitions.
+
+    Args:
+      csv_file: A CSV file-like object.
+      encoding: The string encoding of csv_data, e.g. 'utf-8'.
+    Returns:
+      An array suitable for passing to fieldnames in csv.DictReader
+    """
+    fieldnames = []
+    csv_reader = csv.reader(csv_file)
+    for row in csv_reader:
+      row = [NormalizeFieldName(Decode(f, encoding)) for f in row]
+      if set(row).issuperset(self.location_fields_cleaned):
+        # The fieldnames row is defined to be the first row with lat,lon fields
+        fieldnames = row
+        break
+
+    if '' in fieldnames:
+      # Handle rowspans in the fieldnames line.  Example:
+      # | Name | Location             | Description | Lat | Lon |
+      # |      | Address | City State |             |     |     |
+      # is stored in csv as
+      # Name,Location,,Description,Lat,Lon
+      # ,Address,City State,,,
+      # and should end up as
+      # ['Name', 'Address', 'City_State', 'Description', 'Lat', 'Lon']
+      # if we need to refer to Address or City_State in self.fields
+      first_header_row_pos = csv_file.tell()
+      row = [NormalizeFieldName(Decode(f, encoding)) for f in csv_reader.next()]
+      for index in range(len(fieldnames)):
+        if row[index] in self.fields:
+          fieldnames[index] = row[index]
+      csv_file.seek(first_header_row_pos)
+    return fieldnames
 
   def RecordsFromXml(self, xml_data, record_tag=None, xml_wrapper_tag=None):
     """Extracts records from a string of XML data.
