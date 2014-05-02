@@ -19,7 +19,7 @@ var caretIndex = 1;
  * @type {Array.<function(?Object)>} Set of callbacks, one per row. Calling the
  *     callback at index i opens the info window for the report at row i.
  */
-var infoWindowTriggers = [];
+var infoWindowTriggers = [null /* all indices are 1-based */];
 
 /**
  * Sets up globals assumed to exist, generally populted by a django template.
@@ -235,8 +235,8 @@ function initialize() {
   var map = new google.maps.Map(document.getElementById('map-canvas'));
   var infoWindow = new google.maps.InfoWindow();
   var bounds = new google.maps.LatLngBounds();
-  for (var index in reports) {
-    var report = reports[index];
+  for (var i = 0; i < reports.length; i++) {
+    var report = reports[i];
     report.ll = new google.maps.LatLng(report.lat, report.lng);
     bounds.extend(report.ll);
     var marker = new google.maps.Marker({
@@ -246,7 +246,7 @@ function initialize() {
       icon: report.icon_url
     });
     var callback = makeShowInfoWindowCallback(
-        map, marker, infoWindow, report, index + 1 /* caret index is 1-based*/);
+        map, marker, infoWindow, report, i + 1 /* caret index is 1-based*/);
     google.maps.event.addListener(marker, 'click', callback);
     infoWindowTriggers.push(callback);
   }
