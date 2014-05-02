@@ -22,8 +22,10 @@ goog.require('cm.ui');
  * A single-line text input field.
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
- * @param {Object.<{input_class: string}>} options Editor options:
+ * @param {Object.<{input_class: string, placeholder: string}>} options
+ *     Editor options:
  *     options.input_class: a CSS class for the input element.
+ *     options.placeholder: placeholder text for the input element.
  * @extends cm.Editor
  * @constructor
  */
@@ -36,7 +38,8 @@ cm.TextEditor = function(parentElem, id, options) {
    */
   this.input_ = cm.ui.create('input',
       {'id': id, 'type': 'text',
-       'class': options && options.input_class || null});
+       'class': options && options.input_class || null,
+       'placeholder': options && options.placeholder || ''});
   parentElem.appendChild(this.input_);
 
   // When the user makes an edit in the UI, update the MVCObject property.
