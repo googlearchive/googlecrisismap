@@ -686,6 +686,20 @@ class CrowdReportTests(test_utils.BaseTest):
         [cr2.text],
         GetTextsForAuthor('alpha@gmail.test', count=10, reviewed=False))
 
+    model.CrowdReport.PutScoreForReport(cr2.id, 0, 2, -2, True)
+    self.assertEquals([cr2.text, cr1.text],
+                      GetTextsForAuthor('alpha@gmail.test', count=10))
+    self.assertEquals(
+        [cr2.text],
+        GetTextsForAuthor('alpha@gmail.test', count=10, hidden=True))
+    self.assertEquals(
+        [cr1.text],
+        GetTextsForAuthor('alpha@gmail.test', count=10, hidden=False))
+    self.assertEquals(
+        [],
+        GetTextsForAuthor('alpha@gmail.test', count=10,
+                          hidden=True, reviewed=True))
+
   def testGetForTopics(self):
     """Tests CrowdReport.GetForTopics."""
     topic1 = 'VB5ItphmLJ8tLPax.gas'
@@ -693,11 +707,14 @@ class CrowdReportTests(test_utils.BaseTest):
     topic3 = 'VB5ItphmLJ8tLPax.power'
 
     self.SetTime(1300000001)
-    cr1 = test_utils.NewCrowdReport(topic_ids=[topic1], text='Report 1')
+    cr1 = test_utils.NewCrowdReport(topic_ids=[topic1], text='Report 1',
+                                    author='alpha@gmail.test')
     self.SetTime(1300000002)
-    cr2 = test_utils.NewCrowdReport(topic_ids=[topic1, topic2], text='Report 2')
+    cr2 = test_utils.NewCrowdReport(topic_ids=[topic1, topic2], text='Report 2',
+                                    author='alpha@gmail.test')
     self.SetTime(1300000003)
-    cr3 = test_utils.NewCrowdReport(topic_ids=[topic2, topic3], text='Report 3')
+    cr3 = test_utils.NewCrowdReport(topic_ids=[topic2, topic3], text='Report 3',
+                                    author='beta@gmail.test')
 
     # pylint: disable=g-long-lambda,invalid-name
     GetTextsForTopics = lambda *args, **kwargs: [
@@ -724,6 +741,28 @@ class CrowdReportTests(test_utils.BaseTest):
     self.assertEquals(
         [cr1.text],
         GetTextsForTopics([topic1, topic3], count=10, reviewed=False))
+
+    model.CrowdReport.PutScoreForReport(cr2.id, 0, 2, -2, True)
+    self.assertEquals([cr3.text, cr2.text, cr1.text],
+                      GetTextsForTopics([topic1, topic3], count=10))
+    self.assertEquals(
+        [cr2.text],
+        GetTextsForTopics([topic1, topic3], count=10, hidden=True))
+    self.assertEquals(
+        [cr3.text, cr1.text],
+        GetTextsForTopics([topic1, topic3], count=10, hidden=False))
+    self.assertEquals(
+        [cr3.text],
+        GetTextsForTopics([topic1, topic3], count=10, reviewed=True,
+                          hidden=False))
+    self.assertEquals(
+        [cr3.text],
+        GetTextsForTopics([topic1, topic3], count=10, reviewed=True,
+                          hidden=False, author='beta@gmail.test'))
+    self.assertEquals(
+        [],
+        GetTextsForTopics([topic1, topic3], count=10, reviewed=True,
+                          hidden=False, author='alpha@gmail.test'))
 
   def testGetWithoutLocation(self):
     """Tests CrowdReport.GetWithoutLocation."""

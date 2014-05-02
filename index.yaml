@@ -73,7 +73,32 @@ indexes:
 - kind: CrowdReportModel
   properties:
   - name: author
+  - name: hidden
   - name: reviewed
+  - name: topic_ids
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
+  - name: author
+  - name: hidden
+  - name: topic_ids
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
+  - name: author
+  - name: reviewed
+  - name: topic_ids
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
+  - name: author
+  - name: topic_ids
   - name: updated
     direction: desc
 
@@ -93,27 +118,29 @@ indexes:
 
 - kind: CrowdReportModel
   properties:
-  - name: location
-  - name: effective
-    direction: desc
-
-- kind: CrowdReportModel
-  properties:
-  - name: location
-  - name: topic_ids
-  - name: effective
-    direction: desc
-
-- kind: CrowdReportModel
-  properties:
-  - name: location
+  - name: hidden
+  - name: reviewed
   - name: topic_ids
   - name: updated
     direction: desc
 
 - kind: CrowdReportModel
   properties:
+  - name: hidden
+  - name: topic_ids
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
+  - name: hidden
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
   - name: location
+  - name: topic_ids
   - name: updated
     direction: desc
 
@@ -126,8 +153,8 @@ indexes:
 
 - kind: CrowdReportModel
   properties:
-  - name: topic_ids
-  - name: effective
+  - name: reviewed
+  - name: updated
     direction: desc
 
 - kind: CrowdReportModel

@@ -347,7 +347,14 @@ h2 + h3 {
 .cm-crowd-reports td {
   padding: 4px;
   border: 1px solid #ccc;
+  vertical-align: middle;
 }
-.cm-crowd-reports td.checkbox {
-  padding: 2px;
+.cm-crowd-reports td.empty {
+  text-align: center;
+  border: none;
+}
+.cm-crowd-reports td.caret, .cm-crowd-reports td.checkbox {
+  padding: 0;
+  border-left: none;
+  border-right: none;
 }

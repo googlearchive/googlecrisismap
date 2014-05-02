@@ -903,13 +903,15 @@ class CrowdReport(utils.Struct):
     return report and cls.FromModel(report) or None
 
   @classmethod
-  def GetForAuthor(cls, author, count, offset=0, reviewed=None):
-    """Gets reports with the given author.
+  def GetForAuthor(cls, author, count, offset=0, hidden=None, reviewed=None):
+    """Gets reports by the given author, across maps and topics.
 
     Args:
       author: A string matching _CrowdReportModel.author
       count: The maximum number of reports to retrieve.
       offset: The number of reports to skip, for paging cases.
+      hidden: A boolean; if specified, only get reports whose hidden flag
+          matches this value.  (Otherwise, include both hidden and unhidden.)
       reviewed: A boolean; if specified, only get reports whose reviewed flag
           matches this value.  (Otherwise, include reviewed and unreviewed.)
 
@@ -921,19 +923,26 @@ class CrowdReport(utils.Struct):
       return
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.author == author)
+    if hidden is not None:
+      query = query.filter(_CrowdReportModel.hidden == hidden)
     if reviewed is not None:
       query = query.filter(_CrowdReportModel.reviewed == reviewed)
     for report in query.fetch(count, offset=offset):
       yield cls.FromModel(report)
 
   @classmethod
-  def GetForTopics(cls, topic_ids, count, offset=0, reviewed=None):
+  def GetForTopics(cls, topic_ids, count, offset=0,
+                   author=None, hidden=None, reviewed=None):
     """Gets reports with any of the given topic_ids.
 
     Args:
       topic_ids: A list of strings in the form map_id + '.' + topic_id.
       count: The maximum number of reports to retrieve.
       offset: The number of reports to skip, for paging cases.
+      author: A string matching _CrowdReportModel.author; if specified, restrict
+              to reports from this author.
+      hidden: A boolean; if specified, only get reports whose hidden flag
+          matches this value.  (Otherwise, include both hidden and unhidden.)
       reviewed: A boolean; if specified, only get reports whose reviewed flag
           matches this value.  (Otherwise, include reviewed and unreviewed.)
 
@@ -945,6 +954,10 @@ class CrowdReport(utils.Struct):
       return
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.topic_ids.IN(topic_ids))
+    if author is not None:
+      query = query.filter(_CrowdReportModel.author == author)
+    if hidden is not None:
+      query = query.filter(_CrowdReportModel.hidden == hidden)
     if reviewed is not None:
       query = query.filter(_CrowdReportModel.reviewed == reviewed)
     for report in query.fetch(count, offset=offset):
