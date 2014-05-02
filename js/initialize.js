@@ -356,7 +356,7 @@ cm.Map.prototype.buildUi_ = function(frame) {
   var startTimeMs = goog.getObjectByName('cmStartTimeMs');
   var endTimeMs = goog.now();
   if (startTimeMs && 0 < startTimeMs && startTimeMs < endTimeMs) {
-    cm.Analytics.logTime('page', 'load', endTimeMs - startTimeMs);
+    cm.Analytics.logTime('Load', 'Page', endTimeMs - startTimeMs);
   }
 };
 

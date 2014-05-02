@@ -129,7 +129,7 @@ MapTest.prototype.testTabbedCollapsed = function() {
 MapTest.prototype.testTimeLogging = function() {
   var clock = this.getMockClock();
   clock.tick();
-  this.expectLogTime('page', 'load', 1);
+  this.expectLogTime('Load', 'Page', 1);
 
   goog.global['cmStartTimeMs'] = clock.getCurrentTime();
   clock.tick();
