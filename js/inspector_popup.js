@@ -47,6 +47,13 @@ cm.InspectorPopup = function() {
   this.copyLayerLink_;
 
   /**
+   * Listener token for the window's 'resize' event.
+   * @type {cm.events.ListenerToken}
+   * @private
+   */
+  this.windowResizeListener_;
+
+  /**
    * @type Element
    * @private
    */
@@ -86,6 +93,13 @@ cm.InspectorPopup = function() {
 };
 
 /**
+ * Fraction of the window size that the importer expands to, at maximum.
+ * @type {number}
+ * @private
+ */
+cm.InspectorPopup.MAX_HEIGHT_FRACTION_ = 0.9;
+
+/**
  * Build and show an object property inspector.  Accepts a list of editor
  * specifications (indicating which properties to edit and the types of editors
  * to show), and optionally a MapModel or LayerModel to populate
@@ -118,6 +132,11 @@ cm.InspectorPopup.prototype.inspect = function(
 
   // Bring up the inspector dialog.
   cm.ui.showPopup(this.popup_);
+  this.handleResize_();
+  this.windowResizeListener_ = /** @type {cm.events.ListenerToken} */
+        (cm.events.listen(window, 'resize',
+            // Fails on IE8 if you do not bind cm.ui.document.body here
+            goog.bind(this.handleResize_, this, cm.ui.document.body)));
   cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: true});
 };
 
@@ -160,6 +179,29 @@ cm.InspectorPopup.prototype.handleCancel_ = function() {
 };
 
 /**
+ * Updates the maximum height of the layer list based on the defined maximum
+ * height of the popup (cm.InspectorPopup.MAX_HEIGHT_FRACTION_), and repositions
+ * the popup to center it, assuming it is its maximum size.
+ * Should be called whenever the size of the popup's container has changed.
+ * @param {Element=} opt_container Parent container of the popup; defaults to
+ *     cm.ui.document.body.
+ * @private
+ */
+cm.InspectorPopup.prototype.handleResize_ = function(opt_container) {
+  var container = opt_container || cm.ui.document.body;
+  var maxPopupHeight = Math.round(
+      container.offsetHeight * cm.InspectorPopup.MAX_HEIGHT_FRACTION_);
+
+  // Anchor popup such that it is centered in the case of maximum
+  // width and height. This is so that may grow to this size without going
+  // offscreen.
+  this.popup_.style.top = Math.round((container.offsetHeight -
+      maxPopupHeight) / 2) + 'px';
+  this.popup_.style.left = Math.round((container.offsetWidth -
+      this.popup_.offsetWidth) / 2) + 'px'; // width == max-width for inspector
+};
+
+/**
  * Dispose of the inspector's various editors, and optionally the inspector
  * popup itself.
  * @param {boolean=} opt_disposePopup If true, dispose of the popup.
@@ -168,6 +210,7 @@ cm.InspectorPopup.prototype.handleCancel_ = function() {
 cm.InspectorPopup.prototype.dispose_ = function(opt_disposePopup) {
   this.inspector_.dispose();
   if (opt_disposePopup) {
+    cm.events.unlisten(this.windowResizeListener_, this);
     cm.events.emit(cm.app, cm.events.INSPECTOR_VISIBLE, {value: false});
     cm.ui.remove(this.popup_);
   }
