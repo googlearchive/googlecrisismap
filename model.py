@@ -836,9 +836,11 @@ class _CrowdReportModel(ndb.Model):
   # The time that this report or its latest edit was posted by the author.
   published = ndb.DateTimeProperty()
 
-  # The time of the last write to this datastore entity.  (Includes: report
-  # created in this repository; report edited in this repository; report copied
-  # into this repository via an API or import from another repository, etc.)
+  # The time of the last write to any field owned by this datastore entity.
+  # This includes, for example: report created in this repository; report
+  # edited in this repository; report copied into this repository via an API
+  # or import from another repository.  It does not include writes to fields
+  # computed from other entities (upvote_count, downvote_count, score, hidden).
   updated = ndb.DateTimeProperty()
 
   # Text of the user's comment.
@@ -859,11 +861,14 @@ class _CrowdReportModel(ndb.Model):
   location = ndb.GeoPtProperty()
 
   # Number of positive and negative votes for this report, respectively.
-  upvote_count = ndb.IntegerProperty()
-  downvote_count = ndb.IntegerProperty()
+  upvote_count = ndb.IntegerProperty(default=0)
+  downvote_count = ndb.IntegerProperty(default=0)
 
   # Aggregate score for this report.
-  score = ndb.FloatProperty()
+  score = ndb.FloatProperty(default=0)
+
+  # True if the report should be hidden because its score is too low.
+  hidden = ndb.BooleanProperty(default=False)
 
   @classmethod
   def _get_kind(cls):  # pylint: disable=g-bad-name
@@ -880,8 +885,8 @@ class CrowdReport(utils.Struct):
     unique_int_id, _ = _CrowdReportModel.allocate_ids(1)
     return source.rstrip('/') + '/.reports/' + str(unique_int_id)
 
-  @staticmethod
-  def Get(report_id):
+  @classmethod
+  def Get(cls, report_id):
     """Gets the report with the given report_id.
 
     Args:
@@ -892,7 +897,7 @@ class CrowdReport(utils.Struct):
       for the report_id.
     """
     report = _CrowdReportModel.get_by_id(report_id)
-    return report and utils.Struct.FromModel(report) or None
+    return report and cls.FromModel(report) or None
 
   @classmethod
   def GetForAuthor(cls, author, count, offset=0):
@@ -935,7 +940,7 @@ class CrowdReport(utils.Struct):
       yield cls.FromModel(report)
 
   @classmethod
-  def GetWithoutLocation(cls, topic_ids, count, max_updated=None):
+  def GetWithoutLocation(cls, topic_ids, count, max_updated=None, hidden=None):
     """Gets reports with the given topic IDs that don't have locations.
 
     Args:
@@ -943,6 +948,8 @@ class CrowdReport(utils.Struct):
       count: The maximum number of reports to retrieve.
       max_updated: A datetime; if specified, only get reports that were updated
           at or before this time.
+      hidden: A boolean; if specified, only get reports whose hidden flag
+          matches this value.  (Otherwise, include both hidden and unhidden.)
 
     Yields:
       The 'count' most recently updated Report objects, in order by decreasing
@@ -957,12 +964,15 @@ class CrowdReport(utils.Struct):
       query = query.filter(_CrowdReportModel.topic_ids.IN(topic_ids))
     if max_updated:
       query = query.filter(_CrowdReportModel.updated <= max_updated)
+    if hidden is not None:
+      query = query.filter(_CrowdReportModel.hidden == hidden)
 
     for report in query.fetch(count):
       yield cls.FromModel(report)
 
   @classmethod
-  def GetByLocation(cls, center, topic_radii, count=1000, max_updated=None):
+  def GetByLocation(cls, center, topic_radii, count=1000, max_updated=None,
+                    hidden=None):
     """Gets reports with the given topic IDs that are near a given location.
 
     Args:
@@ -972,6 +982,8 @@ class CrowdReport(utils.Struct):
       count: The maximum number of reports to retrieve.
       max_updated: A datetime; if specified, only get reports that were updated
           at or before this time.
+      hidden: A boolean; if specified, only get reports whose hidden flag
+          matches this value.  (Otherwise, include both hidden and unhidden.)
 
     Yields:
       The 'count' most recently updated Report objects, in order by decreasing
@@ -989,6 +1001,8 @@ class CrowdReport(utils.Struct):
       if max_updated:
         subquery.append('%s <= %s' % ('updated',
                                       utils.UtcToTimestamp(max_updated)))
+      if hidden is not None:
+        subquery.append('hidden = %s' % bool(hidden))
       query.append('(' + ' '.join(subquery) + ')')
 
     results = cls.index.search(search.Query(
@@ -1043,31 +1057,96 @@ class CrowdReport(utils.Struct):
     """Stores one new crowd report and returns it."""
     now = datetime.datetime.utcnow()
     report_id = cls.GenerateId(source)
-    # We index updated as a number because DateField has only date precision;
-    # see http://developers.google.com/appengine/docs/python/search/
-    fields = [
-        search.NumberField('updated', utils.UtcToTimestamp(now)),
-        search.TextField('text', text),
-        search.TextField('author', author)
-    ] + [search.AtomField('topic_id', topic_id) for topic_id in topic_ids]
-    if location:
-      fields.append(search.GeoField(
-          'location', search.GeoPoint(location.lat, location.lon)))
-
-    # Prepare all the arguments for both put() calls before this point, to
-    # minimize the possibility that one put() succeeds and the other fails.
     model = _CrowdReportModel(id=report_id, source=source, author=author,
                               effective=effective, published=now, updated=now,
                               topic_ids=topic_ids, answer_ids=answer_ids,
                               text=text, location=location or NOWHERE)
-    model.put()
-    cls.index.put(search.Document(doc_id=report_id, fields=fields))
-    return cls.FromModel(model)
+    report = cls.FromModel(model)
+    document = cls._CreateSearchDocument(model)
 
+    # Prepare all the arguments for both put() calls before this point, to
+    # minimize the possibility that one put() succeeds and the other fails.
+    model.put()
+    cls.index.put(document)
+    return report
+
+  @classmethod
+  def _CreateSearchDocument(cls, model):
+    # We index updated as a number because DateField has only date precision;
+    # see http://developers.google.com/appengine/docs/python/search/
+    fields = [
+        search.NumberField('updated', utils.UtcToTimestamp(model.updated)),
+        search.NumberField('score', model.score),
+        search.TextField('text', model.text),
+        search.TextField('author', model.author),
+        # A 'True'/'False' AtomField is more efficient than a 0/1 NumberField.
+        search.AtomField('hidden', str(bool(model.hidden))),
+    ] + [search.AtomField('topic_id', tid) for tid in model.topic_ids]
+    if model.location:
+      fields.append(search.GeoField(
+          'location', search.GeoPoint(model.location.lat, model.location.lon)))
+    return search.Document(doc_id=model.key.id(), fields=fields)
+
+  @classmethod
+  def UpdateScore(cls, report_id, old_vote=None, new_vote_type=None):
+    """Updates the voting stats on the affected report.
+
+    This method prospectively calculates the new voting stats on the report,
+    factoring in an update to a single vote that hasn't been written yet.
+    Call this just before storing or updating a vote in the datastore, and
+    pass in old_vote and new_vote_type to describe what's about to change.
+
+    Args:
+      report_id: The ID of the report.
+      old_vote: A CrowdVote or None, the vote that's about to be replaced.
+      new_vote_type: A member of VOTE_TYPES or None, the vote about to be added.
+    """
+    # This method is designed this way because scanning the indexes immediately
+    # after writing a vote is likely to produce incomplete counts; there's some
+    # delay between when a vote is written and when the indexes are updated.
+    # Also, we can't do the counting in a transaction, as non-ancestor queries
+    # are not allowed.  So we count first and then adjust by one vote; this
+    # still relies on indexes being up to date just before a vote is cast, but
+    # that's more likely than being up to date just after a vote is cast.  So,
+    # the situation in which a report ends up with the wrong score is when
+    # (a) multiple people try to vote on the same report at the same time and
+    # (b) no one votes on that report for a while afterward.  If a report is so
+    # controversial that lots of conflicting votes come in quickly, being off
+    # by a few votes is unlikely to sway the final hidden/unhidden outcome.
+    upvote_count = _CrowdVoteModel.query(
+        _CrowdVoteModel.report_id == report_id,
+        _CrowdVoteModel.vote_type == 'ANONYMOUS_UP'
+    ).count() + (bool(new_vote_type == 'ANONYMOUS_UP') -
+                 bool(old_vote and old_vote.vote_type == 'ANONYMOUS_UP'))
+    downvote_count = _CrowdVoteModel.query(
+        _CrowdVoteModel.report_id == report_id,
+        _CrowdVoteModel.vote_type == 'ANONYMOUS_DOWN'
+    ).count() + (bool(new_vote_type == 'ANONYMOUS_DOWN') -
+                 bool(old_vote and old_vote.vote_type == 'ANONYMOUS_DOWN'))
+
+    score = upvote_count - downvote_count
+    hidden = score <= -2  # for now, two downvotes hide a report
+    cls.PutScoreForReport(
+        report_id, upvote_count, downvote_count, score, hidden)
+
+  @classmethod
+  @ndb.transactional
+  def PutScoreForReport(
+      cls, report_id, upvote_count, downvote_count, score, hidden):
+    """Atomically writes the voting stats on a report."""
+    model = _CrowdReportModel.get_by_id(report_id)
+    if model:
+      model.upvote_count = upvote_count
+      model.downvote_count = downvote_count
+      model.score = score
+      model.hidden = hidden
+      document = cls._CreateSearchDocument(model)
+      model.put()
+      cls.index.put(document)
 
 # Possible types of votes.  Each vote type is associated with a particular
 # weight, and some vote types are only available to privileged users.
-VOTE_TYPES = ['anonymous_positive', 'anonymous_negative']
+VOTE_TYPES = ['ANONYMOUS_UP', 'ANONYMOUS_DOWN']
 
 
 class _CrowdVoteModel(ndb.Model):
@@ -1079,9 +1158,54 @@ class _CrowdVoteModel(ndb.Model):
   # A unique URL identifying the voter.
   voter = ndb.StringProperty()
 
-  # The type of vote, which determines its weight.
+  # The type of vote, which determines its weight.  None is allowed, and
+  # means that the vote has no weight (the user voted and then unvoted).
   vote_type = ndb.StringProperty(choices=VOTE_TYPES)
 
   @classmethod
   def _get_kind(cls):  # pylint: disable=g-bad-name
     return 'CrowdVoteModel'  # so the Python class can start with an underscore
+
+
+class CrowdVote(utils.Struct):
+  """Application-level object representing a crowd vote."""
+
+  @classmethod
+  def Get(cls, report_id, voter):
+    """Gets the vote for a specified report and voter.
+
+    Args:
+      report_id: The ID of the report.
+      voter: A unique URL identifying the voter.
+    Returns:
+      The CrowdVote object, or None if this voter has not voted on this report.
+    """
+    return cls.FromModel(_CrowdVoteModel.get_by_id(report_id + '\x00' + voter))
+
+  @classmethod
+  def GetMulti(cls, report_ids, voter):
+    """Gets the votes by a given voter on multiple reports.
+
+    Args:
+      report_ids: A list of report IDs.
+      voter: A unique URL identifying the voter.
+    Returns:
+      A dictionary mapping a subset of the report IDs to CrowdVote objects.
+    """
+    ids = [report_id + '\x00' + voter for report_id in report_ids]
+    votes = ndb.get_multi([ndb.Key(_CrowdVoteModel, i) for i in ids])
+    return {vote.report_id: cls.FromModel(vote) for vote in votes if vote}
+
+  @classmethod
+  def Put(cls, report_id, voter, vote_type):
+    """Stores or replaces the vote for a specified report and voter.
+
+    Args:
+      report_id: The ID of the report.
+      voter: A unique URL identifying the voter.
+      vote_type: A member of VOTE_TYPES.
+    """
+    old_vote = CrowdVote.Get(report_id, voter)
+    CrowdReport.UpdateScore(report_id, old_vote, vote_type)
+    _CrowdVoteModel(id=report_id + '\x00' + voter, report_id=report_id,
+                    voter=voter, vote_type=vote_type).put()

@@ -38,9 +38,10 @@ class Struct(object):
     """Populates a new Struct from an ndb.Model (doesn't take a db.Model)."""
     # ._properties is actually a public API; it's just named with "_" in order
     # to avoid collision with property names (see http://goo.gl/xAcU4).
-    properties = model._properties  # pylint: disable=protected-access
-    return cls(id=model.key.id(), key=model.key,
-               **dict((name, getattr(model, name)) for name in properties))
+    if model:
+      properties = model._properties  # pylint: disable=protected-access
+      return cls(id=model.key.id(), key=model.key,
+                 **dict((name, getattr(model, name)) for name in properties))
 
 
 def StructFromModel(model):

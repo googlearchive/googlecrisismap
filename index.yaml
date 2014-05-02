@@ -78,6 +78,14 @@ indexes:
 
 - kind: CrowdReportModel
   properties:
+  - name: hidden
+  - name: location
+  - name: topic_ids
+  - name: updated
+    direction: desc
+
+- kind: CrowdReportModel
+  properties:
   - name: location
   - name: effective
     direction: desc

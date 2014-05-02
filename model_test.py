@@ -566,6 +566,64 @@ class CatalogEntryTests(test_utils.BaseTest):
       self.assertEquals(None, model.Map.GetDeleted(map_id))
 
 
+class CrowdVoteTests(test_utils.BaseTest):
+  """Tests the CrowdVote class."""
+
+  def testPutGet(self):
+    r1 = test_utils.NewCrowdReport(text='hello')
+    model.CrowdVote.Put(r1.id, 'voter1', 'ANONYMOUS_UP')
+    vote = model.CrowdVote.Get(r1.id, 'voter1')
+    self.assertEquals(r1.id, vote.report_id)
+    self.assertEquals('voter1', vote.voter)
+    self.assertEquals('ANONYMOUS_UP', vote.vote_type)
+
+  def testPutGetMulti(self):
+    r1 = test_utils.NewCrowdReport(text='one')
+    r2 = test_utils.NewCrowdReport(text='two')
+    r3 = test_utils.NewCrowdReport(text='three')
+    model.CrowdVote.Put(r1.id, 'voter1', 'ANONYMOUS_UP')
+    model.CrowdVote.Put(r2.id, 'voter1', 'ANONYMOUS_DOWN')
+    model.CrowdVote.Put(r3.id, 'voter2', 'ANONYMOUS_UP')
+    votes = model.CrowdVote.GetMulti([r1.id, r2.id, r3.id], 'voter1')
+    self.assertEquals('ANONYMOUS_UP', votes.get(r1.id).vote_type)
+    self.assertEquals('ANONYMOUS_DOWN', votes.get(r2.id).vote_type)
+    self.assertEquals(None, votes.get(r3.id))
+
+  def testUpdateScore(self):
+    r1 = test_utils.NewCrowdReport(text='hello')
+
+    # Should increment the report's upvote_count.
+    model.CrowdVote.Put(r1.id, 'voter1', 'ANONYMOUS_UP')
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertEquals(1, r1.upvote_count)
+    self.assertEquals(0, r1.downvote_count)
+
+    # Should decrement the report's upvote_count and increment downvote_count.
+    model.CrowdVote.Put(r1.id, 'voter1', 'ANONYMOUS_DOWN')
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertEquals(0, r1.upvote_count)
+    self.assertEquals(1, r1.downvote_count)
+
+    # Should decrement the report's downvote_count.
+    model.CrowdVote.Put(r1.id, 'voter1', None)
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertEquals(0, r1.upvote_count)
+    self.assertEquals(0, r1.downvote_count)
+
+    # Two downvotes should hide the report.
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertFalse(r1.hidden)
+    model.CrowdVote.Put(r1.id, 'voter1', 'ANONYMOUS_DOWN')
+    model.CrowdVote.Put(r1.id, 'voter2', 'ANONYMOUS_DOWN')
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertTrue(r1.hidden)
+
+    # Cancelling a downvote should unhide the report.
+    model.CrowdVote.Put(r1.id, 'voter2', None)
+    r1 = model.CrowdReport.Get(r1.id)
+    self.assertFalse(r1.hidden)
+
+
 class CrowdReportTests(test_utils.BaseTest):
   """Tests the CrowdReport class."""
 
@@ -676,6 +734,21 @@ class CrowdReportTests(test_utils.BaseTest):
         GetEffectiveWithoutLocation(topic_ids=['foo'], count=10,
                                     max_updated=TimeAgo(hours=3, minutes=30)))
 
+    # 1 match, 1 hidden
+    model.CrowdReport.PutScoreForReport(cr4.id, 0, 2, -2, True)
+    self.assertEquals([cr3.effective, cr4.effective],
+                      GetEffectiveWithoutLocation(topic_ids=['foo'], count=10))
+
+    # 1 match, 1 hidden (fetch only the hidden report)
+    self.assertEquals([cr4.effective],
+                      GetEffectiveWithoutLocation(
+                          topic_ids=['foo'], count=10, hidden=True))
+
+    # 1 match, 1 hidden (fetch only the unhidden report)
+    self.assertEquals([cr3.effective],
+                      GetEffectiveWithoutLocation(
+                          topic_ids=['foo'], count=10, hidden=False))
+
   def testGetByLocation(self):
     """Tests CrowdReport.GetByLocation."""
     now = datetime.datetime.utcnow()
@@ -753,6 +826,26 @@ class CrowdReportTests(test_utils.BaseTest):
         GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
                                topic_radii={'bar': 200, 'bez': 12000},
                                max_updated=TimeAgo(hours=3, minutes=30)))
+
+    # 1 match, 1 hidden
+    model.CrowdReport.PutScoreForReport(cr2.id, 0, 2, -2, True)
+    self.assertEquals([cr2.effective, cr3.effective],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                             topic_radii={'bar': 10}))
+
+    # 1 match, 1 hidden (fetch only the hidden report)
+    model.CrowdReport.PutScoreForReport(cr2.id, 0, 2, -2, True)
+    self.assertEquals([cr2.effective],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                             topic_radii={'bar': 10},
+                                             hidden=True))
+
+    # 1 match, 1 hidden (fetch only the unhidden report)
+    model.CrowdReport.PutScoreForReport(cr2.id, 0, 2, -2, True)
+    self.assertEquals([cr3.effective],
+                      GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                             topic_radii={'bar': 10},
+                                             hidden=False))
 
   def testSearch(self):
     """Tests CrowdReport.Search."""
