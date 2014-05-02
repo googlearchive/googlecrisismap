@@ -14,7 +14,7 @@
 /**
  * A fake for a DOM Element object.  These fakes are used in gjstest tests.
  * @param {string} nodeName The name of the newly created node.
- * @param {Object} opt_attrs The attributes of the newly created node.
+ * @param {Object=} opt_attrs The attributes of the newly created node.
  * @constructor
  */
 FakeElement = function(nodeName, opt_attrs) {
@@ -319,7 +319,7 @@ FakeUi.get = function(id) {
 /**
  * Fake implementation of cm.ui.getByClass.
  * @param {string} className A class name.
- * @param {?FakeElement} opt_parent A DOM element to look in.
+ * @param {FakeElement=} opt_parent A DOM element to look in.
  * @return {FakeElement} The first element with the given class name, if found.
  */
 FakeUi.getByClass = function(className, opt_parent) {
@@ -330,7 +330,7 @@ FakeUi.getByClass = function(className, opt_parent) {
 /**
  * Fake implementation of cm.ui.getAllByClass.
  * @param {string} className A class name.
- * @param {?FakeElement} opt_parent A DOM element to look in.
+ * @param {FakeElement=} opt_parent A DOM element to look in.
  * @return {Array.<FakeElement>} The elements with the given class name.
  */
 FakeUi.getAllByClass = function(className, opt_parent) {
@@ -340,7 +340,7 @@ FakeUi.getAllByClass = function(className, opt_parent) {
 /**
  * Fake implementation of cm.ui.getAllByTag.
  * @param {string} tagName A tag name.
- * @param {?FakeElement} opt_parent A DOM element to look in.
+ * @param {FakeElement=} opt_parent A DOM element to look in.
  * @return {Array.<FakeElement>} The elements with the given tag name.
  */
 FakeUi.getAllByTag = function(tagName, opt_parent) {
@@ -420,7 +420,7 @@ FakeUi.getText = function(element) {
  * Fake implementation of ui.setText.
  * @param {Element} element A DOM element.
  * @param {string} text A string of plain text.
- * @param {number?} opt_wordBreakMaxLen If this is specified, word breaks are
+ * @param {number=} opt_wordBreakMaxLen If this is specified, word breaks are
  *     inserted; this is the maximum length after which to add a word break.
  */
 FakeUi.setText = function(element, text, opt_wordBreakMaxLen) {
@@ -643,7 +643,7 @@ cm.TestBase.expectFalse = function(actual) {
  * Duplicates the given JSON dictionary, updating it according to
  * opt_newProperties.
  * @param {Object} json A JSON dictionary to duplicate
- * @param {?Object} opt_newProperties An optional dictionary of properties
+ * @param {Object=} opt_newProperties An optional dictionary of properties
  *     to overwrite with new values
  * @return {Object} the duplicated dictionary
  */

@@ -24,9 +24,9 @@ registerTestSuite(LatLonBoxTest);
  * @param {number} south The expected north latitude.
  * @param {number} east The expected east longitude.
  * @param {number} west The expected west longitude.
- * @param {number} opt_lonSpan The expected longitude span.  If unspecified,
+ * @param {number=} opt_lonSpan The expected longitude span.  If unspecified,
  *     the expectation is that lonSpan == east - west.
- * @param {number} opt_tolerance The amount of numerical deviation to allow.
+ * @param {number=} opt_tolerance The amount of numerical deviation to allow.
  *     If not specified, requires an exact match.
  * @return {gjstest.Matcher} A cm.LatLonBox matcher that matches the four
  *     extents of the box within a tolerance of opt_tolerance.

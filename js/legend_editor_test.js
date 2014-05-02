@@ -98,7 +98,7 @@ LegendEditorTest.prototype.createEditor_ = function() {
  * item if none is given.
  * @param {string|Element} graphic The graphic color string or DOM element to
  *     set the graphic to.
- * @param {Element} opt_legendItem The legend item to update. A new one is
+ * @param {Element=} opt_legendItem The legend item to update. A new one is
  *     created and returned if none is specified.
  * @return {Element} The newly created graphic element in the editor's legend
  *     item, or the new legend item itself if one was created.
@@ -302,7 +302,7 @@ LegendEditorTest.prototype.expectPaletteUpdates_ = function(opt_items) {
 /**
  * Sets up the expectation of the colors of the color palette being updated to
  * the given list of colors, or to the default colors.
- * @param {Array.<string>} opt_colors Array of colors that are expected to be
+ * @param {Array.<string>=} opt_colors Array of colors that are expected to be
  *     used as the color palette colors. If none are given, the default colors
  *     are expected.
  * @private

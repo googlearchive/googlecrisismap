@@ -144,7 +144,7 @@ cm.Presenter = function(appState, mapView, panelView, panelElem, mapId) {
  * Resets the AppState and MapView according to the given MapModel. If a URI
  * is given, applies adjustments according to the query parameters.
  * @param {cm.MapModel} mapModel A map model.
- * @param {!goog.Uri|!Location|string} opt_uri An optional URI whose query
+ * @param {!goog.Uri|!Location|string=} opt_uri An optional URI whose query
  *     parameters are used to adjust the view settings.
  */
 cm.Presenter.prototype.resetView = function(mapModel, opt_uri) {

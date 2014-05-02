@@ -502,6 +502,7 @@ cm.LayerDragHandler.computeDropTarget_ = function(
               /** @type Element */(titleElem)) : null;
         }
       }
+      return false;
     });
   }
   return {target: target, relation: relation};

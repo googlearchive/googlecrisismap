@@ -41,7 +41,7 @@ var MAX_TILE_LOAD_MS = 2000; // 2s
  * @param {cm.MetadataModel} metadataModel The metadata model.  If the layer is
  *     specified with a tile index, the TileOverlay will update the metadata
  *     update_time field using the update_time in the tile index.
- * @param {?Object} opt_config Configuration settings.  These fields are used:
+ * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     json_proxy_url: URL to the JSON proxy service.
  *     wms_configure_url: URL to the WMS tileset configuration service.
  *     wms_tiles_url: URL to the WMS tile cache.

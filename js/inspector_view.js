@@ -118,7 +118,7 @@ cm.InspectorView.prototype.inspect = function(editorSpecs, modelToEdit) {
  * Adds the given editor spec to the inspector.
  * This assumes you have already initialized the inspector by calling inspect.
  * @param {Object.<cm.EditorSpec>} editorSpec Spec for the editor to add.
- * @param {?boolean} opt_noUpdateConditionals If true, do not try to update
+ * @param {boolean=} opt_noUpdateConditionals If true, do not try to update
  *     conditional editors after adding the editor spec.  This should normally
  *     be set to false, and is only here to enable setting up editors in bulk
  *     from within inspect.

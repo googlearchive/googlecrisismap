@@ -214,6 +214,8 @@ $(OUT_OPT): $(AUX) js/*.js
 	    -f --compilation_level=ADVANCED_OPTIMIZATIONS \
 	    -f --externs=js/externs.js \
 	    -f --externs=aux/google_maps_api_v3_11.js \
+	    -f --process_closure_primitives \
+	    -f --warning_level=VERBOSE \
 	    > $@
 
 # Just concatenate, don't compile (for quick building and easy debugging).

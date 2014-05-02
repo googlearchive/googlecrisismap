@@ -287,7 +287,7 @@ cm.LatLonBox.prototype.toMapRoot = function() {
 };
 
 /**
- * @param {boolean} opt_clampLat If this is set, the center will be computed
+ * @param {boolean=} opt_clampLat If this is set, the center will be computed
  *     using north and south extents adjusted to lie within +/- MAX_LATITUDE.
  * @return {google.maps.LatLng} The point that would appear at the center
  *     of this box in a Mercator projection (e.g. in Google Maps).
@@ -313,7 +313,7 @@ cm.LatLonBox.prototype.getMercatorCenter = function(opt_clampLat) {
  * can be arbitrarily large if the box is arbitrarily small.
  * @param {number} windowWidth A window width in pixels.
  * @param {number} windowHeight A window height in pixels.
- * @param {boolean} opt_clampLat If this is set, the zoom level will be found
+ * @param {boolean=} opt_clampLat If this is set, the zoom level will be found
  *     using north and south extents adjusted to lie within +/- MAX_LATITUDE.
  * @return {number} The Google Maps zoom level (see details above).
  */

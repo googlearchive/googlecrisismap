@@ -216,7 +216,7 @@ cm.ui.getText = function(element) {
  * inserts word breaks to prevent very long words from messing up page layout.
  * @param {Element} element A DOM element.
  * @param {string} text A string of plain text.
- * @param {number?} opt_wordBreakMaxLen If this is specified, word breaks are
+ * @param {number=} opt_wordBreakMaxLen If this is specified, word breaks are
  *     inserted; this is the maximum length after which to add a word break.
  */
 cm.ui.setText = function(element, text, opt_wordBreakMaxLen) {

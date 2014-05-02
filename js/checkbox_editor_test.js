@@ -19,7 +19,7 @@ registerTestSuite(CheckboxEditorTest);
 
 /**
  * Constructs the CheckboxEditor and returns its parent.
- * @param {Object} opt_options Options to pass to the constructor.
+ * @param {Object=} opt_options Options to pass to the constructor.
  * @return {Element} An element containing the new CheckboxEditor.
  * @private
  */

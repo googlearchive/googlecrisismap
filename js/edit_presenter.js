@@ -40,7 +40,7 @@ goog.require('goog.net.XhrIo');
  * @param {cm.AppState} appState The application state.
  * @param {cm.MapModel} mapModel The map model.
  * @param {cm.ArrangeView} arranger The nested folder arranger view.
- * @param {Object} opt_config Configuration settings.  These fields are used:
+ * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     api_maps_url: The URL from which to GET maps with layers to import.
  *     legend_url: The URL of the legend item extractor service.
  *     share_url: The URL to which to POST to share the map.

@@ -24,8 +24,8 @@ goog.require('goog.structs.Set');
  * Model for all the layer metadata, keyed by source address.  The metadata for
  * each source is a dictionary; see metadata_fetch.py for details on its fields.
  * @param {cm.MapModel} mapModel The MapModel to watch for new layers.
- * @param {Object} opt_initialMetadata Initial metadata to load into the model.
- * @param {string?} opt_metadataUrl URL from which to fetch metadata updates,
+ * @param {Object=} opt_initialMetadata Initial metadata to load into the model.
+ * @param {string=} opt_metadataUrl URL from which to fetch metadata updates,
  *     including the ?key=<cache-key> parameter, so that it gets the updates
  *     for all the source addresses in the initial model.  If this URL is
  *     provided, the MetadataModel will periodically use it to get updated

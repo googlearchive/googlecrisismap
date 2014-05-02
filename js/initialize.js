@@ -100,7 +100,7 @@ function installHtmlSanitizer(html) {
  *     or the ID of such a DOM element.
  * @param {string} jsBaseUrl The path component of the URL for loading
  *     additional JS modules.
- * @param {Array} opt_menuItems An array of items for the map menu, with keys:
+ * @param {Array=} opt_menuItems An array of items for the map menu, with keys:
  *     title: The title to display in the menu.
  *     url: The URL to navigate to when the item is clicked.
  * @param {Object=} opt_config The configuration settings.
@@ -108,7 +108,7 @@ function installHtmlSanitizer(html) {
  *     which differentiated between draft maps and published maps.  However,
  *     it is now unused.  It should be removed outright, but chasing down the
  *     callsites is non-trivial, so that was deferred.
- * @param {string} opt_language The (optional) BCP 47 language code.
+ * @param {string=} opt_language The (optional) BCP 47 language code.
  */
 function initialize(mapRoot, frame, jsBaseUrl, opt_menuItems, opt_config,
                     opt_unused, opt_language) {

@@ -51,7 +51,7 @@ cm.NavigationViewConfig;
  *     NavigationView. Each element is an object with keys 'label' and 'url'.
  *     The label value is used as the link text; the url value is used as the
  *     href value of the link tag.
- * @param {cm.NavigationViewConfig} opt_config Configuration specific to the
+ * @param {cm.NavigationViewConfig=} opt_config Configuration specific to the
  *     navigation view. Values from cm.NavigationView.DEFAULT_CONFIG will be
  *     used unless explicitly overridden in opt_config.
  * @constructor

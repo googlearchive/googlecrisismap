@@ -38,7 +38,7 @@ goog.require('goog.ui.Slider');
  * @param {cm.AppState} appState The application state model.
  * @param {Object=} opt_config Configuration settings.  These fields are used:
  *     enable_editing: Allow any editing at all?
- * @param {number} opt_index The index into the parent element's child list at
+ * @param {number=} opt_index The index into the parent element's child list at
  *     which to insert the layer entry.
  * @param {boolean=} opt_includeLegend Whether the view should include the
  *     layer's legend in its content; true by default.
@@ -617,7 +617,7 @@ cm.LayerEntryView.prototype.updateFade_ = function() {
  * Changes the visibility of the view through opacity.
  * @param {boolean} faded If false, the view is shown normally. If true, the
  *     view is shown transparently.
- * @param {string} opt_fadeReason The message to show in the header's tooltip
+ * @param {string=} opt_fadeReason The message to show in the header's tooltip
  *     in case of transparency.
  * @private
  */

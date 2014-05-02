@@ -28,10 +28,10 @@ goog.require('cm.Command');
  *     A value of null means the property is to be deleted (i.e. performing
  *     the edit should remove the property).  A value of undefined means the
  *     property was unaffected (i.e. redoing will not touch the property).
- * @param {string} opt_layerId The layer ID, if the object being
+ * @param {string=} opt_layerId The layer ID, if the object being
  *     edited is a layer. opt_layerId should be specified if and only
  *     if the object being edited is the LayerModel.
- * @param {string} opt_topicId The topic ID, if the object being
+ * @param {string=} opt_topicId The topic ID, if the object being
  *     edited is a topic. opt_topicId should be specified if and only
  *     if the object being edited is the TopicModel.
  * @constructor

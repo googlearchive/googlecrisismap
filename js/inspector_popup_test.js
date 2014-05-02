@@ -35,7 +35,7 @@ registerTestSuite(InspectorPopupTest);
  * Opens the inspector.
  * @param {boolean=} opt_isNewLayer Whether or not to open an inspector for a
  *     new layer.
- * @param {cm.MapModel|cm.LayerModel} opt_object LayerModel,
+ * @param {cm.MapModel|cm.LayerModel=} opt_object LayerModel,
  *     or MapModel to use for the test.
  * @private
  */

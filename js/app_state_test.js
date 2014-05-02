@@ -61,8 +61,8 @@ AppStateTest.prototype.testClone = function() {
 /**
  * Create fake LayerModel as an MVCObject.
  * @param {string} id The layer ID.
- * @param {?cm.LayerModel} opt_parent The layer's parent.
- * @param {?Array<LayerModel>} opt_sublayers The layer's sublayers.
+ * @param {cm.LayerModel=} opt_parent The layer's parent.
+ * @param {Array.<LayerModel>=} opt_sublayers The layer's sublayers.
  * @return {google.maps.MVCObject} The layer object.
  * @private
  */

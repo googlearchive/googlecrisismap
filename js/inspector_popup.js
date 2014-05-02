@@ -95,7 +95,7 @@ cm.InspectorPopup = function() {
  * @param {string} title The title to show on the dialog.
  * @param {Array.<cm.EditorSpec>} editorSpecs An array of editor specifications.
  * @param {cm.AppState} appState The application state.
- * @param {cm.MapModel|cm.LayerModel} opt_object If specified,
+ * @param {cm.MapModel|cm.LayerModel=} opt_object If specified,
  *     the MapModel or LayerModel whose properties will be edited.
  *     Otherwise, a blank inspector will be displayed, and a new LayerModel
  *     will be created on OK depending on the value of isNewLayer.

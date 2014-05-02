@@ -35,7 +35,7 @@ goog.require('goog.structs.Set');
  * and the currently selected base map type.
  * @param {cm.MapModel=} opt_mapModel Optionally update certain properties
  *   of the app state according to the given map model.
- * @param {!goog.Uri|!Location|string} opt_uri An optional URI whose query
+ * @param {!goog.Uri|!Location|string=} opt_uri An optional URI whose query
  *   parameters override properties specified by the opt_mapModel, if given.
  * @param {string=} opt_language The language code for the user's language.
  * @constructor
@@ -100,7 +100,7 @@ goog.inherits(cm.AppState, google.maps.MVCObject);
  */
 cm.AppState.clone = function(appState) {
   var newAppState = new cm.AppState(undefined, undefined,
-      /** @type {string} */ (appState.get('language')));
+      /** @type {string} */(appState.get('language')));
   newAppState.set('enabled_layer_ids',
       appState.get('enabled_layer_ids').clone());
   newAppState.set('matched_layer_ids', goog.array.clone(
