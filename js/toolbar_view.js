@@ -138,10 +138,21 @@ cm.ToolbarView = function(parentElem, mapModel, enableSave, devMode, mapListUrl,
       });
   cm.ui.append(editToolbarElem, addNewFolderLink, cm.ui.SEPARATOR_DOT);
 
-  if (!touch) {
-    var arrangeLink = cm.ui.createLink(cm.MSG_ARRANGE_LAYERS_LINK);
-    cm.events.forward(arrangeLink, 'click', cm.app, cm.events.ARRANGE);
-    cm.ui.append(editToolbarElem, arrangeLink);
+  var arrangeLink = cm.ui.createLink(cm.MSG_ARRANGE_LAYERS_LINK);
+  cm.events.forward(arrangeLink, 'click', cm.app, cm.events.ARRANGE);
+  cm.ui.append(editToolbarElem, arrangeLink);
+  if (touch) {
+    // Do not allow arranging layers on a touch device since the Closure
+    // drag/drop library doesn't handle touch events.
+    goog.dom.classes.add(arrangeLink, cm.css.HIDDEN);
+    // If a mouse event is detected at any point, then there is a pointing
+    // device, so re-enable the arrange link. Note that arranging will only
+    // work with the pointing device; the touch experience will still be broken
+    // in the arranger panel.
+    var token = cm.events.listen(goog.global, 'mousemove', function() {
+      goog.dom.classes.remove(arrangeLink, cm.css.HIDDEN);
+      cm.events.unlisten(token);
+    });
   }
 
   if (devMode) {

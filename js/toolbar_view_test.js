@@ -17,7 +17,7 @@ function ToolbarViewTest() {
   cm.TestBase.call(this);
   this.parent_ = cm.ui.create('div');
   this.mapModel_ = createMockInstance(cm.MapModel);
-  new cm.ToolbarView(
+  this.toolbar_ = new cm.ToolbarView(
       this.parent_, this.mapModel_, true, true, '/root/.maps', false);
 }
 ToolbarViewTest.prototype = new cm.TestBase();
@@ -53,7 +53,7 @@ ToolbarViewTest.prototype.testRedoLink = function() {
   expectThat(redoLink, isElement(not(withClass(cm.css.DISABLED))));
 };
 
-/** Verifies that the Arrange link works properly. */
+/** Verifies that the Arrange link works. */
 ToolbarViewTest.prototype.testArrangeLink = function() {
   var link = expectDescendantOf(this.parent_, withText('Arrange'));
   var eventEmitted = false;
@@ -62,6 +62,20 @@ ToolbarViewTest.prototype.testArrangeLink = function() {
   });
   cm.events.emit(link, 'click');
   expectTrue(eventEmitted);
+};
+
+/** Check that arrange link is hidden on touch-only devices. */
+ToolbarViewTest.prototype.testArrangeLink = function() {
+  // The arrange link should be hidden on touch devices...
+  this.toolbar_ = new cm.ToolbarView(
+      this.parent_, this.mapModel_, true, true, '/root/.maps', true);
+  var link = expectDescendantOf(this.parent_, withText('Arrange'),
+                                not(isShown));
+
+  // ...and appear only if there is a pointing device present and the
+  // user moves it.
+  cm.events.emit(goog.global, 'mousemove');
+  expectThat(link, isShown());
 };
 
 /** Verifies that the 'Add layer' link works properly. */
