@@ -488,6 +488,8 @@ html, body {
   background-color: white;
   min-width: 240px;
   max-width: 560px;
+  max-height: 75%;
+  overflow: scroll;
   -webkit-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   -moz-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   -ms-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
