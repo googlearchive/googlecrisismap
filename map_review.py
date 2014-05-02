@@ -97,11 +97,9 @@ class _MapReview(base_handler.BaseHandler):
       answers = {}
       answer_colors = {}
       for topic in maproot['topics']:
-        if 'questions' not in topic:
-          continue
         topic_ids.append(topic['id'])
         tid = map_id + '.' + topic['id']
-        for question in topic['questions']:
+        for question in topic.get('questions', []):
           question_id = tid + '.' + question['id']
           questions[question_id] = question.get('text')
           for answer in question['answers']:
@@ -159,8 +157,8 @@ class _MapReview(base_handler.BaseHandler):
                answers.get(answer_id, '')
                for answer_id in report.answer_ids])),
           'votes': '&#x2191;%d &#x2193;%d (%.1f) %s' % (
-              report.upvote_count, report.downvote_count, report.score,
-              report.hidden and '<b>hidden</b>' or ''),
+              report.upvote_count or 0, report.downvote_count or 0,
+              report.score or 0.0, report.hidden and '<b>hidden</b>' or ''),
           } for report in reports]
 
     if skip > 0:

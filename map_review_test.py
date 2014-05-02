@@ -66,6 +66,12 @@ class MapReviewTest(test_utils.BaseTest):
                     {'id': 'y', 'title': 'Yes', 'label': 'water'},
                     {'id': 'n', 'title': 'No', 'label': 'no water'}]
             }]
+        }, {
+            'id': 'flooding',
+            'title': 'Flooding',
+            'layer_ids': ['3', '4'],
+            'crowd_enabled': True,
+            'cluster_radius': 987,
         }]
     })
     self.map_object = test_utils.CreateMap(maproot_json, reviewers=['reviewer'])
@@ -89,6 +95,7 @@ class MapReviewTest(test_utils.BaseTest):
       response = self.DoGet('/.maps/' + self.map_id + '/review')
     self.assertTrue('>shelter<' in response.body)
     self.assertTrue('>water<' in response.body)
+    self.assertTrue('>flooding<' in response.body)
     self.assertTrue(self.cr1.id in response.body)
     self.assertTrue(self.cr2.id in response.body)
     self.assertTrue('Is there space available?&lt;br&gt; Yes' in response.body)
