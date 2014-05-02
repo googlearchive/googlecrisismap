@@ -110,12 +110,20 @@ CrowdViewTest.prototype.displayReports = function() {
 
 /** Verifies the voting UI for reports. */
 CrowdViewTest.prototype.voteOnReports = function() {
+  // We're going to show 2 reports with a total of 6 upvotes and 9 downvotes.
+  this.expectLogAction(
+      cm.Analytics.PassiveAction.CROWD_REPORTS_DISPLAYED, '1', 1, 2);
+  this.expectLogAction(
+      cm.Analytics.PassiveAction.CROWD_VOTES_DISPLAYED, '1', 1, -3);
+
   // Open the CrowdView with two reports.
   var now = new Date().getTime() / 1000;
   var parent = this.openCrowdView_([{
     'id': 'r0',
     'effective': now - 301,
-    'answer_ids': ['map1.shelter.q1.y']
+    'answer_ids': ['map1.shelter.q1.y'],
+    'upvote_count': 1,
+    'downvote_count': 6
   }, {
     'id': 'r1',
     'effective': now - 7200,

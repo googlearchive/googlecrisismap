@@ -366,8 +366,17 @@ cm.CrowdView.prototype.loadReports_ = function(parentElem) {
     cm.ui.append(parentElem, cm.ui.create('div', {},
         goog.array.map(reports, goog.bind(self.renderReport_, self))));
     parentElem.style.display = reports.length ? '' : 'none';
-    cm.Analytics.logAction(cm.Analytics.PassiveAction.CROWD_REPORT_DISPLAYED,
-                           self.layerId_, reports.length);
+    if (reports.length) {
+      var totalUpvotes = 0, totalDownvotes = 0;
+      for (var i = 0; i < reports.length; i++) {
+        totalUpvotes += reports[i]['upvote_count'] || 0;
+        totalDownvotes += reports[i]['downvote_count'] || 0;
+      }
+      cm.Analytics.logAction(cm.Analytics.PassiveAction.CROWD_REPORTS_DISPLAYED,
+                             self.layerId_, reports.length);
+      cm.Analytics.logAction(cm.Analytics.PassiveAction.CROWD_VOTES_DISPLAYED,
+                             self.layerId_, totalUpvotes - totalDownvotes);
+    }
   });
 };
 

@@ -158,7 +158,8 @@ cm.Analytics.CrowdReportFormAction = cm.Analytics.prependUiElement_(
 // emitted.
 /** @type {Object.<string, string>} */
 cm.Analytics.PassiveAction = cm.Analytics.prependUiElement_('Passive', {
-  CROWD_REPORT_DISPLAYED: 'Crowd report displayed',
+  CROWD_REPORTS_DISPLAYED: 'Crowd reports displayed',
+  CROWD_VOTES_DISPLAYED: 'Crowd votes displayed',
   LAYER_DISPLAYED: 'Layer displayed',  // Not working after first load
   LAYER_HIDDEN: 'Layer hidden',   // Not working
   MAP_ZOOM_CHANGED: 'Map zoom level changed',
