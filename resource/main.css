@@ -1098,7 +1098,8 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-editors > .cm-text-input-row > th,
 .cm-editors > .cm-text-editor > th,
 .cm-editors > .cm-url-input-row > th,
-.cm-editors > .cm-url-editor > th {
+.cm-editors > .cm-url-editor > th,
+.cm-editors > .cm-layer-menu-editor > th {
   vertical-align: top;
   padding-top: 12px; /* align label with content of text input field */
 }
@@ -1134,7 +1135,7 @@ div.cm-help-icon {
   background-size: 14px;
   display: none;
 }
-.cm-editors tr:hover th div.cm-help-icon {
+.cm-editors > tr:hover > th > div.cm-help-icon {
   display: inline-block;
 }
 .cm-editors-tooltip {

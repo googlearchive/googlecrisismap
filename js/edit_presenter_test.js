@@ -43,7 +43,7 @@ EditPresenterTest.prototype.testInspectEvent = function() {
               preview_class: cm.css.MAP_DESCRIPTION}),
     contains({key: 'viewport', label: 'Default viewport',
               type: cm.editors.Type.LAT_LON_BOX, app_state: null})
-  ]), null, model);
+  ]), null, model, false);
   cm.events.emit(cm.app, cm.events.INSPECT, {object: model});
 
   // Emitting an INSPECT event on a layer should open an inspector on the layer.
@@ -68,14 +68,37 @@ EditPresenterTest.prototype.testInspectEvent = function() {
               type: cm.editors.Type.NUMBER, minimum: 0, maximum: 20,
               require_integer: true, tooltip: cm.MSG_MAXIMUM_ZOOM_TOOLTIP})
   ]);
-  expectCall(inspector.inspect)('Edit layer details', layerSpecExpect, null,
-                                layer);
+  expectCall(inspector.inspect)(cm.MSG_EDIT_LAYER_DETAILS, layerSpecExpect,
+                                null, layer, false);
   cm.events.emit(cm.app, cm.events.INSPECT, {object: layer});
 
   // Emitting an INSPECT event with no object should open an inspector on a new
   // layer.
-  expectCall(inspector.inspect)('Create new layer', layerSpecExpect, null);
+  expectCall(inspector.inspect)(cm.MSG_CREATE_NEW_LAYER, layerSpecExpect, null,
+                                null, true);
   cm.events.emit(cm.app, cm.events.INSPECT, {});
+
+  // Emitting an INSPECT event on a topic should open an inspector on the map.
+  var topic = new cm.TopicModel();
+  var topicSpecExpect = allOf([
+    contains({key: 'title', label: cm.MSG_TITLE, type: cm.editors.Type.TEXT,
+              tooltip: cm.MSG_TOPIC_TITLE_TOOLTIP}),
+    contains({key: 'viewport', label: cm.MSG_DEFAULT_VIEWPORT,
+              type: cm.editors.Type.LAT_LON_BOX, app_state: null,
+              hide_tile_layer_warning: true,
+              tooltip: cm.MSG_TOPIC_VIEWPORT_TOOLTIP}),
+    contains({key: 'tags', label: cm.MSG_TAGS, type: cm.editors.Type.TEXT,
+              tooltip: cm.MSG_TOPIC_TAGS_TOOLTIP})
+  ]);
+  expectCall(inspector.inspect)(cm.MSG_EDIT_TOPIC, topicSpecExpect, null,
+                                topic, false);
+  cm.events.emit(cm.app, cm.events.INSPECT, {object: topic});
+
+  // Emitting an INSPECT event with no object and isNewTopic true should open
+  // an inspector on a new topic.
+  expectCall(inspector.inspect)(cm.MSG_CREATE_NEW_TOPIC, topicSpecExpect, null,
+                                null, false);
+  cm.events.emit(cm.app, cm.events.INSPECT, {isNewTopic: true});
 };
 
 function findEditorSpec(key, editorSpecs) {
@@ -142,7 +165,7 @@ EditPresenterTest.prototype.testAddLayersEvent = function() {
 EditPresenterTest.prototype.testNewLayerEvent = function() {
   var presenter = new cm.EditPresenter(null, null, null);
 
-  // Emitting a CREATE_LAYER event should create and execute a
+  // Emitting a NEW_LAYER event should create and execute a
   // CreateLayersCommand.
   var properties = {title: 'Empty Layer'};
   var createLayersCommand = this.expectNew_('cm.CreateLayersCommand',
@@ -169,6 +192,48 @@ EditPresenterTest.prototype.testLayerDeletedEvent = function() {
   cm.events.emit(cm.app, cm.events.DELETE_LAYER, {id: id});
 };
 
+/**
+ * Tests that the EditPresenter responds to NEW_TOPIC events
+ */
+EditPresenterTest.prototype.testNewTopicEvent = function() {
+  var mapModel = cm.MapModel.newFromMapRoot({'id': 'map1', 'layers': []});
+  var presenter = new cm.EditPresenter(null, mapModel, null);
+
+  // Emitting a CREATE_TOPIC event should create and execute a
+  // CreateTopicsCommand.
+  var properties = {title: 'Boring Topic'};
+  var createTopicCommand = this.expectNew_('cm.CreateTopicsCommand',
+      new gjstest.Matcher(
+          'has one maproot with title ' + properties['title'],
+          'doesn\'t have one maproot with title ' + properties['title'],
+          function(maproots) {
+            return (maproots.length = 1 &&
+                maproots[0]['title'] === properties['title']);
+          }));
+  expectCall(createTopicCommand.execute)(_, _);
+  cm.events.emit(cm.app, cm.events.NEW_TOPIC, {properties: properties});
+};
+
+/** Tests that the EditPresenter responds to DELETE_TOPIC events. */
+EditPresenterTest.prototype.testTopicDeletedEvent = function() {
+  var presenter = new cm.EditPresenter(null, null, null);
+
+  // Emitting a DELETE_TOPIC event should create and execute an
+  // DeleteTopicCommand.
+  var id = 'new_topic_id';
+  var deleteTopicCommand = this.expectNew_('cm.DeleteTopicCommand', id);
+  expectCall(deleteTopicCommand.execute)(_, _);
+  cm.events.emit(cm.app, cm.events.DELETE_TOPIC, {id: id});
+};
+
+/** Tests that the EditPresenter responds to EDIT_TOPICS events. */
+EditPresenterTest.prototype.testEditTopicsEvent = function() {
+  var topicSelector = this.expectNew_('cm.TopicSelectorView', _);
+  expectCall(topicSelector.isOpen)().willOnce(returnWith(true));
+  var presenter = new cm.EditPresenter(null, null, null);
+  cm.events.emit(cm.app, cm.events.EDIT_TOPICS, {});
+};
+
 /** Tests that the EditPresenter responds correctly to OBJECT_EDITED events. */
 EditPresenterTest.prototype.testObjectEditedEvent = function() {
   var inspector = this.expectNew_('cm.InspectorPopup');
@@ -176,7 +241,7 @@ EditPresenterTest.prototype.testObjectEditedEvent = function() {
 
   // Emitting an OBJECT_EDITED event should create and execute an EditCommand.
   var a = {x: 5}, b = {x: 6};
-  var editCommand = this.expectNew_('cm.EditCommand', a, b, null);
+  var editCommand = this.expectNew_('cm.EditCommand', a, b, null, undefined);
   expectCall(editCommand.execute)(_, _);
   cm.events.emit(cm.app, cm.events.OBJECT_EDITED, {
     oldValues: a, newValues: b, layerId: null

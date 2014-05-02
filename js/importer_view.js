@@ -136,7 +136,7 @@ cm.ImporterView = function(apiMapsUrl) {
   this.popup_ = cm.ui.create('div', {'class': [cm.css.IMPORTER, cm.css.POPUP]},
       this.headerElem_ = cm.ui.create('div', undefined,
           cm.ui.create('h2', {}, cm.MSG_IMPORT_TITLE),
-          newLayerLink = cm.ui.createLink(cm.MSG_CREATE_NEW_LAYER)),
+          newLayerLink = cm.ui.createLink(cm.MSG_BACK_TO_CREATE_NEW_LAYER)),
       this.layerListElem_ = cm.ui.create('div',
           // 'tabIndex' makes element focusable
           {'class': cm.css.IMPORTER_LIST, 'tabIndex': 0}),

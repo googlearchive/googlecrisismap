@@ -221,7 +221,7 @@ cm.MSG_LOADING = goog.getMsg('Loading...');
 cm.MSG_IMPORTER_SUBMIT = goog.getMsg('Import selected layers');
 
 /** @desc Link to go back to the "Create new layer" dialog. */
-cm.MSG_CREATE_NEW_LAYER = goog.getMsg('\xab Back');
+cm.MSG_BACK_TO_CREATE_NEW_LAYER = goog.getMsg('\xab Back');
 
 /** @desc Title text for import dialog. */
 cm.MSG_IMPORT_TITLE = goog.getMsg('Select layers to import');
@@ -268,6 +268,31 @@ cm.MSG_CREATE_NEW_TOPIC = goog.getMsg('Create new topic');
 /** @desc Standard label for the 'Layers' button in embedded mode. */
 cm.MSG_LAYER_BUTTON = goog.getMsg('Layers');
 
+
+// Edit presenter
+
+/**
+ * @desc Link to create a new map layer.
+ */
+cm.MSG_CREATE_NEW_LAYER = goog.getMsg('Create new layer');
+
+/**
+ * @desc Title for a popup to edit map properties like title,
+ * description, and viewport.
+ */
+cm.MSG_EDIT_MAP_DETAILS = goog.getMsg('Edit map details');
+
+/**
+ * @desc Title for a popup to edit layer properties like title,
+ * description, and type.
+ */
+cm.MSG_EDIT_LAYER_DETAILS = goog.getMsg('Edit layer details');
+
+/**
+ * @desc Title for a popup to edit topic properties like title, tags,
+ * and viewport.
+ */
+cm.MSG_EDIT_TOPIC = goog.getMsg('Edit topic');
 
 // Layer Entry View
 
@@ -609,7 +634,7 @@ cm.MSG_UNSAVED_CHANGES = goog.getMsg(
 /** @desc Text of link to proceed to the "Import layers" dialog. */
 cm.MSG_IMPORT_LAYERS = goog.getMsg('Import published layers \xbb');
 
-/** @desc Label for a text field for a map title or layer title. */
+/** @desc Label for a text field for a map, layer, or topic title. */
 cm.MSG_TITLE = goog.getMsg('Title');
 
 /** @desc Label for a text field for a map description or layer description. */
@@ -785,6 +810,30 @@ cm.MSG_ICON_HOTSPOT = goog.getMsg('Icon hotspot');
  *     would be "speed > 60".
  */
 cm.MSG_FILTER_CONDITION = goog.getMsg('Filter condition');
+
+/**
+ * @desc Label for a field to select layers with content relevant to the
+ * given topic.
+ */
+cm.MSG_LAYERS_FOR_THIS_TOPIC = goog.getMsg('Layers for this topic');
+
+/** @desc Label for a field to associate tags (like hashtags) to a map topic. */
+cm.MSG_TAGS = goog.getMsg('Tags');
+
+/**
+ * @desc Label for a checkbox field specifying whether viewers of the map
+ * (the crowd) can contribute comments on questions relating to this topic.
+ */
+cm.MSG_ENABLE_CROWD_REPORTS = goog.getMsg('Enable crowd reports');
+
+/**
+ * @desc Label for a text field for entering the radius of a circle inside
+ * which geo-located comments from users are clustered to a single point.
+ */
+cm.MSG_CLUSTER_RADIUS = goog.getMsg('Cluster radius (in meters)');
+
+/** @desc Label for a field to enter questions about a topic. */
+cm.MSG_SURVEY_QUESTIONS = goog.getMsg('Survey questions');
 
 /** @desc Refers to the point at the center of an image. */
 cm.MSG_HOTSPOT_CENTER = goog.getMsg('Center');
@@ -1206,3 +1255,38 @@ cm.MSG_FOLDER_TYPE_TOOLTIP = goog.getMsg(
     'list; <b>Locked</b>: folder contents are hidden from the layer list; ' +
     '<b>Single-select</b>: only one sublayer at a time may be selected ' +
     'in this folder.');
+
+/** @desc Tooltip for the title of a topic. */
+cm.MSG_TOPIC_TITLE_TOOLTIP = goog.getMsg('The user-visible name of the topic.');
+
+/** @desc Tooltip for the tags of a topic. */
+cm.MSG_TOPIC_TAGS_TOOLTIP = goog.getMsg('A list of tags or labels associated ' +
+    'with this topic.');
+
+/** @desc Tooltip for a menu to select one or more layers of map data. */
+cm.MSG_LAYER_MENU_TOOLTIP = goog.getMsg('The layers of the current map whose ' +
+    'data can be associated with this topic. Use Ctrl+click or Cmd+click ' +
+    'to select multiple layers.');
+
+/** @desc Tooltip for the viewport inside which a topic is relevant. */
+cm.MSG_TOPIC_VIEWPORT_TOOLTIP = goog.getMsg(
+    'The bounding coordinates of the area in which this topic is relevant.');
+
+/** @desc Tooltip for whether or not topic is enabled for crowd reporting. */
+cm.MSG_CROWD_ENABLED_TOOLTIP = goog.getMsg('Turns on commenting and, ' +
+    'optionally, survey questions for this topic\'s layers.');
+
+/**
+ * @desc Tooltip for the radius within which to treat geolocated reports
+ * as reports about the same resource (e.g. same gas station, hospital, etc.).
+ */
+cm.MSG_CLUSTER_RADIUS_TOOLTIP = goog.getMsg('The radius, in meters, within ' +
+    'which to treat geolocated reports as reports about the same resource ' +
+    '(e.g. same gas station, hospital, etc.).');
+
+/**
+ * @desc Tooltip for the definitions of the survey questions associated
+ * with this topic.
+ */
+cm.MSG_QUESTION_LIST_TOOLTIP = goog.getMsg(
+    'Definitions of the survey questions associated with this topic.');

@@ -176,8 +176,16 @@ cm.events.ADD_LAYERS = 'ADD_LAYERS';
  */
 cm.events.NEW_LAYER = 'NEW_LAYER';
 
+/**
+ * The user requested to create a new topic from a set of properties (undoable).
+ */
+cm.events.NEW_TOPIC = 'NEW_TOPIC';
+
 /** The user set the current view as the default view. */
 cm.events.DEFAULT_VIEW_SET = 'DEFAULT_VIEW_SET';
+
+/** The user requested to edit topics for the map. */
+cm.events.EDIT_TOPICS = 'EDIT_TOPICS';
 
 // ==== Events emitted when the user performs a non-editing action ====
 
@@ -233,6 +241,9 @@ cm.events.SELECT_SUBLAYER = 'SELECT_SUBLAYER';
 
 /** The user requested to delete a layer (undoable). */
 cm.events.DELETE_LAYER = 'DELETE_LAYER';
+
+/** The user requested to delete a topic (undoable). */
+cm.events.DELETE_TOPIC = 'DELETE_TOPIC';
 
 /**
  * Information about a feature that's carried with the SELECT_FEATURE event.

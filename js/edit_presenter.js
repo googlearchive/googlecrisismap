@@ -42,6 +42,7 @@ goog.require('cm.RadioEditor');
 goog.require('cm.SetDefaultViewCommand');
 goog.require('cm.ShareEmailView');
 goog.require('cm.TextEditor');
+goog.require('cm.TopicSelectorView');
 goog.require('cm.UrlEditor');
 goog.require('cm.WmsMenuEditor');
 goog.require('cm.css');
@@ -86,6 +87,7 @@ var EDITORS = goog.object.create(
 cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   var config = opt_config || {};
   var importer = new cm.ImporterView(config['api_maps_url']);
+  var topicSelector = new cm.TopicSelectorView(mapModel);
   var inspector = new cm.InspectorPopup();
   var sharer = new cm.ShareEmailView();
 
@@ -110,6 +112,10 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   goog.object.forEach(EDITORS, function(editor, type) {
     cm.editors.register(type, editor);
   });
+
+  function isTrue(value) {
+    return !!value;
+  }
 
   function usesUrlField(type) {
     return type === cm.LayerModel.Type.KML ||
@@ -397,20 +403,54 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
       ],
      conditions: {'type': isType(cm.LayerModel.Type.FOLDER)},
      tooltip: cm.MSG_FOLDER_TYPE_TOOLTIP}
+  ];
+
+  var topicFields = [
+   {key: 'title', label: cm.MSG_TITLE, type: cm.editors.Type.TEXT,
+    tooltip: cm.MSG_TOPIC_TITLE_TOOLTIP},
+   {key: 'tags', label: cm.MSG_TAGS, type: cm.editors.Type.TEXT,
+    tooltip: cm.MSG_TOPIC_TAGS_TOOLTIP},
+   {key: 'layer_ids', label: cm.MSG_LAYERS_FOR_THIS_TOPIC,
+    type: cm.editors.Type.LAYER_MENU, multiple: true, choices: [],
+    menu_class: cm.css.WMS_MENU_EDITOR, map_model: mapModel,
+    tooltip: cm.MSG_LAYER_MENU_TOOLTIP},
+   {key: 'viewport', label: cm.MSG_DEFAULT_VIEWPORT,
+    type: cm.editors.Type.LAT_LON_BOX, app_state: appState,
+    hide_tile_layer_warning: true, tooltip: cm.MSG_TOPIC_VIEWPORT_TOOLTIP},
+   {key: 'crowd_enabled', label: cm.MSG_ENABLE_CROWD_REPORTS,
+    type: cm.editors.Type.CHECKBOX, checked_value: true, unchecked_value: null,
+    tooltip: cm.MSG_CROWD_ENABLED_TOOLTIP},
+   {key: 'cluster_radius', label: cm.MSG_CLUSTER_RADIUS,
+    type: cm.editors.Type.NUMBER, conditions: {'crowd_enabled': isTrue},
+    tooltip: cm.MSG_CLUSTER_RADIUS_TOOLTIP},
+   {key: 'questions', label: cm.MSG_SURVEY_QUESTIONS,
+    type: cm.editors.Type.QUESTION_LIST,
+    conditions: {'crowd_enabled': isTrue},
+    tooltip: cm.MSG_QUESTION_LIST_TOOLTIP}
  ];
 
   // The user has asked us to bring up an inspector.
   // The INSPECT event contains an object for editing existing objects, or
-  // no object for a new layer.
+  // no object for a new layer or topic.
   // TODO(joeysilva): Use a type field to specify new layers or new folders.
   cm.events.listen(cm.app, cm.events.INSPECT, function(e) {
-    if (!e.object) {
+    if (e.isNewTopic) {
+      // New topic
+      inspector.inspect(
+          cm.MSG_CREATE_NEW_TOPIC, topicFields, appState, null, false);
+    } else if (!e.object) {
       // New layer
-      inspector.inspect('Create new layer', layerFields, appState);
+      inspector.inspect(
+          cm.MSG_CREATE_NEW_LAYER, layerFields, appState, null, true);
     } else if (e.object instanceof cm.MapModel) {
-      inspector.inspect('Edit map details', mapFields, appState, e.object);
+      inspector.inspect(
+          cm.MSG_EDIT_MAP_DETAILS, mapFields, appState, e.object, false);
     } else if (e.object instanceof cm.LayerModel) {
-      inspector.inspect('Edit layer details', layerFields, appState, e.object);
+      inspector.inspect(
+          cm.MSG_EDIT_LAYER_DETAILS, layerFields, appState, e.object, false);
+    } else if (e.object instanceof cm.TopicModel) {
+      inspector.inspect(
+          cm.MSG_EDIT_TOPIC, topicFields, appState, e.object, false);
     }
   });
 
@@ -449,13 +489,35 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     this.doCommand(new cm.DeleteLayerCommand(e.id), appState, mapModel);
   }, this);
 
+  // The user has filled in properties for a new topic and wants to create the
+  // topic.
+  cm.events.listen(cm.app, cm.events.NEW_TOPIC, function(e) {
+    var model = cm.TopicModel.newFromMapRoot(e.properties,
+                                             mapModel.getLayerIds());
+    if (e.properties['questions']) {
+      // e.properties['questions'] is a javascript object with keys that may
+      // have been obfuscated by the closure compiler, but newFromMapRoot
+      // assumes the keys quoted and not obfuscated. Thus, we need to
+      // separately set the questions javascript blob here.
+      model.set('questions', e.properties['questions']);
+    }
+    this.doCommand(new cm.CreateTopicsCommand([model.toMapRoot()]),
+                   appState, mapModel);
+  }, this);
+
+  // The user has requested to delete a topic.
+  cm.events.listen(cm.app, cm.events.DELETE_TOPIC, function(e) {
+    this.doCommand(new cm.DeleteTopicCommand(e.id), appState, mapModel);
+  }, this);
+
   // The user has requested to save the current map model to the server.
   cm.events.listen(cm.app, cm.events.SAVE, this.handleSave, this);
 
   // The user has finished an edit and wants to commit the changes.
   cm.events.listen(cm.app, cm.events.OBJECT_EDITED, function(e) {
-    this.doCommand(new cm.EditCommand(e.oldValues, e.newValues, e.layerId),
-                   appState, mapModel);
+    this.doCommand(
+        new cm.EditCommand(e.oldValues, e.newValues, e.layerId, e.topicId),
+        appState, mapModel);
   }, this);
 
   // The user has finished arranging layers and wants to commit the changes.
@@ -486,6 +548,13 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     this.doCommand(new cm.SetDefaultViewCommand(e.oldDefault, e.newDefault),
                    appState, mapModel);
   }, this);
+
+  // The user has requested to edit topics for the map.
+  cm.events.listen(cm.app, cm.events.EDIT_TOPICS, function(e) {
+    if (!topicSelector.isOpen()) {
+      topicSelector.open();
+    }
+  });
 };
 
 /**

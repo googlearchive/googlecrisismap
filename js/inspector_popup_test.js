@@ -38,12 +38,14 @@ registerTestSuite(InspectorPopupTest);
  * Opens the inspector.
  * @param {boolean=} opt_isNewLayer Whether or not to open an inspector for a
  *     new layer.
- * @param {cm.MapModel|cm.LayerModel=} opt_object LayerModel,
- *     or MapModel to use for the test.
+ * @param {boolean=} opt_isNewTopic Whether or not to open an inspector for a
+ *     new topic.
+ * @param {cm.MapModel|cm.LayerModel|cm.TopicModel=} opt_object LayerModel,
+ *     TopicModel, or MapModel to use for the test.
  * @private
  */
 InspectorPopupTest.prototype.openInspector_ = function(
-    opt_isNewLayer, opt_object) {
+    opt_isNewLayer, opt_isNewTopic, opt_object) {
   // Grab the popup that the InspectorView will open.
   var me = this;
   this.setForTest_('cm.ui.showPopup', function(popup) {
@@ -53,7 +55,7 @@ InspectorPopupTest.prototype.openInspector_ = function(
 
   // Open the inspector on a sample MVCObject.
   var object;
-  if (opt_isNewLayer) {
+  if (opt_isNewTopic || opt_isNewLayer) {
     object = undefined;
   } else {
     object = opt_object || new google.maps.MVCObject();
@@ -63,7 +65,7 @@ InspectorPopupTest.prototype.openInspector_ = function(
     {key: 'a', label: 'First field', type: cm.editors.Type.TEXT},
     {key: 'b', label: 'Second field', type: cm.editors.Type.NUMBER,
      conditions: {'a': function(x) { return x == 'yes'; }}}
-  ], this.appState_, object);
+  ], this.appState_, object, !!opt_isNewLayer);
 };
 
 /** Tests that the inspect() method works properly. */
@@ -154,6 +156,35 @@ InspectorPopupTest.prototype.testOkForNewLayer = function() {
   expectNoDescendantOf(cm.ui.document.body, this.popup_);
 };
 
+/** Tests that clicking the OK button creates a new topic. */
+InspectorPopupTest.prototype.testOkForNewTopic = function() {
+  this.openInspector_(false, true);
+  expectDescendantOf(cm.ui.document.body, this.popup_);
+
+  var aInput = expectDescendantOf(this.popup_, 'input');
+  aInput.value = 'x';
+  cm.events.emit(aInput, 'keyup');
+
+  // Listen for an NEW_TOPIC event.
+  var topicCreated = false;
+  var properties = null;
+  cm.events.listen(cm.app, cm.events.NEW_TOPIC, function(e) {
+    topicCreated = true;
+    properties = e.properties;
+  }, this);
+
+  // Click the OK button.
+  var button = expectDescendantOf(this.popup_, 'div', withText('OK'));
+  cm.events.emit(button, 'click');
+
+  // Confirm that the NEW_TOPIC event was emitted with the right maproot
+  expectTrue(topicCreated);
+  expectEq({a: 'x'}, properties);
+
+  // Confirm that the popup disappeared.
+  expectNoDescendantOf(cm.ui.document.body, this.popup_);
+};
+
 /** Tests that conditional fields are added to new layers. */
 InspectorPopupTest.prototype.testConditionalsForNewLayer = function() {
   this.openInspector_(true);
@@ -198,7 +229,7 @@ InspectorPopupTest.prototype.testCancel = function() {
 
 /** Tests that disabling the layer closes the edit window. */
 InspectorPopupTest.prototype.testCancelIfLayerDisabled = function() {
-  this.openInspector_(false, new cm.LayerModel());
+  this.openInspector_(false, false, new cm.LayerModel());
 
   // Enable layer0 and verify that the popup is still shown.
   stub(this.appState_.getLayerEnabled)('layer0').is(true);

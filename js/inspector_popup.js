@@ -11,13 +11,14 @@
 
 /**
  * @fileoverview [MODULE: edit] A table-driven property inspector enclosed
- *   in a popup.  Handles maps and layers.
+ *   in a popup.  Handles maps, layers, and topics.
  * @author kpy@google.com (Ka-Ping Yee)
  */
 goog.provide('cm.InspectorPopup');
 
 goog.require('cm.InspectorView');
 goog.require('cm.LayerModel');
+goog.require('cm.TopicModel');
 goog.require('cm.css');
 goog.require('cm.events');
 goog.require('cm.ui');
@@ -72,6 +73,13 @@ cm.InspectorPopup = function() {
    */
   this.isNewLayer_;
 
+  /**
+   * Whether or not this dialog is for a newly created topic.
+   * @type {boolean}
+   * @private
+   */
+  this.isNewTopic_;
+
   var tableElem;
   this.popup_ = cm.ui.create('div', {'class': [cm.css.INSPECTOR, cm.css.POPUP]},
       cm.ui.create('div', undefined,
@@ -102,28 +110,32 @@ cm.InspectorPopup.MAX_HEIGHT_FRACTION_ = 0.9;
 /**
  * Build and show an object property inspector.  Accepts a list of editor
  * specifications (indicating which properties to edit and the types of editors
- * to show), and optionally a MapModel or LayerModel to populate
+ * to show), and optionally a MapModel, LayerModel, or TopicModel to populate
  * the initial values with.  If the user presses "OK", the edits are applied
- * all at once in a single EditCommand, or a new LayerModel
- * is created if no object was given.
+ * all at once in a single EditCommand, or a new LayerModel (isNewLayer=true)
+ * or TopicModel (isNewLayer=false) is created if no object was given.
  * @param {string} title The title to show on the dialog.
  * @param {Array.<cm.EditorSpec>} editorSpecs An array of editor specifications.
  * @param {cm.AppState} appState The application state.
- * @param {cm.MapModel|cm.LayerModel=} opt_object If specified,
- *     the MapModel or LayerModel whose properties will be edited.
+ * @param {cm.MapModel|cm.LayerModel|cm.TopicModel} modelToEdit If not null,
+ *     the MapModel, LayerModel, or TopicModel whose properties will be edited.
  *     Otherwise, a blank inspector will be displayed, and a new LayerModel
- *     will be created on OK depending on the value of isNewLayer.
+ *     or TopicModel will be created on OK depending on the value of isNewLayer.
+ * @param {boolean} isNewLayer If object is null and this is true, create a new
+ *     LayerModel on OK, else create a TopicModel.
  */
 cm.InspectorPopup.prototype.inspect = function(
-    title, editorSpecs, appState, opt_object) {
+    title, editorSpecs, appState, modelToEdit, isNewLayer) {
   // We bind the editors to a separate "draft" copy of the modelToEdit (instead
   // of the original) so we can apply all the edits in a single Command.
-  this.isNewLayer_ = !opt_object;
+  this.isNewLayer_ = isNewLayer;
+  this.isNewTopic_ = !modelToEdit && !isNewLayer;
 
   cm.ui.setText(this.titleElem_, title);
-  goog.dom.classes.enable(this.copyLayerLink_, cm.css.HIDDEN, !!opt_object);
+  goog.dom.classes.enable(this.copyLayerLink_, cm.css.HIDDEN,
+      !!modelToEdit || this.isNewTopic_);
 
-  this.inspector_.inspect(editorSpecs, opt_object);
+  this.inspector_.inspect(editorSpecs, modelToEdit);
 
   // Watch enabled_layer_ids and close the inspector if this layer is disabled.
   this.appState_ = appState;
@@ -159,12 +171,15 @@ cm.InspectorPopup.prototype.handleOk_ = function() {
 
   if (this.isNewLayer_) {
     cm.events.emit(cm.app, cm.events.NEW_LAYER, {properties: edits.newValues});
+  } else if (this.isNewTopic_) {
+    cm.events.emit(cm.app, cm.events.NEW_TOPIC, {properties: edits.newValues});
   } else {
     var object = this.inspector_.getOriginal();
     cm.events.emit(cm.app, cm.events.OBJECT_EDITED, {
       oldValues: edits.oldValues,
       newValues: edits.newValues,
-      layerId: object instanceof cm.LayerModel ? object.get('id') : null
+      layerId: object instanceof cm.LayerModel ? object.get('id') : null,
+      topicId: object instanceof cm.TopicModel ? object.get('id') : null
     });
   }
   this.dispose_(true);
