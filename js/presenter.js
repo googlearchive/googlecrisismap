@@ -154,7 +154,7 @@ cm.Presenter.prototype.resetView = function(mapModel, opt_uri) {
       cm.LatLonBox.ENTIRE_MAP);
   if (opt_uri) {
     this.mapView_.adjustViewportFromUri(opt_uri);
-    this.appState_.setFromUri(opt_uri);
+    this.appState_.setFromUri(opt_uri, mapModel);
   }
 };
 

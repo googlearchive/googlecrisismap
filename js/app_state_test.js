@@ -320,6 +320,40 @@ AppStateTest.prototype.testSetFromUriLayers = function() {
 };
 
 /**
+ * Verifies that the AppState layers are set according to the 'topics' param.
+ */
+AppStateTest.prototype.testSetFromUriTopics = function() {
+  var mapModel = cm.MapModel.newFromMapRoot({
+    id: 'map', layers: [
+      {id: 'w', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+      {id: 'x', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+      {id: 'y', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'},
+      {id: 'z', type: cm.LayerModel.Type.KML, visibility: 'DEFAULT_ON'}
+    ], topics: [
+      {id: 'topic1', tags: ['t1', 't11'], layer_ids: ['x']},
+      {id: 'topic1', tags: ['t2'], layer_ids: ['y', 'z']}
+    ]
+  });
+
+  var uri = new goog.Uri('');
+  uri.setParameterValue('topics', 't11,t2');
+
+  this.appState_.setFromUri(uri, mapModel);
+  expectFalse(this.appState_.getLayerEnabled('w'));
+  expectTrue(this.appState_.getLayerEnabled('x'));
+  expectTrue(this.appState_.getLayerEnabled('y'));
+  expectTrue(this.appState_.getLayerEnabled('z'));
+
+  // But if layers are set, use those, instead
+  uri.setParameterValue('layers', 'w');
+  this.appState_.setFromUri(uri, mapModel);
+  expectTrue(this.appState_.getLayerEnabled('w'));
+  expectFalse(this.appState_.getLayerEnabled('x'));
+  expectFalse(this.appState_.getLayerEnabled('y'));
+  expectFalse(this.appState_.getLayerEnabled('z'));
+};
+
+/**
  * Verifies that the AppState layer filter query is set according
  * to the 'q' param.
  */

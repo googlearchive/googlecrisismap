@@ -85,7 +85,7 @@ cm.AppState = function(opt_mapModel, opt_uri, opt_language) {
   this.set('map_type', cm.MapModel.Type.ROADMAP);
 
   opt_mapModel && this.setFromMapModel(opt_mapModel);
-  opt_uri && this.setFromUri(opt_uri);
+  opt_uri && this.setFromUri(opt_uri, opt_mapModel);
 
   cm.events.listen(cm.app, [cm.events.MODEL_CHANGED], function(e) {
     e.model && this.updateSingleSelectFolders(e.model);
@@ -332,8 +332,10 @@ cm.AppState.prototype.getUri = function() {
  * determines the viewport after initialization of the Maps API map 'bounds'.
  * and then exposes it to the app state.
  * @param {!goog.Uri|!Location|string} uri A URI that encodes the app state.
+ * @param {cm.MapModel=} opt_mapModel If the topics param is provided in
+ *     the uri, use this map model to find the set of layers to enable.
  */
-cm.AppState.prototype.setFromUri = function(uri) {
+cm.AppState.prototype.setFromUri = function(uri, opt_mapModel) {
   uri = new goog.Uri(uri);
 
   var mapType = (uri.getParameterValue('t') || '').toUpperCase();
@@ -364,6 +366,22 @@ cm.AppState.prototype.setFromUri = function(uri) {
     });
     this.set('enabled_layer_ids', enabledLayerIds);
     this.set('layer_opacities', opacities);
+  } else if (opt_mapModel) {
+    var enabledLayerIds = new goog.structs.Set();
+    var uriTopicTags = uri.getParameterValue('topics');
+    if (uriTopicTags) {
+      goog.array.forEach(uriTopicTags.split(','), function(tag) {
+        goog.array.forEach(opt_mapModel.get('topics').getArray(),
+            function(topic) {
+              var tags = /** @type Array.<string> */(topic.get('tags'));
+              if (goog.array.contains(tags, tag)) {
+                enabledLayerIds.addAll(topic.get('layer_ids'));
+                // TODO(shakusa) Set appstate viewport to the topic viewport?
+              }
+            });
+      });
+      this.set('enabled_layer_ids', enabledLayerIds);
+    }
   }
   this.set('filter_query', uri.getParameterValue('q') || '');
 };
