@@ -24,6 +24,13 @@ import utils
 
 from google.appengine.ext import ndb
 
+# A vote code is a short identifier used in query parameters and in client-side
+# JavaScript: 'u' for an upvote, 'd' for a downvote.  A vote type is a constant
+# stored in the datastore; see model.VOTE_TYPES.  Client-side JS doesn't deal
+# in vote types, only vote codes.
+CODES_BY_VOTE_TYPE = {'ANONYMOUS_UP': 'u', 'ANONYMOUS_DOWN': 'd'}
+VOTE_TYPES_BY_CODE = dict((v, k) for k, v in CODES_BY_VOTE_TYPE.items())
+
 
 def ParseInt(string, default=None):
   try:
@@ -121,20 +128,30 @@ class CrowdReports(base_handler.BaseHandler):
           cardinality as topic_ids (one radius corresponding to each topic ID).
       count: Optional maximum number of results (default 100).
       max_updated: Optional upper bound on report update time in epoch seconds.
+      hidden: If non-empty, include reports that are hidden due to low scores.
+      votes: If non-empty, include information on votes by the current user.
     """
     ll = ParseGeoPt(self.request.get('ll'))
     topic_ids = self.request.get('topic_ids').split(',')
     count = ParseInt(self.request.get('count'), 100)
     max_updated = ParseDatetime(self.request.get('max_updated'))
+    hidden = None if self.request.get('hidden') else False
     if ll:
       radii = [ParseFloat(r, 0) for r in self.request.get('radii').split(',')]
       topic_radii = dict(zip(topic_ids, radii))
       results = model.CrowdReport.GetByLocation(
-          ll, topic_radii, count, max_updated)
+          ll, topic_radii, count, max_updated, hidden=hidden)
     else:
       results = model.CrowdReport.GetWithoutLocation(
-          topic_ids, count, max_updated)
-    self.WriteJson(map(self.ReportToDict, results))
+          topic_ids, count, max_updated, hidden=hidden)
+    dicts = map(self.ReportToDict, results)
+    if self.request.get('votes'):
+      report_ids = [d['id'] for d in dicts]
+      votes = model.CrowdVote.GetMulti(report_ids, self.GetCurrentUserUrl())
+      for d in dicts:
+        vote = votes.get(d['id'])
+        d['vote'] = CODES_BY_VOTE_TYPE.get(vote and vote.vote_type)
+    self.WriteJson(dicts)
 
   def Post(self):
     """Adds a crowd report.
@@ -173,5 +190,35 @@ class CrowdReports(base_handler.BaseHandler):
         'text': report.text,
         'topic_ids': report.topic_ids,
         'answer_ids': report.answer_ids,
-        'location': [report.location.lat, report.location.lon]
+        'location': [report.location.lat, report.location.lon],
+        'upvote_count': report.upvote_count,
+        'downvote_count': report.downvote_count
     }
+
+
+class CrowdVotes(base_handler.BaseHandler):
+  """Endpoint for fetching and posting votes on crowd reports."""
+
+  def Get(self):
+    """Retrieves the current user's vote on a report.
+
+    The query parameter report_id identifies the report.  The result is a
+    JSON-encoded vote code: 'u' or 'd' or null, where null means that the user
+    has no vote (either never voted, or voted and then removed their vote).
+    """
+    voter = self.GetCurrentUserUrl()
+    report_id = self.request.get('report_id', '')
+    vote = model.CrowdVote.Get(report_id, voter)
+    self.WriteJson(CODES_BY_VOTE_TYPE.get(vote and vote.vote_type))
+
+  def Post(self):
+    """Stores a vote on a report, replacing any existing vote by this user.
+
+    The query parameters are report_id, which identifies the report, and type,
+    which is a vote code: 'u' or 'd' or '', where '' causes any previously cast
+    vote by this user on this report to be removed.
+    """
+    voter = self.GetCurrentUserUrl()
+    report_id = self.request.get('report_id', '')
+    vote_type = VOTE_TYPES_BY_CODE.get(self.request.get('type'))
+    model.CrowdVote.Put(report_id, voter, vote_type)

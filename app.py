@@ -108,6 +108,7 @@ app = webapp2.WSGIApplication([
             Route('/.api/maps', 'api.PublishedMaps'),
             Route('/.api/maps/<map_id>', 'api.MapById'),
             Route('/.api/reports', 'api.CrowdReports'),
+            Route('/.api/votes', 'api.CrowdVotes'),
             Route('/.diff/<map_id>', 'diff.Diff'),
             Route('/.legend', 'legend_item_extractor.GetLegendItems'),
             Route('/.jsonp', 'jsonp.Jsonp'),

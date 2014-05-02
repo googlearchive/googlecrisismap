@@ -129,7 +129,9 @@ class CrowdReportsTest(test_utils.BaseTest):
          u'published': self.default_time_secs,
          u'topic_ids': [u'foo', u'bar'],
          u'text': u'report1',
-         u'updated': self.default_time_secs},
+         u'updated': self.default_time_secs,
+         u'upvote_count': 0,
+         u'downvote_count': 0},
         reports[0])
 
 
@@ -163,7 +165,9 @@ class CrowdReportsTest(test_utils.BaseTest):
          u'published': report2_time,
          u'topic_ids': [u'foo'],
          u'text': u'report2',
-         u'updated': report2_time},
+         u'updated': report2_time,
+         u'upvote_count': 0,
+         u'downvote_count': 0},
         reports[0])
     self.assertDictEqual(
         {u'answer_ids': [u'bar.1.1'],
@@ -174,7 +178,9 @@ class CrowdReportsTest(test_utils.BaseTest):
          u'published': report1_time,
          u'topic_ids': [u'bar'],
          u'text': u'report1',
-         u'updated': report1_time},
+         u'updated': report1_time,
+         u'upvote_count': 0,
+         u'downvote_count': 0},
         reports[1])
 
     # topic excludes report_2
@@ -234,6 +240,27 @@ class CrowdReportsTest(test_utils.BaseTest):
     # Confirm that the non-spammy reports were all stored.
     response = self.DoGet('/.api/reports?ll=10,10&topic_ids=foo&radii=1000')
     self.assertEquals(2, len(json.loads(response.body)))
+
+
+class CrowdVotesTest(test_utils.BaseTest):
+  """Tests for the crowd voting endpoint."""
+
+  def testVote(self):
+    with self.NewCookieJar():
+      response = self.DoGet('/.api/votes?report_id=1')
+      self.assertEquals(None, json.loads(response.body))
+
+      response = self.DoPost('/.api/votes', 'report_id=1&type=u')
+      response = self.DoGet('/.api/votes?report_id=1')
+      self.assertEquals('u', json.loads(response.body))
+
+      response = self.DoPost('/.api/votes', 'report_id=1&type=d')
+      response = self.DoGet('/.api/votes?report_id=1')
+      self.assertEquals('d', json.loads(response.body))
+
+      response = self.DoPost('/.api/votes', 'report_id=1&type=')
+      response = self.DoGet('/.api/votes?report_id=1')
+      self.assertEquals(None, json.loads(response.body))
 
 
 if __name__ == '__main__':

@@ -15,11 +15,16 @@
 __author__ = 'lschumacher@google.com (Lee Schumacher)'
 
 import base64
+import contextlib
+import cookielib
 import datetime
 import os
+import rfc822
+import StringIO
 import time
 import unittest
 import urllib
+import urllib2
 import urlparse
 
 import base_handler
@@ -49,20 +54,31 @@ ROOT_PATH = urlparse.urlsplit(ROOT_URL).path
 DEFAULT_DOMAIN = 'xyz.com'
 
 
-def DispatchRequest(request):
+def DispatchRequest(request, cookie_jar=None):
+  """Selects a handler for the request according to app.app and executes it."""
   response = webapp2.Response()
   # Can't import app at the top of this file because testbed isn't ready yet.
   import app  # pylint: disable=g-import-not-at-top
   app.app.router.dispatch(request, response)
+  if cookie_jar is not None and 'set-cookie' in response.headers:
+    # Cobble up a urllib2.Request and response for the CookieJar to examine.
+    f = StringIO.StringIO('Set-Cookie: ' + response.headers['set-cookie'])
+    cookie_jar.extract_cookies(urllib2.addinfourl(f, rfc822.Message(f), ''),
+                               urllib2.Request(request.url))
   return response
 
 
-def SetupRequest(path, lang='en'):
+def SetupRequest(path, lang='en', cookie_jar=None):
   """Sets up a webapp2.Request object for testing."""
   request = webapp2.Request(webob.Request.blank(ROOT_URL + path).environ)
   request.root_url = ROOT_URL
   request.root_path = ROOT_PATH
   request.lang = lang
+  if cookie_jar is not None:
+    # Cobble up a urllib2.Request for the CookieJar to put cookies in.
+    req = urllib2.Request(request.url)
+    cookie_jar.add_cookie_header(req)
+    request.headers['Cookie'] = req.get_header('Cookie')
   return request
 
 
@@ -199,6 +215,7 @@ class BaseTest(unittest.TestCase):
         base_handler, 'ValidateXsrfToken', lambda uid, token: token == 'XSRF')
     self.id_counter = 0
     self.mox.stubs.Set(utils, 'MakeRandomId', self.MakePredictableId)
+    self.cookie_jar = None
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -208,6 +225,17 @@ class BaseTest(unittest.TestCase):
     """A replacement for MakeRandomId() that gives predictable IDs in tests."""
     self.id_counter += 1
     return 'random_id_%d' % self.id_counter
+
+  def NewCookieJar(self):
+    """Makes a context manager that sets up a cookie jar for DoGet/DoPost."""
+    def SetCookieJar():
+      original_cookie_jar = self.cookie_jar
+      self.cookie_jar = cookielib.CookieJar()
+      try:
+        yield self.cookie_jar
+      finally:
+        self.cookie_jar = original_cookie_jar
+    return contextlib.contextmanager(SetCookieJar)()
 
   def DoGet(self, path, status=None):
     """Dispatches a GET request according to the routes in app.py.
@@ -220,7 +248,8 @@ class BaseTest(unittest.TestCase):
     Returns:
       The HTTP response from the handler as a webapp2.Response object.
     """
-    response = DispatchRequest(SetupRequest(path))
+    request = SetupRequest(path, cookie_jar=self.cookie_jar)
+    response = DispatchRequest(request, cookie_jar=self.cookie_jar)
     if status:
       self.assertEquals(status, response.status_int)
     else:
@@ -240,14 +269,14 @@ class BaseTest(unittest.TestCase):
     Returns:
       The HTTP response from the handler as a webapp2.Response object.
     """
-    request = SetupRequest(path)
+    request = SetupRequest(path, cookie_jar=self.cookie_jar)
     request.method = 'POST'
     if isinstance(data, dict):
       request.body = urllib.urlencode(data)
     else:
       request.body = str(data)
     request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
-    response = DispatchRequest(request)
+    response = DispatchRequest(request, cookie_jar=self.cookie_jar)
     if status:
       self.assertEquals(status, response.status_int)
     else:
