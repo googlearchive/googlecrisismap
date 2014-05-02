@@ -332,8 +332,8 @@ EditPresenterTest.prototype.testSetDefaultView = function() {
 
 /** Tests that the EditPresenter handles a SAVE event by saving the map. */
 EditPresenterTest.prototype.testSaveEvent = function() {
-  this.setForTest_('cm.xhr.postJson', createMockFunction());
-  expectCall(cm.xhr.postJson)(this.config_['save_url'], {'json': [1, 2, 3]}, _);
+  this.setForTest_('cm.xhr.post', createMockFunction());
+  expectCall(cm.xhr.post)(this.config_['save_url'], {'json': [1, 2, 3]}, _);
 
   var presenter = new cm.EditPresenter(null, null, null, this.config_);
   cm.events.emit(cm.app, cm.events.SAVE,

@@ -607,8 +607,8 @@ cm.EditPresenter.prototype.handleRedo = function(appState, mapModel) {
  * @param {Object} event The SAVE event (which should have a 'model' property).
  */
 cm.EditPresenter.prototype.handleSave = function(event) {
-  cm.xhr.postJson(this.saveUrl_, {'json': event.model.toMapRoot()},
-                  function(ok) {
+  cm.xhr.post(this.saveUrl_, {'json': event.model.toMapRoot()},
+              function(ok) {
     cm.events.emit(cm.app, ok ? cm.events.SAVE_DONE : cm.events.SAVE_FAILED);
   });
 };
