@@ -1,0 +1,172 @@
+{% comment %}
+Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+{% endcomment %}
+<!DOCTYPE html> {# activates Strict mode in most browsers including IE8 #}
+<head>
+  <title>{{title}}</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta itemprop="image" content="{{root}}/.static/favicon.ico">
+  <meta name="viewport" content="maximum-scale=1.0,initial-scale=1.0,user-scalable=no">
+  <style>
+    body {
+      font-family: Roboto, arial, verdana, sans-serif;
+      font-weight: 400;
+      margin: 0;
+      padding: 0;
+    }
+    .card {
+      color: #555;
+      padding: 20px;
+      background: #fff;
+      font-size: 13px;
+      line-height: 1;
+    }
+    .card h2 {
+      color: #000;
+      font-size: 22px;
+      font-weight: 300;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e6e6e6;
+      margin: 0 0 20px;
+    }
+    .card a {
+      color: #4386fc;
+      text-decoration: none;
+    }
+    #list {
+      margin: -8px -8px 0;
+    }
+    .card table td {
+      vertical-align: baseline;
+      padding: 8px;
+    }
+    .card .distance {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .card .menu {
+      float: right;
+      margin-top: 8px;
+      padding-left: 12px;
+    }
+    .answer {
+      font-size: 11px;
+      padding: 0 4px 1px;
+      text-transform: uppercase;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="card" class="card">
+    {% if location %}
+      <div class="menu">
+        {% if unit == 'mi' %}
+          <a href="{{url_no_unit}}&unit=km">km</a> &#xb7; mi
+        {% else %}
+          km &#xb7; <a href="{{url_no_unit}}&unit=mi">mi</a>
+        {% endif %}
+      </div>
+    {% endif %}
+    <h2>
+      {% if location %}
+        {% if lang == 'es' or lang == 'es-419' %}
+          {{title}} cerca de usted
+        {% else %}
+          {{title}} near you
+        {% endif %}
+      {% else %}
+        {{title}}
+      {% endif %}
+    </h2>
+    {% if not features %}
+      {% if lang == 'es' or lang == 'es-419' %}
+        No hay lugares cerca de usted.
+      {% else %}
+        No items nearby.
+      {% endif %}
+    {% endif %}
+    <div id="location-message" class="hidden">
+      {% if lang == 'es' or lang == 'es-419' %}
+        Determinar su ubicacion...
+      {% else %}
+        Determining your location...
+      {% endif %}
+    </div>
+    <div id="list">
+      <table width="100%" cellpadding=0 cellspacing=0>
+        {% for feature in features %}
+          <tr>
+            <td width="70%">
+              {{feature.name|default:"(no name)"}}
+              {% for answer in feature.answers %}
+              <span class="answer" style="color: {{answer.text_color}}; background: {{answer.color}}">
+                  {{answer.label}}
+                </span>
+              {% endfor %}
+            </td>
+            <td width="30%" class="distance">
+              {% if feature.distance != None %}
+                <a href="http://maps.google.com/maps?daddr={{feature.location}}">
+                  {% if unit == 'mi' %}
+                    {{feature.distance_mi|floatformat:1}} mi
+                  {% else %}
+                    {{feature.distance_km|floatformat:1}} km
+                  {% endif %}
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</body>
+<script>
+  var config = {{config_json|safe}};
+  {% if not location %}
+    if (navigator.geolocation) {
+      var list = document.getElementById('list');
+      list.className = 'hidden';
+      var message = document.getElementById('location-message');
+      message.className = '';
+      navigator.geolocation.getCurrentPosition(function(position) {
+        var coords = position.coords;
+        var ll = coords.latitude.toFixed(4) + ',' + coords.longitude.toFixed(4);
+        window.location = config.url_no_ll + '&ll=' + ll;
+      }, function() {
+        // This is called if the user doesn't consent to sharing their location,
+        // or if the user consents and there is any error obtaining location.
+        list.className = '';
+        message.className = 'hidden';
+      });
+    }
+  {% endif %}
+  function updateSize() {
+    var card = document.getElementById('card');
+    window.parent.postMessage({
+        type: 'resize',
+        width: card.scrollWidth,
+        height: card.scrollHeight
+    }, '*');
+    try {
+      // This call is for older browsers don't support postMessage, but it
+      // will only work if the parent frame has the same origin.
+      window.parent.resizeIframe(window, card.scrollWidth, card.scrollHeight);
+    } catch (e) {
+    }
+  }
+  window.addEventListener('resize', updateSize);
+  updateSize();
+</script>

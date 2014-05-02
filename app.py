@@ -91,6 +91,9 @@ app = webapp2.WSGIApplication([
 
             Route('/.admin', 'admin.Admin'),
             Route('/.admin/<map_id>', 'admin.AdminMap'),
+            Route('/.card/<map_id>.<topic_id>', 'card.CardByIdAndTopic'),
+            Route('/.card/<label>', 'card.CardByLabel'),
+            Route('/.card/<label>/<topic_id>', 'card.CardByLabelAndTopic'),
             Route('/.catalog', 'catalog.Catalog'),
             Route('/.create', 'create.Create'),
             Route('/.delete', 'delete.Delete'),

@@ -129,7 +129,7 @@ class KmlifyTests(test_utils.BaseTest):
     memcache.get('Config,root_path').MultipleTimes().AndReturn('')
 
     self.mox.StubOutWithMock(kmlify, 'FetchData')
-    kmlify.FetchData(mox.IgnoreArg()).AndReturn(infile)
+    kmlify.FetchData(mox.ANY, mox.ANY).AndReturn(infile)
 
     if join_name:
       joinfile = open(os.path.join(cwd, 'goldentests', join_name)).read()

@@ -1033,9 +1033,8 @@ class CrowdReport(utils.Struct):
         subquery.append('hidden = %s' % bool(hidden))
       query.append('(' + ' '.join(subquery) + ')')
 
-    results = cls.index.search(search.Query(
-        ' OR '.join(query),
-        options=search.QueryOptions(limit=count, ids_only=True)))
+    options = search.QueryOptions(limit=count, ids_only=True)
+    results = cls.index.search(search.Query(' OR '.join(query), options))
     ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
     entities = ndb.get_multi(ids)
     for entity in entities:
@@ -1070,9 +1069,8 @@ class CrowdReport(utils.Struct):
     """
     if max_updated:
       query += ' (%s <= %s)' % ('updated', utils.UtcToTimestamp(max_updated))
-    results = cls.index.search(
-        search.Query(query, options=search.QueryOptions(limit=count,
-                                                        ids_only=True)))
+    options = search.QueryOptions(limit=count, ids_only=True)
+    results = cls.index.search(search.Query(query, options))
     ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
     entities = ndb.get_multi(ids)
     for entity in entities:

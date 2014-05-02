@@ -269,10 +269,8 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   # Parameters that depend on the MapRoot, for both published and draft maps.
   ui_region = request.get('gl')
   if map_object or catalog_entry:
-    result['lang'] = base_handler.SelectLanguage(
-        request.get('hl'),
-        request.headers.get('accept-language'),
-        maproot_json.get('default_language'))
+    result['lang'] = base_handler.SelectLanguageForRequest(
+        request, maproot_json)
     ui_region = maproot_json.get('region', ui_region)
     cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
     result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)

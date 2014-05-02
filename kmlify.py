@@ -171,9 +171,11 @@ def GetText(element):
       GetText(child) + child.tail for child in element.getchildren())
 
 
-def FetchData(url):
+def FetchData(url, referer=None):
+  headers = referer and {'Referer': referer} or {}
   logging.info('fetching %s', url)
-  data = urlfetch.fetch(url, validate_certificate=False, deadline=10).content
+  data = urlfetch.fetch(
+      url, headers=headers, validate_certificate=False, deadline=10).content
   logging.info('retrieved %d bytes', len(data))
   return UnzipData(data, r'.*\.[kx]ml')
 
@@ -644,7 +646,7 @@ class Kmlify(base_handler.BaseHandler):
 
     try:
       # Fetch the source data.
-      data = FetchData(url)
+      data = FetchData(url, self.request.host)
 
       join_field = join_data = None
       if join:

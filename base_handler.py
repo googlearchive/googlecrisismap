@@ -99,6 +99,13 @@ def SelectLanguage(*langs):
   return DEFAULT_LANGUAGE
 
 
+def SelectLanguageForRequest(request, map_root=None):
+  """Determines the UI language to use, based on a request and a MapRoot."""
+  return SelectLanguage(request.get('hl'),
+                        request.headers.get('accept-language'),
+                        map_root.get('default_language'))
+
+
 def ToHtmlSafeJson(data, **kwargs):
   """Serializes a JSON data structure to JSON that is safe for use in HTML."""
   return json.dumps(data, **kwargs).replace(
@@ -171,6 +178,11 @@ class BaseHandler(webapp2.RequestHandler):
   # These are used in RenderTemplate, so ensure they always exist.
   xsrf_token = ''
   xsrf_tag = ''
+
+  # The default template for rendering an error message includes the product
+  # logo, sign-in links, and left navigation links.  Individual page handlers
+  # can override this to suit their context.
+  error_template = 'error.html'
 
   def GetCurrentUserUrl(self):
     """Gets a URL identifying the current user.
@@ -260,14 +272,14 @@ class BaseHandler(webapp2.RequestHandler):
       }))
     except perms.NotPublishableError as exception:
       self.response.set_status(403, message=exception.message)
-      self.response.out.write(self.RenderTemplate('error.html', {
+      self.response.out.write(self.RenderTemplate(self.error_template, {
           'exception': exception
       }))
     except perms.NotCatalogEntryOwnerError as exception:
       # TODO(kpy): Either add a template for this type of error, or use an
       # error representation that can be handled by one common error template.
       self.response.set_status(403, message=exception.message)
-      self.response.out.write(self.RenderTemplate('error.html', {
+      self.response.out.write(self.RenderTemplate(self.error_template, {
           'exception': utils.Struct(
               message='That publication label is owned '
               'by someone else; you can\'t replace or delete it.')
@@ -278,7 +290,7 @@ class BaseHandler(webapp2.RequestHandler):
       self.response.out.write(exception.message + '\n')
     except Error as exception:
       self.response.set_status(exception.status, message=exception.message)
-      self.response.out.write(self.RenderTemplate('error.html', {
+      self.response.out.write(self.RenderTemplate(self.error_template, {
           'exception': exception
       }))
 
