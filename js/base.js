@@ -410,6 +410,18 @@ cm.MSG_ENTER_COMMENT = goog.getMsg('Enter a comment');
 /** @desc A button for posting the user's comment. */
 cm.MSG_POST = goog.getMsg('Post');
 
+/**
+ * @desc A short question asking whether a comment is helpful or not.  "Yes"
+ *     and "No" buttons are offered after this question for the user to click.
+ */
+cm.MSG_HELPFUL_QUESTION = goog.getMsg('Helpful?');
+
+/** @desc Tooltip for a button to vote that a comment is helpful. */
+cm.MSG_UPVOTE_TOOLTIP = goog.getMsg('Vote this comment up');
+
+/** @desc Tooltip for a button to vote that a comment is not helpful. */
+cm.MSG_DOWNVOTE_TOOLTIP = goog.getMsg('Vote this comment down');
+
 /** @desc A notice to let users know their reports will be public. */
 cm.MSG_CROWD_PRIVACY_DISCLAIMER = goog.getMsg(
     'Please note: All data entered will be public.');

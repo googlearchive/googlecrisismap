@@ -215,11 +215,12 @@ cm.ui.getText = function(element) {
  * Sets the content of an element to a string of plain text.  Optionally
  * inserts word breaks to prevent very long words from messing up page layout.
  * @param {Element} element A DOM element.
- * @param {string} text A string of plain text.
+ * @param {string|number} text A plain text string or number.
  * @param {number=} opt_wordBreakMaxLen If this is specified, word breaks are
  *     inserted; this is the maximum length after which to add a word break.
  */
 cm.ui.setText = function(element, text, opt_wordBreakMaxLen) {
+  text = '' + text;
   if (opt_wordBreakMaxLen) {
     new cm.Html(goog.format.insertWordBreaksBasic(
         goog.string.htmlEscape(text), opt_wordBreakMaxLen)).pasteInto(element);

@@ -424,6 +424,7 @@ FakeUi.getText = function(element) {
  *     inserted; this is the maximum length after which to add a word break.
  */
 FakeUi.setText = function(element, text, opt_wordBreakMaxLen) {
+  text = '' + text;
   if (opt_wordBreakMaxLen) {
     element.innerHTML = goog.format.insertWordBreaksBasic(
         goog.string.htmlEscape(text), opt_wordBreakMaxLen);

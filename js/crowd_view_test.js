@@ -59,27 +59,36 @@ CrowdViewTest.prototype.createCrowdView_ = function() {
   return parent;
 };
 
-/** Verifies that reports are retrieved and displayed. */
-CrowdViewTest.prototype.displayReports = function() {
-  // Set up a mock to return two reports.
-  var now = new Date().getTime() / 1000;
+/** @private Opens a CrowdView with a given list of reports. */
+CrowdViewTest.prototype.openCrowdView_ = function(reports) {
+  // Set up a mock to return the reports.
   var jsonp = this.expectNew_('goog.net.Jsonp', this.config_.report_query_url);
   expectCall(jsonp.send)({
     'll': '3,4',
     'topic_ids': 'map1.shelter',
-    'radii': '456'
-  }, _).willOnce(function(_, callback) { callback([
-      {'effective': now - 301,
-       'answer_ids': ['map1.shelter.q1.y'],
-       'text': 'Foo'},
-      {'effective': now - 7200,
-       'answer_ids': ['map1.shelter.q1.n', 'map1.shelter.q2.y'],
-       'text': 'Bar'}
-  ]); });
+    'radii': '456',
+    'votes': '1'
+  }, _).willOnce(function(_, callback) { callback(reports); });
 
   // Open the CrowdView.
   var parent = this.createCrowdView_();
   this.view_.open(this.feature_);
+  return parent;
+};
+
+/** Verifies that reports are retrieved and displayed. */
+CrowdViewTest.prototype.displayReports = function() {
+  // Open the CrowdView with two reports.
+  var now = new Date().getTime() / 1000;
+  var parent = this.openCrowdView_([{
+    'effective': now - 301,
+    'answer_ids': ['map1.shelter.q1.y'],
+    'text': 'Foo'
+  }, {
+    'effective': now - 7200,
+    'answer_ids': ['map1.shelter.q1.n', 'map1.shelter.q2.y'],
+    'text': 'Bar'
+  }]);
 
   // Verify that both reports are correctly displayed.
   var reports = allDescendantsOf(
@@ -99,17 +108,54 @@ CrowdViewTest.prototype.displayReports = function() {
   expectDescendantOf(r, '#text', withText('Bar'));
 };
 
+/** Verifies the voting UI for reports. */
+CrowdViewTest.prototype.voteOnReports = function() {
+  // Open the CrowdView with two reports.
+  var now = new Date().getTime() / 1000;
+  var parent = this.openCrowdView_([{
+    'id': 'r0',
+    'effective': now - 301,
+    'answer_ids': ['map1.shelter.q1.y']
+  }, {
+    'id': 'r1',
+    'effective': now - 7200,
+    'text': 'Bar',
+    'upvote_count': 5,
+    'downvote_count': 3,
+    'vote': 'd'
+  }]);
+
+  // Verify that the voting UI is correctly displayed.
+  var reports = allDescendantsOf(
+      expectDescendantOf(parent, withClass(cm.css.REPORTS)),
+      withClass(cm.css.REPORT));
+  expectEq(2, reports.length);
+
+  var r = reports[0];  // first report has no text, so no voting UI
+  expectNoDescendantOf(r, withClass(cm.css.REPORT_VOTE));
+
+  r = reports[1];  // second report should have a voting UI
+  expectDescendantOf(r, withClass(cm.css.REPORT_VOTE));
+  var upBtn = expectDescendantOf(r, withClass(cm.css.UPVOTE));
+  var upCount = expectDescendantOf(
+      r, withClass(cm.css.VOTE_COUNT), withText('5'));
+  var downBtn = expectDescendantOf(r, withClass(cm.css.DOWNVOTE));
+  var downCount = expectDescendantOf(
+      r, withClass(cm.css.VOTE_COUNT), withText('3'));
+
+  // Switch from a downvote to an upvote.
+  this.setForTest_('goog.net.XhrIo.send', createMockFunction());
+  expectCall(goog.net.XhrIo.send)(
+      this.config_.vote_post_url, _, 'POST', 'report_id=r1&type=u');
+  cm.events.emit(upBtn, 'click');
+  expectThat(upCount, withText('6'));
+  expectThat(downCount, withText('2'));
+};
+
 /** Verifies the report submission flow. */
 CrowdViewTest.prototype.submitReport = function() {
-  // Set up a mock to return no reports.
-  var now = new Date().getTime() / 1000;
-  var jsonp = this.expectNew_('goog.net.Jsonp', this.config_.report_query_url);
-  expectCall(jsonp.send)(_, _).willOnce(
-      function(_, callback) { callback([]); });
-
-  // Open the CrowdView.
-  var parent = this.createCrowdView_();
-  this.view_.open(this.feature_);
+  // Open the CrowdView with no reports.
+  var parent = this.openCrowdView_([]);
 
   // Clicking the bubble should reveal the form.
   var bubble = expectDescendantOf(parent, withClass(cm.css.CROWD_BUBBLE));

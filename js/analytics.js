@@ -138,6 +138,13 @@ cm.Analytics.MapAction = cm.Analytics.prependUiElement_('Map', {
 });
 
 /** @type {Object.<string, string>} */
+cm.Analytics.CrowdReportAction = cm.Analytics.prependUiElement_(
+    'Crowd report card', {
+      VOTE_BUTTON_CLICKED: 'Vote button clicked'
+    }
+);
+
+/** @type {Object.<string, string>} */
 cm.Analytics.CrowdReportFormAction = cm.Analytics.prependUiElement_(
     'Crowd report form', {
       ANSWER_BUTTON_CLICKED: 'Answer button clicked',
@@ -217,7 +224,7 @@ cm.Analytics.categoryForAction_ = function(action) {
  *     the action.  If no layer is associated with the action, pass null.
  * @param {number=} opt_value An optional numeric value for the event (Analytics
  *     will compute sums and averages of these values).
- * @param {number=} opt_topicId An optional topic ID, if there is a topic
+ * @param {string=} opt_topicId An optional topic ID, if there is a topic
  *     relevant to this event.  (The topic ID should be fully qualified, in
  *     the form mapId + '.' + topicId.)
  */

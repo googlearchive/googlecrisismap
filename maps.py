@@ -231,6 +231,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
       'map_picker_items': map_picker_items,
       'report_query_url': root + '/.api/reports',
       'report_post_url': root + '/.api/reports' + xsrf_qs,
+      'vote_post_url': root + '/.api/votes' + xsrf_qs,
       'static_content_url': root + '/.static',
       'user_email': users.GetCurrent() and users.GetCurrent().email,
       'wms_configure_url': root + '/.wms/configure',

@@ -360,7 +360,7 @@ specific language governing permissions and limitations under the License.
 
 .cm-crowd-bubble {
   background: #ddd;
-  padding: 6px 12px;
+  padding: 6px 9px;
   margin: 12px 0 18px;
   border-radius: 4px 4px 4px 0;
   position: relative;
@@ -424,16 +424,16 @@ specific language governing permissions and limitations under the License.
   font-size: 13px;
 }
 
-.cm-answers, .cm-report-text {
+.cm-answers {
   margin: 6px 0 12px;
-}
-
-.cm-report-text {
-  margin-top: 12px;
 }
 
 .cm-report-text input[type="text"] {
   width: 100%;
+}
+
+.cm-crowd .cm-button-area {
+  margin: 12px 0 6px;
 }
 
 /* Report display area */
@@ -449,16 +449,8 @@ specific language governing permissions and limitations under the License.
   font-style: italic;
 }
 
-.cm-crowd .cm-reports .cm-crowd-abuse, .cm-vote {
-  color: #777;
-  font-size: 11px;
-  padding: 0 0 6px;
-  cursor: pointer;
-}
-
 .cm-report {
   margin: 12px 0 3px;
-  padding: 9px 6px;
   min-height: 16px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -466,7 +458,16 @@ specific language governing permissions and limitations under the License.
   -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.cm-answer {
+.cm-report-answers {
+  padding: 9px 9px;
+}
+
+.cm-reports .cm-report-text {
+  padding: 9px 9px;
+  border-top: 1px solid #eee;
+}
+
+.cm-report .cm-answer {
   text-transform: uppercase;
   font-size: 11px;
   padding: 1px 3px;
@@ -483,10 +484,61 @@ specific language governing permissions and limitations under the License.
   padding: 2px 0 0 6px;
 }
 
-.cm-reports .cm-vote {
-  float: right;
+.cm-report-vote {
+  padding: 0 9px 9px 9px;
+  font-size: 11px;
+  color: #999;
+  cursor: default;
 }
 
-.cm-crowd .cm-button-area {
-  margin: 12px 0 6px;
+.cm-report-vote .cm-vote-count {
+  display: inline-block;
+  min-width: 1em;
+}
+
+.cm-report-vote .cm-vote {
+  display: inline-block;
+  margin-left: 3px;
+  width: 10px;
+  height: 13px;
+  border: 2px solid transparent;
+  border-width: 2px 4px;
+  margin: -2px 0 -5px -4px;
+  opacity: 0.4;
+}
+
+.cm-report-vote .cm-upvote {
+  background: url('thumb_up.png') no-repeat;
+  margin-left: 6px;
+}
+
+.cm-report-vote .cm-downvote {
+  background: url('thumb_down.png') no-repeat;
+  margin-left: 0;
+}
+
+.cm-report-vote .cm-vote:hover {
+  opacity: 0.6;
+}
+
+.cm-report-vote .cm-vote.cm-selected {
+  opacity: 0.8;
+}
+
+.cm-report-vote .cm-vote.cm-selected:hover {
+  opacity: 1;
+}
+
+.cm-report-vote .cm-report-abuse:link {
+  float: right;
+  color: #999;
+  width: 14px;
+  height: 14px;
+  margin-top: -1px;
+  background: url('spam.png') no-repeat;
+  opacity: 0.4;
+}
+
+.cm-report-vote .cm-report-abuse:hover {
+  opacity: 0.6;
 }

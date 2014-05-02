@@ -23,6 +23,7 @@ goog.require('goog.dom.classes');
 goog.require('goog.net.Jsonp');
 goog.require('goog.net.XhrIo');
 goog.require('goog.object');
+goog.require('goog.string');
 
 
 /**
@@ -35,6 +36,7 @@ goog.require('goog.object');
 cm.CrowdView = function(parentElem, mapModel, config) {
   this.reportQueryUrl_ = config['report_query_url'];
   this.reportPostUrl_ = config['report_post_url'];
+  this.votePostUrl_ = config['vote_post_url'];
 
   /** @private {cm.MapModel} */
   this.mapModel_ = mapModel;
@@ -287,7 +289,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
   }
   cm.events.listen(self.submitBtn_, 'click', submitForm);
   cm.events.listen(self.textInput_, 'keypress', function(event) {
-    if (event.keyCode == 13) submitForm(event);
+    if (event.keyCode === 13) submitForm(event);
   });
 };
 
@@ -308,7 +310,8 @@ cm.CrowdView.prototype.loadReports_ = function(parentElem) {
     'topic_ids': goog.array.map(
         topics, function(t) { return mapId + '.' + t.get('id'); }).join(','),
     'radii': goog.array.map(
-        topics, function(t) { return t.get('cluster_radius'); }).join(',')
+        topics, function(t) { return t.get('cluster_radius'); }).join(','),
+    'votes': '1'
   }, function(reports) {
     self.loadingDiv_.style.display = 'none';
     cm.ui.clear(parentElem);
@@ -331,18 +334,79 @@ cm.CrowdView.prototype.loadReports_ = function(parentElem) {
  */
 cm.CrowdView.prototype.renderReport_ = function(report) {
   var self = this;  // this scope uses 'self' throughout instead of 'this'
-  return cm.ui.create('div', {},
-      cm.ui.create('div', cm.css.REPORT,
-          cm.ui.create('div', cm.css.TIME,
-              cm.util.shortAge(report['effective'])),
-          goog.array.map(report['answer_ids'], function(aid) {
-            var answer = self.answersById_[aid];
-            var div = cm.ui.create('div', cm.css.ANSWER,
-                answer.label || answer.title);
-            div.style.background = answer.color;
-            div.style.color = cm.ui.legibleTextColor(answer.color);
-            return div;
-          }), report['text']),
-      null
+
+  var timeDiv = cm.ui.create('div', cm.css.TIME,
+      cm.util.shortAge(report['effective']));
+  var answerChips = goog.array.map(report['answer_ids'] || [], function(aid) {
+    var answer = self.answersById_[aid];
+    var div = cm.ui.create('div', cm.css.ANSWER, answer.label || answer.title);
+    div.style.background = answer.color;
+    div.style.color = cm.ui.legibleTextColor(answer.color);
+    return div;
+  });
+  answerChips = answerChips.length ? answerChips : null;
+  var text = goog.string.trim(report['text'] || '') || null;
+
+  return cm.ui.create('div', cm.css.REPORT,
+      answerChips && cm.ui.create('div', cm.css.REPORT_ANSWERS,
+          timeDiv, answerChips),
+      text && cm.ui.create('div', cm.css.REPORT_TEXT,
+          answerChips ? null : timeDiv, text),
+      text && self.renderVotingUi_(report)
   );
+};
+
+/**
+ * Renders the voting section of a single report.
+ * @param {Object} report A JSON data object returned from /.api/reports.
+ * @return {Element} The voting UI rendered for display.
+ * @private
+ */
+cm.CrowdView.prototype.renderVotingUi_ = function(report) {
+  var self = this;  // this scope uses 'self' throughout instead of 'this'
+  var vote = report['vote'];  // this user's current vote: '' or 'u' or 'd'
+  // Vote counts not including this user's vote, used for recomputing totals.
+  var otherUps = report['upvote_count'] - (vote == 'u' ? 1 : 0);
+  var otherDowns = report['downvote_count'] - (vote == 'd' ? 1 : 0);
+  var upBtn, upLabel, downBtn, downLabel;
+
+  function updateUi() {
+    goog.dom.classes.enable(upBtn, cm.css.SELECTED, vote === 'u');
+    goog.dom.classes.enable(downBtn, cm.css.SELECTED, vote === 'd');
+    cm.ui.setText(upLabel, (otherUps + (vote === 'u' ? 1 : 0)) || '');
+    cm.ui.setText(downLabel, (otherDowns + (vote === 'd' ? 1 : 0)) || '');
+  }
+
+  function setVote(newVote) {
+    vote = newVote;
+    updateUi();
+    goog.net.XhrIo.send(
+        self.votePostUrl_, function(e) { }, 'POST',
+        'report_id=' + encodeURIComponent(report['id']) + '&type=' + vote);
+    cm.Analytics.logAction(
+        cm.Analytics.CrowdReportFormAction.VOTE_BUTTON_CLICKED,
+        self.layerId_, (vote == 'u') ? 1 : (vote == 'd') ? -1 : 0);
+  }
+
+  var result = cm.ui.create('div', cm.css.REPORT_VOTE,
+      cm.MSG_HELPFUL_QUESTION,
+      upBtn = cm.ui.create('span', {
+          'class': [cm.css.VOTE, cm.css.UPVOTE],
+          'title': cm.MSG_UPVOTE_TOOLTIP
+      }),
+      upLabel = cm.ui.create('span', [cm.css.VOTE_COUNT]),
+      downBtn = cm.ui.create('span', {
+          'class': [cm.css.VOTE, cm.css.DOWNVOTE],
+          'title': cm.MSG_DOWNVOTE_TOOLTIP
+      }),
+      downLabel = cm.ui.create('span', [cm.css.VOTE_COUNT])
+  );
+  updateUi();
+  cm.events.listen(upBtn, 'click', function() {
+    setVote((vote === 'u') ? '' : 'u');
+  });
+  cm.events.listen(downBtn, 'click', function() {
+    setVote((vote === 'd') ? '' : 'd');
+  });
+  return result;
 };
