@@ -37,8 +37,7 @@ AUX=aux/build_info.js \
     aux/google_maps_api_v3_11.js \
     aux/html-css-sanitizer.js \
     aux/json_files.js \
-    aux/maps_api.js \
-    aux/uri.js
+    aux/maps_api.js
 
 # Files that are used only by JS tests.
 TEST_FAKES=js/test_bootstrap.js,aux/maps_api.js
@@ -169,11 +168,6 @@ aux/maps_api.js:
 	    grep 'getScript("' | \
 	    sed -e 's/.*"\([^"]*\)".*/\1/') > $@
 
-# Download uri.js from the google-caja project.
-aux/uri.js:
-	@mkdir -p aux
-	curl -o $@ http://google-caja.googlecode.com/svn/trunk/src/com/google/caja/plugin/uri.js
-
 
 # JS COMPILATION --------------------------------------------------------------
 
@@ -185,7 +179,6 @@ $(LIST):
 	@$(MAKE) $(AUX)
 	@mkdir -p $(OUT_DIR)
 	@> $@  # creates the file or truncates it to zero length
-	@echo aux/uri.js >> $@
 	@echo aux/html-css-sanitizer.js >> $@
 	@# Because OUT_DIR is under js/, the compiler will try to compile
 	@# *.js files in OUT_DIR unless we remove them first.
@@ -205,7 +198,6 @@ $(OUT_OPT): $(AUX) js/*.js
 	@rm -f $(OUT_DIR)/*.js
 	python $(CLOSURE_DIR)/closure/bin/calcdeps.py \
 	    $(SOURCE_DIR_OPTIONS) \
-	    -i aux/uri.js \
 	    -i aux/html-css-sanitizer.js \
 	    $(TARGET_OPTIONS) \
 	    -i aux/build_info.js \
