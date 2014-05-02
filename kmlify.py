@@ -53,20 +53,28 @@ OPERATORS = {
 
 
 def Stringify(text, html=False):
+  """Returns a string version of the given text, handling encoding.
+
+  Args:
+    text: The text to stringify
+    html: True if the returned text should be html-escaped
+  Returns:
+    A string.
+  """
   if text is None:
     return ''
   if isinstance(text, unicode):
     # For HTML, encode non-ascii chars to XML char refs
     # For URLs, encode non-ascii chars as utf-8
     if html:
-      return text.encode('ascii', errors='xmlcharrefreplace')
+      return text.replace('&', '&amp').replace('<', '&lt;').replace(
+          '>', '&gt;').encode('ascii', errors='xmlcharrefreplace')
     return text.encode('utf-8')
   return str(text)
 
 
 def HtmlEscape(text):
-  return Stringify(text, html=True).replace(
-      '&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+  return Stringify(text, html=True)
 
 
 def UrlQuote(text):
@@ -315,7 +323,8 @@ class Kmlifier(object):
     self.join_records = {}
     if join_data:
       self.join_records = dict((record[join_field], record)
-                               for record in self.RecordsFromCsv(join_data))
+                               for record in self.RecordsFromCsv(
+                                   join_data, header_fields_hint=[]))
 
     # Gather the set of all fields mentioned in templates or conditions.
     self.fields = set()
@@ -331,8 +340,6 @@ class Kmlifier(object):
         field = field[1:]
       self.location_fields_cleaned = map(str, field.split(','))
       self.fields.update(self.location_fields_cleaned)
-    # TODO(arb): add a test for this - have a join column, don't mention it
-    # anywhere else in the URL.
     if self.join_field:
       self.fields.add(self.join_field)
 
@@ -375,24 +382,28 @@ class Kmlifier(object):
           records.append(dict(props, __geometry__=geometry, __style__=style))
     return records
 
-  def RecordsFromCsv(self, csv_data, encoding='utf-8'):
+  def RecordsFromCsv(self, csv_data, encoding='utf-8', header_fields_hint=None):
     """Extracts records from a string of CSV data.
 
     Args:
       csv_data: The CSV data, as a string. There should be a header, 1 or 2
           rows of which should contain the field names.
       encoding: The string encoding of csv_data, e.g. 'utf-8'.
+      header_fields_hint: A list of fields required to be in the header row.
+          If empty, use the first row as the header.
+          If None, use self.location_fields_cleaned.
     Returns:
       The records, as a list of dictionaries.
     """
-    logging.info('Looking for: %s', self.fields)
     csv_file = StringIO.StringIO(csv_data)
-    fieldnames = self.FindCsvFieldnames(csv_file, encoding)
+    if header_fields_hint is None:
+      header_fields_hint = self.location_fields_cleaned
+    fieldnames = self.FindCsvFieldnames(csv_file, encoding, header_fields_hint)
     logging.info('CSV fieldnames: %s', fieldnames)
     return [NormalizeRecord(DecodeRecord(record, encoding))
             for record in csv.DictReader(csv_file, fieldnames=fieldnames)]
 
-  def FindCsvFieldnames(self, csv_file, encoding):
+  def FindCsvFieldnames(self, csv_file, encoding, header_fields_hint):
     """Finds a suitable set of fieldnames to map fields to CSV columns.
 
     Field names are taken from the first row with cells that match the
@@ -407,6 +418,8 @@ class Kmlifier(object):
     Args:
       csv_file: A CSV file-like object.
       encoding: The string encoding of csv_data, e.g. 'utf-8'.
+      header_fields_hint: A list of fields required to be in the header row.
+          Pass an empty list to use the first row as the header.
     Returns:
       An array suitable for passing to fieldnames in csv.DictReader
     """
@@ -414,8 +427,7 @@ class Kmlifier(object):
     csv_reader = csv.reader(csv_file)
     for row in csv_reader:
       row = [NormalizeFieldName(Decode(f, encoding)) for f in row]
-      if set(row).issuperset(self.location_fields_cleaned):
-        # The fieldnames row is defined to be the first row with lat,lon fields
+      if set(row).issuperset(header_fields_hint):
         fieldnames = row
         break
 

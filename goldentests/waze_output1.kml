@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.2">
+<Document>
+  <Style id="style1">
+    <IconStyle>
+      <color>ffffffff</color>
+      <Icon>
+        <href>http://mts0.google.com/vt/icon/name=icons/layers/traffic/other_large_8x.png</href>
+      </Icon>
+      <hotSpot x="0.5" xunits="fraction" y="0.5" yunits="fraction" />
+    </IconStyle>
+  </Style>
+  <Placemark>
+    <name />
+    <description>&lt;br&gt; Vi&amp;#241;a del Mar&lt;br&gt;&lt;br&gt;&lt;small&gt;Reported via Waze app at 2014-04-14T11:47:34Z&lt;/small&gt;</description>
+    <Point>
+      <coordinates>-71.502553,-33.038244,0</coordinates>
+    </Point>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
+  <Placemark>
+    <name>Object on road</name>
+    <description>Ruta CH-60&lt;br&gt;Valparaiso, 99 &lt;br&gt;&lt;br&gt;&lt;small&gt;Reported via Waze app at 2014-04-14T11:52:29Z&lt;/small&gt;</description>
+    <Point>
+      <coordinates>-71.547404,-33.097315,0</coordinates>
+    </Point>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
+</Document>
+</kml>

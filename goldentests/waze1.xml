@@ -1,0 +1,64 @@
+<rss xmlns:georss="http://www.georss.org/georss" xmlns:linqmap="http://www.linqmap.com" version="2.0">
+  <channel>
+  <title>GeoRSS</title>
+  <description>GeoRSS</description>
+  <georss:box>-33.430000,-72.000000,-32.560000,-71.010000</georss:box>
+  <linqmap:time>2014-04-14T11:59:00Z,2014-04-14T12:00:00Z</linqmap:time>
+    <item>
+      <title>alert</title>
+      <description>Point consists of a Latitude Longitude location</description>
+      <guid>urn:uuid:d496f4e3-7fd8-4169-ac6208e36dffa7f0</guid>
+      <link>http://georss.org/example/simple/point</link>
+      <author>LinQmap</author>
+      <pubDate>2014-04-14T11:47:34Z</pubDate>
+      <georss:point>-33.038244 -71.502553</georss:point>
+      <linqmap:entityid>
+      alert-1253652030/da505758-5041-42e3-925a-9c9399308174
+      </linqmap:entityid>
+      <linqmap:uuid>da505758-5041-42e3-925a-9c9399308174</linqmap:uuid>
+      <linqmap:isJamUnifiedAlert>false</linqmap:isJamUnifiedAlert>
+      <linqmap:magvar>56</linqmap:magvar>
+      <linqmap:speed>0.0</linqmap:speed>
+      <linqmap:type>HAZARD</linqmap:type>
+      <linqmap:subtype/>
+      <linqmap:inscale>true</linqmap:inscale>
+      <linqmap:country>CI</linqmap:country>
+      <linqmap:nearBy>Viña del Mar</linqmap:nearBy>
+      <linqmap:reportMood>1</linqmap:reportMood>
+      <linqmap:reportRating>0</linqmap:reportRating>
+      <linqmap:showFacebookPic>false</linqmap:showFacebookPic>
+      <nComments>0</nComments>
+      <nThumbsUp>0</nThumbsUp>
+      <confidence>0</confidence>
+    </item>
+    <item>
+      <title>alert</title>
+      <description>Point consists of a Latitude Longitude location</description>
+      <guid>urn:uuid:d496f4e3-7fd8-4169-ac6208e36dffa7f0</guid>
+      <link>http://georss.org/example/simple/point</link>
+      <author>LinQmap</author>
+      <pubDate>2014-04-14T11:52:29Z</pubDate>
+      <georss:point>-33.097315 -71.547404</georss:point>
+      <linqmap:entityid>
+      alert-1132246581/ad5c57ac-d71d-4a0c-98d5-761dfd0d388e
+      </linqmap:entityid>
+      <linqmap:uuid>ad5c57ac-d71d-4a0c-98d5-761dfd0d388e</linqmap:uuid>
+      <linqmap:isJamUnifiedAlert>false</linqmap:isJamUnifiedAlert>
+      <linqmap:magvar>57</linqmap:magvar>
+      <linqmap:speed>0.0</linqmap:speed>
+      <linqmap:type>HAZARD</linqmap:type>
+      <linqmap:subtype>HAZARD_ON_ROAD_OBJECT</linqmap:subtype>
+      <linqmap:inscale>true</linqmap:inscale>
+      <linqmap:street>Ruta CH-60</linqmap:street>
+      <linqmap:city>Valparaiso, 99</linqmap:city>
+      <linqmap:country>CI</linqmap:country>
+      <linqmap:roadType>7</linqmap:roadType>
+      <linqmap:reportMood>9</linqmap:reportMood>
+      <linqmap:reportRating>0</linqmap:reportRating>
+      <linqmap:showFacebookPic>false</linqmap:showFacebookPic>
+      <nComments>0</nComments>
+      <nThumbsUp>0</nThumbsUp>
+      <confidence>0</confidence>
+    </item>
+  </channel>
+</rss>

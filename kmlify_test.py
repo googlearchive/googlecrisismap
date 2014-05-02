@@ -96,7 +96,21 @@ class KmlifyTests(test_utils.BaseTest):
                           {'loc': '^coordinates', 'name': '$name',
                            'desc': '$_description', 'id': '$Placemark@id'})
 
-  def DoGoldenFileTest(self, input_type, input_name, output_name, url_flags):
+  def testWazeXml(self):
+    self.DoGoldenFileTest('xml', 'waze1.xml', 'waze_output1.kml',
+                          {'record': 'item',
+                           'loc': 'point',
+                           'join': 'subtype,waze_join1.csv',
+                           'name': '$readable_subtype',
+                           'desc': '$street<br>$city $nearBy<br><br>'
+                                   '<small>Reported via Waze app at '
+                                   '$pubDate</small>',
+                           'icon': 'http://mts0.google.com/vt/icon/name=icons/'
+                                   'layers/traffic/other_large_8x.png'},
+                          'waze_join1.csv')
+
+  def DoGoldenFileTest(self, input_type, input_name, output_name, url_flags,
+                       join_name=None):
     """Perform a golden test, check the response matches expected output.
 
     Args:
@@ -104,6 +118,7 @@ class KmlifyTests(test_utils.BaseTest):
       input_name: The file containing the input in the 'goldentests' dir.
       output_name: The file containing the output in the 'goldentests' dir.
       url_flags: A dictionary containing query parameters for the conversion.
+      join_name: File containing the join csv in the 'goldentests' dir, or None.
     """
     cwd = os.path.dirname(__file__)
 
@@ -115,6 +130,10 @@ class KmlifyTests(test_utils.BaseTest):
 
     self.mox.StubOutWithMock(kmlify, 'FetchData')
     kmlify.FetchData(mox.IgnoreArg()).AndReturn(infile)
+
+    if join_name:
+      joinfile = open(os.path.join(cwd, 'goldentests', join_name)).read()
+      kmlify.FetchData(mox.IgnoreArg()).AndReturn(joinfile)
 
     url = 'http://whatever/'
     url_flags = urllib.urlencode(url_flags)
