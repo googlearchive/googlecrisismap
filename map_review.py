@@ -24,6 +24,15 @@ import perms
 
 from google.appengine.ext import ndb
 
+# Takes the color as a %-substitution
+ICON_URL_TEMPLATE = ('https://chart.googleapis.com/chart?'
+                     'chst=d_map_xpin_letter&chld=pin%%7C+%%7C%s%%7C000%%7CF00')
+
+
+def HtmlEscape(text):
+  return (text or '').replace(
+      '&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
 
 class _MapReview(base_handler.BaseHandler):
   """Administration page for reviewing crowd reports on a map."""
@@ -54,6 +63,7 @@ class _MapReview(base_handler.BaseHandler):
     if 'topics' in maproot:
       questions = {}
       answers = {}
+      answer_colors = {}
       for topic in maproot['topics']:
         if 'questions' not in topic:
           continue
@@ -61,10 +71,11 @@ class _MapReview(base_handler.BaseHandler):
         tid = map_id + '.' + topic['id']
         for question in topic['questions']:
           question_id = tid + '.' + question['id']
-          questions[question_id] = question['text']
+          questions[question_id] = question.get('text')
           for answer in question['answers']:
             answer_id = question_id + '.' + answer['id']
-            answers[answer_id] = answer['title']
+            answers[answer_id] = answer.get('title')
+            answer_colors[answer_id] = answer.get('color')
 
       if report_id:
         reports = [x for x in [model.CrowdReport.Get(report_id)] if x]
@@ -90,20 +101,27 @@ class _MapReview(base_handler.BaseHandler):
         else:
           reports = model.CrowdReport.GetForTopics(tids, count + 1, skip)
 
+      def MakeIconUrl(report):
+        answer_id = report.answer_ids and report.answer_ids[0] or None
+        return ICON_URL_TEMPLATE % (answer_colors.get(answer_id) or '#aaa')[1:]
+
       report_dicts = [{
           'id': report.id,
           'url': '../%s?lat=%.5f&lng=%.5f&z=17' % (
               map_id, report.location.lat, report.location.lon),
           'author': report.author.split('/')[-1],
-          'text': report.text,
+          'text_escaped': HtmlEscape(report.text),
           'location': '(%.3f, %.3f)' % (report.location.lat,
                                         report.location.lon),
+          'lat': report.location.lat,
+          'lng': report.location.lon,
+          'icon_url': MakeIconUrl(report),
           'updated': report.updated.strftime('%Y-%m-%dT%H:%M:%SZ'),
           'topics': ','.join([tid.split('.')[1] for tid in report.topic_ids]),
-          'questions': '\n'.join(
+          'questions_escaped': HtmlEscape('\n'.join(
               [questions.get(answer_id.rsplit('.', 1)[0], '') + ' ' +
                answers.get(answer_id, '')
-               for answer_id in report.answer_ids])
+               for answer_id in report.answer_ids]))
           } for report in reports]
 
     if skip > 0:
@@ -121,6 +139,7 @@ class _MapReview(base_handler.BaseHandler):
     self.response.out.write(self.RenderTemplate('map_review.html', {
         'map': map_object,
         'reports': report_dicts,
+        'reports_json': json.dumps(report_dicts),
         'topic_id': topic_id,
         'topic_ids': topic_ids,
         'id': report_id,

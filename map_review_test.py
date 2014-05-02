@@ -17,6 +17,7 @@ __author__ = 'shakusa@google.com (Steve Hakusa)'
 import json
 import urllib
 
+import map_review
 import model
 import perms
 import test_utils
@@ -41,7 +42,7 @@ class MapReviewTest(test_utils.BaseTest):
             'cluster_radius': 456,
             'questions': [{
                 'id': 'q1',
-                'text': 'Is there space available?',
+                'text': 'Is there space available?<br>',
                 'answers': [
                     {'id': 'y', 'title': 'Yes', 'label': 'space'},
                     {'id': 'n', 'title': 'No', 'label': 'no space'}]
@@ -79,7 +80,8 @@ class MapReviewTest(test_utils.BaseTest):
     self.answer2_id = self.topic2_id + '.q1.n'
     self.SetTime(1300000001)
     self.crowd_report2 = test_utils.NewCrowdReport(author='http://foo.com/abc',
-                                                   text='bottled water here',
+                                                   text=('bottled water here '
+                                                         '</script>'),
                                                    topic_ids=[self.topic2_id],
                                                    answer_ids=[self.answer2_id])
 
@@ -90,9 +92,11 @@ class MapReviewTest(test_utils.BaseTest):
     self.assertTrue('>water<' in response.body)
     self.assertTrue(self.crowd_report1.key.string_id() in response.body)
     self.assertTrue(self.crowd_report2.key.string_id() in response.body)
-    self.assertTrue('Is there space available? Yes' in response.body)
+    self.assertTrue('Is there space available?&lt;br&gt; Yes' in response.body)
     self.assertTrue('Is there water? No' in response.body)
+    self.assertTrue('bottled water here &lt;/script&gt;' in response.body)
     self.assertTrue('name="report" title="delete"' in response.body)
+    self.assertTrue(map_review.ICON_URL_TEMPLATE % 'aaa' in response.body)
 
   def testGetFromDomainReviewer(self):
     perms.Grant('domainreviewer', perms.Role.DOMAIN_REVIEWER, 'xyz.com')
