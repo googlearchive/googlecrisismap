@@ -290,3 +290,12 @@ cm.util.shortAge = function(time) {
     return cm.getMsgShortDaysAgo(Math.round(age / 8640) / 10);
   }
 };
+
+
+/**
+ * Checks whether or not the map is embedded.
+ * @return {boolean} Whether the map is embedded.
+ */
+cm.util.isEmbedded = function() {
+  return window != window.parent;
+};
