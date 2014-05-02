@@ -16,24 +16,59 @@
  */
 goog.provide('cm.EditPresenter');
 
+goog.require('cm.AnswerEditor');
 goog.require('cm.ArrangeCommand');
 goog.require('cm.ArrangeView');
+goog.require('cm.CheckboxEditor');
 goog.require('cm.Command');
 goog.require('cm.CreateLayersCommand');
 goog.require('cm.CreateTopicsCommand');
 goog.require('cm.DeleteLayerCommand');
 goog.require('cm.DeleteTopicCommand');
 goog.require('cm.EditCommand');
+goog.require('cm.HtmlEditor');
 goog.require('cm.ImporterView');
 goog.require('cm.InspectorPopup');
+goog.require('cm.LatLonBoxEditor');
+goog.require('cm.LayerMenuEditor');
 goog.require('cm.LayerModel');
+goog.require('cm.LegendEditor');
 goog.require('cm.MapModel');
+goog.require('cm.MenuEditor');
+goog.require('cm.NumberEditor');
+goog.require('cm.QuestionEditor');
+goog.require('cm.QuestionListEditor');
+goog.require('cm.RadioEditor');
 goog.require('cm.SetDefaultViewCommand');
 goog.require('cm.ShareEmailView');
+goog.require('cm.TextEditor');
+goog.require('cm.UrlEditor');
+goog.require('cm.WmsMenuEditor');
 goog.require('cm.css');
 goog.require('cm.editors');
 goog.require('cm.events');
 goog.require('goog.net.XhrIo');
+
+/**
+ * The map of editors, by type, available to the EditPresenter.
+ * Editors are registered in the constructor.
+ * @type {Object}
+ */
+var EDITORS = goog.object.create(
+    cm.editors.Type.ANSWER, cm.AnswerEditor,
+    cm.editors.Type.CHECKBOX, cm.CheckboxEditor,
+    cm.editors.Type.HTML, cm.HtmlEditor,
+    cm.editors.Type.LAT_LON_BOX, cm.LatLonBoxEditor,
+    cm.editors.Type.LAYER_MENU, cm.LayerMenuEditor,
+    cm.editors.Type.LEGEND, cm.LegendEditor,
+    cm.editors.Type.MENU, cm.MenuEditor,
+    cm.editors.Type.NUMBER, cm.NumberEditor,
+    cm.editors.Type.QUESTION, cm.QuestionEditor,
+    cm.editors.Type.QUESTION_LIST, cm.QuestionListEditor,
+    cm.editors.Type.RADIO, cm.RadioEditor,
+    cm.editors.Type.TEXT, cm.TextEditor,
+    cm.editors.Type.URL, cm.UrlEditor,
+    cm.editors.Type.WMS_MENU, cm.WmsMenuEditor);
 
 /**
  * Presenter for editing functionality.
@@ -71,6 +106,10 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
    * @private
    */
   this.saveUrl_ = config['save_url'];
+
+  goog.object.forEach(EDITORS, function(editor, type) {
+    cm.editors.register(type, editor);
+  });
 
   function usesUrlField(type) {
     return type === cm.LayerModel.Type.KML ||

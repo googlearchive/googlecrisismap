@@ -12,11 +12,14 @@
 // Author: kpy@google.com (Ka-Ping Yee)
 
 goog.require('cm.css');
+goog.require('cm.editors');
 
 function InspectorViewTest() {
   cm.TestBase.call(this);
   this.tableElem_ = cm.ui.create('table');
   this.view_ = new cm.InspectorView(this.tableElem_);
+  cm.editors.register(cm.editors.Type.NUMBER, cm.NumberEditor);
+  cm.editors.register(cm.editors.Type.TEXT, cm.TextEditor);
 }
 InspectorViewTest.prototype = new cm.TestBase();
 registerTestSuite(InspectorViewTest);

@@ -12,6 +12,7 @@
 // Author: kpy@google.com (Ka-Ping Yee)
 
 goog.require('cm.css');
+goog.require('cm.editors');
 
 function InspectorPopupTest() {
   cm.TestBase.call(this);
@@ -27,6 +28,8 @@ function InspectorPopupTest() {
     this.oldValues_ = e.oldValues;
     this.newValues_ = e.newValues;
   }, this);
+  cm.editors.register(cm.editors.Type.NUMBER, cm.NumberEditor);
+  cm.editors.register(cm.editors.Type.TEXT, cm.TextEditor);
 }
 InspectorPopupTest.prototype = new cm.TestBase();
 registerTestSuite(InspectorPopupTest);

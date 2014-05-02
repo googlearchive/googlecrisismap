@@ -365,6 +365,72 @@ cm.MSG_INVALID_LEGEND =
 cm.MSG_REVERT = goog.getMsg('Revert');
 
 
+// Answer editor
+
+/** @desc Label for a field to enter a color. */
+cm.MSG_ANSWER_COLOR = goog.getMsg('Color');
+
+/** @desc Tooltip for the field to enter a color. */
+cm.MSG_ANSWER_COLOR_TOOLTIP = goog.getMsg('Background color for the answer ' +
+    'label, in hexadecimal RGB notation as used in CSS. ' +
+    'Red is #ff0000 or #f00.');
+
+/**
+ * @desc Label for a field to enter an multiple-choice answer to a question.
+ * This answer appears on a button the user presses to select the asnwer.
+ */
+cm.MSG_ANSWER_BUTTON_LABEL = goog.getMsg('Button label');
+
+/** @desc Tooltip for the field to enter a multiple-choice answer. */
+cm.MSG_ANSWER_BUTTON_LABEL_TOOLTIP = goog.getMsg('Short text of the answer. ' +
+    'The answer appears on a button the user presses to select it. Often the ' +
+    'button label is simply "Yes" or "No".');
+
+/**
+ * @desc Label for a field to enter an answer label, a very short form of the
+ * answer that can be understood without seeing the corresponding
+ * question.  A successful answer label to the question,
+ * "Does this gas station have gas?" would be, "Has Gas".
+ */
+cm.MSG_ANSWER_STANDALONE_LABEL = goog.getMsg('Standalone label');
+
+/**
+ * @desc Tooltip for the field to enter a label for a multiple-choice answer.
+ */
+cm.MSG_ANSWER_STANDALONE_LABEL_TOOLTIP = goog.getMsg('A label to describe ' +
+   'the selected answer. These labels should be understandable without ' +
+    'seeing the corresponding question and should be unique across all ' +
+    'questions. A useful label to the question, "Does this gas station have ' +
+    'gas?" could be, "Has gas"');
+
+/**
+ * @desc An affirmative answer.
+ */
+cm.MSG_YES = goog.getMsg('Yes');
+
+/**
+ * @desc A negative answer.
+ */
+cm.MSG_NO = goog.getMsg('No');
+
+// Question editor
+
+/** @desc Label for a button to add an multiple choice answer to a question. */
+cm.MSG_ADD_ANSWER = goog.getMsg('Add an answer');
+
+/** @desc Label for a text field for entering the text of a question. */
+cm.MSG_QUESTION_TEXT = goog.getMsg('Question');
+
+/** @desc Tooltip for a text field. */
+cm.MSG_QUESTION_TEXT_TOOLTIP = goog.getMsg('The text of the question.');
+
+
+// Question list editor
+
+/** @desc Label for a button to add a question to a list of questions. */
+cm.MSG_ADD_QUESTION = goog.getMsg('Add a question');
+
+
 // Map view
 
 /** @desc HTML for a copyright notice for map data from OpenStreetMap. */

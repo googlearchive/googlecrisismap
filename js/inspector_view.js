@@ -36,8 +36,8 @@ var TOOLTIP_HIDE_DELAY_MS = 500;
  * @typedef {{key: string,
  *            label: string,
  *            type: cm.editors.Type,
- *            tooltip: string,
- *            conditions: Object}}
+ *            tooltip: (string|undefined),
+ *            conditions: (Object|undefined)}}
  */
 cm.EditorSpec;
 
@@ -218,23 +218,29 @@ cm.InspectorView.prototype.deleteEditor = function(key) {
 /**
  * Collects and returns pending edits that have been made to the original model.
  *
- * @return {{oldValues: Object, newValues: Object}} An object with 2 properties,
- *     oldValues and newValues.  Both objects will have the same keys. There are
- *     three cases:
- *     1. new value is added: oldValues[key] will be undefined
- *                            newValues[key] will contain the new value
+ * @return {{oldValues: Object, newValues: Object, draftValues: Object}} An
+ *     object with 3 properties, oldValues, newValues, and draftValues.
+ *     oldValues and newValues will have the same keys. There are three cases:
+ *     1. new value is added: oldValues[key] will be undefined,
+ *                            newValues[key] and draftValues[key] will contain
+ *                            the new value
  *     2. old value is removed: oldValues[key] will contain the old value,
- *                              newValues[key] will be undefined
+ *                              newValues[key] and draftValues[key] will be
+ *                              undefined
  *     3. old value is changed: oldValues[key] will contain the old value,
- *                              newValues[key] will contain the new value
- *     Values in the original that have not been changed appear in neither
- *     oldValues nor newValues.
+ *                              newValues[key] and draftValues[key] will
+ *                              contain the new value
+ *     Values in the original that have not been changed appear in
+ *     draftValues, but neither oldValues nor newValues.
  */
 cm.InspectorView.prototype.collectEdits = function() {
-  var oldValues = {}, newValues = {};
+  var oldValues = {}, newValues = {}, draftValues = {};
   for (var key in this.rows_) {
     var oldValue = this.object_.get(key);
     var newValue = this.draft_.get(key);
+    if (newValue !== undefined) {
+      draftValues[key] = newValue;
+    }
     if (!this.editorIsActive_(key)) {
       // The editor's conditions determine whether a key is active or not, but
       // we currently have only one notion of conditionality to determine
@@ -253,7 +259,9 @@ cm.InspectorView.prototype.collectEdits = function() {
     }
   }
 
-  return {oldValues: oldValues, newValues: newValues};
+  return {oldValues: oldValues,
+          newValues: newValues,
+          draftValues: draftValues};
 };
 
 /**

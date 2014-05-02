@@ -1343,6 +1343,27 @@ textarea.cm-legend-text {
   color: #d43;
 }
 
+/* Question list, question, and answer editors */
+.cm-question-editor {
+  border: 1px dashed #efefef;
+}
+.cm-answer-editor {
+  border: 1px dashed #e6e6e6;
+}
+.cm-question-editor .cm-button,
+.cm-question-list-editor .cm-button {
+  margin-top: 10px;
+}
+.cm-question-container, .cm-answer-container {
+  position: relative;
+  padding: 0 32px 8px 0;
+}
+.cm-answer-container .cm-close-button,
+.cm-question-container .cm-close-button
+{
+  margin: 0 6px;
+}
+
 /* Collaborate dialog */
 .cm-share-emailer {
   width: 400px;

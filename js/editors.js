@@ -15,17 +15,6 @@
  */
 goog.provide('cm.editors');
 
-goog.require('cm.CheckboxEditor');
-goog.require('cm.HtmlEditor');
-goog.require('cm.LatLonBoxEditor');
-goog.require('cm.LayerMenuEditor');
-goog.require('cm.LegendEditor');
-goog.require('cm.MenuEditor');
-goog.require('cm.NumberEditor');
-goog.require('cm.RadioEditor');
-goog.require('cm.TextEditor');
-goog.require('cm.UrlEditor');
-goog.require('cm.WmsMenuEditor');
 goog.require('cm.ui');
 goog.require('goog.object');
 
@@ -34,6 +23,7 @@ goog.require('goog.object');
  * @enum {string}
  */
 cm.editors.Type = {
+  ANSWER: 'ANSWER',
   CHECKBOX: 'CHECKBOX',
   HTML: 'HTML',
   LAT_LON_BOX: 'LAT_LON_BOX',
@@ -41,6 +31,8 @@ cm.editors.Type = {
   LEGEND: 'LEGEND',
   MENU: 'MENU',
   NUMBER: 'NUMBER',
+  QUESTION: 'QUESTION',
+  QUESTION_LIST: 'QUESTION_LIST',
   RADIO: 'RADIO',
   TEXT: 'TEXT',
   URL: 'URL',
@@ -51,21 +43,19 @@ cm.editors.Type = {
  * A table of editor constructors by editor type.
  * @type {Object.<cm.editors.Type, function(
  *     new:cm.Editor, Element, string, Object, google.maps.MVCObject)>}
- * @const
  */
-cm.editors.CONSTRUCTORS = goog.object.create(
-  cm.editors.Type.CHECKBOX, cm.CheckboxEditor,
-  cm.editors.Type.HTML, cm.HtmlEditor,
-  cm.editors.Type.LAT_LON_BOX, cm.LatLonBoxEditor,
-  cm.editors.Type.LAYER_MENU, cm.LayerMenuEditor,
-  cm.editors.Type.LEGEND, cm.LegendEditor,
-  cm.editors.Type.MENU, cm.MenuEditor,
-  cm.editors.Type.NUMBER, cm.NumberEditor,
-  cm.editors.Type.RADIO, cm.RadioEditor,
-  cm.editors.Type.TEXT, cm.TextEditor,
-  cm.editors.Type.URL, cm.UrlEditor,
-  cm.editors.Type.WMS_MENU, cm.WmsMenuEditor
-);
+cm.editors.constructors = {};
+
+/**
+ * Registers an editor constructor by its type.
+ * @param {cm.editors.Type} type The type of the editor.
+ * @param {function(
+ *     new:cm.Editor, Element, string, Object, google.maps.MVCObject)} editor An
+ *     editor constructor.
+ */
+cm.editors.register = function(type, editor) {
+  cm.editors.constructors[type] = editor;
+};
 
 /**
  * @param {Element} parentElem The element in which to place the editor.
@@ -78,5 +68,5 @@ cm.editors.CONSTRUCTORS = goog.object.create(
  * @return {cm.Editor} A newly created editor of the requested type.
  */
 cm.editors.create = function(parentElem, type, id, options, draft) {
-  return new (cm.editors.CONSTRUCTORS[type])(parentElem, id, options, draft);
+  return new (cm.editors.constructors[type])(parentElem, id, options, draft);
 };
