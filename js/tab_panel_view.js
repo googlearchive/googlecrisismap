@@ -287,6 +287,9 @@ cm.TabPanelView.prototype.createTabs_ = function() {
   if (this.config_['enable_editing'] || this.mapModel_.hasVisibleLegends()) {
     var legendTab = new cm.LegendTabItem(
         this.mapModel_, this.appState_, this.config_, this.metadataModel_);
+    cm.events.listen(legendTab, cm.events.OPEN_LAYERS_TAB, function() {
+      this.tabView_.selectTabItem(layersTab);
+    }, this);
     this.tabView_.appendTabItem(legendTab);
     if (legendTab.getIsEnabled()) {
       firstTab = legendTab;

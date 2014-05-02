@@ -504,6 +504,9 @@ cm.MSG_NUMBER_MATCHING_LAYERS = goog.getMsg('{NUM_LAYERS, plural, ' +
   '=1 {1 layer or folder matches the filter query}' +
   'other {# layers and folders match the filter query}}');
 
+/** @desc Label for a link that opens the layers tab. */
+cm.MSG_OPEN_LAYERS_TAB_LINK = goog.getMsg('View all layers \u00bb');
+
 
 // Crowd view
 

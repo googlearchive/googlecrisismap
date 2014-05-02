@@ -221,6 +221,9 @@ cm.events.TAB_PANEL_STATE_FIRST_CHANGED = 'TAB_PANEL_STATE_FIRST_CHANGED';
 /** The user clicked on a tab that was currently selected */
 cm.events.SAME_TAB_SELECTED = 'SAME_TAB_SELECTED';
 
+/** The user requested to open the layers tab. */
+cm.events.OPEN_LAYERS_TAB = 'OPEN_LAYERS_TAB';
+
 /** The details tab was selected. */
 cm.events.DETAILS_TAB_OPENED = 'DETAILS_TAB_OPENED';
 

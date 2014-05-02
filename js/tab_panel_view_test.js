@@ -333,7 +333,7 @@ TabPanelViewTest.prototype.testDetailsOpenedOnPanelExpand = function() {
 TabPanelViewTest.prototype.testDetailsOpenedOnDetailsSelect = function() {
   this.expectFeatureSelection_();
 
-  // Rest this.detailsOpened_ and expect it to become true after selecting
+  // Reset this.detailsOpened_ and expect it to become true after selecting
   // another tab and then re-selecting the details tab.
   this.detailsOpened_ = false;
   var aboutTab = this.tabView_.getTabItemByTitle('About');
@@ -342,6 +342,15 @@ TabPanelViewTest.prototype.testDetailsOpenedOnDetailsSelect = function() {
   var detailsTab = this.tabView_.getTabItemByTitle('Details');
   this.tabView_.selectTabItem(detailsTab);
   expectTrue(this.detailsOpened_);
+};
+
+/** Tests the event listener for opening the layers tab. */
+TabPanelViewTest.prototype.testLayersOpenedOnEvent = function() {
+  this.createTabPanelView_();
+  var legendTabItem = this.tabView_.getTabItemByTitle('Legend');
+  this.expectTab_('Layers', 1, false);
+  cm.events.emit(legendTabItem, cm.events.OPEN_LAYERS_TAB);
+  this.expectTab_('Layers', 1, true);
 };
 
 /**

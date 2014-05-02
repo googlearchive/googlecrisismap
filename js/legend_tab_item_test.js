@@ -178,6 +178,7 @@ LegendTabItemTest.prototype.testCreation = function() {
   this.assertLegendAbsent_(content, this.layerDescs_[2]);
   this.assertCorrectBoxMarkedFirst_(content);
   expectTrue(legendTabItem.getIsEnabled());
+  expectDescendantOf(content, withText(cm.MSG_OPEN_LAYERS_TAB_LINK));
 };
 
 
@@ -357,4 +358,12 @@ LegendTabItemTest.prototype.testArrangeLayersTwice = function() {
   var content = legendTabItem.getContent();
   expectDescendantOf(content, withText(hasSubstr(blueLayer.title)));
   this.assertCorrectBoxMarkedFirst_(content);
+};
+
+LegendTabItemTest.prototype.testOpenLayersTabLink = function() {
+  var legendTabItem = this.createLegendTabItem_('testOpenLayersTabLink');
+  var link = expectDescendantOf(
+      legendTabItem.getContent(), withText(cm.MSG_OPEN_LAYERS_TAB_LINK));
+  this.expectEvent(legendTabItem, cm.events.OPEN_LAYERS_TAB);
+  cm.events.emit(link, 'click');
 };

@@ -45,6 +45,9 @@ cm.LegendTabItem = function(mapModel, appState, config, metadataModel) {
   /** @private {!Element} */
   this.legendContainer_ = cm.ui.create('div');
 
+  /** @private {!Element} */
+  this.linksContainer_ = this.createLinksContainer_();
+
   /**
    * Whether the tab item is currently enabled; set in update_()
    * @private {boolean}
@@ -68,7 +71,7 @@ goog.inherits(cm.LegendTabItem, cm.MapTabItem);
 
 /** @override */
 cm.LegendTabItem.prototype.addContent = function(parentElem) {
-  parentElem.appendChild(this.legendContainer_);
+  cm.ui.append(parentElem, this.legendContainer_, this.linksContainer_);
 };
 
 
@@ -119,6 +122,21 @@ cm.LegendTabItem.prototype.markFirstLegend_ = function() {
       goog.dom.classes.remove(elt, cm.css.FIRST_TABBED_LEGEND_BOX);
     });
   }
+};
+
+
+/**
+ * Creates an element that contains a set of links that appear at the bottom of
+ * the legend tab.
+ * @return {!Element} An element containing links.
+ * @private
+ */
+cm.LegendTabItem.prototype.createLinksContainer_ = function() {
+  var layersLink = cm.ui.createLink(cm.MSG_OPEN_LAYERS_TAB_LINK);
+  cm.events.forward(layersLink, 'click', this, cm.events.OPEN_LAYERS_TAB);
+  var linksContainer = cm.ui.create('div', {'class': cm.css.TABBED_LEGEND_BOX});
+  cm.ui.append(linksContainer, layersLink);
+  return linksContainer;
 };
 
 
