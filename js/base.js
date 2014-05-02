@@ -951,6 +951,29 @@ cm.MSG_GME_LAYER_KEY = goog.getMsg('Layer key');
 cm.MSG_WMS_LAYERS = goog.getMsg('Layers');
 
 /**
+ * @desc Message to display while waiting for a menu of layer choices
+ * to appear.
+ */
+cm.MSG_WMS_LAYERS_WAITING = goog.getMsg(
+    'Retrieving layer options from the above URL....');
+
+/**
+ * @desc Message displayed when the values for a menu of layer choices
+ * could not be filled because of a URL fetch error or timeout. The
+ * message is displayed below the URL and the empty list of layer choices.
+ */
+cm.MSG_WMS_LAYERS_FETCH_ERROR = goog.getMsg(
+    'A fetch or timeout error was encountered retrieving layer options from ' +
+    'the above URL.');
+
+/**
+ * @desc Message to display when no valid layers were available to fill a
+ * menu of layer choices.
+ */
+cm.MSG_WMS_LAYERS_FETCH_EMPTY = goog.getMsg(
+    'No layers with valid projections are available.');
+
+/**
  * @desc Label for a menu for selecting the type of coordinates to use
  *     for a tile service.
  */
@@ -1235,9 +1258,9 @@ cm.MSG_GME_LAYER_KEY_TOOLTIP = goog.getMsg(
  *     [BACKUP_MESSAGE_ID: 6748479918576975622] <- remove by 2013-06-30.
  */
 cm.MSG_WMS_LAYERS_TOOLTIP = goog.getMsg(
-    'The list of WMS layers to use.  If nothing is shown in this box, it' +
-    'means that either the WMS server cannot be reached, or the server ' +
-    'is not publishing layers with Spherical Mercator projections.');
+    'The list of WMS layers to use.  If nothing is shown in this box, it ' +
+    'could mean that either the WMS server could not be reached or the ' +
+    'server is not publishing layers with Spherical Mercator projections.');
 
 /**
  * @desc Tooltip for toggling whether a tile layer's source URL is an

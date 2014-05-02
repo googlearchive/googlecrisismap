@@ -14,6 +14,7 @@
 function WmsMenuEditorTest() {
   cm.TestBase.call(this);
 
+  this.parent_ = cm.ui.create('div');
   this.draft_ = new google.maps.MVCObject();
   this.draft_.set('type', cm.LayerModel.Type.WMS);
   this.draft_.set('url', '');
@@ -26,9 +27,8 @@ registerTestSuite(WmsMenuEditorTest);
  * @private
  */
 WmsMenuEditorTest.prototype.createEditor_ = function() {
-  var parent = cm.ui.create('div');
   this.editor_ = new cm.WmsMenuEditor(
-      parent, 'wms_editor',
+      this.parent_, 'wms_editor',
       {wms_query_url: '/root/.wms/query'},
       this.draft_);
 };
@@ -44,24 +44,47 @@ WmsMenuEditorTest.prototype.testValidReply = function() {
   this.createEditor_();
   var tilestacheQuery = this.expectNew_(
       'goog.net.Jsonp', containsRegExp(/^\/root\/\.wms\/query\?/));
+  expectCall(tilestacheQuery.setRequestTimeout)(_);
   var replyCallback = null;
   tilestacheQuery.send = function(_, r, e) {
     replyCallback = r;
   };
   this.draft_.set('url', 'http://some.wms/service');
+  expectDescendantOf(this.parent_, withText(
+      hasSubstr('Retrieving layer options')));
   replyCallback({'layers': [{name: 'a', title: 'Choice A', crs: 'EPSG:3857'},
-                            {name: 'b', title: 'Choice B', crs: 'EPSG:3857'}]});
+                            {name: 'b', title: 'Choice B', crs: 'EPSG:3857'}],
+                 'status': cm.WmsMenuEditor.WmsLayersFetchStatus.SUCCESS});
   expectEq(2, this.editor_.selectElem.options.length);
   expectThat(this.editor_.selectElem.options[0],
              isElement(withText('Choice A (a)')));
   expectThat(this.editor_.selectElem.options[1],
              isElement(withText('Choice B (b)')));
+  expectDescendantOf(this.parent_, withClass('cm-wms-menu-editor-message'),
+                     withText(''));
+};
+
+/** Tests handling a valid response with an empty layer list. */
+WmsMenuEditorTest.prototype.testValidReplyNoLayers = function() {
+  this.createEditor_();
+  var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
+  expectCall(tilestacheQuery.setRequestTimeout)(_);
+  var replyCallback = null;
+  tilestacheQuery.send = function(_, r, e) {
+    replyCallback = r;
+  };
+  this.draft_.set('url', 'http://some.wms/service');
+  replyCallback({'layers': [],
+                 'status': cm.WmsMenuEditor.WmsLayersFetchStatus.EMPTY});
+  expectDescendantOf(this.parent_, withText(
+      hasSubstr('No layers with valid projections')));
 };
 
 /** Tests handling a query response from an invalid WMS service. */
 WmsMenuEditorTest.prototype.testInvalidService = function() {
   this.createEditor_();
   var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
+  expectCall(tilestacheQuery.setRequestTimeout)(_);
   var errorCallback = null;
   tilestacheQuery.send = function(_, r, e) {
     errorCallback = e;
@@ -69,12 +92,15 @@ WmsMenuEditorTest.prototype.testInvalidService = function() {
   this.draft_.set('url', 'http://invalid/service');
   errorCallback({garbage: 'garbage'});
   expectEq(0, this.editor_.selectElem.options.length);
+  expectDescendantOf(this.parent_, withText(
+      hasSubstr('A fetch or timeout error was encountered')));
 };
 
 /** Tests caching of layers. */
 WmsMenuEditorTest.prototype.testLayerCaching = function() {
   this.createEditor_();
   var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
+  expectCall(tilestacheQuery.setRequestTimeout)(_).times(2);
   var querySent = false;
   var replyCallback;
   tilestacheQuery.send = function(_, r, e) {
@@ -103,6 +129,7 @@ WmsMenuEditorTest.prototype.testLayerType = function() {
   // Expect a query to be issued when the draft layer has a valid URL and
   // type WMS.
   var tilestacheQuery = this.expectNew_('goog.net.Jsonp', _);
+  expectCall(tilestacheQuery.setRequestTimeout)(_).times(2);
   var querySent = false;
   var replyCallback = null;
   tilestacheQuery.send = function(_, r, e) {

@@ -1276,6 +1276,9 @@ textarea.cm-legend-text {
   vertical-align: top;
   padding-top: 11px; /* align label with first line of text in the multiselect menu */
 }
+.cm-wms-menu-editor-message {
+  font-style: italic;
+}
 
 /* Editors */
 .cm-html-editor .cm-disclosure {

@@ -28,9 +28,12 @@ var SPHERICAL_MERCATOR_PROJECTIONS = ['EPSG:3857', 'ESPG:3785', 'EPSG:900913'];
 
 var SERVER_LAYERS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-// Time to wait before sending another query request if one is already
-// pending, in order to avoid sending a request for every typed character.
-var QUERY_DELAY_MS = 500; // 0.5s
+// Time to wait before sending a layer list request to a new URL if one is
+// already pending, to avoid sending a request for every typed character.
+var NEW_QUERY_DELAY_MS = 500; // 0.5s
+
+// Time to wait for a response for a layer list request.
+var QUERY_RESPONSE_TIMEOUT_MS = 30000; // 30s
 
 /**
  * A multi-select list of options that are populated by querying the
@@ -88,19 +91,19 @@ cm.WmsMenuEditor = function(parentElem, id, options, draft) {
   this.draft_ = draft;
 
   /**
-   * Warning message displayed when no valid layers are available.
+   * Warning message displayed while waiting for the list of layer options or
+   * when there was a problem populating the list of layer options.
    * @private
    */
-  this.warningMessage_ = cm.ui.create(
-      'div', {}, 'No layers with valid projections available.');
+  this.warningDiv_ = cm.ui.create('div',
+                                  {'class': cm.css.WMS_MENU_EDITOR_MESSAGE});
 
   // Create the menu with an empty list of choices.
   goog.base(this, parentElem, id,
             {choices: [], div_class: options.div_class,
              menu_class: options.menu_class, multiple: true});
 
-  // Warning message when no layers are available.
-  cm.ui.append(parentElem, this.warningMessage_);
+  cm.ui.append(parentElem, this.warningDiv_);
 
   this.bindTo('url', draft);
   this.bindTo('type', draft);
@@ -110,6 +113,18 @@ cm.WmsMenuEditor = function(parentElem, id, options, draft) {
   this.updateMenuOptions_();
 };
 goog.inherits(cm.WmsMenuEditor, cm.MenuEditor);
+
+/**
+ * Status codes returned by the WMS layers query service.
+ * These must match the WmsLayersFetchStatus codes in
+ * wmscache/wms_query.py
+ * @enum {number}
+ */
+cm.WmsMenuEditor.WmsLayersFetchStatus = {
+  SUCCESS: 0,
+  EMPTY: 1,
+  ERROR: 2
+};
 
 /**
  * Update the menu's layer options.
@@ -126,19 +141,25 @@ cm.WmsMenuEditor.prototype.updateMenuOptions_ = function() {
     this.waitingForResponse_ = false;
     if (json) {
       var layers = json['layers'] || [];
-      goog.dom.classes.enable(this.warningMessage_, cm.css.HIDDEN,
-                              layers.length > 0);
+      var status = parseInt(json['status'], 10);
+      this.updateWarningMessage_(status);
       this.updateSelect_(layers);
-      this.serverLayersCache_[url] = {
-        'layers': layers,
-        'timestamp': (new Date()).getTime()};
+      // Do not cache responses that returned an error, in case the request is
+      // timing out and the user would like the fetch to be tried again.
+      if (status !== cm.WmsMenuEditor.WmsLayersFetchStatus.ERROR) {
+        this.serverLayersCache_[url] = {
+          'layers': layers,
+          'timestamp': (new Date()).getTime(),
+          'status': status
+        };
+      }
       // If the draft URL has changed by the time the handler is invoked,
       // call the handler again.
       if (this.draftUrlChanged_) {
         this.draftUrlChanged_ = false;
         goog.global.setTimeout(goog.bind(function() {
           this.updateMenuOptions_();
-        }, this), QUERY_DELAY_MS);
+        }, this), NEW_QUERY_DELAY_MS);
       }
     }
   }, this);
@@ -153,21 +174,41 @@ cm.WmsMenuEditor.prototype.updateMenuOptions_ = function() {
       if (layerCache && (new Date()).getTime() - layerCache['timestamp'] <
           SERVER_LAYERS_CACHE_TTL_MS) {
         var layers = layerCache['layers'];
-        goog.dom.classes.enable(this.warningMessage_, cm.css.HIDDEN,
-                                layers.length > 0);
+        this.updateWarningMessage_(layerCache['status']);
         this.updateSelect_(layers);
       } else {
         var query = new goog.net.Jsonp(this.wmsQueryUrl_ +
             '?server_url=' + encodeURIComponent(url) +
             '&projections=' + SPHERICAL_MERCATOR_PROJECTIONS.join(','));
+        query.setRequestTimeout(QUERY_RESPONSE_TIMEOUT_MS);
         this.waitingForResponse_ = true;
+        cm.ui.setText(this.warningDiv_, cm.MSG_WMS_LAYERS_WAITING);
         query.send(null, handleWmsQueryResponse, goog.bind(function() {
           this.waitingForResponse_ = false;
+          this.updateWarningMessage_(
+              cm.WmsMenuEditor.WmsLayersFetchStatus.ERROR);
           this.updateSelect_([]);
         }, this));
       }
     }
   }
+};
+
+/**
+ * Update the informational message under the WMS menu options list according
+ * to the status code returned by the WMS layers query server.
+ * @param {number} status The status code returned by the server.
+ * @private
+ */
+cm.WmsMenuEditor.prototype.updateWarningMessage_ = function(status) {
+  var warningMessage = '';
+  if (status === cm.WmsMenuEditor.WmsLayersFetchStatus.EMPTY) {
+    warningMessage = cm.MSG_WMS_LAYERS_FETCH_EMPTY;
+  }
+  if (status === cm.WmsMenuEditor.WmsLayersFetchStatus.ERROR) {
+    warningMessage = cm.MSG_WMS_LAYERS_FETCH_ERROR;
+  }
+  cm.ui.setText(this.warningDiv_, warningMessage);
 };
 
 /**
