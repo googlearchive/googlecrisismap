@@ -371,8 +371,8 @@ class CardHandlerTest(test_utils.BaseTest):
 
   def setUp(self):
     super(CardHandlerTest, self).setUp()
-    map_model = model.MapModel(key_name='1', domains=['test.com'],
-                               world_readable=True)
+    map_model = model.MapModel(key_name='1', domain='test.com',
+                               domains=['test.com'], world_readable=True)
     map_object = model.Map(map_model)
     map_version = model.MapVersionModel(
         parent=map_model, maproot_json=json.dumps(MAP_ROOT))

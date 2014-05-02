@@ -107,7 +107,11 @@ class MapModel(db.Model):
   # CAUTION: for not google domains this is potentially problematic,
   # since there may not be a google apps domain that corresponds to the
   # gaia ids (and hence no management).
-  domains = db.StringListProperty()
+  domains = db.StringListProperty()  # DEPRECATED
+
+  # This is the new domain property.  After data migration, this will become
+  # a required property and we'll delete the 'domains' property above.
+  domain = db.StringProperty()
 
   # Default role for users in one of the domains listed in the domains property.
   # domain_role can be set to admin, but we won't honor it.
@@ -460,8 +464,8 @@ class Map(object):
   for x in ['created', 'creator_uid', 'updated', 'updater_uid',
             'blocked', 'blocker_uid', 'deleted', 'deleter_uid',
             'title', 'description', 'current_version', 'world_readable',
-            'owners', 'editors', 'reviewers', 'viewers', 'domains',
-            'domain_role']:
+            'owners', 'editors', 'reviewers', 'viewers', 'domain',
+            'domains', 'domain_role']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
 
   # Handy access to the user profiles associated with user IDs.
@@ -606,8 +610,8 @@ class Map(object):
         key_name=utils.MakeRandomId(),
         created=datetime.datetime.utcnow(), creator_uid=users.GetCurrent().id,
         owners=owners, editors=editors, reviewers=reviewers, viewers=viewers,
-        domains=[domain.name], domain_role=domain.initial_domain_role,
-        world_readable=world_readable))
+        domain=domain.name, domains=[domain.name],
+        domain_role=domain.initial_domain_role, world_readable=world_readable))
     map_object.PutNewVersion(maproot_json)  # also puts the MapModel
     return map_object
 
@@ -783,8 +787,8 @@ class EmptyMap(Map):
   def __init__(self):
     Map.__init__(self, MapModel(
         key_name='0', owners=[], editors=[], reviewers=[], viewers=[],
-        domains=['gmail.com'], world_readable=True, title=self.TITLE,
-        description=self.DESCRIPTION))
+        domain='gmail.com', domains=['gmail.com'],
+        world_readable=True, title=self.TITLE, description=self.DESCRIPTION))
 
   def GetCurrent(self):
     key = db.Key.from_path('MapModel', '0', 'MapVersionModel', 1)

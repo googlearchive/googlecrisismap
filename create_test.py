@@ -56,6 +56,7 @@ class CreateTest(test_utils.BaseTest):
       map_object = model.Map.Get(location.split('/')[-1])
       self.assertTrue(map_object is not None)
       # With no initial_domain_role set, domain_role should be None.
+      self.assertEquals('xyz.com', map_object.domain)
       self.assertEquals(['xyz.com'], map_object.domains)
       self.assertEquals(None, map_object.domain_role)
 
@@ -71,6 +72,7 @@ class CreateTest(test_utils.BaseTest):
       # Check the map; initial_domain_role is set so domain_role should be set.
       map_object = model.Map.Get(location.split('/')[-1])
       self.assertTrue(map_object is not None)
+      self.assertEquals('xyz.com', map_object.domain)
       self.assertEquals(['xyz.com'], map_object.domains)
       self.assertEquals(perms.Role.MAP_EDITOR, map_object.domain_role)
 
