@@ -93,8 +93,14 @@ cm.FooterView = function(parentElem, popupContainer, mapModel, footerParams) {
 
 /** @private Updates the footer to match the MapModel. */
 cm.FooterView.prototype.updateFooter_ = function() {
+  cm.ui.clear(this.footerSpan_);
   var footer = /** @type cm.Html */(this.mapModel_.get('footer'));
-  (footer || cm.Html.EMPTY).pasteInto(this.footerSpan_);
+  if (footer.isEmpty()) {
+    return;
+  }
+  var span = cm.ui.create('span');
+  footer.pasteInto(span);
+  cm.ui.append(this.footerSpan_, cm.ui.SEPARATOR_DOT, span);
 };
 
 /**
@@ -109,6 +115,5 @@ cm.FooterView.prototype.appendPublisher_ = function(parentElem, footerParams) {
   if (!publisherName) return;
   var span = cm.ui.create('span');
   new cm.Html(cm.getMsgPublisherAttribution(publisherName)).pasteInto(span);
-  cm.ui.append(span, cm.ui.SEPARATOR_DOT);
   cm.ui.append(parentElem, span);
 };
