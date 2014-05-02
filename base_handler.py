@@ -239,6 +239,10 @@ class BaseHandler(webapp2.RequestHandler):
           self.request.get('hl'), self.request.headers.get('accept-language'))
       self.request.root_path = root_path
       self.request.root_url = self.request.host_url + root_path
+      self.request.secure_root_url = re.sub(
+          '^http', 'https', self.request.root_url)
+      if utils.IsDevelopmentServer():  # we don't have HTTPS in development
+        self.request.secure_root_url = self.request.root_url
 
       # To prevent clickjacking attacks, disable framing by default.
       if not self.embeddable:

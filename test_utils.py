@@ -72,6 +72,7 @@ def SetupRequest(path, lang='en', cookie_jar=None):
   """Sets up a webapp2.Request object for testing."""
   request = webapp2.Request(webob.Request.blank(ROOT_URL + path).environ)
   request.root_url = ROOT_URL
+  request.secure_root_url = ROOT_URL.replace('http', 'https')
   request.root_path = ROOT_PATH
   request.lang = lang
   if cookie_jar is not None:

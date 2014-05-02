@@ -16,9 +16,16 @@ import base64
 import calendar
 from HTMLParser import HTMLParseError
 from HTMLParser import HTMLParser
+import os
 import random
 import re
 import time
+
+
+def IsDevelopmentServer():
+  """Returns True if the app is running in development."""
+  server = os.environ.get('SERVER_SOFTWARE', '')
+  return 'Development' in server or 'testutil' in server
 
 
 class Struct(object):

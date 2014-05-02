@@ -106,12 +106,6 @@ def _GetModel(uid):
   return model
 
 
-def _IsDevelopmentServer():
-  """Returns True if the app is running in development."""
-  server = os.environ.get('SERVER_SOFTWARE', '')
-  return 'Development' in server or 'testutil' in server
-
-
 @ndb.transactional
 def _GenerateNextUid():
   """Generates a sequentially increasing string uid, starting with '1'.
@@ -203,7 +197,7 @@ def _GetLoginInfo():
 
 def IsDeveloper():
   """Returns True if running in development or the user is an app admin."""
-  return _IsDevelopmentServer() or gae_users.is_current_user_admin()
+  return utils.IsDevelopmentServer() or gae_users.is_current_user_admin()
 
 
 def Get(uid):
@@ -301,7 +295,7 @@ def SetMarketingConsent(uid, value):
 
 def GetLoginUrl(url):
   """Gets a URL that accepts a sign-in and then proceeds to the given URL."""
-  if _IsDevelopmentServer():
+  if utils.IsDevelopmentServer():
     root_path = config.Get('root_path') or ''
     return root_path + '/.login?redirect=' + urllib.quote(url)
   return gae_users.create_login_url(url)
@@ -309,7 +303,7 @@ def GetLoginUrl(url):
 
 def GetLogoutUrl(url):
   """Gets a URL that signs the user out and then proceeds to the given URL."""
-  if _IsDevelopmentServer():
+  if utils.IsDevelopmentServer():
     root_path = config.Get('root_path') or ''
     return root_path + '/.login?logout=1&redirect=' + urllib.quote(url)
   return gae_users.create_logout_url(url)
