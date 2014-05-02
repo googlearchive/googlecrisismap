@@ -84,8 +84,8 @@ goog.inherits(cm.QuestionListEditor, cm.Editor);
 cm.QuestionListEditor.QUESTION_TEMPLATE = {
   text: '',
   answers: [
-    {id: '1', title: cm.MSG_YES},
-    {id: '2', title: cm.MSG_NO}
+    {id: '1', title: cm.MSG_YES, color: '#59AA00'},
+    {id: '2', title: cm.MSG_NO, color: '#D70000'}
   ]
 };
 

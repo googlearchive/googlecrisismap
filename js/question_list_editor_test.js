@@ -62,14 +62,14 @@ QuestionListEditorTest.prototype.testAddQuestion = function() {
   expectEq(7, inputs.length);
   expectThat(this.editor_.get('value'), elementsAre(
       [{'id': '1', 'text': '',
-        'answers': [{'id': '1', 'title': 'Yes'},
-                    {'id': '2', 'title': 'No'}]}]));
+        'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
+                    {'id': '2', 'title': 'No', 'color': '#D70000'}]}]));
 
   this.type_(inputs[0], 'To be or not to be?');
   expectThat(this.editor_.get('value'), elementsAre(
       [{'id': '1', 'text': 'To be or not to be?',
-        'answers': [{'id': '1', 'title': 'Yes'},
-                    {'id': '2', 'title': 'No'}]}]));
+        'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
+                    {'id': '2', 'title': 'No', 'color': '#D70000'}]}]));
 
   this.type_(inputs[1], 'Not to be');
   this.type_(inputs[2], 'Not');
@@ -78,7 +78,7 @@ QuestionListEditorTest.prototype.testAddQuestion = function() {
       [{'id': '1', 'text': 'To be or not to be?',
         'answers': [{'id': '1', 'title': 'Not to be', 'label': 'Not',
                      'color': '#f00'},
-                    {'id': '2', 'title': 'No'}]}]));
+                    {'id': '2', 'title': 'No', 'color': '#D70000'}]}]));
 
   cm.events.emit(addQuestionBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
@@ -91,10 +91,10 @@ QuestionListEditorTest.prototype.testAddQuestion = function() {
       [{'id': '1', 'text': 'To be or not to be?',
         'answers': [{'id': '1', 'title': 'Not to be', 'label': 'Not',
                      'color': '#f00'},
-                    {'id': '2', 'title': 'No'}]},
+                    {'id': '2', 'title': 'No', 'color': '#D70000'}]},
        {'id': '2', 'text': 'Second question',
-        'answers': [{'id': '1', 'title': 'Yes'},
-                    {'id': '2', 'title': 'No'}]}]));
+        'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
+                    {'id': '2', 'title': 'No', 'color': '#D70000'}]}]));
 };
 
 /** Tests adding, deleting, then re-adding a question. */
