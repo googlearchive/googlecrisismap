@@ -344,17 +344,33 @@ h2 + h3 {
   font-size: 11px;
   border-color: gray;
 }
-.cm-crowd-reports td {
+.cm-crowd-reports td, .cm-crowd-reports th {
   padding: 4px;
   border: 1px solid #ccc;
-  vertical-align: middle;
+  vertical-align: baseline;
 }
-.cm-crowd-reports td.empty {
+.cm-crowd-reports th {
+  border: 1px solid #fff;
+  color: #fff;
+  background: #58d;
+  font-weight: normal;
+  text-transform: uppercase;
+  text-align: left;
+  font-size: 10px;
+}
+.cm-crowd-reports td.cm-plain {
   text-align: center;
   border: none;
+  background: none;
 }
-.cm-crowd-reports td.caret, .cm-crowd-reports td.checkbox {
+.cm-crowd-reports td.cm-date,
+.cm-crowd-reports td.cm-votes,
+.cm-crowd-reports td.cm-link {
+  white-space: nowrap;
+}
+.cm-crowd-reports td.cm-caret, .cm-crowd-reports td.cm-checkbox {
   padding: 0;
   border-left: none;
   border-right: none;
+  vertical-align: middle;
 }

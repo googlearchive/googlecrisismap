@@ -859,11 +859,12 @@ class _CrowdReportModel(ndb.Model):
   # implemented, this field begins with map_id + '.' to ensure said uniqueness.)
   topic_ids = ndb.StringProperty(repeated=True)
 
-  # Survey answers in this report.  Each item has the format topic_id + '.' +
-  # question_id + '.' + answer_id.  (Note that the definitions of questions and
-  # answers can be edited, and we do not record the version of the question and
-  # answer that was current at the time that the answer was submitted.)
-  answer_ids = ndb.StringProperty(repeated=True)
+  # Survey answers in this report, as a JSON dictionary.  The keys are in the
+  # form topic_id + '.' + question_id, and the values are answer IDs.  Note
+  # that the definitions of questions and answer choices can be edited, and we
+  # do not record the version of the question and choice that was current at
+  # the time that the answer was submitted.
+  answers_json = ndb.TextProperty()
 
   # The report's geolocation.
   location = ndb.GeoPtProperty()
@@ -889,6 +890,8 @@ class _CrowdReportModel(ndb.Model):
 class CrowdReport(utils.Struct):
   """Application-level object representing a crowd report."""
   index = search.Index('CrowdReport')
+
+  answers = property(lambda self: json.loads(self.answers_json))
 
   @staticmethod
   def GenerateId(source):
@@ -1082,15 +1085,15 @@ class CrowdReport(utils.Struct):
         yield cls.FromModel(entity)
 
   @classmethod
-  def Create(cls, source, author, effective, text, topic_ids, answer_ids,
+  def Create(cls, source, author, effective, text, topic_ids, answers,
              location):
     """Stores one new crowd report and returns it."""
     now = datetime.datetime.utcnow()
     report_id = cls.GenerateId(source)
-    model = _CrowdReportModel(id=report_id, source=source, author=author,
-                              effective=effective, published=now, updated=now,
-                              topic_ids=topic_ids, answer_ids=answer_ids,
-                              text=text, location=location or NOWHERE)
+    model = _CrowdReportModel(
+        id=report_id, source=source, author=author, effective=effective,
+        published=now, updated=now, text=text, topic_ids=topic_ids,
+        answers_json=json.dumps(answers), location=location or NOWHERE)
     report = cls.FromModel(model)
     document = cls._CreateSearchDocument(model)
 

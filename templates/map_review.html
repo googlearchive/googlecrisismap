@@ -99,52 +99,52 @@ specific language governing permissions and limitations under the License.
   </h3>
   <table class="cm-crowd-reports">
     <tr>
-      <td width="1%" class="empty"></td>
-      <td width="1%" class="empty" title="accept">a</td>
-      <td width="1%" class="empty" title="downvote (-1000)">d</td>
-      <td width="1%" class="empty" title="upvote (+1000)">u</td>
-      <td width="17%">Updated</td>
-      <td width="23%">Answers</td>
-      <td width="35%">Text</td>
-      <td width="10%">Votes</td>
-      <td width="10%">Author</td>
-      <td width="1%">ID</td>
+      <td width="1%" class="cm-plain"></td>
+      <td width="1%" class="cm-plain" title="accept">a</td>
+      <td width="1%" class="cm-plain" title="downvote (-1000)">d</td>
+      <td width="1%" class="cm-plain" title="upvote (+1000)">u</td>
+      <th width="1%">Updated</td>
+      <th width="32%">Answers</td>
+      <th width="60%">Text</td>
+      <th width="1%">Votes</td>
+      <th width="1%">Author</td>
+      <th width="1%">Link</td>
     </tr>
     {% for report in reports %}
     <tr class="cm-crowd-report" id="report-{{forloop.counter}}">
-      <td class="caret" id="caret-{{forloop.counter}}"></td>
-      <td class="checkbox">
+      <td class="cm-caret" id="caret-{{forloop.counter}}"></td>
+      <td class="cm-checkbox">
         <input name="accept" type="checkbox"
                id="report-{{forloop.counter}}-accept" title="accept"
                value="{{report.id}}"
                onclick="updateRow({{forloop.counter}}, 'accept')">
       </td>
-      <td class="checkbox">
+      <td class="cm-checkbox">
         <input name="downvote" type="checkbox"
                id="report-{{forloop.counter}}-downvote" title="downvote (-1000)"
                value="{{report.id}}"
                onclick="updateRow({{forloop.counter}}, 'downvote')">
       </td>
-      <td class="checkbox">
+      <td class="cm-checkbox">
         <input name="upvote" type="checkbox"
                id="report-{{forloop.counter}}-upvote" title="upvote (+1000)"
                value="{{report.id}}"
                onclick="updateRow({{forloop.counter}}, 'upvote')">
       </td>
-      <td>{{report.updated}}</td>
-      <td>{{report.answers_escaped|linebreaks}}</td>
-      <td>{{report.text_escaped|safe}}</td>
-      <td>{{report.votes|safe}}</td>
-      <td>{{report.author}}</td>
-      <td style="font-size:8px">
-        <a href="{{report.url}}" target="_blank"
-           id="link-{{forloop.counter}}">{{report.id}}</a>
+      <td class="cm-date">{{report.updated}}</td>
+      <td class="cm-answers">{{report.answers}}</td>
+      <td class="cm-text">{{report.text}}</td>
+      <td class="cm-votes">{{report.votes}}</td>
+      <td class="cm-author">{{report.author}}</td>
+      <td class="cm-link">
+        <a href="{{report.url}}" target="_blank" title="{{report.id}}"
+            id="link-{{forloop.counter}}">view map</a>
       </td>
     </tr>
     {% endfor %}
   </table>
   </p>
-  <input type="submit" value="Process the selected items" class="cm-button cm-wipe">
+  <input type="submit" value="Process the selected items" class="cm-button cm-submit">
   </form>
   <h3>Map of crowd reports</h3>
   <div id="map-canvas" style="width:100%; min-height:400px"></div>

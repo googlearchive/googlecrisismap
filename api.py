@@ -161,20 +161,21 @@ class CrowdReports(base_handler.BaseHandler):
       cm-ll: Optional latitude and longitude (two floats separated by a comma).
       cm-text: Text of the report.
       cm-topic-ids: Comma-separated list of topic IDs.
-      cm-answer-ids: Comma-separated list of answer IDs.
+      cm-answers-json: JSON-encoded dictionary of {question IDs: answer values}.
     """
     # The form parameter names all start with "cm-" because our form protection
     # mechanism uses the DOM element IDs as parameter names, and we prefix our
     # element IDs with "cm-" to avoid collision.  See protect.py and xhr.js.
     if not protect.Verify(
-        self.request, ['cm-topic-ids', 'cm-answer-ids', 'cm-ll', 'cm-text']):
+        self.request, ['cm-topic-ids', 'cm-answers-json', 'cm-ll', 'cm-text']):
       raise base_handler.ApiError(403, 'Unauthorized crowd report.')
 
     author = self.GetCurrentUserUrl()
-    topic_ids = self.request.get('cm-topic-ids', '').split(',')
-    answer_ids = self.request.get('cm-answer-ids', '').split(',')
-    topic_ids = [i.strip() for i in topic_ids if i.strip()]
-    answer_ids = [i.strip() for i in answer_ids if i.strip()]
+    topic_ids = self.request.get('cm-topic-ids', '').replace(',', ' ').split()
+    try:
+      answers = dict(json.loads(self.request.get('cm-answers-json', '{}')))
+    except (TypeError, ValueError):
+      raise base_handler.ApiError(400, 'Invalid answers JSON.')
     ll = ParseGeoPt(self.request.get('cm-ll'))
     text = self.request.get('cm-text', '')
     now = datetime.datetime.utcnow()
@@ -183,7 +184,7 @@ class CrowdReports(base_handler.BaseHandler):
       raise base_handler.ApiError(403, 'Crowd report text rejected as spam.')
     model.CrowdReport.Create(source=self.request.root_url, author=author,
                              effective=now, text=text, topic_ids=topic_ids,
-                             answer_ids=answer_ids, location=ll)
+                             answers=answers, location=ll)
 
   def ReportToDict(self, report):
     """Converts a model.CrowdReport to a dictionary for JSON serialization."""
@@ -197,7 +198,7 @@ class CrowdReports(base_handler.BaseHandler):
         'published': utils.UtcToTimestamp(report.published),
         'text': report.text,
         'topic_ids': report.topic_ids,
-        'answer_ids': report.answer_ids,
+        'answers': report.answers,
         'location': [report.location.lat, report.location.lon],
         'upvote_count': report.upvote_count,
         'downvote_count': report.downvote_count

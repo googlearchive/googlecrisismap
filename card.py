@@ -172,8 +172,8 @@ def GetLatestAnswers(map_id, topic_id, location, radius):
   aids_by_qid = {}
   for report in model.CrowdReport.GetByLocation(
       location, {full_topic_id: radius}, 100, hidden=False):
-    for answer_id in report.answer_ids:
-      tid, qid, aid = answer_id.rsplit('.', 2)
+    for question_id, aid in report.answers.items():
+      tid, qid = question_id.rsplit('.', 1)
       if tid == full_topic_id:
         # GetByLocation returns reports in reverse updated order, so we keep
         # just the first answer that we see for each question.

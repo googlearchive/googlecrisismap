@@ -304,11 +304,13 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals([], card.GetFeatures(MAP_ROOT, 'xyz', self.request))
 
   def testGetLatestAnswers(self):
-    reports = [model.CrowdReport(answer_ids=['m1.t1.q1.a1', 'm1.t1.q2.a2']),
-               # Older answer to m1.t1.q2 should be superceded by recent answer
-               model.CrowdReport(answer_ids=['m1.t1.q2.a3', 'm1.t1.q3.a3']),
-               # Answers for irrelevant maps or topics should be ignored
-               model.CrowdReport(answer_ids=['m1.t2.q4.a4', 'm2.t1.q5.a5'])]
+    reports = [
+        model.CrowdReport(answers_json='{"m1.t1.q1": "a1", "m1.t1.q2": "a2"}'),
+        # Older answer to m1.t1.q2 should be superceded by recent answer
+        model.CrowdReport(answers_json='{"m1.t1.q2": "a3", "m1.t1.q3": "a3"}'),
+        # Answers for irrelevant maps or topics should be ignored
+        model.CrowdReport(answers_json='{"m1.t2.q4": "a4", "m2.t1.q5": "a5"}')
+    ]
     self.SetForTest(model.CrowdReport, 'GetByLocation',
                     staticmethod(lambda *args, **kwargs: reports))
     self.assertEquals({'q1': 'a1', 'q2': 'a2', 'q3': 'a3'},

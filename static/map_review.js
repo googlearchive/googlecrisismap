@@ -213,19 +213,22 @@ function reload(overrides) {
  * @return {function(Object)} the callback.
  */
 function makeShowInfoWindowCallback(map, marker, infoWindow, report, index) {
-  return function(e) {
-    var content = '<table style="min-width: 300px">' +
-        '<tr><td>Updated</td><td>' + report.updated + '</td></tr>' +
-        '<tr><td>Answers</td><td>' + report.answers_escaped + '</td></tr>' +
-        '<tr><td>Text</td><td>' + report.text_escaped + '</td></tr>' +
-        '<tr><td>Votes</td><td>' + report.votes + '</td></tr>' +
-        '<tr><td>Author</td><td>' + report.updated + '</td></tr>' +
-        '<tr><td>Location</td><td><a href="' + report.url +
-            '" target="_blank">' + report.location + '</a></td></tr>' +
-        '</table>';
-    infoWindow.setContent(content);
+  function htmlEscape(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  return function(event) {
+    infoWindow.setContent('<table style="min-width: 300px">' +
+        '<tr><td>Updated</td><td>' + htmlEscape(report.updated) + '</td></tr>' +
+        '<tr><td>Answers</td><td>' + htmlEscape(report.answers) + '</td></tr>' +
+        '<tr><td>Text</td><td>' + htmlEscape(report.text) + '</td></tr>' +
+        '<tr><td>Votes</td><td>' + htmlEscape(report.votes) +
+        (report.hidden ? ' (hidden)' : '') + '</td></tr>' +
+        '<tr><td>Author</td><td>' + htmlEscape(report.updated) + '</td></tr>' +
+        '<tr><td>Location</td><td><a href="' + htmlEscape(report.url) +
+        '" target="_blank">' + htmlEscape(report.location) + '</a></td></tr>' +
+        '</table>');
     infoWindow.open(map, marker);
-    if (e) {
+    if (event) {  // present when callback is triggered by a click on the map
       moveCaret(index);
     }
   }
@@ -237,7 +240,7 @@ function initialize() {
   var bounds = new google.maps.LatLngBounds();
   for (var i = 0; i < reports.length; i++) {
     var report = reports[i];
-    report.ll = new google.maps.LatLng(report.lat, report.lng);
+    report.ll = new google.maps.LatLng(report.lat, report.lon);
     bounds.extend(report.ll);
     var marker = new google.maps.Marker({
       position: report.ll,

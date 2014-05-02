@@ -21,7 +21,7 @@ import config
 import model
 import perms
 
-# Takes the color as a %-substitution
+# Takes a hex color (rgb or rrggbb) as a %-substitution
 _ICON_URL_TEMPLATE = ('https://chart.googleapis.com/chart?'
                       'chst=d_map_xpin_letter'
                       '&chld=pin%%7C+%%7C%s%%7C000%%7CF00')
@@ -32,26 +32,14 @@ def _MakeIconUrl(report, answer_colors):
 
   Args:
     report: A model.CrowdReport.
-    answer_colors: A dict; keys are answer_ids, values are hex color strings.
+    answer_colors: A dict; keys are (question_id, answer_id) pairs, values
+        are hex color strings.
 
   Returns:
-    A string, a URL to render an icon for the given report.
+    A string, a URL for a marker icon colored by the first answer, if any.
   """
-  answer_id = report.answer_ids and report.answer_ids[0] or None
-  return _ICON_URL_TEMPLATE % (answer_colors.get(answer_id) or '#aaa')[1:]
-
-
-def _HtmlEscape(text):
-  """Ensures the given text is properly escaped for displaying as HTML.
-
-  Args:
-    text: A string, the text to escape, may be None.
-
-  Returns:
-    The escaped text. If the input was None, an empty string is returned.
-  """
-  return (text or '').replace(
-      '&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+  color = report.answers and answer_colors.get(report.answers.items()[0])
+  return _ICON_URL_TEMPLATE % (color or 'aaa').strip('#')
 
 
 def _NoneIfTrueElseFalse(value):
@@ -183,28 +171,22 @@ class _MapReview(base_handler.BaseHandler):
 
     Args:
       map_id: A string, the id of the map being reviewed.
-      maproot: A dict representing the map being reviewed.
+      maproot: The MapRoot definition of the map being reviewed.
 
     Returns:
-      A tuple; the first element is an array of topic IDs representing the
-      map topics, the second element is an array of dicts representing reports
-      to review.
+      A pair (topic_ids, reports) where topic_ids is a list of the map's topic
+      IDs and reports is a list of dicts representing reports to review.
     """
     topic_ids = []
-    questions = {}
-    answers = {}
+    answer_labels = {}
     answer_colors = {}
-
     for topic in maproot['topics']:
       topic_ids.append(topic['id'])
-      tid = '%s.%s' % (map_id, topic['id'])
       for question in topic.get('questions', []):
-        question_id = '%s.%s' % (tid, question['id'])
-        questions[question_id] = question.get('text')
+        question_id = '%s.%s.%s' % (map_id, topic['id'], question['id'])
         for answer in question['answers']:
-          answer_id = '%s.%s' % (question_id, answer['id'])
-          answers[answer_id] = answer.get('title')
-          answer_colors[answer_id] = answer.get('color')
+          answer_labels[question_id, answer['id']] = answer.get('label', '')
+          answer_colors[question_id, answer['id']] = answer.get('color', '')
 
     return topic_ids, [{
         'id': report.id,
@@ -212,21 +194,20 @@ class _MapReview(base_handler.BaseHandler):
             map_id, report.location.lat, report.location.lon),
         'author': (('%s/.users/' % self.request.root_url) in report.author and
                    report.author.split('/')[-1] or report.author),
-        'text_escaped': _HtmlEscape(report.text),
-        'location': '(%.3f, %.3f)' % (report.location.lat,
-                                      report.location.lon),
+        'text': report.text,
+        'location': '(%.3f, %.3f)' % (report.location.lat, report.location.lon),
         'lat': report.location.lat,
-        'lng': report.location.lon,
+        'lon': report.location.lon,
         'icon_url': _MakeIconUrl(report, answer_colors),
         'updated': report.updated.strftime('%Y-%m-%dT%H:%M:%SZ'),
         'topics': ','.join(tid.split('.')[1] for tid in report.topic_ids),
-        'answers_escaped': _HtmlEscape('\n'.join(
-            '%s %s' % (questions.get(answer_id.rsplit('.', 1)[0], ''),
-                       answers.get(answer_id, ''))
-            for answer_id in report.answer_ids)),
-        'votes': '&#x2191;%d &#x2193;%d (%.1f) %s' % (
+        'answers': ', '.join(answer_labels.get((question_id, answer_id), '')
+                             for question_id, answer_id in
+                             json.loads(report.answers_json).items()),
+        'hidden': report.hidden,
+        'votes': u'\u2191%d \u2193%d (%.1f)' % (
             report.upvote_count or 0, report.downvote_count or 0,
-            report.score or 0.0, report.hidden and '<b>hidden</b>' or ''),
+            report.score or 0)
         } for report in self._QueryForReports(map_id, topic_ids)]
 
   def _QueryForReports(self, map_id, topic_ids):

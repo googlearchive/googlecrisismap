@@ -82,11 +82,11 @@ CrowdViewTest.prototype.displayReports = function() {
   var now = new Date().getTime() / 1000;
   var parent = this.openCrowdView_([{
     'effective': now - 301,
-    'answer_ids': ['map1.shelter.q1.y'],
+    'answers': {'map1.shelter.q1': 'y'},
     'text': 'Foo'
   }, {
     'effective': now - 7200,
-    'answer_ids': ['map1.shelter.q1.n', 'map1.shelter.q2.y'],
+    'answers': {'map1.shelter.q1': 'n', 'map1.shelter.q2': 'y'},
     'text': 'Bar'
   }]);
 
@@ -121,7 +121,7 @@ CrowdViewTest.prototype.voteOnReports = function() {
   var parent = this.openCrowdView_([{
     'id': 'r0',
     'effective': now - 301,
-    'answer_ids': ['map1.shelter.q1.y'],
+    'answers': {'map1.shelter.q1': 'y'},
     'upvote_count': 1,
     'downvote_count': 6
   }, {
@@ -200,6 +200,6 @@ CrowdViewTest.prototype.submitReport = function() {
   // Verify the contents of the report.
   expectEq('3,4', cm.ui.get('cm-ll').value);
   expectEq('map1.shelter', cm.ui.get('cm-topic-ids').value);
-  expectEq('map1.shelter.q1.y,map1.shelter.q2.n',
-           cm.ui.get('cm-answer-ids').value);
+  expectEq('{"map1.shelter.q1":"y","map1.shelter.q2":"n"}',
+           cm.ui.get('cm-answers-json').value);
 };

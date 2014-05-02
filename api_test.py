@@ -118,7 +118,7 @@ class CrowdReportsTest(test_utils.BaseTest):
                                USER_ORGANIZATION='alpha.test'):
       self.DoPost('/.api/reports', {
           'cm-topic-ids': 'foo,bar',
-          'cm-answer-ids': 'foo.1.1,bar.1.1',
+          'cm-answers-json': '{"foo.1.1": "1", "bar.1.1": "2"}',
           'cm-text': 'report1',
           'xsrf_token': 'XSRF'
       })  # XSRF check is stubbed in test_utils
@@ -130,7 +130,7 @@ class CrowdReportsTest(test_utils.BaseTest):
     id0 = reports[0].pop('id')
     self.assertTrue(id0.startswith('http://app.com/root/.reports/'))
     self.assertDictEqual(
-        {u'answer_ids': [u'foo.1.1', u'bar.1.1'],
+        {u'answers': {'foo.1.1': '1', 'bar.1.1': '2'},
          u'author': u'http://app.com/root/.users/1',
          u'author_email': u'alice@alpha.test',
          u'effective': self.default_time_secs,
@@ -148,7 +148,7 @@ class CrowdReportsTest(test_utils.BaseTest):
     self.SetForTest(protect, 'Verify', lambda request, keys: False)
     self.DoPost('/.api/reports', {
         'cm-topic-ids': 'bar',
-        'cm-answer-ids': 'bar.1.1',
+        'cm-answers-json': 'bar.1.1',
         'cm-text': 'report1',
         'cm-ll': '37.1,-74.2'
     }, 403)  # should be rejected by protect.Verify
@@ -158,7 +158,7 @@ class CrowdReportsTest(test_utils.BaseTest):
     report1_time = self.default_time_secs
     self.DoPost('/.api/reports', {
         'cm-topic-ids': 'bar',
-        'cm-answer-ids': 'bar.1.1',
+        'cm-answers-json': '{"foo.1.1": "1"}',
         'cm-text': 'report1',
         'cm-ll': '37.1,-74.2'
     })
@@ -167,7 +167,7 @@ class CrowdReportsTest(test_utils.BaseTest):
     self.SetTime(report2_time)
     self.DoPost('/.api/reports', {
         'cm-topic-ids': 'foo',
-        'cm-answer-ids': 'foo.1.2',
+        'cm-answers-json': '{"foo.1.1": "2"}',
         'cm-text': 'report2',
         'cm-ll': '37.1,-74.2001'
     })
@@ -182,7 +182,7 @@ class CrowdReportsTest(test_utils.BaseTest):
     self.assertTrue(ids[1].startswith('http://app.com/root/.reports/'))
     self.assertNotEqual(ids[0], ids[1])
     self.assertDictEqual(
-        {u'answer_ids': [u'foo.1.2'],
+        {u'answers': {'foo.1.1': '2'},
          u'author': u'http://app.com/root/.users/anonymous.random_id_2',
          u'author_email': None,
          u'effective': report2_time,
@@ -195,7 +195,7 @@ class CrowdReportsTest(test_utils.BaseTest):
          u'downvote_count': 0},
         reports[0])
     self.assertDictEqual(
-        {u'answer_ids': [u'bar.1.1'],
+        {u'answers': {'foo.1.1': '1'},
          u'author': u'http://app.com/root/.users/anonymous.random_id_1',
          u'author_email': None,
          u'effective': report1_time,

@@ -181,11 +181,10 @@ def CreateMap(maproot_json='{"title": "Foo"}', domain=DEFAULT_DOMAIN, **kwargs):
 def NewCrowdReport(source='http://source.com/',
                    author='http://google.org/crisismap/.users/anonymous/12345',
                    text='Crowd report text',
-                   topic_ids=('map1.gas', 'map1.water'),
-                   answer_ids=('map1.gas.q1.yes',), location=None):
+                   topic_ids=None, answers=None, location=None):
   effective = datetime.datetime.utcnow()
   return model.CrowdReport.Create(source, author, effective, text,
-                                  topic_ids, answer_ids, location)
+                                  topic_ids or [], answers or {}, location)
 
 
 class BaseTest(unittest.TestCase):

@@ -43,14 +43,14 @@ class MapReviewTest(test_utils.BaseTest):
                 'id': 'q1',
                 'text': 'Is there space available?<br>',
                 'answers': [
-                    {'id': 'y', 'title': 'Yes', 'label': 'space'},
-                    {'id': 'n', 'title': 'No', 'label': 'no space'}]
+                    {'id': 'y', 'title': 'Yes', 'label': '[space]'},
+                    {'id': 'n', 'title': 'No', 'label': '[no space]'}]
             }, {
                 'id': 'q2',
                 'text': 'Are overnight stays allowed?',
                 'answers': [
-                    {'id': 'y', 'title': 'Yes', 'label': 'overnight'},
-                    {'id': 'n', 'title': 'No', 'label': 'day only'}]
+                    {'id': 'y', 'title': 'Yes', 'label': '[overnight]'},
+                    {'id': 'n', 'title': 'No', 'label': '[day only]'}]
             }]
         }, {
             'id': 'water',
@@ -62,8 +62,8 @@ class MapReviewTest(test_utils.BaseTest):
                 'id': 'q1',
                 'text': 'Is there water?',
                 'answers': [
-                    {'id': 'y', 'title': 'Yes', 'label': 'water'},
-                    {'id': 'n', 'title': 'No', 'label': 'no water'}]
+                    {'id': 'y', 'title': 'Yes', 'label': '[water]'},
+                    {'id': 'n', 'title': 'No', 'label': '[no water]'}]
             }]
         }, {
             'id': 'flooding',
@@ -76,18 +76,18 @@ class MapReviewTest(test_utils.BaseTest):
     self.map_object = test_utils.CreateMap(maproot_json, reviewers=['reviewer'])
     self.map_id = self.map_object.id
     self.topic1_id = '%s.shelter' % self.map_id
-    self.answer1_id = '%s.q1.y' % self.topic1_id
+    self.question1_id = '%s.shelter.q1' % self.map_id
     self.SetTime(1300000000)
     self.cr1 = test_utils.NewCrowdReport(text='26 beds here',
                                          topic_ids=[self.topic1_id],
-                                         answer_ids=[self.answer1_id])
+                                         answers={self.question1_id: 'y'})
     self.topic2_id = '%s.water' % self.map_id
-    self.answer2_id = '%s.q1.n' % self.topic2_id
+    self.question2_id = '%s.water.q1' % self.map_id
     self.SetTime(1300000001)
     self.cr2 = test_utils.NewCrowdReport(author='http://foo.com/abc',
                                          text='bottled water here </script>',
                                          topic_ids=[self.topic2_id],
-                                         answer_ids=[self.answer2_id])
+                                         answers={self.question2_id: 'n'})
 
   def testGet(self):
     with test_utils.Login('reviewer'):
@@ -97,8 +97,8 @@ class MapReviewTest(test_utils.BaseTest):
     self.assertTrue('>flooding<' in response.body)
     self.assertTrue(self.cr1.id in response.body)
     self.assertTrue(self.cr2.id in response.body)
-    self.assertTrue('Is there space available?&lt;br&gt; Yes' in response.body)
-    self.assertTrue('Is there water? No' in response.body)
+    self.assertTrue('[space]' in response.body)
+    self.assertTrue('[no water]' in response.body)
     self.assertTrue('bottled water here &lt;/script&gt;' in response.body)
     self.assertTrue('name="accept"' in response.body)
     self.assertTrue(map_review._ICON_URL_TEMPLATE % 'aaa' in response.body)

@@ -65,23 +65,26 @@ cm.CrowdView = function(parentElem, mapModel, config) {
   /** @private {boolean} True after comment form protection is initialized. */
   this.isProtectionReady_ = false;
 
-  /** @private {Element} Hidden field for the 'cm-ll' form parameter. */
+  /** @private {Element} Hidden field for the 'cm-ll' parameter. */
   this.llInput_;
 
-  /** @private {Element} Hidden field for the 'cm-topic-ids' form parameter. */
+  /** @private {Element} Hidden field for the 'cm-topic-ids' parameter. */
   this.topicIdsInput_;
 
-  /** @private {Element} Hidden field for the 'cm-answer-ids' form parameter. */
-  this.answerIdsInput_;
+  /** @private {Element} Hidden field for the 'cm-answers-json' parameter. */
+  this.answersJsonInput_;
 
-  /** @private {Element} Hidden field for the 'cm-report-id' form parameter. */
+  /** @private {Element} Hidden field for the 'cm-report-id' parameter. */
   this.reportIdInput_;
 
-  /** @private {Element} Hidden field for the 'cm-vote-code' form parameter. */
+  /** @private {Element} Hidden field for the 'cm-vote-code' parameter. */
   this.voteCodeInput_;
 
   /** @private {Element} The button for submitting the report form. */
   this.submitBtn_;
+
+  /** @private {Array.<string>} Question IDs relevant to the layer, in order. */
+  this.questionIds_ = [];
 
   /** @private {Object.<Object>} A map of answer objects by answer ID. */
   this.answersById_ = {};
@@ -111,6 +114,7 @@ cm.CrowdView.prototype.enableFormPopup = function(enabled) {
 cm.CrowdView.prototype.open = function(featureData) {
   var mapId = this.mapModel_.get('id');
   var answersById = this.answersById_ = {};
+  var questionIds = this.questionIds_ = [];
   this.layerId_ = featureData.layerId;
   this.position_ = featureData.position;
 
@@ -119,9 +123,10 @@ cm.CrowdView.prototype.open = function(featureData) {
   goog.array.forEach(topics, function(topic) {
     var questions = /** @type Array.<Object> */(topic.get('questions'));
     goog.array.forEach(questions, function(question) {
+      var qid = mapId + '.' + topic.get('id') + '.' + question.id;
+      questionIds.push(qid);
       goog.array.forEach(question.answers, function(answer) {
-        answersById[mapId + '.' + topic.get('id') + '.' +
-                    question.id + '.' + answer.id] = answer;
+        answersById[qid + '.' + answer.id] = answer;
       });
     });
   });
@@ -147,10 +152,8 @@ cm.CrowdView.prototype.updateSubmitButton_ = function() {
     this.submitBtn_.disabled = true;
     return;
   }
-  var anyAnswer = false;
-  for (var qid in this.selectedAnswerIds_) {
-    anyAnswer = anyAnswer || this.selectedAnswerIds_[qid];
-  }
+  var anyAnswer = goog.object.some(
+      this.selectedAnswerIds_, function(aid) { return aid; });
   this.submitBtn_.disabled = !(anyAnswer || this.textInput_.value.match(/\S/));
 };
 
@@ -166,15 +169,15 @@ cm.CrowdView.prototype.makeAnswerButtons_ = function(topicId, question) {
   var qid = topicId + '.' + question.id;
   var buttons = [];  // held locally so we can deselect other buttons on click
 
-  function makeButton(answerTitleAndId) {
-    var button = cm.ui.create('div', cm.css.BUTTON, answerTitleAndId.title);
+  function makeButton(answer) {
+    var button = cm.ui.create('div', cm.css.BUTTON, answer.title);
     cm.events.listen(button, 'click', function() {
       goog.array.forEach(buttons, function(b) {  // select it, deselect others
         goog.dom.classes.enable(b, cm.css.SELECTED, b === button);
       });
-      self.selectedAnswerIds_[qid] = answerTitleAndId.id;
-      self.answerIdsInput_.value = (cm.util.removeNulls(
-          goog.object.getValues(self.selectedAnswerIds_)) || []).join(',');
+      self.selectedAnswerIds_[qid] = answer.id;
+      self.answersJsonInput_.value =
+          goog.json.serialize(self.selectedAnswerIds_);
       cm.Analytics.logAction(
           cm.Analytics.CrowdReportFormAction.ANSWER_BUTTON_CLICKED,
           self.layerId_);
@@ -183,11 +186,8 @@ cm.CrowdView.prototype.makeAnswerButtons_ = function(topicId, question) {
     return button;
   }
 
-  var answerTitlesAndIds = goog.array.map(question.answers, function(answer) {
-    return {title: answer.title, id: qid + '.' + answer.id};
-  }).concat({title: cm.MSG_NOT_SURE, id: null});
-
-  buttons = goog.array.map(answerTitlesAndIds, makeButton);
+  var notSure = {title: cm.MSG_NOT_SURE, id: null};
+  buttons = goog.array.map(question.answers.concat(notSure), makeButton);
   return buttons;
 };
 
@@ -298,8 +298,8 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
       this.llInput_ = cm.ui.create('input', {'type': 'hidden', 'id': 'cm-ll'}),
       this.topicIdsInput_ = cm.ui.create(
           'input', {'type': 'hidden', 'id': 'cm-topic-ids'}),
-      this.answerIdsInput_ = cm.ui.create(
-          'input', {'type': 'hidden', 'id': 'cm-answer-ids'}),
+      this.answersJsonInput_ = cm.ui.create(
+          'input', {'type': 'hidden', 'id': 'cm-answers-json'}),
       this.reportIdInput_ = cm.ui.create(
           'input', {'type': 'hidden', 'id': 'cm-report-id'}),
       this.voteCodeInput_ = cm.ui.create(
@@ -309,7 +309,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
   // Submission behaviour
   cm.xhr.protectInputs(
       self.protectUrl_, self.reportPostUrl_,
-      ['cm-ll', 'cm-text', 'cm-topic-ids', 'cm-answer-ids'],
+      ['cm-ll', 'cm-text', 'cm-topic-ids', 'cm-answers-json'],
       function() {
         self.isProtectionReady_ = true;
         self.updateSubmitButton_();
@@ -391,12 +391,17 @@ cm.CrowdView.prototype.renderReport_ = function(report) {
 
   var timeDiv = cm.ui.create('div', cm.css.TIME,
       cm.util.shortAge(report['effective']));
-  var answerChips = goog.array.map(report['answer_ids'] || [], function(aid) {
-    var answer = self.answersById_[aid];
-    var div = cm.ui.create('div', cm.css.ANSWER, answer.label || answer.title);
-    div.style.background = answer.color;
-    div.style.color = cm.ui.legibleTextColor(answer.color);
-    return div;
+
+  var answerChips = [], chip;
+  var answers = report['answers'] || {};
+  goog.array.forEach(this.questionIds_, function(qid) {
+    var answer = self.answersById_[qid + '.' + answers[qid]];
+    if (answer) {
+      chip = cm.ui.create('div', cm.css.ANSWER, answer.label || answer.title);
+      chip.style.background = answer.color;
+      chip.style.color = cm.ui.legibleTextColor(answer.color);
+      answerChips.push(chip);
+    }
   });
   answerChips = answerChips.length ? answerChips : null;
   var text = goog.string.trim(report['text'] || '') || null;
