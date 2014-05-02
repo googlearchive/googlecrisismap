@@ -82,7 +82,7 @@ specific language governing permissions and limitations under the License.
   -webkit-overflow-scrolling:touch;
 }
 
-.cm-tab-content .cm-panel-links a {
+.cm-tab-content .cm-about-links a {
   display: inline-block;
   margin: 0 20px 0 0;
 }

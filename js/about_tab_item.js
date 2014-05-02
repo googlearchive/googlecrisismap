@@ -52,7 +52,8 @@ cm.AboutTabItem.prototype.addContent = function(parentElem) {
       this.mapModel, 'description', this.handleDescriptionChanged_, this);
   this.handleDescriptionChanged_();
 
-  var panelLinks = cm.ui.create('div', {'class': cm.css.PANEL_LINKS});
+  var panelLinks = cm.ui.create(
+      'div', {'class': [cm.css.PANEL_LINKS, cm.css.ABOUT_LINKS]});
   if (this.editingEnabled) {
     var setDefaultView = cm.ui.createLink(cm.MSG_SET_DEFAULT_VIEW_LINK);
     cm.ui.append(panelLinks, setDefaultView);
