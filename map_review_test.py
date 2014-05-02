@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -76,23 +75,23 @@ class MapReviewTest(test_utils.BaseTest):
     })
     self.map_object = test_utils.CreateMap(maproot_json, reviewers=['reviewer'])
     self.map_id = self.map_object.id
-    self.topic1_id = self.map_id + '.shelter'
-    self.answer1_id = self.topic1_id + '.q1.y'
+    self.topic1_id = '%s.shelter' % self.map_id
+    self.answer1_id = '%s.q1.y' % self.topic1_id
     self.SetTime(1300000000)
     self.cr1 = test_utils.NewCrowdReport(text='26 beds here',
                                          topic_ids=[self.topic1_id],
                                          answer_ids=[self.answer1_id])
-    self.topic2_id = self.map_id + '.water'
-    self.answer2_id = self.topic2_id + '.q1.n'
+    self.topic2_id = '%s.water' % self.map_id
+    self.answer2_id = '%s.q1.n' % self.topic2_id
     self.SetTime(1300000001)
     self.cr2 = test_utils.NewCrowdReport(author='http://foo.com/abc',
-                                         text=('bottled water here </script>'),
+                                         text='bottled water here </script>',
                                          topic_ids=[self.topic2_id],
                                          answer_ids=[self.answer2_id])
 
   def testGet(self):
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review')
+      response = self.DoGet('/.maps/%s/review' % self.map_id)
     self.assertTrue('>shelter<' in response.body)
     self.assertTrue('>water<' in response.body)
     self.assertTrue('>flooding<' in response.body)
@@ -102,12 +101,12 @@ class MapReviewTest(test_utils.BaseTest):
     self.assertTrue('Is there water? No' in response.body)
     self.assertTrue('bottled water here &lt;/script&gt;' in response.body)
     self.assertTrue('name="accept"' in response.body)
-    self.assertTrue(map_review.ICON_URL_TEMPLATE % 'aaa' in response.body)
+    self.assertTrue(map_review._ICON_URL_TEMPLATE % 'aaa' in response.body)
 
   def testGetFromDomainReviewer(self):
     perms.Grant('domainreviewer', perms.Role.DOMAIN_REVIEWER, 'xyz.com')
     with test_utils.DomainLogin('domainreviewer', 'xyz.com'):
-      self.DoGet('/.maps/' + self.map_id + '/review')
+      self.DoGet('/.maps/%s/review' % self.map_id)
 
   def testGetPublishedMap(self):
     model.CatalogEntryModel(key_name='xyz.com:zz', domain='xyz.com',
@@ -117,47 +116,46 @@ class MapReviewTest(test_utils.BaseTest):
 
   def testGetWithSearch(self):
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review?query=beds')
+      response = self.DoGet('/.maps/%s/review?query=beds' % self.map_id)
     self.assertTrue(self.cr1.id in response.body)
     self.assertFalse(self.cr2.id in response.body)
 
   def testGetWithComplexSearch(self):
     with test_utils.Login('reviewer'):
-      response = self.DoGet(
-          '/.maps/' + self.map_id +
-          '/review?query=' + urllib.quote('here author:"http://foo.com/abc"'))
+      response = self.DoGet('/.maps/%s/review?query=%s' % (
+          self.map_id, urllib.quote('here author:"http://foo.com/abc"')))
     self.assertFalse(self.cr1.id in response.body)
     self.assertTrue(self.cr2.id in response.body)
 
   def testGetWithTopic(self):
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review?topic=shelter')
+      response = self.DoGet('/.maps/%s/review?topic=shelter' % self.map_id)
     self.assertTrue(self.cr1.id in response.body)
     self.assertFalse(self.cr2.id in response.body)
 
   def testGetWithAuthor(self):
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id +
-                            '/review?author=http://foo.com/abc')
+      response = self.DoGet('/.maps/%s/review?author=http://foo.com/abc' %
+                            self.map_id)
     self.assertFalse(self.cr1.id in response.body)
     self.assertTrue(self.cr2.id in response.body)
 
   def testGetWithReportId(self):
     cr_id = self.cr1.id
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review?id=' + cr_id)
+      response = self.DoGet('/.maps/%s/review?id=%s' % (self.map_id, cr_id))
     self.assertTrue(self.cr1.id in response.body)
     self.assertFalse(self.cr2.id in response.body)
 
   def testGetWithCount(self):
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review?count=1')
+      response = self.DoGet('/.maps/%s/review?count=1' % self.map_id)
     self.assertFalse(self.cr1.id in response.body)
     self.assertTrue(self.cr2.id in response.body)
 
   def testGetWithSkip(self):
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review?skip=1')
+      response = self.DoGet('/.maps/%s/review?skip=1' % self.map_id)
     self.assertTrue(self.cr1.id in response.body)
     self.assertFalse(self.cr2.id in response.body)
 
@@ -165,40 +163,39 @@ class MapReviewTest(test_utils.BaseTest):
     model.CrowdVote.Put(self.cr1.id, 'voter1', 'ANONYMOUS_DOWN')
     model.CrowdVote.Put(self.cr1.id, 'voter2', 'ANONYMOUS_DOWN')
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review')
+      response = self.DoGet('/.maps/%s/review' % self.map_id)
       self.assertTrue(self.cr1.id in response.body)
       self.assertTrue(self.cr2.id in response.body)
 
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review?hidden=true')
+      response = self.DoGet('/.maps/%s/review?hidden=true' % self.map_id)
       self.assertTrue(self.cr1.id in response.body)
       self.assertFalse(self.cr2.id in response.body)
 
   def testGetWithReviewed(self):
     model.CrowdReport.MarkAsReviewed(self.cr1.id)
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review')
+      response = self.DoGet('/.maps/%s/review' % self.map_id)
       self.assertFalse(self.cr1.id in response.body)
       self.assertTrue(self.cr2.id in response.body)
 
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review?reviewed=true')
+      response = self.DoGet('/.maps/%s/review?reviewed=true' % self.map_id)
       self.assertTrue(self.cr1.id in response.body)
       self.assertTrue(self.cr2.id in response.body)
 
   def testPostMarkAsReviewed(self):
     with test_utils.Login('reviewer'):
-      self.DoPost('/.maps/' + self.map_id + '/review',
-                  'accept=' + self.cr1.id +
-                  '&accept=' + self.cr2.id +
-                  '&xsrf_token=XSRF')
+      self.DoPost('/.maps/%s/review' % self.map_id,
+                  'xsrf_token=XSRF&accept=%s&accept=%s' % (self.cr1.id,
+                                                           self.cr2.id))
       self.assertTrue(model.CrowdReport.Get(self.cr1.id).reviewed)
       self.assertTrue(model.CrowdReport.Get(self.cr2.id).reviewed)
 
     # Both reports get marked as reviewed and should not show up by default
     # on the review page
     with test_utils.Login('reviewer'):
-      response = self.DoGet('/.maps/' + self.map_id + '/review')
+      response = self.DoGet('/.maps/%s/review' % self.map_id)
       self.assertFalse(self.cr1.id in response.body)
       self.assertFalse(self.cr2.id in response.body)
 
@@ -212,9 +209,8 @@ class MapReviewTest(test_utils.BaseTest):
 
     with test_utils.Login('reviewer'):
       self.DoPost('/xyz.com/zz/review',
-                  'upvote=' + self.cr1.id +
-                  '&downvote=' + self.cr2.id +
-                  '&xsrf_token=XSRF')
+                  'xsrf_token=XSRF&upvote=%s&downvote=%s' % (self.cr1.id,
+                                                             self.cr2.id))
       self.assertFalse(model.CrowdReport.Get(self.cr1.id).hidden)
       self.assertTrue(model.CrowdReport.Get(self.cr2.id).hidden)
 

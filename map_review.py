@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # Copyright 2012 Google Inc.  All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -23,13 +22,44 @@ import model
 import perms
 
 # Takes the color as a %-substitution
-ICON_URL_TEMPLATE = ('https://chart.googleapis.com/chart?'
-                     'chst=d_map_xpin_letter&chld=pin%%7C+%%7C%s%%7C000%%7CF00')
+_ICON_URL_TEMPLATE = ('https://chart.googleapis.com/chart?'
+                      'chst=d_map_xpin_letter'
+                      '&chld=pin%%7C+%%7C%s%%7C000%%7CF00')
 
 
-def HtmlEscape(text):
+def _MakeIconUrl(report, answer_colors):
+  """Returns a URL to render an icon for the given report.
+
+  Args:
+    report: A model.CrowdReport.
+    answer_colors: A dict; keys are answer_ids, values are hex color strings.
+
+  Returns:
+    A string, a URL to render an icon for the given report.
+  """
+  answer_id = report.answer_ids and report.answer_ids[0] or None
+  return _ICON_URL_TEMPLATE % (answer_colors.get(answer_id) or '#aaa')[1:]
+
+
+def _HtmlEscape(text):
+  """Ensures the given text is properly escaped for displaying as HTML.
+
+  Args:
+    text: A string, the text to escape, may be None.
+
+  Returns:
+    The escaped text. If the input was None, an empty string is returned.
+  """
   return (text or '').replace(
       '&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def _NoneIfTrueElseFalse(value):
+  return None if value.lower() in {'true', 'yes', '1'} else False
+
+
+def _NoneIfFalseElseTrue(value):
+  return value.lower() in {'true', 'yes', '1'} or None
 
 
 class _MapReview(base_handler.BaseHandler):
@@ -60,140 +90,199 @@ class _MapReview(base_handler.BaseHandler):
           returning count.
   """
 
-  # Query params used in GetUrl and also passed to map_review.js
+  # Query params used in _GetUrl and also passed to map_review.js
   params = ['query', 'id', 'author', 'topic', 'hidden', 'reviewed',
             'count', 'skip']
 
-  def GetUrl(self, **kwargs):
+  def _GetUrl(self, **kwargs):
+    """Gets a URL for the review page with params set from self.request.
+
+    Args:
+      **kwargs: key, value pairs used to override params in self.request
+
+    Returns:
+      A URL for the review page with params set from self.request.
+    """
     for param in self.params:
       kwargs[param] = kwargs.get(param, self.request.get(param, ''))
     return 'review?' + urllib.urlencode(
-        [(k, v) for (k, v) in kwargs.iteritems() if v])
+        [(k, v) for k, v in kwargs.iteritems() if v])
 
   def RenderReviewPage(self, map_object):
-    """Renders the admin page."""
-    map_id = map_object.key.name()
+    """Renders the map review page.
+
+    Args:
+      map_object: The model.Map instance being reviewed.
+    """
     perms.AssertAccess(perms.Role.MAP_REVIEWER, map_object)
 
+    self.count = int(self.request.get('count') or 50)
+    self.skip = int(self.request.get('skip') or 0)
+    self.reviewed = _NoneIfTrueElseFalse(self.request.get('reviewed'))
+    self.hidden = _NoneIfFalseElseTrue(self.request.get('hidden'))
+    self.report_id = self.request.get('id', '').strip()
+    self.query = self.request.get('query', '').strip()
+    self.author = self.request.get('author', '').strip() or None
+    self.topic_id = self.request.get('topic')
+
+    prev_skip = max(0, self.skip - self.count)
+    prev_url = self._GetUrl(skip=prev_skip) if self.skip else None
+    next_skip = 0
+    next_url = None
+
+    map_id = map_object.key.name()
     maproot = json.loads(map_object.GetCurrentJson())
 
-    def NoneIfTrueElseFalse(value):
-      return None if value.lower() in ['true', 'yes', '1'] else False
-
-    count = int(self.request.get('count') or 50)
-    skip = int(self.request.get('skip') or 0)
-    reviewed = NoneIfTrueElseFalse(self.request.get('reviewed'))
-    hidden = self.request.get('hidden').lower() in ['true', 'yes', '1'] or None
-    report_id = self.request.get('id', '').strip()
-    query = self.request.get('query', '').strip()
-    author = self.request.get('author', '').strip() or None
-    topic_id = self.request.get('topic')
     topic_ids = []
     report_dicts = []
-    next_skip = 0
 
     if 'topics' in maproot:
-      questions = {}
-      answers = {}
-      answer_colors = {}
-      for topic in maproot['topics']:
-        topic_ids.append(topic['id'])
-        tid = map_id + '.' + topic['id']
-        for question in topic.get('questions', []):
-          question_id = tid + '.' + question['id']
-          questions[question_id] = question.get('text')
-          for answer in question['answers']:
-            answer_id = question_id + '.' + answer['id']
-            answers[answer_id] = answer.get('title')
-            answer_colors[answer_id] = answer.get('color')
+      topic_ids, report_dicts = self._ExtractTopicsAndReports(map_id, maproot)
 
-      if report_id:
-        reports = [x for x in [model.CrowdReport.Get(report_id)] if x]
-      else:
-        if topic_id and topic_id in topic_ids:
-          tids = [map_id + '.' + topic_id]
-        else:
-          tids = ['%s.%s' % (map_id, tid) for tid in topic_ids]
-        if query:
-          # Restrict the search to topics for this map.
-          # Note that the query itself can be arbitrarily complex, following
-          # the syntax at
-          # developers.google.com/appengine/docs/python/search/query_strings
-          # We don't validate the query here, and an invalid query currently
-          # will render an error page.
-          restricted_query = query + ' topic_id:(%s)' % (
-              ' OR '.join(['"%s"' % tid for tid in tids]))
-          if hidden is not None:
-            restricted_query += ' hidden: %s' % hidden
-          if reviewed is not None:
-            restricted_query += ' reviewed: %s' % reviewed
-          reports = model.CrowdReport.Search(restricted_query, count + 1, skip)
-        else:
-          if author and not author.startswith('http'):
-            author = self.request.root_url + '/.users/' + author
-          reports = model.CrowdReport.GetForTopics(tids, count + 1, skip,
-                                                   author, hidden, reviewed)
+    if len(report_dicts) > self.count:
+      report_dicts = report_dicts[:self.count]
+      next_skip = self.skip + self.count
+      next_url = self._GetUrl(skip=next_skip)
 
-      def MakeIconUrl(report):
-        answer_id = report.answer_ids and report.answer_ids[0] or None
-        return ICON_URL_TEMPLATE % (answer_colors.get(answer_id) or '#aaa')[1:]
+    self._RenderTemplate(map_object, report_dicts, topic_ids,
+                         prev_url, next_url, next_skip)
 
-      report_dicts = [{
-          'id': report.id,
-          'url': '../%s?lat=%.5f&lng=%.5f&z=17' % (
-              map_id, report.location.lat, report.location.lon),
-          'author': ((self.request.root_url + '/.users/') in report.author and
-                     report.author.split('/')[-1] or report.author),
-          'text_escaped': HtmlEscape(report.text),
-          'location': '(%.3f, %.3f)' % (report.location.lat,
-                                        report.location.lon),
-          'lat': report.location.lat,
-          'lng': report.location.lon,
-          'icon_url': MakeIconUrl(report),
-          'updated': report.updated.strftime('%Y-%m-%dT%H:%M:%SZ'),
-          'topics': ','.join([tid.split('.')[1] for tid in report.topic_ids]),
-          'answers_escaped': HtmlEscape('\n'.join(
-              [questions.get(answer_id.rsplit('.', 1)[0], '') + ' ' +
-               answers.get(answer_id, '')
-               for answer_id in report.answer_ids])),
-          'votes': '&#x2191;%d &#x2193;%d (%.1f) %s' % (
-              report.upvote_count or 0, report.downvote_count or 0,
-              report.score or 0.0, report.hidden and '<b>hidden</b>' or ''),
-          } for report in reports]
+  def _RenderTemplate(self, map_object, report_dicts, topic_ids,
+                      prev_url, next_url, next_skip):
+    """Renders the map review template.
 
-    if skip > 0:
-      prev_url = self.GetUrl(skip=max(0, skip - count))
-    else:
-      prev_url = None
-
-    if len(report_dicts) > count:
-      report_dicts = report_dicts[:count]
-      next_skip = skip + count
-      next_url = self.GetUrl(skip=next_skip)
-    else:
-      next_url = None
-
+    Args:
+      map_object: The model.Map instance being reviewed.
+      report_dicts: An array of dicts representing reports to review.
+      topic_ids: An array of topic IDs representing the map topics.
+      prev_url: A string, the URL to review the previous page of reports.
+      next_url: A string, the URL to review the next page of reports.
+      next_skip: An int, the number of reports to skip when rendering next_url.
+    """
     self.response.out.write(self.RenderTemplate('map_review.html', {
         'map': map_object,
         'params_json': json.dumps(self.params),
         'reports': report_dicts,
         'reports_json': json.dumps(report_dicts),
-        'topic_id': topic_id,
+        'topic_id': self.topic_id,
         'topic_ids': topic_ids,
-        'id': report_id,
-        'query': query,
+        'id': self.report_id,
+        'query': self.query,
         'author': self.request.get('author'),
         'prev_url': prev_url,
         'next_url': next_url,
-        'first': skip + 1,
-        'last': skip + len(report_dicts),
+        'first': self.skip + 1,
+        'last': self.skip + len(report_dicts),
         'skip': next_skip,
-        'hidden': hidden and 'true' or '',
-        'reviewed': reviewed is None and 'true' or '',
+        'hidden': self.hidden and 'true' or '',
+        'reviewed': self.reviewed is None and 'true' or '',
     }))
 
+  def _ExtractTopicsAndReports(self, map_id, maproot):
+    """Extracts topics from maproot and loads reports to review from datastore.
+
+    Args:
+      map_id: A string, the id of the map being reviewed.
+      maproot: A dict representing the map being reviewed.
+
+    Returns:
+      A tuple; the first element is an array of topic IDs representing the
+      map topics, the second element is an array of dicts representing reports
+      to review.
+    """
+    topic_ids = []
+    questions = {}
+    answers = {}
+    answer_colors = {}
+
+    for topic in maproot['topics']:
+      topic_ids.append(topic['id'])
+      tid = '%s.%s' % (map_id, topic['id'])
+      for question in topic.get('questions', []):
+        question_id = '%s.%s' % (tid, question['id'])
+        questions[question_id] = question.get('text')
+        for answer in question['answers']:
+          answer_id = '%s.%s' % (question_id, answer['id'])
+          answers[answer_id] = answer.get('title')
+          answer_colors[answer_id] = answer.get('color')
+
+    return topic_ids, [{
+        'id': report.id,
+        'url': '../%s?lat=%.5f&lng=%.5f&z=17' % (
+            map_id, report.location.lat, report.location.lon),
+        'author': (('%s/.users/' % self.request.root_url) in report.author and
+                   report.author.split('/')[-1] or report.author),
+        'text_escaped': _HtmlEscape(report.text),
+        'location': '(%.3f, %.3f)' % (report.location.lat,
+                                      report.location.lon),
+        'lat': report.location.lat,
+        'lng': report.location.lon,
+        'icon_url': _MakeIconUrl(report, answer_colors),
+        'updated': report.updated.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'topics': ','.join(tid.split('.')[1] for tid in report.topic_ids),
+        'answers_escaped': _HtmlEscape('\n'.join(
+            '%s %s' % (questions.get(answer_id.rsplit('.', 1)[0], ''),
+                       answers.get(answer_id, ''))
+            for answer_id in report.answer_ids)),
+        'votes': '&#x2191;%d &#x2193;%d (%.1f) %s' % (
+            report.upvote_count or 0, report.downvote_count or 0,
+            report.score or 0.0, report.hidden and '<b>hidden</b>' or ''),
+        } for report in self._QueryForReports(map_id, topic_ids)]
+
+  def _QueryForReports(self, map_id, topic_ids):
+    """Queries datastore for reports.
+
+    Args:
+      map_id: A string, the id of the map being reviewed.
+      topic_ids: An array of topic IDs for which to restrict the query.
+
+    Returns:
+      A iterable of model.CrowdReport.
+    """
+    if self.report_id:
+      report = model.CrowdReport.Get(self.report_id)
+      return [report] if report else []
+    else:
+      if self.topic_id and self.topic_id in topic_ids:
+        tids = ['%s.%s' % (map_id, self.topic_id)]
+      else:
+        tids = ['%s.%s' % (map_id, tid) for tid in topic_ids]
+      if self.query:
+        # Restrict the search to topics for this map.
+        # Note that the query itself can be arbitrarily complex, following
+        # the syntax at
+        # developers.google.com/appengine/docs/python/search/query_strings
+        # We don't validate the query here, and an invalid query currently
+        # will render an error page.
+        restricted_query = [
+            self.query,
+            'topic_id:(%s)' % (' OR '.join('"%s"' % tid for tid in tids))]
+        if self.hidden is not None:
+          restricted_query.append('hidden: %s' % self.hidden)
+        if self.reviewed is not None:
+          restricted_query.append('reviewed: %s' % self.reviewed)
+        return model.CrowdReport.Search(' '.join(restricted_query),
+                                        self.count + 1, self.skip)
+      else:
+        if self.author and not self.author.startswith('http'):
+          author = '%s/.users/%s' % (self.request.root_url, self.author)
+        else:
+          author = self.author
+        return model.CrowdReport.GetForTopics(tids, self.count + 1, self.skip,
+                                              author, self.hidden,
+                                              self.reviewed)
+
   def HandlePost(self, map_object):
-    """Handles a POST (delete)."""
+    """Handles a POST.
+
+    Possible user actions are marking the set of input reports reviewed,
+    upvoted or downvoted.
+
+    Upon success, the user is redirected to the review page.
+
+    Args:
+      map_object: The model.Map instance being reviewed.
+    """
     perms.AssertAccess(perms.Role.MAP_REVIEWER, map_object)
 
     to_accept = self.request.get_all('accept')
@@ -206,13 +295,25 @@ class _MapReview(base_handler.BaseHandler):
     for report_id in to_upvote:
       model.CrowdVote.Put(report_id, self.GetCurrentUserUrl(), 'REVIEWER_UP')
 
-    self.redirect(self.GetUrl())
+    self.redirect(self._GetUrl())
 
 
 class MapReviewByLabel(_MapReview):
   """A version of MapReview that expects a map label in the URL."""
 
-  def GetMap(self, label, domain):
+  def _GetMap(self, label, domain):
+    """Loads the model.Map instance being reviewed by label and domain.
+
+    Args:
+      label: A string, the published label for the map.
+      domain: A string, the domain in which the map was created, eg gmail.com.
+
+    Returns:
+      The model.Map instance being reviewed
+
+    Raises:
+      base_handler.Error: If the map csnnot be found.
+    """
     domain = domain or config.Get('primary_domain') or ''
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
@@ -223,23 +324,58 @@ class MapReviewByLabel(_MapReview):
     return map_object
 
   def Get(self, label, domain=None):
-    self.RenderReviewPage(self.GetMap(label, domain))
+    """Renders the map review page by domain and map label.
+
+    Args:
+      label: A string, the published label for the map.
+      domain: A string, the domain in which the map was created, eg gmail.com.
+    """
+    self.RenderReviewPage(self._GetMap(label, domain))
 
   def Post(self, label, domain=None):
-    self.HandlePost(self.GetMap(label, domain))
+    """Updates report statuses for the map at the given domain and map label.
+
+    Args:
+      label: A string, the published label for the map.
+      domain: A string, the domain in which the map was created, eg gmail.com.
+    """
+    self.HandlePost(self._GetMap(label, domain))
 
 
 class MapReviewById(_MapReview):
   """A version of MapReview that expects a map_id in the URL."""
 
-  def GetMap(self, map_id):
+  def _GetMap(self, map_id):
+    """Loads the model.Map instance being reviewed by ID.
+
+    Args:
+      map_id: A string, the id of the map being reviewed.
+
+    Returns:
+      The model.Map instance being reviewed
+
+    Raises:
+      base_handler.Error: If the map csnnot be found.
+    """
     map_object = model.Map.Get(map_id)
     if not map_object:
       raise base_handler.Error(404, 'Map %r not found.' % map_id)
     return map_object
 
   def Get(self, map_id, domain=None):
-    self.RenderReviewPage(self.GetMap(map_id))
+    """Renders the map review page by map ID.
+
+    Args:
+      map_id: A string, the id of the map being reviewed.
+      domain: A string, the domain in which the map was created, eg gmail.com.
+    """
+    self.RenderReviewPage(self._GetMap(map_id))
 
   def Post(self, map_id, domain=None):
-    self.HandlePost(self.GetMap(map_id))
+    """Updates report statuses for the map at the given map ID.
+
+    Args:
+      map_id: A string, the id of the map being reviewed.
+      domain: A string, the domain in which the map was created, eg gmail.com.
+    """
+    self.HandlePost(self._GetMap(map_id))
