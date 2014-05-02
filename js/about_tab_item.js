@@ -56,7 +56,7 @@ cm.AboutTabItem.prototype.addContent = function(parentElem) {
       'div', {'class': [cm.css.PANEL_LINKS, cm.css.ABOUT_LINKS]});
   if (this.editingEnabled) {
     var setDefaultView = cm.ui.createLink(cm.MSG_SET_DEFAULT_VIEW_LINK);
-    cm.ui.append(panelLinks, setDefaultView);
+    cm.ui.append(panelLinks, setDefaultView, cm.ui.SEPARATOR_DOT);
     cm.events.listen(setDefaultView, 'click', this.handleSetDefaultView_, this);
   }
   var resetViewLink = cm.ui.createLink(cm.MSG_RESET_VIEW_LINK);
@@ -64,16 +64,13 @@ cm.AboutTabItem.prototype.addContent = function(parentElem) {
   cm.events.listen(resetViewLink, 'click', this.handleResetView_, this);
 
   var helpLink = cm.ui.createLink(cm.MSG_HELP);
-  cm.events.listen(
-      helpLink, 'click', goog.bind(this.helpPopup_.show, this.helpPopup_));
-  cm.ui.append(panelLinks, helpLink);
+  cm.ui.append(panelLinks, cm.ui.SEPARATOR_DOT, helpLink);
+  cm.events.listen(helpLink, 'click', this.helpPopup_.show, this.helpPopup_);
 
-  var uri = new goog.Uri(goog.global.location);
-  var reportAbuseUri = new goog.Uri(REPORT_ABUSE_BASE_URL);
-  reportAbuseUri.setParameterValue('url', uri.toString());
-  cm.ui.append(
-      panelLinks, cm.ui.createLink(
-          cm.MSG_REPORT_ABUSE, reportAbuseUri.toString(), '_blank'));
+  var reportAbuseUri = REPORT_ABUSE_BASE_URL +
+      '?url=' + encodeURIComponent(goog.global.location + '');
+  cm.ui.append(panelLinks, cm.ui.SEPARATOR_DOT, cm.ui.createLink(
+      cm.MSG_REPORT_ABUSE, reportAbuseUri, '_blank'));
 
   cm.ui.append(parentElem, this.descElem_, panelLinks);
 };

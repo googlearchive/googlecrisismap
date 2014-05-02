@@ -82,9 +82,8 @@ specific language governing permissions and limitations under the License.
   -webkit-overflow-scrolling:touch;
 }
 
-.cm-tab-content .cm-about-links a {
+.cm-panel-links a {
   display: inline-block;
-  margin: 0 20px 0 0;
 }
 
 .cm-tab-content input[type=checkbox] {
