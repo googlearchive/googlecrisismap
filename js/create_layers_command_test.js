@@ -32,8 +32,8 @@ registerTestSuite(CreateLayersCommandTest);
  */
 CreateLayersCommandTest.prototype.testExecuteSingle = function() {
   this.singleCommand_.execute(this.appState_, this.mapModel_);
-  expectThat(this.mapModel_.getLayer('layer0'), not(isUndefined));
-  expectTrue(this.appState_.getLayerEnabled('layer0'));
+  expectThat(this.mapModel_.getLayer('1'), not(isUndefined));
+  expectTrue(this.appState_.getLayerEnabled('1'));
 };
 
 /**
@@ -42,10 +42,10 @@ CreateLayersCommandTest.prototype.testExecuteSingle = function() {
  */
 CreateLayersCommandTest.prototype.testExecuteMultiple = function() {
   this.multipleCommand_.execute(this.appState_, this.mapModel_);
-  expectThat(this.mapModel_.getLayer('layer1'), not(isUndefined));
-  expectTrue(this.appState_.getLayerEnabled('layer1'));
-  expectThat(this.mapModel_.getLayer('layer2'), not(isUndefined));
-  expectTrue(this.appState_.getLayerEnabled('layer2'));
+  expectThat(this.mapModel_.getLayer('1'), not(isUndefined));
+  expectTrue(this.appState_.getLayerEnabled('1'));
+  expectThat(this.mapModel_.getLayer('2'), not(isUndefined));
+  expectTrue(this.appState_.getLayerEnabled('2'));
 };
 
 /**
@@ -54,12 +54,12 @@ CreateLayersCommandTest.prototype.testExecuteMultiple = function() {
  */
 CreateLayersCommandTest.prototype.testUndoSingle = function() {
   this.singleCommand_.execute(this.appState_, this.mapModel_);
-  expectThat(this.mapModel_.getLayer('layer3'), not(isUndefined));
-  expectTrue(this.appState_.getLayerEnabled('layer3'));
+  expectThat(this.mapModel_.getLayer('1'), not(isUndefined));
+  expectTrue(this.appState_.getLayerEnabled('1'));
 
   this.singleCommand_.undo(this.appState_, this.mapModel_);
-  expectThat(this.mapModel_.getLayer('layer3'), isUndefined);
-  expectFalse(this.appState_.getLayerEnabled('layer3'));
+  expectThat(this.mapModel_.getLayer('1'), isUndefined);
+  expectFalse(this.appState_.getLayerEnabled('1'));
 };
 
 /**
@@ -68,16 +68,16 @@ CreateLayersCommandTest.prototype.testUndoSingle = function() {
  */
 CreateLayersCommandTest.prototype.testUndoMultiple = function() {
   this.multipleCommand_.execute(this.appState_, this.mapModel_);
-  expectThat(this.mapModel_.getLayer('layer4'), not(isUndefined));
-  expectTrue(this.appState_.getLayerEnabled('layer4'));
-  expectThat(this.mapModel_.getLayer('layer5'), not(isUndefined));
-  expectTrue(this.appState_.getLayerEnabled('layer5'));
+  expectThat(this.mapModel_.getLayer('1'), not(isUndefined));
+  expectTrue(this.appState_.getLayerEnabled('1'));
+  expectThat(this.mapModel_.getLayer('2'), not(isUndefined));
+  expectTrue(this.appState_.getLayerEnabled('2'));
 
   this.multipleCommand_.undo(this.appState_, this.mapModel_);
-  expectThat(this.mapModel_.getLayer('layer4'), isUndefined);
-  expectFalse(this.appState_.getLayerEnabled('layer4'));
-  expectThat(this.mapModel_.getLayer('layer5'), isUndefined);
-  expectFalse(this.appState_.getLayerEnabled('layer5'));
+  expectThat(this.mapModel_.getLayer('1'), isUndefined);
+  expectFalse(this.appState_.getLayerEnabled('1'));
+  expectThat(this.mapModel_.getLayer('2'), isUndefined);
+  expectFalse(this.appState_.getLayerEnabled('2'));
 };
 
 /**
@@ -85,10 +85,10 @@ CreateLayersCommandTest.prototype.testUndoMultiple = function() {
  * sequence (when the user requests to undo and redo the command),
  * for a single layer.
  */
-CreateLayersCommandTest.prototype.redoPreservesLayerID = function() {
+CreateLayersCommandTest.prototype.redoPreservesLayerId = function() {
   this.singleCommand_.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
-      elementsAre(['layer6', 'a', 'b']));
+      elementsAre(['1', 'a', 'b']));
 
   this.singleCommand_.undo(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
@@ -96,7 +96,7 @@ CreateLayersCommandTest.prototype.redoPreservesLayerID = function() {
 
   this.singleCommand_.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
-      elementsAre(['layer6', 'a', 'b']));
+      elementsAre(['1', 'a', 'b']));
 };
 
 /**
@@ -104,18 +104,18 @@ CreateLayersCommandTest.prototype.redoPreservesLayerID = function() {
  * sequence (when the user requests to undo and redo the command),
  * for multiple layers.
  */
-CreateLayersCommandTest.prototype.redoPreservesLayerIDMultiple = function() {
+CreateLayersCommandTest.prototype.redoPreservesLayerIdMultiple = function() {
   this.multipleCommand_.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
-             elementsAre(['layer7', 'layer8', 'a', 'b']));
+             whenSorted(elementsAre(['1', '2', 'a', 'b'])));
 
   this.multipleCommand_.undo(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
-             elementsAre(['a', 'b']));
+             whenSorted(elementsAre(['a', 'b'])));
 
   this.multipleCommand_.execute(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getLayerIds(),
-             elementsAre(['layer7', 'layer8', 'a', 'b']));
+             whenSorted(elementsAre(['1', '2', 'a', 'b'])));
 };
 
 /** Tests that we can create a folder with sublayers, and undo and redo it. */
@@ -127,18 +127,18 @@ CreateLayersCommandTest.prototype.testCreateFolder = function() {
     {title: 'Folder B', type: cm.LayerModel.Type.FOLDER}
   ]);
   this.multipleCommand_.execute(this.appState_, this.mapModel_);
-  expectThat(this.mapModel_.getAllLayerIds(), elementsAre(['a', 'b', 'layer9',
-      'layer10', 'layer11', 'layer12']));
+  expectThat(this.mapModel_.getAllLayerIds(),
+             whenSorted(elementsAre(['1', '2', '3', '4', 'a', 'b'])));
   expectEq(cm.LayerModel.Type.FOLDER,
-           this.mapModel_.getLayer('layer9').get('type'));
+           this.mapModel_.getLayer('1').get('type'));
   expectEq(cm.LayerModel.Type.FOLDER,
-           this.mapModel_.getLayer('layer12').get('type'));
+           this.mapModel_.getLayer('4').get('type'));
 
   this.multipleCommand_.undo(this.appState_, this.mapModel_);
   expectThat(this.mapModel_.getAllLayerIds(),
-             elementsAre(['a', 'b']));
+             whenSorted(elementsAre(['a', 'b'])));
 
   this.multipleCommand_.execute(this.appState_, this.mapModel_);
-  expectThat(this.mapModel_.getAllLayerIds(), elementsAre(['a', 'b', 'layer9',
-      'layer10', 'layer11', 'layer12']));
+  expectThat(this.mapModel_.getAllLayerIds(),
+             whenSorted(elementsAre(['1', '2', '3', '4', 'a', 'b'])));
 };

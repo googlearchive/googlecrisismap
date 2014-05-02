@@ -60,15 +60,15 @@ TopicModelTest.prototype.newFromMapRootMissingId = function() {
   delete json['id'];
   json['title'] = ' Complex (title 3!) ';
   var model = cm.TopicModel.newFromMapRoot(json, ['1', '2', '3', '4', '5']);
-  expectEq('complex__title_3__', model.get('id'));
+  expectEq('complex_title_3', model.get('id'));
 
   json['title'] = '   ';
   model = cm.TopicModel.newFromMapRoot(json, ['1', '2', '3', '4', '5']);
-  expectEq('topic0', model.get('id'));
+  expectEq('', model.get('id'));
 
   delete json['title'];
   model = cm.TopicModel.newFromMapRoot(json, ['1', '2', '3', '4', '5']);
-  expectEq('topic1', model.get('id'));
+  expectEq('', model.get('id'));
 };
 
 TopicModelTest.prototype.newFromMapRootInvalidLayerIds = function() {

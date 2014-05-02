@@ -171,7 +171,7 @@ cm.MapModel.prototype.getLayer = function(id) {
 };
 
 /**
- * Returns a flat array of all layer IDs in the map.
+ * Returns a flat array of all layer IDs in the map, in arbitrary order.
  * @return {Array.<string>} The array of layer IDs.
  */
 cm.MapModel.prototype.getAllLayerIds = function() {
@@ -183,7 +183,7 @@ cm.MapModel.prototype.getAllLayerIds = function() {
 };
 
 /**
- * Returns an array of the map's top-level layer IDs.
+ * Returns an array of the map's top-level layer IDs, in order.
  * @return {Array.<string>} The array of layer IDs.
  *   The layer ID hierarchy.
  */

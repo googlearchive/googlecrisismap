@@ -28,13 +28,6 @@ cm.TopicModel = function() {
 goog.inherits(cm.TopicModel, google.maps.MVCObject);
 
 /**
- * An internal counter used to generate unique IDs.
- * @type number
- * @private
- */
-cm.TopicModel.nextId_ = 0;
-
-/**
  * @param {Object} maproot A MapRoot JS topic object.
  * @param {Array.<string>} valid_layer_ids A list of the layer IDs to allow.
  * @return {cm.TopicModel} A newly constructed TopicModel, or null if the
@@ -45,15 +38,13 @@ cm.TopicModel.newFromMapRoot = function(maproot, valid_layer_ids) {
   var model = new cm.TopicModel();
 
   var id = maproot['id'];
-  // If there is no id in the maproot, try to create a sensible id from
-  // the topic title.  If that fails, try to generate a unique topic id.
-  if (!id && maproot['title']) {
-    var title = goog.string.trim(maproot['title']);
-    id = title.replace(/[^\w.-]/g, '_').toLowerCase();
-  }
+  // If there's no ID in the MapRoot, try to create a sensible ID from the
+  // title.  If it's still empty, it will be set by cm.MapModel.registerTopic_.
   if (!id) {
-    id = 'topic' + cm.TopicModel.nextId_++;
+    var title = (maproot['title'] || '').replace(/[^\w.-]+/g, ' ');
+    id = goog.string.trim(title).replace(/ /g, '_').toLowerCase();
   }
+
   /** {string} An ID unique among topics in this MapModel. */
   model.set('id', id);
 

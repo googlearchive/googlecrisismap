@@ -47,16 +47,16 @@ cm.CreateLayersCommand.prototype.execute = function(appState, mapModel) {
     // Inserting the layer into the map causes it and its sublayers' 'id'
     // property to be populated. We save the ID so that redo() will create the
     // layer again with the same ID.
-    var recursivelySetIDs = function(layerMapRoot, layer) {
+    var recursivelySetIds = function(layerMapRoot, layer) {
       layerMapRoot.id = /** @type string */(layer.get('id'));
       if (layerMapRoot.sublayers) {
         for (var i = 0; i < layerMapRoot.sublayers.length; i++) {
-          recursivelySetIDs(layerMapRoot.sublayers[i],
+          recursivelySetIds(layerMapRoot.sublayers[i],
                             layer.get('sublayers').getAt(i));
         }
       }
     };
-    recursivelySetIDs(layerMapRoot, layer);
+    recursivelySetIds(layerMapRoot, layer);
 
     // Set the visibility of layers in the app state based on their default
     // visibility. The default visibility of the top level layers are set to

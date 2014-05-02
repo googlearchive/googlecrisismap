@@ -118,7 +118,7 @@ LayerModelTest.prototype.newFromMapRootDefaultValues = function() {
   var layerModel = cm.LayerModel.newFromMapRoot(EMPTY_MAPROOT);
   expectEq('Empty map', layerModel.get('title'));
   expectEq('', layerModel.get('description').getUnsanitizedHtml());
-  expectEq('layer0', layerModel.get('id'));
+  expectEq('', layerModel.get('id'));
   expectEq(cm.LayerModel.Type.KML, layerModel.get('type'));
   expectFalse(layerModel.get('default_visibility'));
   expectEq(null, layerModel.get('viewport'));
@@ -393,23 +393,14 @@ LayerModelTest.prototype.newFromMapRootLockedFolder = function() {
   expectEq(cm.LayerModel.FolderType.LOCKED, layerModel.get('folder_type'));
 };
 
-/**
- * Tests that layer ids are used from the MapRoot JSON or generated if
- * unspecified.
- */
+/** Tests that layer IDs are used from the MapRoot JSON or left empty. */
 LayerModelTest.prototype.newFromMapRootLayerIds = function() {
   var layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_TRANSIT'});
-  expectEq('layer0', layerModel.get('id'));
-
-  var layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_WEATHER'});
-  expectEq('layer1', layerModel.get('id'));
+  expectEq('', layerModel.get('id'));
 
   var layerModel = cm.LayerModel.newFromMapRoot(
       {type: 'GOOGLE_TRAFFIC', id: 'traffic'});
   expectEq('traffic', layerModel.get('id'));
-
-  var layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_CLOUD_IMAGERY'});
-  expectEq('layer2', layerModel.get('id'));
 };
 
 /**

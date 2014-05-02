@@ -169,13 +169,6 @@ cm.LayerModel.MAPROOT_TO_MODEL_FOLDER_TYPES = {
 };
 
 /**
- * An internal counter used to generate unique IDs.
- * @type number
- * @private
- */
-cm.LayerModel.nextId_ = 0;
-
-/**
  * @param {Object} maproot A MapRoot JS layer object.
  * @return {cm.LayerModel} A newly constructed LayerModel, or null if the
  *     'type' member was not a recognized type name.
@@ -187,7 +180,8 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
   }
   var source = maproot['source'] || {};
   var model = new cm.LayerModel();
-  model.set('id', maproot['id'] || ('layer' + cm.LayerModel.nextId_++));
+  // If the ID is empty, it will be set by cm.MapModel.registerLayer_.
+  model.set('id', maproot['id'] || '');
   model.set('type', type);
   model.set('title', maproot['title'] || '');
   model.set('description', new cm.Html(maproot['description'] || ''));
