@@ -11,6 +11,8 @@
 
 // Author: arb@google.com (Anthony Baxter)
 
+goog.require('goog.testing.MockClock');
+
 /**
  * A fake for a DOM Element object.  These fakes are used in gjstest tests.
  * @param {string} nodeName The name of the newly created node.
@@ -535,6 +537,20 @@ cm.TestBase = function() {
 
   this.logActionMatchers_ = [];
   this.logTimeMatchers_ = [];
+
+  /** @type {goog.testing.MockClock} **/
+  this.mockClock_;
+};
+
+/**
+ * Gets or creates a mock clock for a test.
+ * @return {goog.testing.MockClock}
+ */
+cm.TestBase.prototype.getMockClock = function() {
+  if (!this.mockClock_) {
+    this.mockClock_ = new goog.testing.MockClock(true);
+  }
+  return this.mockClock_;
 };
 
 /**
@@ -827,6 +843,10 @@ cm.TestBase.createCallCapturer = function() {
     }
     for (var i = 0, matcher; matcher = this.logTimeMatchers_[i]; i++) {
       expectThat(this.logTimeCapturer_.calls, matcher);
+    }
+
+    if (this.mockClock_) {
+      this.mockClock_.uninstall();
     }
   };
 

@@ -171,6 +171,30 @@ cm.Analytics.SharePopupAction = cm.Analytics.prependUiElement_('Share popup', {
   SHORTEN_URL_ON: '"Shorten URLs" toggled on'
 });
 
+/** @type {Object.<string, string>} */
+cm.Analytics.TimingCategory = {
+    PANEL_ACTION: 'Panel action'
+};
+
+/** @type {Object.<string, string>} */
+cm.Analytics.TimingVariable = {
+    PANEL_TAB_CHANGED: 'Panel tab changed',
+    PANEL_TOGGLED_CLOSED: 'Panel toggled closed',
+    PANEL_TOGGLED_OPEN: 'Panel toggled open'
+};
+
+/** @type {Object.<string, string>} */
+cm.Analytics.Timer = {
+  PANEL_TAB_SELECTED: 'panel_tab_selected',
+  PANEL_TOGGLE_SELECTED: 'panel_toggle_selected'
+};
+
+/**
+ * Map of timestamps.
+ * @private
+ * @type Object.<string, number>
+ */
+cm.Analytics.timers_ = {};
 
 /**
  * The ID of the map currently being viewed/edited; set in initialize().
@@ -270,5 +294,25 @@ cm.Analytics.logAction = function(action, layerId, opt_value, opt_topicId) {
  */
 cm.Analytics.logTime = function(category, variable, time,
                                 opt_label, opt_sample) {
-  _gaq.push(['_trackTiming', category, variable, time, opt_label, opt_sample]);
+  if (goog.isNumber(time) && time >= 0) {
+    _gaq.push(
+        ['_trackTiming', category, variable, time, opt_label, opt_sample]);
+  }
+};
+
+/**
+ * Saves the current time as the start time for a given key.
+ * @param {string} timerKey A key name for storing a timestamp.
+ */
+cm.Analytics.startTimer = function(timerKey) {
+  cm.Analytics.timers_[timerKey] = goog.now();
+};
+
+/**
+ * Gets the start time for a given key.
+ * @param {string} timerKey A key name for storing a timestamp.
+ * @return {number} The start time in milliseconds.
+ */
+cm.Analytics.getTimer = function(timerKey) {
+  return cm.Analytics.timers_[timerKey];
 };

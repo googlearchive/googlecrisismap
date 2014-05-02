@@ -241,7 +241,7 @@ cm.LayersTabItem.prototype.setTabView = function(tabView) {
       cm.events.unlisten(this.tabViewListener_, this);
     }
     this.tabViewListener_ = /** @type cm.events.ListenerToken */(
-        cm.events.listen(tabView, cm.events.TAB_SELECTION_CHANGED,
+        cm.events.listen(tabView, cm.events.NEW_TAB_SELECTED,
                          this.handleTabSelectionChanged_, this));
   }
   cm.MapTabItem.prototype.setTabView.call(this, tabView);

@@ -12,7 +12,6 @@
 // Author: kpy@google.com (Ka-Ping Yee)
 
 goog.require('cm.Analytics');
-goog.require('goog.testing.MockClock');
 
 function PresenterTest() {
   cm.TestBase.call(this);
@@ -54,7 +53,7 @@ PresenterTest.prototype.filterQueryChanged = function() {
  * Tests that an analytics event is logged when a filter query is entered.
  */
 PresenterTest.prototype.filterQueryChangeLogging = function() {
-  var clock = new goog.testing.MockClock(true);
+  var clock = this.getMockClock();
   this.expectLogAction(
       cm.Analytics.LayersTabAction.FILTER_QUERY_ENTERED, null, 1);
 
@@ -74,8 +73,6 @@ PresenterTest.prototype.filterQueryChangeLogging = function() {
   clock.tick(1000);
   cm.events.emit(this.panelView_, cm.events.FILTER_QUERY_CHANGED);
   clock.tick(1000);
-
-  clock.uninstall();
 };
 
 /**

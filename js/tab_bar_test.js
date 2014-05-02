@@ -25,3 +25,18 @@ TabBarTest.prototype.testRender = function() {
   var tabs = expectDescendantOf(parent, withClass(cm.css.TAB_BAR_CONTAINER));
   var buttons = expectDescendantOf(tabs, withClass(cm.css.TAB_BAR_BUTTONS));
 };
+
+TabBarTest.prototype.testTabClickTimer = function() {
+  var clock = this.getMockClock();
+
+  var parent = cm.ui.create('div');
+  var tabBar = new cm.TabBar();
+  tabBar.insertTab(0, 'My Tab', true);
+  tabBar.render(parent);
+
+  var tab = tabBar.tabBar_.getChildAt(0);
+  clock.tick();
+
+  cm.events.emit(tab, goog.ui.Component.EventType.ACTION);
+  expectEq(cm.Analytics.getTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED), 1);
+};

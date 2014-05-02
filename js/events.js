@@ -213,13 +213,13 @@ cm.events.CHANGE_OPACITY = 'CHANGE_OPACITY';
 // TODO(rew): the presenter should listen to this and update AppState
 // with the currently selected tab.
 /** The user changed the selection in a tab view. */
-cm.events.TAB_SELECTION_CHANGED = 'TAB_SELECTION_CHANGED';
+cm.events.NEW_TAB_SELECTED = 'NEW_TAB_SELECTED';
 
 /** The tab panel was expanded or collapsed for the first time. */
 cm.events.TAB_PANEL_STATE_FIRST_CHANGED = 'TAB_PANEL_STATE_FIRST_CHANGED';
 
 /** The user clicked on a tab that was currently selected */
-cm.events.CLICK_ON_SELECTED_TAB = 'CLICK_ON_SELECTED_TAB';
+cm.events.SAME_TAB_SELECTED = 'SAME_TAB_SELECTED';
 
 /** The details tab was selected. */
 cm.events.DETAILS_TAB_OPENED = 'DETAILS_TAB_OPENED';

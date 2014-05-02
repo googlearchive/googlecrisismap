@@ -224,16 +224,16 @@ TabViewTest.prototype.testSelectASelectedTabItem = function() {
   // Listen for and record emitted events from the TabView, so that we
   // can check for expected behavior based on events we send it.
   var tabSelectionChangedEmitted = false;
-  cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED,
+  cm.events.listen(this.tabView_, cm.events.NEW_TAB_SELECTED,
                    function() { tabSelectionChangedEmitted = true; });
   var selectedTabClickedEmitted = false;
-  cm.events.listen(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB,
+  cm.events.listen(this.tabView_, cm.events.SAME_TAB_SELECTED,
                    function() { selectedTabClickedEmitted = true; });
 
   // Emit an event from the TabBar, with it thinking that tab 0 has been
   // clicked on.  TabView should recognize this as a click on an already
   // selected tab.
-  cm.events.emit(this.tabView_.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+  cm.events.emit(this.tabView_.tabBar_, cm.TabBar.TAB_SELECTED);
   expectTrue(selectedTabClickedEmitted);
   expectFalse(tabSelectionChangedEmitted);
 };
@@ -246,17 +246,24 @@ TabViewTest.prototype.testSelectAnUnselectedTabItem = function() {
   // Listen for and record emitted events from the TabView, so that we
   // can check for expected behavior based on events we send it.
   var tabSelectionChangedEmitted = false;
-  cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED,
+  cm.events.listen(this.tabView_, cm.events.NEW_TAB_SELECTED,
                    function() { tabSelectionChangedEmitted = true; });
   var selectedTabClickedEmitted = false;
-  cm.events.listen(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB,
+  cm.events.listen(this.tabView_, cm.events.SAME_TAB_SELECTED,
                    function() { selectedTabClickedEmitted = true; });
   this.expectLogAction(cm.Analytics.TabPanelAction.NEW_TAB_SELECTED, null);
+  this.expectLogTime(cm.Analytics.TimingCategory.PANEL_ACTION,
+                     cm.Analytics.TimingVariable.PANEL_TAB_CHANGED, 1, 1,
+                     'Mock 1');
+
+  var clock = this.getMockClock();
+  cm.Analytics.startTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED);
+  clock.tick();
 
   // Emit an event from the TabBar, with it thinking that tab 1 (an
   // unselected tab) has been clicked on.
   this.tabView_.tabBar_.selectTab(1);
-  cm.events.emit(this.tabView_.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+  cm.events.emit(this.tabView_.tabBar_, cm.TabBar.TAB_SELECTED);
   expectTrue(tabSelectionChangedEmitted);
   expectFalse(selectedTabClickedEmitted);
 };

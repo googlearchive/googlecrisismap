@@ -154,16 +154,10 @@ cm.TabPanelView.prototype.render_ = function(expand) {
   this.tabView_.render(this.parentElem_);
   this.setExpanded_(expand);
   this.firstExpandCollapseDone_ = false;
-  cm.events.listen(this.tabView_, cm.events.TAB_SELECTION_CHANGED, function() {
-    this.setExpanded_(true);
-  }, this);
-  cm.events.listen(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB,
-      function() {
-        cm.Analytics.logAction(this.expanded_ ?
-            cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED :
-            cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
-        this.setExpanded_(!this.expanded_);
-      }, this);
+  cm.events.listen(this.tabView_, cm.events.NEW_TAB_SELECTED,
+      this.handleNewTabSelected_, this);
+  cm.events.listen(this.tabView_, cm.events.SAME_TAB_SELECTED,
+      this.handleSameTabSelected_, this);
 };
 
 /**
@@ -362,11 +356,59 @@ cm.TabPanelView.prototype.deselectFeature = function() {
 cm.TabPanelView.prototype.createButtons_ = function() {
   this.expandCollapseButton_ = cm.ui.create('div',
                                             {'class': cm.css.CHEVRON_DOWN});
-  cm.events.listen(this.expandCollapseButton_, 'click', function() {
-    cm.Analytics.logAction(this.expanded_ ?
-        cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED :
-        cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
-    this.setExpanded_(!this.expanded_);
-  }, this);
+  cm.events.listen(this.expandCollapseButton_, 'click',
+                   this.handleToggleClicked_, this);
   this.tabView_.addButton(this.expandCollapseButton_);
+};
+
+/**
+ * Handler for when a new tab is selected.
+ * @private
+ */
+cm.TabPanelView.prototype.handleNewTabSelected_ = function() {
+  var wasCollapsed = !this.expanded_;
+  this.setExpanded_(true);
+  if (wasCollapsed) {
+    this.logExpandCollapse_(
+        cm.Analytics.getTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED));
+  }
+};
+
+/**
+ * Handler for when the selected tab is selected again.
+ * @private
+ */
+cm.TabPanelView.prototype.handleSameTabSelected_ = function() {
+  this.setExpanded_(!this.expanded_);
+  this.logExpandCollapse_(
+      cm.Analytics.getTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED));
+};
+
+/**
+ * Handler for click events on the expand/collapse toggle button.
+ * @private
+ */
+cm.TabPanelView.prototype.handleToggleClicked_ = function() {
+  cm.Analytics.startTimer(cm.Analytics.Timer.PANEL_TOGGLE_SELECTED);
+  this.setExpanded_(!this.expanded_);
+  this.logExpandCollapse_(
+      cm.Analytics.getTimer(cm.Analytics.Timer.PANEL_TOGGLE_SELECTED));
+};
+
+/**
+ * Logs action and timing events for expanding/collapsing the panel.
+ * @param {number} startMs Time in milliseconds when the action to expand or
+ *     collapse started.
+ * @private
+ */
+cm.TabPanelView.prototype.logExpandCollapse_ = function(startMs) {
+  cm.Analytics.logAction(this.expanded_ ?
+      cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN :
+      cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED, null);
+
+  var timingVar = this.expanded_ ?
+      cm.Analytics.TimingVariable.PANEL_TOGGLED_OPEN :
+      cm.Analytics.TimingVariable.PANEL_TOGGLED_CLOSED;
+  cm.Analytics.logTime(cm.Analytics.TimingCategory.PANEL_ACTION, timingVar,
+                       goog.now() - startMs);
 };

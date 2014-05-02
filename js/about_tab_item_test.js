@@ -120,5 +120,5 @@ AboutTabItemTest.prototype.testAnalyticsSelectionEvent = function() {
   tabView.tabBar_.selectTab(1);
   this.expectLogAction(cm.Analytics.TabPanelAction.ABOUT_TAB_SELECTED, null);
 
-  cm.events.emit(tabView.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+  cm.events.emit(tabView.tabBar_, cm.TabBar.TAB_SELECTED);
 };

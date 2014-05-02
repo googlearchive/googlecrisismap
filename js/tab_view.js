@@ -70,7 +70,7 @@ cm.TabView.prototype.render = function(parent) {
   // Add the tab content.
   cm.ui.append(parent, this.contentElem_);
 
-  cm.events.listen(this.tabBar_, cm.TabBar.NEW_TAB_SELECTED,
+  cm.events.listen(this.tabBar_, cm.TabBar.TAB_SELECTED,
                    this.handleTabSelected_, this);
 };
 
@@ -127,18 +127,24 @@ cm.TabView.prototype.getTabItemByTitle = function(title) {
  * Updates the content of the TabView based on the state of the TabBar. Used as
  * the handler for selection events from the TabBar. If an unselected tab is
  * clicked on, it gets selected; if a selected tab is clicked on, it emits the
- * cm.events.CLICK_ON_SELECTED_TAB event.
+ * cm.events.SAME_TAB_SELECTED event.
  * @private
  */
 cm.TabView.prototype.handleTabSelected_ = function() {
   if (this.selectedTabIndex_ == this.tabBar_.getSelectedTab()) {
-    cm.events.emit(this, cm.events.CLICK_ON_SELECTED_TAB);
+    cm.events.emit(this, cm.events.SAME_TAB_SELECTED);
     return;
   }
   cm.Analytics.logAction(
       this.tabItems_[this.tabBar_.getSelectedTab()].analyticsSelectionEvent(),
       null);
   this.doSelectTabItem_();
+
+  var start = cm.Analytics.getTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED);
+  cm.Analytics.logTime(
+      cm.Analytics.TimingCategory.PANEL_ACTION,
+      cm.Analytics.TimingVariable.PANEL_TAB_CHANGED, goog.now() - start,
+      this.selectedTabItem().getTitle());
 };
 
 /**
@@ -155,7 +161,7 @@ cm.TabView.prototype.doSelectTabItem_ = function() {
   this.tabItems_[this.selectedTabIndex_].setSelected(true);
   cm.ui.append(this.contentElem_,
                this.tabItems_[this.selectedTabIndex_].getContent());
-  cm.events.emit(this, cm.events.TAB_SELECTION_CHANGED);
+  cm.events.emit(this, cm.events.NEW_TAB_SELECTED);
 };
 
 /**

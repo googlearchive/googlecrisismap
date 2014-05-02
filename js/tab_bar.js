@@ -52,8 +52,8 @@ cm.TabBar = function() {
   this.listeners_ = [];
 };
 
-/** Emitted when the user changes the selection in the tabbar. */
-cm.TabBar.NEW_TAB_SELECTED = 'TabView.tabBar_.NEW_TAB_SELECTED';
+/** Emitted when the user selects a tab in the tabbar. */
+cm.TabBar.TAB_SELECTED = 'TabView.tabBar_.TAB_SELECTED';
 
 /**
  * Renders the tab bar in to the given parent.
@@ -83,8 +83,11 @@ cm.TabBar.prototype.addButton = function(button) {
  */
 cm.TabBar.prototype.insertTab = function(index, title, isEnabled) {
   var googTab = new goog.ui.Tab(title);
-  var tok = cm.events.forward(googTab, goog.ui.Component.EventType.ACTION,
-                              this, cm.TabBar.NEW_TAB_SELECTED);
+  var tok = cm.events.listen(
+      googTab, goog.ui.Component.EventType.ACTION, function() {
+        cm.Analytics.startTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED);
+        cm.events.emit(this, cm.TabBar.TAB_SELECTED);
+      }, this);
   this.listeners_.splice(index, 0, tok);
   this.tabBar_.addChildAt(googTab, index, true);
   if (!isEnabled) {

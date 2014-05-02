@@ -45,5 +45,5 @@ DetailsTabItemTest.prototype.testAnalyticsSelectionEvent = function() {
   this.expectLogAction(cm.Analytics.TabPanelAction.DETAILS_TAB_SELECTED, null);
 
   tabView.tabBar_.selectTab(1);
-  cm.events.emit(tabView.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+  cm.events.emit(tabView.tabBar_, cm.TabBar.TAB_SELECTED);
 };

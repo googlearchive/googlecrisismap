@@ -13,7 +13,6 @@
 
 goog.require('cm.Html');
 goog.require('goog.module');
-goog.require('goog.testing.MockClock');
 
 function InitializeTest() {
   cm.TestBase.call(this);
@@ -128,26 +127,24 @@ MapTest.prototype.testTabbedCollapsed = function() {
 
 /** Test the analytics time logging. */
 MapTest.prototype.testTimeLogging = function() {
-  var clock = new goog.testing.MockClock(true);
+  var clock = this.getMockClock();
   clock.tick();
   this.expectLogTime('page', 'load', 1);
 
   goog.global['cmStartTimeMs'] = clock.getCurrentTime();
   clock.tick();
   new cm.Map(this.frame_);
-  clock.uninstall();
 };
 
 /** Test the analytics time logging with a time that shouldnt be logged. */
 MapTest.prototype.testTimeLoggingBadTime = function() {
-  var clock = new goog.testing.MockClock(true);
+  var clock = this.getMockClock();
   clock.tick();
   this.setForTest_('cm.Analytics.logTime', createMockFunction());
 
   // Test a start time > the current time to verify we don't log bad data.
   goog.global['cmStartTimeMs'] = clock.getCurrentTime() + 1;
   new cm.Map(this.frame_);
-  clock.uninstall();
 };
 
 /** Test analytics action logging. */

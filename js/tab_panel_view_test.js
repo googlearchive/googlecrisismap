@@ -9,8 +9,12 @@
 // OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 // specific language governing permissions and limitations under the License.
 
+goog.require('cm');
+goog.require('cm.TabBar');
+goog.require('cm.TabPanelView');
 goog.require('cm.css');
 goog.require('cm.ui');
+goog.require('goog.testing.events');
 
 function TabPanelViewTest() {
   cm.TestBase.call(this);
@@ -138,7 +142,7 @@ TabPanelViewTest.prototype.testMultipleClicksOnSelectedTab = function() {
   expectThat(chevron, withClass(cm.css.CHEVRON_UP));
 
   // Re-selecting the currently selected tab should result in collapsed state
-  cm.events.emit(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB);
+  cm.events.emit(this.tabView_, cm.events.SAME_TAB_SELECTED);
   expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
   expectThat(chevron, withClass(cm.css.CHEVRON_DOWN));
 };
@@ -146,15 +150,43 @@ TabPanelViewTest.prototype.testMultipleClicksOnSelectedTab = function() {
 TabPanelViewTest.prototype.testExpandByClickingOnSelectedTab = function() {
   this.createTabPanelView_();
   var chevron = expectDescendantOf(this.parent_, withClass(cm.css.CHEVRON_UP));
-  this.expectLogAction(cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED, null);
+  var clock = this.getMockClock();
 
   // Collapse the tab bar by selecting an already-selected tab.
-  cm.events.emit(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB);
+  this.expectLogAction(cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED, null);
+  this.expectLogTime(cm.Analytics.TimingCategory.PANEL_ACTION,
+                     cm.Analytics.TimingVariable.PANEL_TOGGLED_CLOSED, 1);
+  cm.Analytics.startTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED);
+  clock.tick();
+  cm.events.emit(this.tabView_, cm.events.SAME_TAB_SELECTED);
 
   // Selecting the currently selected tab while in collapsed state should result
   // in an expanded state
   this.expectLogAction(cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
-  cm.events.emit(this.tabView_, cm.events.CLICK_ON_SELECTED_TAB);
+  this.expectLogTime(cm.Analytics.TimingCategory.PANEL_ACTION,
+                     cm.Analytics.TimingVariable.PANEL_TOGGLED_OPEN, 1);
+  cm.Analytics.startTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED);
+  clock.tick();
+  cm.events.emit(this.tabView_, cm.events.SAME_TAB_SELECTED);
+  expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
+  expectThat(chevron, withClass(cm.css.CHEVRON_UP));
+};
+
+TabPanelViewTest.prototype.testExpandByClickingOnNewTab = function() {
+  this.expand_ = false;
+  this.createTabPanelView_();
+  var chevron = expectDescendantOf(this.parent_,
+                                   withClass(cm.css.CHEVRON_DOWN));
+  var clock = this.getMockClock();
+
+  // Selecting a new tab while in collapsed state should result in an expanded
+  // state.
+  this.expectLogAction(cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
+  this.expectLogTime(cm.Analytics.TimingCategory.PANEL_ACTION,
+                     cm.Analytics.TimingVariable.PANEL_TOGGLED_OPEN, 1);
+  cm.Analytics.startTimer(cm.Analytics.Timer.PANEL_TAB_SELECTED);
+  clock.tick();
+  cm.events.emit(this.tabView_, cm.events.NEW_TAB_SELECTED);
   expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));
   expectThat(chevron, withClass(cm.css.CHEVRON_UP));
 };
@@ -168,12 +200,18 @@ TabPanelViewTest.prototype.testExpandCollapse = function() {
 
   // Collapse the tab panel.
   this.expectLogAction(cm.Analytics.TabPanelAction.PANEL_TOGGLED_CLOSED, null);
+  this.expectLogTime(cm.Analytics.TimingCategory.PANEL_ACTION,
+                     cm.Analytics.TimingVariable.PANEL_TOGGLED_CLOSED,
+                     greaterOrEqual(0));
   cm.events.emit(button, 'click');
   expectThat(button, withClass(cm.css.CHEVRON_DOWN));
   expectThat(this.parent_, not(withClass(cm.css.TAB_PANEL_EXPANDED)));
 
   // Expand the tab panel.
   this.expectLogAction(cm.Analytics.TabPanelAction.PANEL_TOGGLED_OPEN, null);
+  this.expectLogTime(cm.Analytics.TimingCategory.PANEL_ACTION,
+                     cm.Analytics.TimingVariable.PANEL_TOGGLED_OPEN,
+                     greaterOrEqual(0));
   cm.events.emit(button, 'click');
   expectThat(button, withClass(cm.css.CHEVRON_UP));
   expectThat(this.parent_, withClass(cm.css.TAB_PANEL_EXPANDED));

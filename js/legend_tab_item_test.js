@@ -181,7 +181,7 @@ LegendTabItemTest.prototype.testAnalyticsSelectionEvent = function() {
   this.expectLogAction(cm.Analytics.TabPanelAction.LEGEND_TAB_SELECTED, null);
 
   tabView.tabBar_.selectTab(1);
-  cm.events.emit(tabView.tabBar_, cm.TabBar.NEW_TAB_SELECTED);
+  cm.events.emit(tabView.tabBar_, cm.TabBar.TAB_SELECTED);
 };
 
 LegendTabItemTest.prototype.testEnabledAddingFirstLayer = function() {
