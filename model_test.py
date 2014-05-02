@@ -27,9 +27,13 @@ import utils
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
-JSON1 = '{"title": "One", "description": "description1"}'
-JSON2 = '{"title": "Two", "description": "description2"}'
-JSON3 = '{"title": "Three", "description": "description3"}'
+JSON1_WITHOUT_ID = '{"title": "One", "description": "description1"}'
+JSON2_WRONG_ID = '{"id": "foo", "title": "Two", "description": "description2"}'
+# The "id" property of the first map written during a test will be set to
+# "random_id_1" due to test_utils.MakePredictableId.
+JSON1 = '{"id": "random_id_1", "title": "One", "description": "description1"}'
+JSON2 = '{"id": "random_id_1", "title": "Two", "description": "description2"}'
+JSON3 = '{"id": "random_id_1", "title": "Three", "description": "description3"}'
 
 
 class MapTests(test_utils.BaseTest):
@@ -64,7 +68,7 @@ class MapTests(test_utils.BaseTest):
       # Verify that GetCurrent() sees the most recent version as expected.
       current = m.GetCurrent()
       self.assertEquals(id2, current.id)
-      self.assertEquals(JSON2, current.maproot_json)
+      self.assertEqualsJson(JSON2, current.maproot_json)
       self.assertEquals('root', current.creator_uid)
 
   def testWorldReadable(self):
@@ -78,7 +82,7 @@ class MapTests(test_utils.BaseTest):
     with test_utils.RootLogin():
       m.SetWorldReadable(True)
     with test_utils.Login('outsider'):
-      self.assertEquals(JSON1, m.GetCurrent().maproot_json)
+      self.assertEqualsJson(JSON1, m.GetCurrent().maproot_json)
 
     with test_utils.RootLogin():
       m.SetWorldReadable(False)
@@ -156,6 +160,16 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals(['xyz.com'], m.model.domains)
     self.assertEquals(m.model.world_readable, False)
 
+  def testMapId(self):
+    """Verifies that the "id" property of maps is enforced to be the map ID."""
+    with test_utils.RootLogin():
+      # "id" property should be filled in if it's missing.
+      m = test_utils.CreateMap(JSON1_WITHOUT_ID)
+      self.assertEqualsJson(JSON1, m.GetCurrentJson())
+      # "id" property should be overwritten if it's wrong.
+      m.PutNewVersion(JSON2_WRONG_ID)
+      self.assertEqualsJson(JSON2, m.GetCurrentJson())
+
   def testInitialDomainRole(self):
     """Verifies that map creation sets up initial permissions properly."""
     # Verify the default values from Map.Create.
@@ -202,16 +216,16 @@ class MapTests(test_utils.BaseTest):
     with test_utils.RootLogin():
       m = model.Map.Create(JSON1, 'xyz.com', world_readable=True)
       m.PutNewVersion(JSON2)
-      self.assertEquals(JSON2, m.GetCurrentJson())
+      self.assertEqualsJson(JSON2, m.GetCurrentJson())
       self.assertEquals(m.title, 'Two')
       self.assertEquals(m.description, 'description2')
       # GetCurrentJson should have filled the cache.
-      self.assertEquals(JSON2, memcache.get('Map,%s,json' % m.id))
+      self.assertEqualsJson(JSON2, memcache.get('Map,%s,json' % m.id))
 
       # PutVersion should clear the cache.
       m.PutNewVersion(JSON3)
       self.assertEquals(None, memcache.get('Map,%s,json' % m.id))
-      self.assertEquals(JSON3, m.GetCurrentJson())
+      self.assertEqualsJson(JSON3, m.GetCurrentJson())
 
   def testGetAll(self):
     """Tests Maps.GetAll and Maps.GetViewable."""
@@ -392,7 +406,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     # The CatalogEntry should now point at the new MapVersion.
     mc = model.CatalogEntry.Get('xyz.com', 'label')
     self.assertEquals('Two', mc.title)
-    self.assertEquals(JSON2, mc.maproot_json)
+    self.assertEqualsJson(JSON2, mc.maproot_json)
     self.assertEquals(True, mc.is_listed)
 
   def testPut_StickyCatalogEntries(self):

@@ -17,6 +17,7 @@ __author__ = 'joeysilva@google.com (Joey Silva)'
 import difflib
 import json
 
+import diff
 import model
 import mox
 import test_utils
@@ -30,9 +31,9 @@ class DiffTest(test_utils.BaseTest):
 
   def testDiff(self):
     """Test that a map's versions are diffed against new maproot JSON."""
-    saved_json = json.dumps({'a': 'b', 'c': 'd'})
-    new_json = json.dumps({'a': 'b', 'x': 'y'})
-    catalog_json = json.dumps({'x': 'y', 'c': 'd'})
+    saved_json = json.dumps({'id': 'random_id_1', 'a': 'b', 'c': 'd'})
+    new_json = json.dumps({'id': 'random_id_1', 'a': 'b', 'x': 'y'})
+    catalog_json = json.dumps({'id': 'random_id_1', 'x': 'y', 'c': 'd'})
 
     # Create a saved map and a catalog entry to diff against.
     with test_utils.RootLogin():
@@ -46,12 +47,12 @@ class DiffTest(test_utils.BaseTest):
     html_diff = self.mox.CreateMock(difflib.HtmlDiff)
     self.mox.StubOutWithMock(difflib, 'HtmlDiff')
     difflib.HtmlDiff(wrapcolumn=mox.IgnoreArg()).AndReturn(html_diff)
-    html_diff.make_file('{\n  "a": "b", \n  "c": "d"\n}'.splitlines(),
-                        '{\n  "a": "b", \n  "x": "y"\n}'.splitlines(),
+    html_diff.make_file(diff.FormatJsonForDisplay(saved_json).splitlines(),
+                        diff.FormatJsonForDisplay(new_json).splitlines(),
                         fromdesc='Saved', todesc='Current',
                         context=mox.IgnoreArg()).AndReturn(saved_diff)
-    html_diff.make_file('{\n  "c": "d", \n  "x": "y"\n}'.splitlines(),
-                        '{\n  "a": "b", \n  "x": "y"\n}'.splitlines(),
+    html_diff.make_file(diff.FormatJsonForDisplay(catalog_json).splitlines(),
+                        diff.FormatJsonForDisplay(new_json).splitlines(),
                         fromdesc='xyz.com/Published', todesc='Current',
                         context=mox.IgnoreArg()).AndReturn(catalog_diff)
 

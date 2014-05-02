@@ -33,7 +33,7 @@ class MapByIdTest(test_utils.BaseTest):
 
   def testGetMap(self):
     """Fetches a map through the API."""
-    json_dict = {'json': True, 'stuff': [0, 1]}
+    json_dict = {'id': self.map.id, 'json': True, 'stuff': [0, 1]}
     maproot_json = json.dumps(json_dict)
     with test_utils.Login('editor'):
       self.map.PutNewVersion(maproot_json)
@@ -47,7 +47,7 @@ class MapByIdTest(test_utils.BaseTest):
 
   def testPostMap(self):
     """Posts a new version of a map."""
-    maproot_json = '{"stuff": [0, 1]}'
+    maproot_json = '{"id": "%s", "stuff": [0, 1]}' % self.map.id
     with test_utils.Login('editor'):
       self.DoPost('/.api/maps/' + self.map.id,
                   'json=' + maproot_json + '&xsrf_token=XSRF')
@@ -55,7 +55,7 @@ class MapByIdTest(test_utils.BaseTest):
     with test_utils.Login('viewer'):
       # Verify that the edited content was saved properly.
       map_object = model.Map.Get(self.map.id)
-      self.assertEquals(maproot_json, map_object.GetCurrentJson())
+      self.assertEqualsJson(maproot_json, map_object.GetCurrentJson())
 
 
 class PublishedMapsTest(test_utils.BaseTest):
@@ -88,6 +88,8 @@ class PublishedMapsTest(test_utils.BaseTest):
       test_utils.CreateMap(json.dumps(draft))
 
     response = self.DoGet('/.api/maps')
+    map1['id'] = m1.id  # storing the map should have set its 'id' property
+    map2['id'] = m2.id  # storing the map should have set its 'id' property
     self.assertEquals([{'url': '/root/xyz.com/label2', 'maproot': map2},
                        {'url': '/root/xyz.com/label1', 'maproot': map1}],
                       json.loads(response.body))

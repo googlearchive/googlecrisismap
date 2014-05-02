@@ -572,6 +572,9 @@ class Map(object):
     # maproot_json must be syntactically valid JSON, but otherwise any JSON
     # object is allowed; we don't check for MapRoot validity here.
 
+    # TODO(kpy): Change the map storage API to accept and expose MapRoot objects
+    # instead of JSON strings throughout (Create, PutNewVersion, GetCurrent*).
+
     # TODO(rew): Change the domain argument to take a domains.Domain instead
     # of a string
     domain_obj = domains.Domain.Get(domain)
@@ -617,11 +620,12 @@ class Map(object):
     """Stores a new MapVersionModel object for this Map and returns its ID."""
     self.AssertAccess(perms.Role.MAP_EDITOR)
     maproot = json.loads(maproot_json)  # validate the JSON first
+    maproot['id'] = self.model.key().name()  # enforce correct 'id' property
     now = datetime.datetime.utcnow()
     uid = users.GetCurrent().id
+    new_version = MapVersionModel(parent=self.model, creator_uid=uid,
+                                  created=now, maproot_json=json.dumps(maproot))
 
-    new_version = MapVersionModel(parent=self.model, maproot_json=maproot_json,
-                                  created=now, creator_uid=uid)
     # Update the MapModel from fields in the MapRoot JSON.
     self.model.title = maproot.get('title', '')
     self.model.description = maproot.get('description', '')

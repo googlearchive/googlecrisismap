@@ -52,7 +52,8 @@ class PublishTest(test_utils.BaseTest):
     # Confirm that the entry is still listed and points at the new version.
     entry = model.CatalogEntry.Get('xyz.com', 'abc')
     self.assertTrue(entry.is_listed)
-    self.assertEquals('{"title": "new version"}', entry.maproot_json)
+    self.assertEqualsJson(
+        '{"id": "random_id_1", "title": "new version"}', entry.maproot_json)
 
   def testInvalidLabels(self):
     """Tests to makes sure invalid labels don't get published."""

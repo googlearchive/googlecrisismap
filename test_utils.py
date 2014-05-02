@@ -18,6 +18,7 @@ import base64
 import contextlib
 import cookielib
 import datetime
+import json
 import os
 import rfc822
 import StringIO
@@ -334,6 +335,10 @@ class BaseTest(unittest.TestCase):
     """Checks that a value is within a desired range."""
     self.assertGreaterEqual(actual, low)
     self.assertLessEqual(actual, high)
+
+  def assertEqualsJson(self, expected, actual):
+    """Checks for a JSON string that has the equivalent deserialization."""
+    self.assertEquals(json.loads(expected), json.loads(actual))
 
   def assertEqualsUrlWithUnorderedParams(self, expected, actual):
     """Checks for an expected URL, ignoring the order of query params."""
