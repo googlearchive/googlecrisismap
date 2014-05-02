@@ -452,7 +452,7 @@ cm.CrowdView.prototype.renderVotingUi_ = function(report) {
     self.voteCodeInput_.value = vote;
     cm.xhr.post(self.votePostUrl_);
     cm.Analytics.logAction(
-        cm.Analytics.CrowdReportFormAction.VOTE_BUTTON_CLICKED,
+        cm.Analytics.CrowdReportAction.VOTE_BUTTON_CLICKED,
         self.layerId_, (vote == 'u') ? 1 : (vote == 'd') ? -1 : 0);
   }
 
