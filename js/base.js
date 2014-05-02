@@ -417,17 +417,17 @@ cm.MSG_ANSWER_BUTTON_LABEL_TOOLTIP = goog.getMsg('Short text of the answer. ' +
     'button label is simply "Yes" or "No".');
 
 /**
- * @desc Label for a field to enter an answer label, a very short form of the
+ * @desc Label for a field to enter a very short form of the
  * answer that can be understood without seeing the corresponding
  * question.  A successful answer label to the question,
  * "Does this gas station have gas?" would be, "Has Gas".
  */
-cm.MSG_ANSWER_STANDALONE_LABEL = goog.getMsg('Standalone label');
+cm.MSG_ANSWER_STANDALONE_TEXT = goog.getMsg('Standalone text');
 
 /**
  * @desc Tooltip for the field to enter a label for a multiple-choice answer.
  */
-cm.MSG_ANSWER_STANDALONE_LABEL_TOOLTIP = goog.getMsg('A label to describe ' +
+cm.MSG_ANSWER_STANDALONE_TEXT_TOOLTIP = goog.getMsg('A label to describe ' +
    'the selected answer. These labels should be understandable without ' +
     'seeing the corresponding question and should be unique across all ' +
     'questions. A useful label to the question, "Does this gas station have ' +
@@ -443,7 +443,11 @@ cm.MSG_YES = goog.getMsg('Yes');
  */
 cm.MSG_NO = goog.getMsg('No');
 
+
 // Question editor
+
+/** @desc Label for a form to add a multiple choice answer to a question. */
+cm.MSG_ANSWER = goog.getMsg('Answer');
 
 /** @desc Label for a button to add an multiple choice answer to a question. */
 cm.MSG_ADD_ANSWER = goog.getMsg('Add an answer');

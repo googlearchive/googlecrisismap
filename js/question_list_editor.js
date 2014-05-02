@@ -41,8 +41,7 @@ cm.QuestionListEditor = function(parentElem, id, options) {
   options = options || {};
 
   /**
-   * @type Element
-   * @private
+   * @private Element
    */
   this.input_ = cm.ui.create('div', {'id': id},
      this.tableElem_ = cm.ui.create('table',
@@ -53,15 +52,13 @@ cm.QuestionListEditor = function(parentElem, id, options) {
 
   /**
    * Renders the questions in the question list.
-   * @type cm.InspectorView
-   * @private
+   * @private cm.InspectorView
    */
   this.inspector_ = new cm.InspectorView(this.tableElem_);
 
   /**
    * The list of question IDs currently shown in the question list inspector.
-   * @type Array.<string>
-   * @private
+   * @private Array.<string>
    */
   this.questionIds_ = [];
 
@@ -87,8 +84,8 @@ goog.inherits(cm.QuestionListEditor, cm.Editor);
 cm.QuestionListEditor.QUESTION_TEMPLATE = {
   text: '',
   answers: [
-    {id: 'yes', title: cm.MSG_YES},
-    {id: 'no', title: cm.MSG_NO}
+    {id: '1', title: cm.MSG_YES},
+    {id: '2', title: cm.MSG_NO}
   ]
 };
 
@@ -177,8 +174,10 @@ cm.QuestionListEditor.prototype.questionListChanged_ = function() {
   // using the questionIds to preserve editing order.
   goog.array.forEach(this.questionIds_, function(id) {
     var question = draft[id];
-    question.id = question.id || id;
-    questionList.push(question);
+    if (question) {
+      question.id = question.id || id;
+      questionList.push(question);
+    }
   }, this);
   this.setValid(questionList);
 };

@@ -93,6 +93,28 @@ QuestionEditorTest.prototype.testAddAnswer = function() {
       this.editor_.get('value'));
 };
 
+/** Tests adding, deleting, then re-adding an answer. */
+QuestionEditorTest.prototype.testAddDeleteAddAnswer = function() {
+  var parent = this.createEditor_();
+  this.editor_.set('value', null);
+  var inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(1, inputs.length);
+
+  var addAnswerBtn = expectDescendantOf(parent, 'div',
+      withText(cm.MSG_ADD_ANSWER));
+  cm.events.emit(addAnswerBtn, 'click');
+  inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(4, inputs.length);
+
+  this.editor_.deleteAnswer_('1');
+  inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(1, inputs.length);
+
+  cm.events.emit(addAnswerBtn, 'click');
+  var inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(4, inputs.length);
+};
+
 /** Tests editing and deleting an existing answer. */
 QuestionEditorTest.prototype.testEditAndDeleteAnswer = function() {
   var expected = {

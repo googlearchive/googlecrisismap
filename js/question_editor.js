@@ -43,10 +43,9 @@ cm.QuestionEditor = function(parentElem, id, options) {
   options = options || {};
 
   /**
-   * @type Element
-   * @private
+   * @private Element
    */
-  this.input_ = cm.ui.create('div', {'class': cm.css.ANSWER_CONTAINER,
+  this.input_ = cm.ui.create('div', {'class': cm.css.QUESTION_CONTAINER,
                                      'id': id},
       this.deleteQuestionBtn_ = cm.ui.create('div', cm.css.CLOSE_BUTTON),
       this.tableElem_ = cm.ui.create('table',
@@ -57,15 +56,13 @@ cm.QuestionEditor = function(parentElem, id, options) {
 
   /**
    * Renders the fields of the question.
-   * @type cm.InspectorView
-   * @private
+   * @private cm.InspectorView
    */
   this.inspector_ = new cm.InspectorView(this.tableElem_);
 
   /**
    * The list of answer IDs currently shown in the question inspector.
-   * @type Array.<string>
-   * @private
+   * @private Array.<string>
    */
   this.answerIds_ = [];
 
@@ -81,6 +78,19 @@ cm.QuestionEditor = function(parentElem, id, options) {
   if (options.delete_callback) {
     cm.events.listen(this.deleteQuestionBtn_, 'click', options.delete_callback);
   }
+
+  // When the delete button is hovered, highlight the section of the page
+  // that would be deleted if clicked.
+  cm.events.listen(this.deleteQuestionBtn_, 'mouseover', function() {
+    if (parentElem.parentNode) {
+      goog.dom.classes.add(parentElem.parentNode, cm.css.DELETE_HOVER);
+    }
+  });
+  cm.events.listen(this.deleteQuestionBtn_, 'mouseout', function() {
+    if (parentElem.parentNode) {
+      goog.dom.classes.remove(parentElem.parentNode, cm.css.DELETE_HOVER);
+    }
+  });
 };
 goog.inherits(cm.QuestionEditor, cm.Editor);
 
@@ -136,7 +146,8 @@ cm.QuestionEditor.prototype.updateUi = function(value) {
  * @private
  */
 cm.QuestionEditor.prototype.newAnswerSpec_ = function(id) {
-  return {key: id, type: cm.editors.Type.ANSWER, label: '', tooltip: undefined,
+  return {key: id, type: cm.editors.Type.ANSWER, label: cm.MSG_ANSWER,
+          tooltip: undefined,
           delete_callback: goog.bind(this.deleteAnswer_, this, id)};
 };
 
@@ -189,8 +200,10 @@ cm.QuestionEditor.prototype.questionChanged_ = function() {
   }
   goog.array.forEach(this.answerIds_, function(id) {
     var answer = draft[id];
-    answer.id = answer.id || id;
-    value.answers.push(answer);
+    if (answer) {
+      answer.id = answer.id || id;
+      value.answers.push(answer);
+    }
   }, this);
   this.setValid(value);
 };

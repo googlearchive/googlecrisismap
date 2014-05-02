@@ -62,23 +62,23 @@ QuestionListEditorTest.prototype.testAddQuestion = function() {
   expectEq(7, inputs.length);
   expectThat(this.editor_.get('value'), elementsAre(
       [{'id': '1', 'text': '',
-        'answers': [{'id': 'yes', 'title': 'Yes'},
-                    {'id': 'no', 'title': 'No'}]}]));
+        'answers': [{'id': '1', 'title': 'Yes'},
+                    {'id': '2', 'title': 'No'}]}]));
 
   this.type_(inputs[0], 'To be or not to be?');
   expectThat(this.editor_.get('value'), elementsAre(
       [{'id': '1', 'text': 'To be or not to be?',
-        'answers': [{'id': 'yes', 'title': 'Yes'},
-                    {'id': 'no', 'title': 'No'}]}]));
+        'answers': [{'id': '1', 'title': 'Yes'},
+                    {'id': '2', 'title': 'No'}]}]));
 
   this.type_(inputs[1], 'Not to be');
   this.type_(inputs[2], 'Not');
   this.type_(inputs[3], '#f00');
   expectThat(this.editor_.get('value'), elementsAre(
       [{'id': '1', 'text': 'To be or not to be?',
-        'answers': [{'id': 'yes', 'title': 'Not to be', 'label': 'Not',
+        'answers': [{'id': '1', 'title': 'Not to be', 'label': 'Not',
                      'color': '#f00'},
-                    {'id': 'no', 'title': 'No'}]}]));
+                    {'id': '2', 'title': 'No'}]}]));
 
   cm.events.emit(addQuestionBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
@@ -89,12 +89,34 @@ QuestionListEditorTest.prototype.testAddQuestion = function() {
   this.type_(inputs[7], 'Second question');
   expectThat(this.editor_.get('value'), elementsAre(
       [{'id': '1', 'text': 'To be or not to be?',
-        'answers': [{'id': 'yes', 'title': 'Not to be', 'label': 'Not',
+        'answers': [{'id': '1', 'title': 'Not to be', 'label': 'Not',
                      'color': '#f00'},
-                    {'id': 'no', 'title': 'No'}]},
+                    {'id': '2', 'title': 'No'}]},
        {'id': '2', 'text': 'Second question',
-        'answers': [{'id': 'yes', 'title': 'Yes'},
-                    {'id': 'no', 'title': 'No'}]}]));
+        'answers': [{'id': '1', 'title': 'Yes'},
+                    {'id': '2', 'title': 'No'}]}]));
+};
+
+/** Tests adding, deleting, then re-adding a question. */
+QuestionListEditorTest.prototype.testAddDeleteAddQuestion = function() {
+  var parent = this.createEditor_();
+  this.editor_.set('value', null);
+  var inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(0, inputs.length);
+
+  var addQuestionBtn = expectDescendantOf(parent, 'div',
+      withText(cm.MSG_ADD_QUESTION));
+  cm.events.emit(addQuestionBtn, 'click');
+  inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(7, inputs.length);
+
+  this.editor_.deleteQuestion_('1');
+  inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(0, inputs.length);
+
+  cm.events.emit(addQuestionBtn, 'click');
+  inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(7, inputs.length);
 };
 
 /** Tests editing and deleting an existing question. */

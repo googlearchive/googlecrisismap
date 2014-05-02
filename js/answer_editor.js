@@ -35,6 +35,9 @@ cm.AnswerEditor = function(parentElem, id, options) {
   cm.Editor.call(this);
   options = options || {};
 
+  /**
+   * @private Element
+   */
   this.input_ = cm.ui.create('div', {'class': cm.css.ANSWER_CONTAINER,
                                      'id': id},
      this.deleteAnswerBtn_ = cm.ui.create('div', cm.css.CLOSE_BUTTON),
@@ -42,28 +45,45 @@ cm.AnswerEditor = function(parentElem, id, options) {
          {'class': cm.css.EDITORS, 'cellpadding': '0', 'cellspacing': '0'}));
   parentElem.appendChild(this.input_);
 
+  /**
+   * Renders the fields of the answer.
+   * @private cm.InspectorView
+   */
   this.inspector_ = new cm.InspectorView(this.tableElem_);
 
   if (options.delete_callback) {
     cm.events.listen(this.deleteAnswerBtn_, 'click', options.delete_callback);
   }
+
+  // When the delete button is hovered, highlight the section of the page
+  // that would be deleted if clicked.
+  cm.events.listen(this.deleteAnswerBtn_, 'mouseover', function() {
+    if (parentElem.parentNode) {
+      goog.dom.classes.add(parentElem.parentNode, cm.css.DELETE_HOVER);
+    }
+  });
+  cm.events.listen(this.deleteAnswerBtn_, 'mouseout', function() {
+    if (parentElem.parentNode) {
+      goog.dom.classes.remove(parentElem.parentNode, cm.css.DELETE_HOVER);
+    }
+  });
 };
 goog.inherits(cm.AnswerEditor, cm.Editor);
 
 /**
  * An array of editor specs representing the fields of an answer.
- * @type Array.<cm.EditorSpec>
+ * @private Array.<cm.EditorSpec>
  */
-cm.AnswerEditor.ANSWER_FIELDS = [
-      {key: 'title', label: cm.MSG_ANSWER_BUTTON_LABEL,
-       type: cm.editors.Type.TEXT, tooltip: cm.MSG_ANSWER_BUTTON_LABEL_TOOLTIP},
-      {key: 'label', label: cm.MSG_ANSWER_STANDALONE_LABEL,
-       type: cm.editors.Type.TEXT,
-       tooltip: cm.MSG_ANSWER_STANDALONE_LABEL_TOOLTIP},
-      // TODO(shakusa) Create and use a color editor using goog.ui.ColorPalette
-      {key: 'color', label: cm.MSG_ANSWER_COLOR, type: cm.editors.Type.TEXT,
-       tooltip: cm.MSG_ANSWER_COLOR_TOOLTIP}
-  ];
+cm.AnswerEditor.ANSWER_FIELDS_ = [
+  {key: 'title', label: cm.MSG_ANSWER_BUTTON_LABEL,
+   type: cm.editors.Type.TEXT, tooltip: cm.MSG_ANSWER_BUTTON_LABEL_TOOLTIP},
+  {key: 'label', label: cm.MSG_ANSWER_STANDALONE_TEXT,
+   type: cm.editors.Type.TEXT,
+   tooltip: cm.MSG_ANSWER_STANDALONE_TEXT_TOOLTIP},
+  // TODO(shakusa) Create and use a color editor using goog.ui.ColorPalette
+  {key: 'color', label: cm.MSG_ANSWER_COLOR, type: cm.editors.Type.TEXT,
+   tooltip: cm.MSG_ANSWER_COLOR_TOOLTIP}
+];
 
 /** @override */
 cm.AnswerEditor.prototype.updateUi = function(value) {
@@ -85,7 +105,7 @@ cm.AnswerEditor.prototype.updateUi = function(value) {
   answerObj.set('color', answer.color || '');
 
   var editors = this.inspector_.inspect(
-      cm.AnswerEditor.ANSWER_FIELDS, answerObj);
+      cm.AnswerEditor.ANSWER_FIELDS_, answerObj);
 
   // Listen to changes in the value of each of the editors. Set the value of
   // this editor to the copied values from all the editors, as JSON with the
