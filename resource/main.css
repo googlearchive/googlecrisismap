@@ -1110,6 +1110,7 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 }
 .cm-editors > .cm-text-input-row > th,
 .cm-editors > .cm-text-editor > th,
+.cm-editors > .cm-text-list-editor > th,
 .cm-editors > .cm-url-input-row > th,
 .cm-editors > .cm-url-editor > th,
 .cm-editors > .cm-layer-menu-editor > th {
@@ -1118,6 +1119,7 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 }
 .cm-editors > .cm-text-input-row input[type='text'],
 .cm-editors > .cm-text-editor input[type='text'],
+.cm-editors > .cm-text-list-editor input[type='text'],
 .cm-editors > .cm-url-editor input[type='text'] {
   width: 100%;
 }

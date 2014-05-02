@@ -1,4 +1,4 @@
-// Copyright 2012 Google Inc.  All Rights Reserved.
+// Copyright 2014 Google Inc.  All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License.  You may obtain a copy
@@ -10,57 +10,44 @@
 // specific language governing permissions and limitations under the License.
 
 /**
- * @fileoverview [MODULE: edit] A single-line text entry field.
- * @author kpy@google.com (Ka-Ping Yee)
+ * @fileoverview [MODULE: edit] A text entry field for a string array.
+ * @author shakusa@google.com (Steve Hakusa)
  */
-goog.provide('cm.TextEditor');
+goog.provide('cm.TextListEditor');
 
-goog.require('cm.Editor');
+goog.require('cm.TextEditor');
 goog.require('cm.ui');
 
 /**
- * A single-line text input field.
+ * A single-line text input field that expects and emits an array of strings.
+ * The array is edited as a comma-separated list.
  * @param {Element} parentElem The parent element in which to create the editor.
  * @param {string} id The element ID for the editor.
  * @param {Object.<{input_class: string, placeholder: string}>} options
  *     Editor options:
  *     options.input_class: a CSS class for the input element.
  *     options.placeholder: placeholder text for the input element.
- * @extends cm.Editor
+ * @extends cm.TextEditor
  * @constructor
  */
-cm.TextEditor = function(parentElem, id, options) {
-  cm.Editor.call(this);
-
-  /**
-   * @type Element
-   * @protected
-   */
-  this.input = cm.ui.create('input',
-      {'id': id, 'type': 'text',
-       'class': options && options.input_class || null,
-       'placeholder': options && options.placeholder || ''});
-  parentElem.appendChild(this.input);
-
-  // When the user makes an edit in the UI, update the MVCObject property.
-  cm.events.listen(
-      this.input, ['change', 'input', 'keyup', 'cut', 'paste'], function() {
-    this.validate(this.input.value);
-  }, this);
+cm.TextListEditor = function(parentElem, id, options) {
+  goog.base(this, parentElem, id, options);
 };
-goog.inherits(cm.TextEditor, cm.Editor);
+goog.inherits(cm.TextListEditor, cm.TextEditor);
 
 /**
  * Validates the given user-supplied value for submission.
  * If acceptable, implementations must invoke this.setValid(...).
  * If validation fails, implementations must invoke this.setInvalid(message).
  * @param {string} value User-supplied value.
+ * @override
  */
-cm.TextEditor.prototype.validate = function(value) {
-  this.setValid(value.replace(/^\s+|\s+$/g, ''));
+cm.TextListEditor.prototype.validate = function(value) {
+  this.setValid(goog.array.map(value.split(','), goog.string.trim));
 };
 
 /** @override */
-cm.TextEditor.prototype.updateUi = function(value) {
-  this.input.value = (value === null) ? '' : '' + value;
+cm.TextListEditor.prototype.updateUi = function(value) {
+  this.input.value = (value === null) ? '' :
+      goog.isArray(value) ? value.join(', ') : value + '';
 };

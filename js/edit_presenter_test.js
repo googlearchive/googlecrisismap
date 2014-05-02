@@ -91,7 +91,7 @@ EditPresenterTest.prototype.testInspectEvent = function() {
               type: cm.editors.Type.LAT_LON_BOX, app_state: null,
               hide_tile_layer_warning: true,
               tooltip: cm.MSG_TOPIC_VIEWPORT_TOOLTIP}),
-    contains({key: 'tags', label: cm.MSG_TAGS, type: cm.editors.Type.TEXT,
+    contains({key: 'tags', label: cm.MSG_TAGS, type: cm.editors.Type.TEXT_LIST,
               tooltip: cm.MSG_TOPIC_TAGS_TOOLTIP})
   ]);
   expectCall(inspector.inspect)(cm.MSG_EDIT_TOPIC, topicSpecExpect, null,

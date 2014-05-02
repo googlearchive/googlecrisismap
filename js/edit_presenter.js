@@ -42,6 +42,7 @@ goog.require('cm.RadioEditor');
 goog.require('cm.SetDefaultViewCommand');
 goog.require('cm.ShareEmailView');
 goog.require('cm.TextEditor');
+goog.require('cm.TextListEditor');
 goog.require('cm.TopicSelectorView');
 goog.require('cm.UrlEditor');
 goog.require('cm.WmsMenuEditor');
@@ -68,6 +69,7 @@ var EDITORS = goog.object.create(
     cm.editors.Type.QUESTION_LIST, cm.QuestionListEditor,
     cm.editors.Type.RADIO, cm.RadioEditor,
     cm.editors.Type.TEXT, cm.TextEditor,
+    cm.editors.Type.TEXT_LIST, cm.TextListEditor,
     cm.editors.Type.URL, cm.UrlEditor,
     cm.editors.Type.WMS_MENU, cm.WmsMenuEditor);
 
@@ -408,7 +410,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
   var topicFields = [
    {key: 'title', label: cm.MSG_TITLE, type: cm.editors.Type.TEXT,
     tooltip: cm.MSG_TOPIC_TITLE_TOOLTIP},
-   {key: 'tags', label: cm.MSG_TAGS, type: cm.editors.Type.TEXT,
+   {key: 'tags', label: cm.MSG_TAGS, type: cm.editors.Type.TEXT_LIST,
     tooltip: cm.MSG_TOPIC_TAGS_TOOLTIP},
    {key: 'layer_ids', label: cm.MSG_LAYERS_FOR_THIS_TOPIC,
     type: cm.editors.Type.LAYER_MENU, multiple: true, choices: [],

@@ -35,6 +35,7 @@ cm.editors.Type = {
   QUESTION_LIST: 'QUESTION_LIST',
   RADIO: 'RADIO',
   TEXT: 'TEXT',
+  TEXT_LIST: 'TEXT_LIST',
   URL: 'URL',
   WMS_MENU: 'WMS_MENU'
 };

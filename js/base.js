@@ -1275,8 +1275,8 @@ cm.MSG_FOLDER_TYPE_TOOLTIP = goog.getMsg(
 cm.MSG_TOPIC_TITLE_TOOLTIP = goog.getMsg('The user-visible name of the topic.');
 
 /** @desc Tooltip for the tags of a topic. */
-cm.MSG_TOPIC_TAGS_TOOLTIP = goog.getMsg('A list of tags or labels associated ' +
-    'with this topic.');
+cm.MSG_TOPIC_TAGS_TOOLTIP = goog.getMsg('A comma-separated list of tags or ' +
+    'labels associated with this topic.');
 
 /** @desc Tooltip for a menu to select one or more layers of map data. */
 cm.MSG_LAYER_MENU_TOOLTIP = goog.getMsg('The layers of the current map whose ' +
