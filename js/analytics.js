@@ -189,6 +189,7 @@ cm.Analytics.initialize = function(analyticsId, mapId) {
   analyticsId = analyticsId || DEFAULT_ANALYTICS_ID;
   cm.Analytics.currentMapId_ = mapId;
   _gaq.push(['_setAccount', analyticsId]);
+  _gaq.push(['_setCustomVar', 4, 'Is Embedded', window != window.parent]);
   _gaq.push(['_trackPageview']);
 
   var ga = cm.ui.document.createElement('script');
