@@ -71,6 +71,18 @@ class KmlifyTests(test_utils.BaseTest):
   def tearDown(self):
     self.mox.UnsetStubs()
 
+  def testStringify(self):
+    self.assertEquals('abcdef', kmlify.Stringify('abcdef'))
+    self.assertEquals('abcdef', kmlify.Stringify(u'abcdef'))
+    self.assertEquals('3', kmlify.Stringify(3))
+    self.assertEquals('&', kmlify.Stringify('&'))
+    self.assertEquals('&amp;', kmlify.Stringify('&', True))
+    self.assertEquals('\xe8', kmlify.Stringify('\xe8'))
+    self.assertEquals('\xc3\xa8', kmlify.Stringify(u'\xe8'))
+    self.assertEquals('&#232;', kmlify.Stringify(u'\xe8', True))
+    self.assertEquals("<type 'list'>", kmlify.Stringify(list))
+    self.assertEquals("&lt;type 'list'&gt;", kmlify.Stringify(list, True))
+
   def testSimpleCsv(self):
     self.DoGoldenFileTest('csv', 'input1.csv', 'output1.kml',
                           {'loc': 'Latitude,Longitude', 'name': '$Name',
@@ -91,10 +103,14 @@ class KmlifyTests(test_utils.BaseTest):
     self.DoGoldenFileTest('geojson', 'input2.geojson', 'output2.kml',
                           {'name': '$name', 'desc': '$_description'})
 
-  def testSimpleXml(self):
-    self.DoGoldenFileTest('xml', 'input3.xml', 'output3.kml',
-                          {'loc': '^coordinates', 'name': '$name',
-                           'desc': '$_description', 'id': '$Placemark@id'})
+  def testKmlWithPolygon(self):
+    self.DoGoldenFileTest('xml', 'input3.kml', 'output3.kml', {})
+
+  def testXmlWithComplexTemplate(self):
+    self.DoGoldenFileTest('xml', 'input4.xml', 'output4.kml',
+                          {'record': 'placemat', 'loc': 'elocution@foo',
+                           'name': '$fish#jelly', 'id': '$fish#gold',
+                           'desc': '$meow $_meow $__meow $/size'})
 
   def testWazeXml(self):
     self.DoGoldenFileTest('xml', 'waze1.xml', 'waze_output1.kml',
@@ -109,7 +125,7 @@ class KmlifyTests(test_utils.BaseTest):
                                    'layers/traffic/other_large_8x.png'},
                           'waze_join1.csv')
 
-  def DoGoldenFileTest(self, input_type, input_name, output_name, url_flags,
+  def DoGoldenFileTest(self, input_type, input_name, output_name, url_params,
                        join_name=None):
     """Perform a golden test, check the response matches expected output.
 
@@ -117,7 +133,7 @@ class KmlifyTests(test_utils.BaseTest):
       input_type: A string, one of 'csv' or 'xml'.
       input_name: The file containing the input in the 'goldentests' dir.
       output_name: The file containing the output in the 'goldentests' dir.
-      url_flags: A dictionary containing query parameters for the conversion.
+      url_params: A dictionary containing query parameters for the conversion.
       join_name: File containing the join csv in the 'goldentests' dir, or None.
     """
     cwd = os.path.dirname(__file__)
@@ -136,14 +152,12 @@ class KmlifyTests(test_utils.BaseTest):
       kmlify.FetchData(mox.IgnoreArg()).AndReturn(joinfile)
 
     url = 'http://whatever/'
-    url_flags = urllib.urlencode(url_flags)
-    memcache.get(mox.StrContains('S\'%s' % url))  # Nothing cached
+    memcache.get(mox.StrContains('S\'%s' % url))  # return nothing from cache
     self.mox.ReplayAll()
-    response = self.DoGet('/.kmlify?type=%s&url=%s&%s' % (input_type, url,
-                                                          url_flags))
+    response = self.DoGet('/.kmlify?type=%s&url=%s&%s' %
+                          (input_type, url, urllib.urlencode(url_params)))
     self.mox.VerifyAll()
     outkmz = zipfile.ZipFile(StringIO.StringIO(response.body))
-
     outfile = outkmz.open('doc.kml').read()
 
     MaybeUpdateGoldenFile(output_name, outfile)

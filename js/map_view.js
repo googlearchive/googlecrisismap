@@ -742,7 +742,7 @@ cm.MapView.getFeatureData_ = function(layerId, event) {
   var node = goog.dom.htmlToDocumentFragment(goog.string.trim(htmlString));
   if (node && node.childNodes && node.childNodes.length > 0) {
     if (node.nodeType === goog.dom.NodeType.ELEMENT) {
-      content = node;
+      content = /** @type Element */(node);
     } else {
       // node might be a DocumentFragment; wrap it to ensure we have an Element.
       content = cm.ui.create('div', {}, node);
@@ -750,12 +750,30 @@ cm.MapView.getFeatureData_ = function(layerId, event) {
   } else {
     return null;
   }
+  // Maps API gives us the click location (not the feature location) in the
+  // 'latLng' property.  For point features this is rounded to the nearest
+  // pixel, which means it changes depending on zoom level (arrrgh), and for
+  // polygon features this can be anywhere in the polygon, so we don't get a
+  // consistent location for each feature.  kmlify inserts a hidden <input>
+  // element in the description so that we can get the actual feature location
+  // (or for lines and polygons, the center of the bounding box).
+  var position = event['latLng'];
+  var inputs = content.getElementsByTagName('input');
+  for (var i = 0; i < inputs.length; i++) {
+    if (inputs[i].getAttribute('name') === 'kmlify-location') {
+      var pair = inputs[i].value.split(',');
+      var lat = pair[0] - 0, lon = pair[1] - 0;
+      if (!isNaN(lat) && !isNaN(lon)) {
+        position = new google.maps.LatLng(lat, lon);
+      }
+    }
+  }
   return {
     layerId: layerId,
     title: featureData['name'] || '',
     snippet: featureData['snippet'] || '',
-    content: /** @type Element */(content),
-    position: event['latLng'],
+    content: content,
+    position: position,
     pixelOffset: event['pixelOffset']
   };
 };

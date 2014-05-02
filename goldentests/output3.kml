@@ -1,30 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://earth.google.com/kml/2.2">
+<kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
   <Style id="style1">
     <IconStyle>
-      <color>ffffffff</color>
+      <color>ff5EDDFF</color>
+      <scale>1.1</scale>
       <Icon>
-        <href>http://mw1.google.com/crisisresponse/icons/red_dot.png</href>
+        <href>http://www.gstatic.com/mapspro/images/stock/960-wht-star-blank.png</href>
       </Icon>
-      <hotSpot x="0.5" xunits="fraction" y="0.5" yunits="fraction" />
     </IconStyle>
   </Style>
+  <Style id="style2">
+    <LineStyle>
+      <color>ff4A1BA6</color>
+      <width>3</width>
+    </LineStyle>
+    <PolyStyle>
+      <color>9E4A1BA6</color>
+      <fill>1</fill>
+      <outline>1</outline>
+    </PolyStyle>
+  </Style>
   <Placemark>
-    <name />
-    <description />
+    <name>Point 1</name>
+    <description>A point.&lt;input type="hidden" name="kmlify-location" value="44.964700,-94.130800"&gt;</description>
     <Point>
-      <coordinates>-108.800000,36.300000,0</coordinates>
+      <coordinates>-94.1308,44.9647,0.0</coordinates>
     </Point>
     <styleUrl>#style1</styleUrl>
   </Placemark>
   <Placemark>
-    <name />
-    <description />
-    <Point>
-      <coordinates>-92.500000,46.100000,0</coordinates>
-    </Point>
-    <styleUrl>#style1</styleUrl>
+    <name>Polygon 2</name>
+    <description>A polygon!&lt;input type="hidden" name="kmlify-location" value="40.414900,-105.952100"&gt;</description>
+    <Polygon>
+      <outerBoundaryIs>
+        <LinearRing>
+          <tessellate>0</tessellate>
+          <coordinates>-107.9296,38.8910,0.0 -103.0078,38.3416,0.0 -103.0957,42.4882,0.0 -108.8964,42.0328,0.0 -107.9296,38.8910,0.0</coordinates>
+        </LinearRing>
+      </outerBoundaryIs>
+    </Polygon>
+    <styleUrl>#style2</styleUrl>
   </Placemark>
 </Document>
 </kml>

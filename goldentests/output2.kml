@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://earth.google.com/kml/2.2">
+<kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
   <Style id="style1">
     <IconStyle>
@@ -21,7 +21,7 @@
   </Style>
   <Placemark>
     <name>Main Elementary</name>
-    <description>&lt;b&gt;Place:&lt;/b&gt; Main Elementary</description>
+    <description>&lt;b&gt;Place:&lt;/b&gt; Main Elementary&lt;input type="hidden" name="kmlify-location" value="30.280000,78.980000"&gt;</description>
     <Point>
       <coordinates>78.98,30.28</coordinates>
     </Point>
@@ -29,7 +29,7 @@
   </Placemark>
   <Placemark>
     <name>Main High School</name>
-    <description>&lt;b&gt;Place:&lt;/b&gt; Main High School</description>
+    <description>&lt;b&gt;Place:&lt;/b&gt; Main High School&lt;input type="hidden" name="kmlify-location" value="29.840000,80.530000"&gt;</description>
     <Point>
       <coordinates>80.53,29.84</coordinates>
     </Point>

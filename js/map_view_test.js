@@ -149,7 +149,8 @@ MapViewTest.prototype.expectInfoWindowOpen_ = function(
     content, position, pixelOffset) {
   // Simulate the conversion of a string of HTML into a DOM node.
   var node = {nodeType: goog.dom.NodeType.ELEMENT,
-              innerHTML: content, childNodes: ['x']};
+              innerHTML: content, childNodes: ['x'],
+              getElementsByTagName: function() { return []; }};
 
   expectCall(this.infoWindow_.close)();
   expectCall(goog.dom.htmlToDocumentFragment)(content)
@@ -164,7 +165,8 @@ MapViewTest.prototype.expectDetailsTab_ = function(
     content, position, pixelOffset) {
   // Simulate the conversion of a string of HTML into a DOM node.
   var node = {nodeType: goog.dom.NodeType.ELEMENT,
-              innerHTML: content, childNodes: ['x']};
+              innerHTML: content, childNodes: ['x'],
+              getElementsByTagName: function() { return []; }};
   expectCall(goog.dom.htmlToDocumentFragment)(content)
       .willOnce(returnWith(node));
 

@@ -18,6 +18,7 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 import base_handler
 
 import StringIO
+import collections
 import csv
 import json
 import logging
@@ -35,7 +36,7 @@ KMZ_CONTENT_TYPE = 'application/vnd.google-earth.kmz'
 KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
 KML_DOCUMENT_TEMPLATE = """\
 <?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://earth.google.com/kml/2.2">
+<kml xmlns="http://www.opengis.net/kml/2.2">
 %s
 </kml>
 """
@@ -53,24 +54,26 @@ OPERATORS = {
 
 
 def Stringify(text, html=False):
-  """Returns a string version of the given text, handling encoding.
+  """Converts the input to a string, handling encoding and HTML-escaping.
 
   Args:
-    text: The text to stringify
-    html: True if the returned text should be html-escaped
+    text: The thing to convert.
+    html: True if the result should be HTML-escaped.
   Returns:
-    A string.
+    An 8-bit string, either encoded in UTF-8 or HTML-escaped.
   """
   if text is None:
     return ''
+  if not isinstance(text, (str, unicode)):
+    text = str(text)
+  if html:
+    text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
   if isinstance(text, unicode):
-    # For HTML, encode non-ascii chars to XML char refs
-    # For URLs, encode non-ascii chars as utf-8
+    # Encode non-ASCII chars as XML char refs for HTML, or UTF-8 otherwise.
     if html:
-      return text.replace('&', '&amp').replace('<', '&lt;').replace(
-          '>', '&gt;').encode('ascii', errors='xmlcharrefreplace')
+      return text.encode('ascii', errors='xmlcharrefreplace')
     return text.encode('utf-8')
-  return str(text)
+  return text
 
 
 def HtmlEscape(text):
@@ -139,19 +142,26 @@ def MakeKmz(kml):
 
 
 def Compare(op, lhs, rhs):
-  try:  # do the comparison according to the type of the right side
-    lhs = type(rhs)(lhs)
-  except Exception:  # pylint:disable=broad-except
+  """Applies a comparison operator, converting the type of rhs as needed."""
+  try:
+    # In general, we do the comparison according to the type of the right side
+    # (string or float).  However, we don't convert None; that way if an XML
+    # element is missing, it is considered less than all strings and floats,
+    # Thus, comparing to '' is a way to test for existence of an XML element.
+    if lhs is not None:
+      lhs = type(rhs)(lhs)
+  except (TypeError, ValueError):  # return False when conversion fails
     return False
   return op(lhs, rhs)
 
 
 def NormalizeFieldName(name):
-  return '_'.join(re.sub(r'[^\w.@]', ' ', name).split())
+  """Normalizes a field name as used in templates, e.g. (foo);Bar -> foo_Bar."""
+  return '_'.join(re.sub(r'[^/\w.@#]', ' ', name).split())
 
 
 def NormalizeRecord(record):
-  return dict((NormalizeFieldName(key), record[key].strip()) for key in record)
+  return {NormalizeFieldName(key): record[key].strip() for key in record}
 
 
 def Decode(s, encoding):
@@ -162,8 +172,8 @@ def Decode(s, encoding):
 
 
 def DecodeRecord(record, encoding):
-  return dict((Decode(key, encoding), Decode(value, encoding))
-              for key, value in record.items())
+  return {Decode(key, encoding): Decode(value, encoding)
+          for key, value in record.items()}
 
 
 def GetText(element):
@@ -260,7 +270,7 @@ def KmlColorFromJson(color, opacity=1):
 
 
 class Template(string.Template):
-  idpattern = r'[\w.][\w.@]*'
+  idpattern = r'/?\w[\w.@#]*'
 
 
 class Kmlifier(object):
@@ -324,9 +334,9 @@ class Kmlifier(object):
     self.join_field = join_field or ''
     self.join_records = {}
     if join_data:
-      self.join_records = dict((record[join_field], record)
-                               for record in self.RecordsFromCsv(
-                                   join_data, header_fields_hint=[]))
+      self.join_records = {
+          record[join_field]: record
+          for record in self.RecordsFromCsv(join_data, header_fields_hint=[])}
 
     # Gather the set of all fields mentioned in templates or conditions.
     self.fields = set()
@@ -454,12 +464,13 @@ class Kmlifier(object):
   def RecordsFromXml(self, xml_data, record_tag=None, xml_wrapper_tag=None):
     """Extracts records from a string of XML data.
 
-    Fields are sought as XML tags or attributes within each record element.
+    Fields in self.fields are sought as XML tags or attributes in each record.
     For example, if record_tag is "foo", then each <foo> element becomes a
-    record.  The field named "bar" will get the contents of the <bar> element
-    found anywhere within the <foo> element.  The field named "bar.z" will get
-    the contents of the <bar> element whose "id" or "name" attribute is "z".
-    The field named "x@y" get the value of the "y" attribute on the <x> element.
+    record.  A field named "bar" gets the contents of the <bar> element found
+    anywhere within the <foo> element.  A field named "bar#z" gets the contents
+    of the <bar> element whose "id" or "name" attribute is "z".  A field named
+    "p.q" gets the contents of the <p> element whose "class" attribute is "q".
+    A field named "x@y" gets the value of the "y" attribute on the <x> element.
 
     Args:
       xml_data: A string of XML to parse.
@@ -471,47 +482,61 @@ class Kmlifier(object):
     Returns:
       The records, as a list of dictionaries.
     """
-    records = []
     if xml_wrapper_tag:
       root = ParseXml(xml_data)
       xml_data = ''.join(element.text for element in root.getiterator()
                          if element.tag.split('}')[-1] == xml_wrapper_tag)
-
     root = ParseXml(xml_data)
-    global_record = {}
     for element in root.getiterator():
-      if element.tag.split('}')[-1] == record_tag:
+      element.tag = element.tag.split('}')[-1]  # remove XML namespaces
+
+    styles = {element.get('id'): element
+              for element in root.findall('.//Style')}
+
+    def ExtractFields(field_prefix, element, record):
+      """Copies field values from an element into the given dictionary."""
+      def ExtractField(field, value):
+        if field in self.fields:
+          record[field] = value
+      text = GetText(element)
+      ExtractField(field_prefix, text)
+      for attr in element.keys():
+        ExtractField(field_prefix + '@' + attr, element.get(attr))
+      ExtractField(field_prefix + '.' + element.get('class', '').strip(), text)
+      ExtractField(field_prefix + '#' + element.get('id', '').strip(), text)
+      ExtractField(field_prefix + '#' + element.get('name', '').strip(), text)
+
+    # We walk over the the whole document looking for the record_tag XML tag;
+    # for each record tag, we scan all elements and attributes within, pulling
+    # out their values into records only if they are specified in self.fields.
+    records = []
+    # global_fields collects fields outside of record tags, so that if, for
+    # example, there is a single <title> for the whole XML document, it can
+    # be referenced in templates as $/title.
+    global_fields = {}
+    for element in root.getiterator():
+      if element.tag == record_tag:
         record = {}
         for child in element.getiterator():
-          name = child.tag.split('}')[-1]
-          if name in self.fields:
-            record[name] = GetText(child)
-          for attr in child.keys():
-            field = name + '@' + attr
-            if field in self.fields:
-              record[field] = child.get(attr) or ''
-            if attr == 'name' or attr == 'id':
-              field = name + '.' + child.get(attr).strip()
-              if field in self.fields:
-                record[field] = GetText(child)
+          ExtractFields(child.tag, child, record)
+          if (child.tag in 'Point LineString Polygon MultiGeometry'.split() and
+              child.find('.//coordinates') is not None):
+            record['__geometry__'] = child  # preserve KML geometry
+        style = element.find('.//Style')
+        style_url = element.find('.//styleUrl')
+        if style is not None:
+          record['__style__'] = style  # preserve KML style
+        elif style_url is not None and style_url.text.startswith('#'):
+          record['__style__'] = styles.get(style_url.text.lstrip('#'))
         records.append(record)
       else:
-        name = '.' + element.tag.split('}')[-1]
-        if name in self.fields:
-          global_record[name] = GetText(element)
-        for attr in element.keys():
-          field = name + '@' + attr
-          if field in self.fields:
-            global_record[field] = element.get(attr) or ''
-          if attr == 'name' or attr == 'id':
-            field = name + '.' + element.get(attr).strip()
-            if field in self.fields:
-              global_record[field] = GetText(element)
-    for record in records:
-      result = global_record.copy()
-      result.update(record)
-      record.update(result)
-    return records
+        ExtractFields('/' + element.tag, element, global_fields)
+
+    def OverlayDictionaries(base, overlay):
+      result = base.copy()
+      result.update(overlay)
+      return result
+    return [OverlayDictionaries(global_fields, record) for record in records]
 
   def FilterRecords(self, records):
     """Filters the given a list of records by the specified conditions."""
@@ -536,25 +561,25 @@ class Kmlifier(object):
           record.update(join_record)
 
       # Substitute raw values into templates.
-      values = dict((key, '') for key in self.fields)
-      values.update(record)
-      name = self.name_template.substitute(**values)
-      id_value = self.id_template.substitute(**values)
-      icon_url = self.icon_url_template.substitute(**values)
-      color = self.color_template.substitute(**values)
-      hotspot = self.hotspot_template.substitute(**values)
+      values = collections.defaultdict(lambda: '', record)
+      name = self.name_template.substitute(values)
+      id_value = self.id_template.substitute(values)
+      icon_url = self.icon_url_template.substitute(values)
+      color = self.color_template.substitute(values)
+      hotspot = self.hotspot_template.substitute(values)
 
-      # Substitute HTML-escaped values into the description template.
-      values.update(dict(('_' + key, '') for key in self.fields))
-      values.update(dict(('__' + key, '') for key in self.fields))
-      values.update(dict(('_' + key, record[key]) for key in record))
-      values.update(dict(('__' + key, UrlQuote(record[key])) for key in record))
-      values.update(dict((key, HtmlEscape(record[key])) for key in record))
-      description = self.description_template.substitute(**values)
+      # Substitute escaped or quoted values into the description template.
+      values.update({key: HtmlEscape(record[key]) for key in record})
+      values.update({'_' + key: record[key] for key in record})
+      values.update({'__' + key: UrlQuote(record[key]) for key in record})
+      description = self.description_template.substitute(values)
 
       # Get geometry information.
       if not geometry:
-        lats, lons = [], []
+        # Take the first field specification that gets us to a valid latitude
+        # and longitude.  This is handy because, if the location might appear
+        # in one of two different fields, you can specify both and you'll get
+        # whichever field is populated.
         for field in self.location_fields:
           try:
             if ',' in field:
@@ -563,17 +588,28 @@ class Kmlifier(object):
               lon, lat = record[field[1:]].replace(',', ' ').split()[:2]
             else:
               lat, lon = record[field].replace(',', ' ').split()[:2]
-            lats.append(float(lat))
-            lons.append(float(lon))
+            coords = '%.6f,%.6f,0' % (float(lon), float(lat))
+            geometry = xml('Point', xml('coordinates', coords))
+            break
           except (KeyError, ValueError, TypeError):
-            continue  # skip records that don't have geolocations
-        if lats and lons:
-          # Take the centroid.  This is handy because, if the location might
-          # appear in e.g. one of two different fields, you can specify them
-          # both and you'll get whichever field is populated.
-          # TODO(kpy): Consider removing this feature since it's hardly used.
-          geometry = xml('Point', xml('coordinates', '%.6f,%.6f,0' % (
-              sum(lons)/len(lons), sum(lats)/len(lats))))
+            continue
+
+      if geometry:
+        # When the Maps API gives us click events on a KmlLayer, it conveys
+        # the name and description but not the coordinates of the item.  :(
+        # So we have to pass along the coordinates inside the description.
+        try:
+          coords = geometry.find('.//coordinates').text
+          # Take the center of the bounding box around all the points, which
+          # approximates the center of a polyline, polygon, etc.  (This totally
+          # fails for polygons that cross the 180-degree meridian.)
+          lons, lats = zip(*[map(float, xyz.split(',')[:2])
+                             for xyz in coords.split()])
+          description += (
+              '<input type="hidden" name="kmlify-location" value="%.6f,%.6f">' %
+              ((min(lats) + max(lats)) / 2, (min(lons) + max(lons)) / 2))
+        except (AttributeError, ValueError):
+          continue
 
       # Get style information.
       if not style:
@@ -597,7 +633,7 @@ class Kmlifier(object):
                 xml('styleUrl', '#' + style_ids[key])))
 
     styles = [xml('Style', *xml_utils.Parse(key).getchildren(), id=style_id)
-              for key, style_id in style_ids.items()]
+              for key, style_id in sorted(style_ids.items())]
     return xml('Document', *(styles + placemarks))
 
 
@@ -675,8 +711,8 @@ class Kmlify(base_handler.BaseHandler):
     except Exception, e:  # pylint:disable=broad-except
       # Even if conversion fails, always cache something.  We don't want an
       # error to trigger a spike of urlfetch requests to the remote server.
-      document = xml_utils.Xml('Document',
-                               xml_utils.Xml('name', 'Conversion failed: ', e))
+      document = xml_utils.Xml(
+          'Document', xml_utils.Xml('name', 'Conversion failed: %r' %  e))
       logging.exception(e)
     kmz = MakeKmz(KML_DOCUMENT_TEMPLATE % xml_utils.Serialize(document))
     memcache.set(cache_key, kmz, self.TTL_SECONDS)

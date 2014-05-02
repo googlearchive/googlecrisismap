@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<kml xmlns='http://www.opengis.net/kml/2.2'>
+  <Document>
+    <name>Point and polygon</name>
+    <description><![CDATA[]]></description>
+    <Folder>
+      <name>Untitled layer</name>
+      <Placemark>
+        <styleUrl>#icon-960-FFDD5E</styleUrl>
+        <name>Point 1</name>
+        <description><![CDATA[A point.]]></description>
+        <Point>
+          <coordinates>-94.1308,44.9647,0.0</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <styleUrl>#poly-A61B4A-3-158</styleUrl>
+        <name>Polygon 2</name>
+        <description><![CDATA[A polygon!]]></description>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>0</tessellate>
+              <coordinates>-107.9296,38.8910,0.0 -103.0078,38.3416,0.0 -103.0957,42.4882,0.0 -108.8964,42.0328,0.0 -107.9296,38.8910,0.0</coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+    </Folder>
+    <Style id='icon-960-FFDD5E'>
+      <IconStyle>
+        <color>ff5EDDFF</color>
+        <scale>1.1</scale>
+        <Icon>
+          <href>http://www.gstatic.com/mapspro/images/stock/960-wht-star-blank.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    <Style id='poly-A61B4A-3-158'>
+      <LineStyle>
+        <color>ff4A1BA6</color>
+        <width>3</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>9E4A1BA6</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+  </Document>
+</kml>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://earth.google.com/kml/2.2">
+<kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
   <Style id="style1">
     <IconStyle>
@@ -12,7 +12,7 @@
   </Style>
   <Placemark>
     <name />
-    <description>&lt;br&gt; Vi&amp;#241;a del Mar&lt;br&gt;&lt;br&gt;&lt;small&gt;Reported via Waze app at 2014-04-14T11:47:34Z&lt;/small&gt;</description>
+    <description>&lt;br&gt; Vi&amp;#241;a del Mar&lt;br&gt;&lt;br&gt;&lt;small&gt;Reported via Waze app at 2014-04-14T11:47:34Z&lt;/small&gt;&lt;input type="hidden" name="kmlify-location" value="-33.038244,-71.502553"&gt;</description>
     <Point>
       <coordinates>-71.502553,-33.038244,0</coordinates>
     </Point>
@@ -20,7 +20,7 @@
   </Placemark>
   <Placemark>
     <name>Object on road</name>
-    <description>Ruta CH-60&lt;br&gt;Valparaiso, 99 &lt;br&gt;&lt;br&gt;&lt;small&gt;Reported via Waze app at 2014-04-14T11:52:29Z&lt;/small&gt;</description>
+    <description>Ruta CH-60&lt;br&gt;Valparaiso, 99 &lt;br&gt;&lt;br&gt;&lt;small&gt;Reported via Waze app at 2014-04-14T11:52:29Z&lt;/small&gt;&lt;input type="hidden" name="kmlify-location" value="-33.097315,-71.547404"&gt;</description>
     <Point>
       <coordinates>-71.547404,-33.097315,0</coordinates>
     </Point>

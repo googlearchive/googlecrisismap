@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <Style id="style1">
+    <IconStyle>
+      <color>ffffffff</color>
+      <Icon>
+        <href>http://mw1.google.com/crisisresponse/icons/red_dot.png</href>
+      </Icon>
+      <hotSpot x="0.5" xunits="fraction" y="0.5" yunits="fraction" />
+    </IconStyle>
+  </Style>
+  <Placemark id="shiny">
+    <name>gooey</name>
+    <description>grey&amp;amp;furry grey&amp;furry grey%26furry enormous&lt;input type="hidden" name="kmlify-location" value="12.000000,34.000000"&gt;</description>
+    <Point>
+      <coordinates>34.000000,12.000000,0</coordinates>
+    </Point>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
+  <Placemark id="hard">
+    <name>soft</name>
+    <description>black&amp;amp;white black&amp;white black%26white enormous&lt;input type="hidden" name="kmlify-location" value="-56.000000,-78.000000"&gt;</description>
+    <Point>
+      <coordinates>-78.000000,-56.000000,0</coordinates>
+    </Point>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
+</Document>
+</kml>
