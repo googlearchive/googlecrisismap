@@ -42,6 +42,7 @@ goog.require('goog.Uri');
 goog.require('goog.dom.ViewportSizeMonitor');
 goog.require('goog.dom.classes');
 goog.require('goog.i18n.bidi');
+goog.require('goog.math.Size');
 goog.require('goog.module');
 goog.require('goog.ui.Component');
 
@@ -236,6 +237,18 @@ cm.Map = function(frame, opt_config) {
    */
   this.panelView_;
 
+  /**
+   * @type {goog.math.Size}
+   * @private
+   */
+  this.footerSize_;
+
+  /**
+   * @type {goog.math.Size}
+   * @private
+   */
+  this.frameSize_;
+
   // Wrap the getModuleUrl function in an adapter for the goog.module API.
   var lang = this.config_['lang'];
   var getModuleUrl = this.config_['get_module_url'];
@@ -326,9 +339,10 @@ cm.Map.prototype.buildUi_ = function(frame) {
   });
   new cm.BuildInfoView(this.mapElem_);
 
-  // Call the resize handler to determine the map size before setting
-  // up the viewport.
-  this.handleResize_(preview, extraViewsPlugins, extraViews);
+  // Call the resize handler to determine the map size and to resize the panel
+  // components before setting up the viewport.
+  cm.events.emit(cm.app, 'resize');
+
   // We readjust the layout whenever the ViewportSizeMonitor detects that the
   // window resized, and also when anything emits 'resize' on cm.app.
   cm.events.forward(
@@ -345,9 +359,6 @@ cm.Map.prototype.buildUi_ = function(frame) {
   this.constructPresenter_(appState, mapModel, mapView);
   this.constructEditor_(appState, mapModel);
 
-  // Trigger resizing of the panel components when initialization is done.
-  cm.events.emit(cm.app, 'resize');
-
   // Expose the google.maps.Map and the MapModel for testing and debugging.
   window['theMap'] = this.map_;
   window['mapModel'] = mapModel;
@@ -358,6 +369,43 @@ cm.Map.prototype.buildUi_ = function(frame) {
   if (startTimeMs && 0 < startTimeMs && startTimeMs < endTimeMs) {
     cm.Analytics.logTime('Load', 'Page', endTimeMs - startTimeMs);
   }
+};
+
+/**
+ * Measures the size of the footer element and stores it.
+ * We store the footer size in order to prevent computing the offsetWidth and
+ * offsetHeight unnecessarily. This should be called only upon initialization or
+ * if the footer may have changed size, e.g., if the viewport was resized.
+ * @private
+ */
+cm.Map.prototype.captureFooterSize_ = function() {
+  this.footerSize_ = new goog.math.Size(
+      this.footerElem_.offsetWidth, this.footerElem_.offsetHeight);
+};
+
+/**
+ * Measures the size of the frame element and stores it.
+ * We store the frame size in order to prevent computing the offsetWidth and
+ * offsetHeight unnecessarily. This should be called only upon initialization or
+ * if the frame may have changed size, e.g., if the viewport was resized.
+ * @private
+ */
+cm.Map.prototype.captureFrameSize_ = function() {
+  this.frameSize_ = new goog.math.Size(
+      this.frameElem_.offsetWidth, this.frameElem_.offsetHeight);
+};
+
+/**
+ * Determines whether the frame is narrow by checking the frame width. Lazily
+ * computes the frame size if it hasn't been measured.
+ * @return {boolean} Whether the frame is narrow.
+ * @private
+ */
+cm.Map.prototype.isNarrow_ = function() {
+  if (!this.frameSize_) {
+    this.captureFrameSize_();
+  }
+  return this.frameSize_.width < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
 };
 
 /**
@@ -398,10 +446,9 @@ cm.Map.prototype.buildUi_ = function(frame) {
    }
    var borders = getStylePropertyValue(this.mapWrapperElem_, 'border-top') +
        getStylePropertyValue(this.mapWrapperElem_, 'border-bottom');
-   var mapHeight = this.frameElem_.offsetHeight - margins - borders -
-       this.footerElem_.offsetHeight;
-   if (this.config_['use_tab_panel'] &&
-       this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR) {
+   var mapHeight = this.frameSize_.height - margins - borders -
+       this.footerSize_.height;
+   if (this.config_['use_tab_panel'] && this.isNarrow_()) {
      // The frame is narrow, so the tab bar is positioned below the map.
      mapHeight = mapHeight - this.panelElem_.offsetHeight;
    }
@@ -419,6 +466,8 @@ cm.Map.prototype.buildUi_ = function(frame) {
  */
 cm.Map.prototype.handleResize_ = function(preview, extraViewsPlugins,
                                           extraViews) {
+  this.captureFrameSize_();
+  this.captureFooterSize_();
   if (this.config_['use_tab_panel']) {
     this.resizeTabPanel_();
   } else {
@@ -443,9 +492,8 @@ cm.Map.prototype.handleResize_ = function(preview, extraViewsPlugins,
   if (this.searchbox_) {
     var uncoveredMapWidth = this.mapWrapperElem_.offsetWidth -
         (floating ? this.panelElem_.offsetWidth : 0);
-    var smallTabbedUi = this.config_['use_tab_panel'] &&
-        this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR &&
-        this.frameElem_.offsetHeight < MIN_DOCUMENT_HEIGHT_FOR_SEARCHBOX;
+    var smallTabbedUi = this.config_['use_tab_panel'] && this.isNarrow_() &&
+        this.frameSize_.height < MIN_DOCUMENT_HEIGHT_FOR_SEARCHBOX;
     if (uncoveredMapWidth < MIN_MAP_WIDTH_FOR_SEARCHBOX || preview ||
         smallTabbedUi) {
       this.searchbox_.hide();
@@ -464,8 +512,7 @@ cm.Map.prototype.handleResize_ = function(preview, extraViewsPlugins,
  * @private
  */
 cm.Map.prototype.resizePanel_ = function() {
-  var narrowOrEmbedded = this.embedded_ ||
-      this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
+  var narrowOrEmbedded = this.embedded_ || this.isNarrow_();
   var floating = goog.dom.classes.has(this.frameElem_, cm.css.PANEL_FLOAT);
   if (!narrowOrEmbedded) {
     // Ensure that the pop-up panel is closed when the window is resized.
@@ -490,40 +537,20 @@ cm.Map.prototype.resizePanel_ = function() {
 /**
  * Resize handler for the tabbed UI. Adjusts the tab panel height to a
  * fixed fraction of the frame when the tab bar is below the map and
- * the tab panel is expanded. This isn't a TabPanelView method because
- * it needs access to the footer height.
+ * the tab panel is expanded.
  * @private
  */
 cm.Map.prototype.resizeTabPanel_ = function() {
-  var expanded = goog.dom.classes.has(this.panelElem_,
-                                      cm.css.TAB_PANEL_EXPANDED);
-  var narrow = this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
-  if (narrow) {
-    // If panel is in the frame element, move it into the map wrapper.
-    if (cm.ui.getByClass(cm.css.TAB_PANEL, this.frameElem_) ===
-        this.panelElem_) {
-      cm.ui.remove(this.panelElem_);
-      goog.dom.insertSiblingAfter(this.panelElem_, this.footerElem_);
-    }
-  } else {
-    // If panel is in the map wrapper, move it into the frame element.
-    if (cm.ui.getByClass(cm.css.TAB_PANEL, this.mapWrapperElem_) ===
-        this.panelElem_) {
-      cm.ui.remove(this.panelElem_);
-      goog.dom.insertChildAt(this.frameElem_, this.panelElem_, 0);
-    }
-  }
+  var narrow = this.isNarrow_();
+  goog.dom.classes.enable(this.frameElem_, cm.css.EMBEDDED, narrow);
   goog.dom.classes.enable(this.frameElem_, cm.css.PANEL_BELOW, narrow);
   if (this.config_['panel_side'] === 'left') {
     goog.dom.classes.enable(this.frameElem_, cm.css.PANEL_LEFT, !narrow);
   }
 
-  goog.dom.classes.enable(this.frameElem_, cm.css.EMBEDDED, narrow);
-
   var maxPanelHeight;
   if (narrow) {
-    maxPanelHeight = (
-        BOTTOM_TAB_PANEL_HEIGHT_FRACTION * this.frameElem_.offsetHeight);
+    maxPanelHeight = BOTTOM_TAB_PANEL_HEIGHT_FRACTION * this.frameSize_.height;
   } else {
     // When panel is on left or right, leave 5px top and bottom margins.
     // When panel is on right, lave an additional 15px bottom margin for
@@ -587,15 +614,15 @@ cm.Map.prototype.createElements_ = function(frame) {
  * @private
  */
 cm.Map.prototype.layoutTabbedPanelUi_ = function() {
-  var narrow = this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
+  var narrow = this.isNarrow_();
   if (narrow) {
-    goog.dom.classes.add(this.panelElem_, cm.css.TAB_PANEL_BELOW);
-    cm.ui.append(this.mapWrapperElem_, this.panelElem_);
-  } else {
-    cm.ui.append(this.frameElem_, this.panelElem_);
+    goog.dom.classes.add(this.frameElem_, cm.css.EMBEDDED);
+    goog.dom.classes.add(this.frameElem_, cm.css.PANEL_BELOW);
   }
   cm.ui.append(this.mapWrapperElem_, this.footerElem_);
-  cm.ui.append(this.frameElem_, this.mapWrapperElem_, this.aboutElem_);
+  cm.ui.append(
+      this.frameElem_, this.mapWrapperElem_, this.aboutElem_, this.footerElem_,
+      this.panelElem_);
   goog.dom.classes.add(this.frameElem_, cm.css.FOOTER_SHADOW);
 };
 
@@ -680,17 +707,32 @@ cm.Map.prototype.constructButtons_ = function(preview, appState) {
  */
 cm.Map.prototype.constructPanelView_ = function(appState, mapModel,
                                                 metadataModel) {
-  var narrow = this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR;
+  var narrow = this.isNarrow_();
   if (!!this.config_['use_tab_panel']) {
     goog.dom.classes.add(this.frameElem_, cm.css.TABBED);
     this.panelView_ = new cm.TabPanelView(
         this.frameElem_, this.panelElem_, this.mapElem_, mapModel,
         metadataModel, appState, narrow, !this.embedded_ && !this.panelClosed_,
         this.config_);
+    cm.events.listen(
+        this.panelView_,
+        [cm.events.TAB_PANEL_OPENED, cm.events.TAB_PANEL_CLOSED],
+        this.handleTabPanelOpenedClosed_,
+        this);
   } else {
     this.panelView_ = new cm.PanelView(
         this.frameElem_, this.panelElem_, this.mapElem_, mapModel,
         metadataModel, appState, this.config_);
+  }
+};
+
+/**
+ * @private
+ */
+cm.Map.prototype.handleTabPanelOpenedClosed_ = function() {
+  if (this.isNarrow_()) {
+    this.resizeTabPanel_();
+    cm.events.emit(this.map_, 'resize');
   }
 };
 
@@ -712,15 +754,17 @@ cm.Map.prototype.constructPresenter_ = function(appState, mapModel, mapView) {
     presenter.zoomToUserLocation(match[1] - 0);
   }
 
-  if (this.frameElem_.offsetWidth < MIN_DOCUMENT_WIDTH_FOR_SIDEBAR) {
+  if (this.isNarrow_()) {
     // On narrow maps, the first time the user expands or collapses the panel
     // we re-center the viewport to use the available space.
-    var token = cm.events.listen(this.panelView_,
-      cm.events.TAB_PANEL_STATE_FIRST_CHANGED, function() {
-        mapView.matchViewport(
-            /** @type cm.LatLonBox */(mapView.get('viewport')));
-        cm.events.unlisten(token);
-      });
+    var token = cm.events.listen(
+        this.panelView_,
+        [cm.events.TAB_PANEL_OPENED, cm.events.TAB_PANEL_CLOSED],
+        function() {
+          mapView.matchViewport(
+              /** @type cm.LatLonBox */(mapView.get('viewport')));
+          cm.events.unlisten(token);
+        });
   }
 };
 

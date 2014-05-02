@@ -232,78 +232,48 @@ TabPanelViewTest.prototype.testExpandCollapse = function() {
   this.expectExpanded_();
 };
 
-TabPanelViewTest.prototype.testExpandCollapseBelowExpanded = function() {
-  this.below_ = true;
-  this.createTabPanelView_();
-
-  var numTimesFirstChanged = 0;
-  cm.events.listen(this.tabPanel_, cm.events.TAB_PANEL_STATE_FIRST_CHANGED,
-    function() { numTimesFirstChanged += 1; });
-
-  // The panel should be expanded by default.
-  this.expectExpanded_(true);
-
-  // Collapse the tab panel.
-  cm.events.emit(this.chevron_, 'click');
-  this.expectCollapsed_(true);
-  expectEq(1, numTimesFirstChanged);
-
-  // Expand the tab panel.
-  cm.events.emit(this.chevron_, 'click');
-  this.expectExpanded_(true);
-
-  // Collapse again and verify theat the first-collapsed event doesn't fire.
-  expectEq(1, numTimesFirstChanged);
-};
-
-TabPanelViewTest.prototype.testExpandCollapseBelowCollapsed = function() {
-  this.below_ = true;
+TabPanelViewTest.prototype.testExpandEventFromButton = function() {
+  // Start in the collapsed state.
   this.expand_ = false;
   this.createTabPanelView_();
-
-  var numTimesFirstChanged = 0;
-  cm.events.listen(this.tabPanel_, cm.events.TAB_PANEL_STATE_FIRST_CHANGED,
-    function() { numTimesFirstChanged += 1; });
-
-  // The panel should be collapsed by default.
-  this.expectCollapsed_(true);
-
-  // Expand the tab panel.
+  this.expectEvent(this.tabPanel_, cm.events.TAB_PANEL_OPENED);
   cm.events.emit(this.chevron_, 'click');
-  this.expectExpanded_(true);
-  expectEq(1, numTimesFirstChanged);
-
-  // Collapse the tab panel.
-  cm.events.emit(this.chevron_, 'click');
-  this.expectCollapsed_(true);
-
-  // Expand again and verify that the first-changed event doesn't fire.
-  expectEq(1, numTimesFirstChanged);
 };
 
-TabPanelViewTest.prototype.testNoResizeOnExpandCollapse = function() {
-  // Create a TabPanelView that begins expanded.
+TabPanelViewTest.prototype.testCollapseEventFromButton = function() {
+  // Start in the expanded state.
   this.createTabPanelView_();
+  this.expectEvent(this.tabPanel_, cm.events.TAB_PANEL_CLOSED);
+  cm.events.emit(this.chevron_, 'click');
+};
 
-  // Collapse the panel by selecting the same tab. Since the panel is not
-  // positioned below, expect no resize event.
-  this.expectEvent(cm.app, 'resize', 0);
+TabPanelViewTest.prototype.testExpandEventFromNewTab = function() {
+  // Start in the collapsed state.
+  this.expand_ = false;
+  this.createTabPanelView_();
+  this.expectEvent(this.tabPanel_, cm.events.TAB_PANEL_OPENED);
+  cm.events.emit(this.tabView_, cm.events.NEW_TAB_SELECTED);
+};
+
+TabPanelViewTest.prototype.testNoExpandEventFromNewTab = function() {
+  // Start in the expanded state.
+  this.createTabPanelView_();
+  this.expectEvent(this.tabPanel_, cm.events.TAB_PANEL_OPENED, 0);
+  cm.events.emit(this.tabView_, cm.events.NEW_TAB_SELECTED);
+};
+
+TabPanelViewTest.prototype.testExpandEventFromSameTab = function() {
+  // Start in the collapsed state.
+  this.expand_ = false;
+  this.createTabPanelView_();
+  this.expectEvent(this.tabPanel_, cm.events.TAB_PANEL_OPENED);
   cm.events.emit(this.tabView_, cm.events.SAME_TAB_SELECTED);
 };
 
-TabPanelViewTest.prototype.testResizeOnExpandCollapseBelow = function() {
-  // Create a TabPanelView that begins expanded and is positioned below.
-  this.below_ = true;
+TabPanelViewTest.prototype.testCollapseEventFromSameTab = function() {
+  // Start in the expanded state.
   this.createTabPanelView_();
-
-  this.expectEvent(cm.app, 'resize');
-
-  // Select a new tab. Since the panel is already expanded expect no resize
-  // event.
-  cm.events.emit(this.tabView_, cm.events.NEW_TAB_SELECTED);
-
-  // Select the same tab, which collapses the panel. Since there is a change in
-  // state and the panel is below, expect a resize event.
+  this.expectEvent(this.tabPanel_, cm.events.TAB_PANEL_CLOSED);
   cm.events.emit(this.tabView_, cm.events.SAME_TAB_SELECTED);
 };
 

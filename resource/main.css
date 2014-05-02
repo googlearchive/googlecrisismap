@@ -653,7 +653,8 @@ span.cm-g-flag {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cm-embedded.cm-footer-shadow .cm-footer {
+.cm-embedded.cm-footer-shadow .cm-footer,
+.cm-panel-below.cm-footer-shadow .cm-footer {
   padding: 0 6px 2px;
   border: none;
 }
@@ -670,7 +671,8 @@ span.cm-g-flag {
 .cm-language-picker-container {
   display: inline-block;
 }
-.cm-tabbed.cm-embedded .cm-language-picker-container {
+.cm-tabbed.cm-embedded .cm-language-picker-container,
+.cm-tabbed.cm-panel-below .cm-language-picker-container {
   display: none;
 }
 .cm-language-picker-icon {

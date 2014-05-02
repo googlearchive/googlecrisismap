@@ -91,9 +91,13 @@ MapTest.prototype.testTabbed = function() {
 
   // Panel is a child of the frame.
   expectThat(this.frame_, withClass('cm-tabbed'));
-  var panel = findDescendantOf(this.frame_, withClass('cm-tab-panel'));
-  var parent = panel.parentNode;
-  expectThat(parent, stringEquals(this.frame_));
+
+  // Verify children of the frame.
+  var childNodes = this.frame_.childNodes;
+  expectThat(childNodes[0], isElement(withClass('cm-map-wrapper')));
+  expectThat(childNodes[1], isElement(withId('cm-aboutText')));
+  expectThat(childNodes[2], isElement(withClass('cm-footer')));
+  expectThat(childNodes[3], isElement(withClass('cm-tab-panel')));
 };
 
 /** Test construction with the tabbed UI in narrow frame. */
@@ -104,15 +108,9 @@ MapTest.prototype.testTabbedBelow = function() {
   };
   map = new cm.Map(this.frame_, config);
 
-  // Panel is a child of the map wrapper.
-  var panel = findDescendantOf(this.frame_, withClass('cm-tab-panel'));
-  expectThat(panel, withClass('cm-tab-panel-below'));
-  var parent = panel.parentNode;
-  expectThat(parent, withClass('cm-map-wrapper'));
-
-  // Panel follows the footer.
-  var footer = findDescendantOf(this.frame_, withClass('cm-footer'));
-  expectThat(panel, stringEquals(footer.nextSibling));
+  // Panel has the expected 'below' class.
+  expectDescendantOf(
+      this.frame_, withClass('cm-tab-panel'), withClass('cm-tab-panel-below'));
 };
 
 /** Test construction with the tabbed panel collapsed. */

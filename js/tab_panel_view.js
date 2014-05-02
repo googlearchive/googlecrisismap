@@ -101,13 +101,6 @@ cm.TabPanelView = function(frameElem, parentElem, mapContainer, mapModel,
    */
   this.expandCollapseButton_;
 
-  /**
-   * Whether the tab panel state has been toggled at least once by the
-   * user (either from collapsed to expanded or vice versa).
-   * @private {boolean}
-   */
-  this.firstExpandCollapseDone_;
-
   this.createTabs_();
   this.createButtons_();
   this.render_(expand);
@@ -131,7 +124,6 @@ cm.TabPanelView.TabPosition = {
 cm.TabPanelView.prototype.render_ = function(expand) {
   this.tabView_.render(this.parentElem_);
   this.setExpanded_(expand);
-  this.firstExpandCollapseDone_ = false;
   cm.events.listen(this.tabView_, cm.events.NEW_TAB_SELECTED,
       this.handleNewTabSelected_, this);
   cm.events.listen(this.tabView_, cm.events.SAME_TAB_SELECTED,
@@ -175,21 +167,8 @@ cm.TabPanelView.prototype.setExpanded_ = function(shouldExpand) {
     this.tabView_.setExpanded(shouldExpand);
     this.updateExpandCollapseButton_(shouldExpand);
     this.expanded_ = shouldExpand;
-
-    // Recompute sizes only if the tab panel is below.
-    if (this.below_) {
-      cm.events.emit(cm.app, 'resize');
-    }
-  }
-
-  // Trigger viewport adjustment on first collapse.
-  if (!this.firstExpandCollapseDone_) {
-    // Instead of keeping track of this in a class member, we could simply
-    // emit a global event on every collapse/expand and have the listener
-    // cancel itself after it's triggered. For now, we instead emit this
-    // event only once.
-    this.firstExpandCollapseDone_ = true;
-    cm.events.emit(this, cm.events.TAB_PANEL_STATE_FIRST_CHANGED);
+    cm.events.emit(this, this.expanded_ ?
+        cm.events.TAB_PANEL_OPENED : cm.events.TAB_PANEL_CLOSED);
   }
 
   // Recenter viewport if there is a currently selected marker.
