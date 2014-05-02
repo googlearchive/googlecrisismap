@@ -71,17 +71,17 @@ class KmlifyTests(test_utils.BaseTest):
   def tearDown(self):
     self.mox.UnsetStubs()
 
-  def testSimpleGeoJson(self):
-    self.DoGoldenFileTest('geojson', 'simple.geojson', 'simple_geojson.kml',
-                          {'name': '$name', 'desc': '$_description'})
-
   def testSimpleCsv(self):
-    self.DoGoldenFileTest('csv', 'simple.csv', 'simple_csv.kml',
+    self.DoGoldenFileTest('csv', 'input1.csv', 'output1.kml',
                           {'loc': 'Latitude,Longitude', 'name': '$Name',
                            'desc': '$_Description', 'id': '$Id'})
 
+  def testSimpleGeoJson(self):
+    self.DoGoldenFileTest('geojson', 'input2.geojson', 'output2.kml',
+                          {'name': '$name', 'desc': '$_description'})
+
   def testSimpleXml(self):
-    self.DoGoldenFileTest('xml', 'simple.xml', 'simple_xml.kml',
+    self.DoGoldenFileTest('xml', 'input3.xml', 'output3.kml',
                           {'loc': '^coordinates', 'name': '$name',
                            'desc': '$_description', 'id': '$Placemark@id'})
 
