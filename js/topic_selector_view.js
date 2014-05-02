@@ -59,20 +59,24 @@ cm.TopicSelectorView = function(mapModel) {
    */
   this.mapModel_ = mapModel;
 
-  var newTopicLink;
+  var newTopicBtn;
   var closeBtn;
 
-  this.popup_ = cm.ui.create('div', cm.css.POPUP,
+  this.popup_ = cm.ui.create('div', [cm.css.TOPIC_SELECTOR, cm.css.POPUP],
       this.headerElem_ = cm.ui.create('div', undefined,
-          cm.ui.create('h2', cm.css.TOPIC_SELECTOR_TITLE, cm.MSG_SELECT_TOPIC),
-          newTopicLink = cm.ui.createLink(cm.MSG_CREATE_NEW_TOPIC)),
+          cm.ui.create('h2', cm.css.TOPIC_SELECTOR_TITLE,
+              cm.MSG_TOPICS_FOR_THIS_MAP_TITLE),
+          cm.ui.create('div', cm.css.TOPIC_SELECTOR_DESCRIPTION,
+              cm.MSG_TOPICS_DESCRIPTION)),
       this.topicListElem_ = cm.ui.create('div',
           {'class': cm.css.TOPIC_SELECTOR_LIST, 'tabIndex': 0}),
       cm.ui.create('div', {'class': cm.css.BUTTON_AREA},
-          closeBtn = cm.ui.create('button', {'class': cm.css.BUTTON},
-              cm.MSG_CANCEL)));
+          newTopicBtn = cm.ui.create('button',
+              {'class': [cm.css.BUTTON, cm.css.CREATE]},
+              cm.MSG_CREATE_NEW_TOPIC),
+          closeBtn = cm.ui.create('button', cm.css.BUTTON, cm.MSG_CANCEL)));
 
-  cm.events.listen(newTopicLink, 'click', this.handleNewTopic_, this);
+  cm.events.listen(newTopicBtn, 'click', this.handleNewTopic_, this);
   cm.events.listen(closeBtn, 'click', this.handleCancel_, this);
 };
 
@@ -109,10 +113,6 @@ cm.TopicSelectorView.prototype.isOpen = function() {
  */
 cm.TopicSelectorView.prototype.open = function() {
   var topics = this.mapModel_.get('topics').getArray();
-  if (topics.length == 0) {
-    this.handleNewTopic_();
-    return;
-  }
 
   cm.ui.showPopup(this.popup_);
   this.handleResize_();
@@ -136,8 +136,6 @@ cm.TopicSelectorView.prototype.open = function() {
         goog.bind(this.handleDeleteTopicClick_, this, topicElem, topicModel),
         this);
   }, this);
-
-  this.topicListElem_.focus();
 };
 
 /**

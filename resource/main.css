@@ -1058,17 +1058,30 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 }
 
 /* Topic selector */
+.cm-topic-selector {
+  max-width: 375px;
+}
 .cm-topic-selector-title {
   padding-right: 20px;
+}
+.cm-topic-selector-description {
+  color: #666;
+  padding-bottom: 10px;
 }
 .cm-topic-selector-list {
   padding: 4px 8px;
 }
-.cm-topic-item .cm-close-button {
-  margin: 2px;
+.cm-topic-item {
+  padding: 10px 0;
 }
 .cm-topic-item:hover {
   background: #efefef;
+}
+.cm-topic-item .cm-close-button {
+  background: url('delete_trashcan.png') no-repeat center center;
+  width: 13px;
+  height: 15px;
+  margin: 12px 2px;
 }
 
 /* Tooltips */

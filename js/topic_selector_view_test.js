@@ -143,7 +143,7 @@ TopicSelectorViewTest.prototype.testCreateNew = function() {
   });
 
   // Click the 'Create new topic' link
-  var link = expectDescendantOf(this.popup_, 'a',
+  var link = expectDescendantOf(this.popup_, 'button',
       withText('Create new topic'));
   cm.events.emit(link, 'click');
 

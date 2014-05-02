@@ -248,13 +248,18 @@ cm.MSG_NO_PREVIEW =
     goog.getMsg('This folder has no layers visible by default.');
 
 
-// TopicsEditor view
+// TopicSelector view
 
 /**
- * @desc Link to edit an existing topic data structure, where the user can
- * pose questions relating to layers on the map.
+ * @desc Title for a popup that displays an editable set of topics for this map.
+ * Topics are used to group map layers and associate them with survey
+ * questions and user comments.
  */
-cm.MSG_SELECT_TOPIC = goog.getMsg('Select a topic to edit.');
+cm.MSG_TOPICS_FOR_THIS_MAP_TITLE = goog.getMsg('Topics for this map');
+
+/** @desc Description explaining the concept of map topics. */
+cm.MSG_TOPICS_DESCRIPTION = goog.getMsg('Topics are used to group map layers ' +
+    'and associate them with survey questions and user comments.');
 
 /**
  * @desc Link to create a new topic data structure, where the user can pose
