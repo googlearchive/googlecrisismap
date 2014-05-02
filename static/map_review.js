@@ -38,7 +38,7 @@ function $(id) {
 
 /**
  * Updates the row color at index based on the state of the checkboxes
- * @param {number} index The index of the row for which to retrieve a color.
+ * @param {number} index The 1-based row index from which to retrieve a color.
  * @return {string} A hex color string for the row background.
  */
 function rowColor(index) {
@@ -55,7 +55,7 @@ function rowColor(index) {
 
 /**
  * Moves the keyboard-shortcut caret to the row with the new index.
- * @param {number} newIndex The row index to which the caret should move.
+ * @param {number} newIndex The 1-based row index to which the caret should move
  */
 function moveCaret(newIndex) {
   var oldIndex = caretIndex;
@@ -101,7 +101,7 @@ function scrollIntoView(element) {
 
 /**
  * Updates the caret and background color of the row at the given index.
- * @param {number} index The index of the row to update.
+ * @param {number} index The 1-based index of the row to update.
  */
 function updateRowStyle(index) {
   $('caret-' + index).innerHTML = (index == caretIndex) ? '\u25b6' : '';
@@ -111,7 +111,7 @@ function updateRowStyle(index) {
 /**
  * Updates the checkboxes and display of this row to guarantee only
  * one checkbox is checked at a time.
- * @param {number} index The row index.
+ * @param {number} index The 1-based row index.
  * @param {string} name The checkbox name.
  * @param {boolean} opt_toggle True to toggle the state of the named checkbox.
  */
@@ -209,7 +209,7 @@ function reload(overrides) {
  * @param {google.maps.InfoWindow} infoWindow Info window in which to render
  *     the report
  * @param {Object} report The report object
- * @param {number} index The row index of the report
+ * @param {number} index The 1-based row index of the report
  * @return {function(Object)} the callback.
  */
 function makeShowInfoWindowCallback(map, marker, infoWindow, report, index) {
@@ -246,7 +246,7 @@ function initialize() {
       icon: report.icon_url
     });
     var callback = makeShowInfoWindowCallback(
-        map, marker, infoWindow, report, index);
+        map, marker, infoWindow, report, index + 1 /* caret index is 1-based*/);
     google.maps.event.addListener(marker, 'click', callback);
     infoWindowTriggers.push(callback);
   }
