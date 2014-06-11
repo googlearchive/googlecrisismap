@@ -318,7 +318,7 @@ class CardBase(base_handler.BaseHandler):
       geojson = GetGeoJSON(features)
       geojson['title'] = topic.get('title', '')
       geojson['unit'] = unit
-      geojson['location'] = center and RoundGeoPt(center)
+      geojson['center'] = center and RoundGeoPt(center)
       geojson['lang'] = lang
       geojson['url_no_unit'] = RemoveParamsFromUrl(self.request.url, 'unit')
       geojson['config_json'] = config_json

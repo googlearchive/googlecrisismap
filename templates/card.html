@@ -20,7 +20,7 @@ specific language governing permissions and limitations under the License.
 </head>
 <body>
   <div id="card" class="card">
-    {% if location %}
+    {% if center %}
       <div class="menu">
         {% if unit == 'mi' %}
           <a href="{{url_no_unit}}&unit=km">km</a> &#xb7; mi
@@ -30,7 +30,7 @@ specific language governing permissions and limitations under the License.
       </div>
     {% endif %}
     <h2>
-      {% if location %}
+      {% if center %}
         {% if lang == 'es' or lang == 'es-419' %}
           {{title}} cerca de usted
         {% else %}
@@ -59,7 +59,7 @@ specific language governing permissions and limitations under the License.
         <div class="item">
           {% if feature.properties.distance != None %}
             <div class="directions">
-              <a href="http://maps.google.com/maps?daddr={{feature.properties.location}}">
+              <a target="_blank" href="http://maps.google.com/maps?daddr={{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
                 <span class="icon"></span>
                 <div class="distance">
                   {% if unit == 'mi' %}
@@ -88,7 +88,7 @@ specific language governing permissions and limitations under the License.
 </body>
 <script>
   var config = {{config_json|safe}};
-  {% if not location %}
+  {% if not center %}
     if (navigator.geolocation) {
       var list = document.getElementById('list');
       list.className = 'hidden';
