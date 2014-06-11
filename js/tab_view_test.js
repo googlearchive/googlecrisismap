@@ -290,3 +290,23 @@ TabViewTest.prototype.testSelectAnUnselectedTabItem = function() {
   expectTrue(tabSelectionChangedEmitted);
   expectFalse(selectedTabClickedEmitted);
 };
+
+TabViewTest.prototype.testSetExpanded = function() {
+  this.initializeTabView_(2);
+  // Make sure that the second tab in the TabView is selected.
+  var selectedTabIndex = 1;
+  this.tabView_.selectTabItem(this.tabs_[selectedTabIndex]);
+  var selectedTab = this.tabView_.selectedTabItem();
+
+  this.tabView_.setExpanded(false);
+  // Verify that the bar has no selected items, but that tab view still
+  // remembers which tab is supposed to be selected
+  expectEq(cm.TabView.NO_SELECTION, this.tabView_.tabBar_.getSelectedTab());
+  expectEq(selectedTab, this.tabView_.selectedTabItem());
+
+  this.tabView_.setExpanded(true);
+  // Verify that the bar has the right item selected and that tab view has
+  // a correct selectedTabItem
+  expectEq(selectedTabIndex, this.tabView_.tabBar_.getSelectedTab());
+  expectEq(selectedTab, this.tabView_.selectedTabItem());
+};

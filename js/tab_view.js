@@ -156,6 +156,11 @@ cm.TabView.prototype.setExpanded = function(expand) {
   if (this.toolbarElem_) {
     goog.style.setElementShown(this.toolbarElem_, expand);
   }
+  // On expanding, select the tab that was selected before the view was
+  // collapsed. On collapsing, just deselect the tab bar, but remember the
+  // index of the currently selected item
+  this.tabBar_.selectTab(
+      expand ? this.selectedTabIndex_ : cm.TabView.NO_SELECTION);
 };
 
 /**
