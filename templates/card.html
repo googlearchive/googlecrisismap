@@ -38,13 +38,12 @@ specific language governing permissions and limitations under the License.
         <div class="change-location-arrow" id="change-location-arrow"></div>
       </div>
     </div>
-    {% if not features %}
-      No results found
-      {% if not place %}
-        near you
-      {% endif %}
-    {% endif %}
     <div id="list">
+      {% if not features %}
+        <div class="item">
+          No results found{% if not place %} near you{% endif %}.
+        </div>
+      {% endif %}
       {% for feature in features %}
         {% if feature.properties.name %}
           <div class="item">
