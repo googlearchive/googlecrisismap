@@ -387,11 +387,11 @@ class CardTest(test_utils.BaseTest):
     card.FilterFeatures(features, 100, 1)
     self.assertEquals(['name1'], [f.name for f in features])
 
-  def testGetGeoJSON(self):
+  def testGetGeoJson(self):
     features = [card.Feature('title1', 'description1', ndb.GeoPt(20, -40)),
                 card.Feature('title2', 'description2', ndb.GeoPt(30, -50))]
     card.SetDistanceOnFeatures(features, ndb.GeoPt(20, -40))
-    geojson = card.GetGeoJSON(features)
+    geojson = card.GetGeoJson(features)
     self.assertEquals('FeatureCollection', geojson['type'])
     self.assertEquals(2, len(geojson['features']))
     self.assertEquals({'geometry': {'coordinates': [-40.0, 20.0],
@@ -459,10 +459,18 @@ class CardHandlerTest(test_utils.BaseTest):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
     response = self.DoGet('/test.com/.card/foo/t2?output=json')
     geojson = json.loads(response.body)
-    self.assertEquals('Topic 2', geojson['title'])
+    self.assertEquals('FeatureCollection', geojson['type'])
     features = geojson['features']
     self.assertEquals(2, len(features))
 
+  def testRenderFooter(self):
+    self.assertEquals('ab', card.RenderFooter(['a', 'b']))
+    self.assertEquals('a&lt;b&amp;', card.RenderFooter(['a<b&']))
+    self.assertEquals(
+        'x<a href="http://example.com/" target="_blank">y</a>',
+        card.RenderFooter(['x', ['http://example.com/', 'y']]))
+    self.assertFalse(
+        'javascript' in card.RenderFooter(['x', ['javascript:alert(1)', 'y']]))
 
 if __name__ == '__main__':
   test_utils.main()

@@ -21,7 +21,6 @@ specific language governing permissions and limitations under the License.
 <body>
   <div id="card" class="card">
     <div id="location-menu" class="location-menu">
-      <div style="font-weight: bold;">See results for</div>
     </div>
     {% if features and not place %}
       <div class="menu">
@@ -80,6 +79,9 @@ specific language governing permissions and limitations under the License.
         {% endif %}
       {% endfor %}
     </div>
+    {% if footer_html %}
+      <div class="footer">{{footer_html|safe}}</div>
+    {% endif %}
   </div>
 </body>
 <script src="{{root}}/.static/card.js"></script>

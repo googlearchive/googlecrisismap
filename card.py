@@ -18,6 +18,7 @@ import logging
 import math
 import re
 import urllib
+import urlparse
 
 import base_handler
 import cache
@@ -245,26 +246,46 @@ def RemoveParamsFromUrl(url, *params):
   return base + '?' + query
 
 
-def GetGeoJSON(feature_objects):
-  """Converts feature array to GeoJSON object."""
-  features = []
-  for f in feature_objects:
-    features.append({
-        'type': 'Feature',
-        'geometry': {
-            'type': 'Point',
-            'coordinates': [f.location.lon, f.location.lat]},
-        'properties': {
-            'name': f.name,
-            'description_html': kmlify.HtmlEscape(f.description_html),
-            'distance': f.distance,
-            'distance_mi': f.distance_mi,
-            'distance_km': f.distance_km,
-            'status_color': f.status_color,
-            'answer_text': f.answer_text}
+def GetGeoJson(features):
+  """Converts a list of Feature instances to a GeoJSON object."""
+  return {'type': 'FeatureCollection', 'features': [{
+      'type': 'Feature',
+      'geometry': {
+          'type': 'Point',
+          'coordinates': [f.location.lon, f.location.lat]
+      },
+      'properties': {
+          'name': f.name,
+          'description_html': kmlify.HtmlEscape(f.description_html),
+          'distance': f.distance,
+          'distance_mi': f.distance_mi,
+          'distance_km': f.distance_km,
+          'status_color': f.status_color,
+          'answer_text': f.answer_text
+      }
+  } for f in features]}
 
-        })
-  return {'type': 'FeatureCollection', 'features': features}
+
+def RenderFooter(items):
+  """Renders the card footer as HTML.
+
+  Args:
+    items: A sequence of items, where each item is (a) a string or (b) a pair
+        [url, text] to be rendered as a hyperlink that opens in a new window.
+  Returns:
+    A Unicode string of safe HTML containing only text and <a> tags.
+  """
+  results = []
+  for item in items:
+    if isinstance(item, (str, unicode)):
+      results.append(kmlify.HtmlEscape(item))
+    elif len(item) == 2:
+      url, text = item
+      scheme, _, _, _, _ = urlparse.urlsplit(url)
+      if scheme in ['http', 'https']:  # accept only safe schemes
+        results.append('<a href="%s" target="_blank">%s</a>' % (
+            kmlify.HtmlEscape(url), kmlify.HtmlEscape(text)))
+  return ''.join(results)
 
 
 class CardBase(base_handler.BaseHandler):
@@ -286,14 +307,17 @@ class CardBase(base_handler.BaseHandler):
           treated specially: if it is a CHOICE question, its answer will also
           be displayed as a coloured status dot.
     - places: A specification of the list of possible locations for which the
-          card has content, specified as an array of stringified JSON objects,
-          each the following keys: "id", "name", and "ll". Example:
+          card has content, specified as a JSON array of objects, each with
+          the following keys: "id", "name", and "ll". Example:
             [{"id":"place1", "name":"Centerville", "ll":[10.0,-120.0]},
              {"id": "place2", "name":"Springfield", "ll":[10.5,-120.5"]}]
     - place: A place ID, expected to be one of the "ids" of the provided
           '?places' array. If the given place ID is invalid, a default place
           is used (the first place in the ?places array). If a valid '?ll' is
           provided, the '?place' parameter is ignored.
+    - footer: Text and links for the footer, specified as a JSON array where
+          each element is either a plain text string or a two-element array
+          [url, text], which is rendered as a link.
   """
   embeddable = True
   error_template = 'card-error.html'
@@ -310,13 +334,17 @@ class CardBase(base_handler.BaseHandler):
     qids = self.request.get('qids').replace(',', ' ').split()
     places_json = self.request.get('places') or '[]'
     place_id = str(self.request.get('place', ''))
+    footer_json = self.request.get('footer') or '[]'
     lang = base_handler.SelectLanguageForRequest(self.request, map_root)
 
     try:
       places = json.loads(places_json)
     except ValueError:
       logging.error('Could not parse ?places= parameter')
-      places = []
+    try:
+      footer = json.loads(footer_json)
+    except ValueError:
+      logging.error('Could not parse ?footer= parameter')
 
     # If '?ll' parameter is supplied, find nearby results.
     center = None
@@ -337,11 +365,10 @@ class CardBase(base_handler.BaseHandler):
     # point-radius query.
     if not center and place:
       try:
-        lat = place['ll'][0]
-        lon = place['ll'][1]
+        lat, lon = place['ll']
         center = ndb.GeoPt(lat, lon)
-      except (ValueError, KeyError):
-        logging.info('Could not extract center for ?place=%s', place_id)
+      except (KeyError, TypeError, ValueError):
+        logging.error('Could not extract center for ?place=%s', place_id)
 
     try:
       features = GetFeatures(map_root, topic_id, self.request)
@@ -349,23 +376,25 @@ class CardBase(base_handler.BaseHandler):
         SetDistanceOnFeatures(features, center)
       FilterFeatures(features, radius, max_count)
       SetAnswersOnFeatures(features, map_root, topic_id, qids)
-      geojson = GetGeoJSON(features)
-      geojson['title'] = topic.get('title', '')
-      geojson['unit'] = unit
-      geojson['lang'] = lang
-      geojson['url_no_unit'] = RemoveParamsFromUrl(self.request.url, 'unit')
-      geojson['place'] = place
-      config_json = {
-          'url_no_loc': RemoveParamsFromUrl(self.request.url, 'll', 'place'),
-          'place': place
-          }
-      geojson['config_json'] = config_json
+      geojson = GetGeoJson(features)
       if output == 'json':
         self.WriteJson(geojson)
       else:
-        geojson['config_json'] = json.dumps(config_json)
-        geojson['places_json'] = json.dumps(places)
-        self.response.out.write(self.RenderTemplate('card.html', geojson))
+        self.response.out.write(self.RenderTemplate('card.html', {
+            'features': geojson['features'],
+            'title': topic.get('title', ''),
+            'unit': unit,
+            'lang': lang,
+            'url_no_unit': RemoveParamsFromUrl(self.request.url, 'unit'),
+            'place': place,
+            'config_json': json.dumps({
+                'url_no_loc': RemoveParamsFromUrl(
+                    self.request.url, 'll', 'place'),
+                'place': place
+            }),
+            'places_json': json.dumps(places),
+            'footer_html': RenderFooter(footer)
+        }))
 
     except Exception, e:  # pylint:disable=broad-except
       logging.exception(e)
