@@ -308,14 +308,14 @@ class CardBase(base_handler.BaseHandler):
     radius = float(self.request.get('r', 100000))  # radius, metres
     unit = str(self.request.get('unit', 'km'))
     qids = self.request.get('qids').replace(',', ' ').split()
-    places_json = self.request.get('places', '')
+    places_json = self.request.get('places') or '[]'
     place_id = str(self.request.get('place', ''))
     lang = base_handler.SelectLanguageForRequest(self.request, map_root)
 
     try:
       places = json.loads(places_json)
     except ValueError:
-      logging.info('Could not parse ?places= parameter')
+      logging.error('Could not parse ?places= parameter')
       places = []
 
     # If '?ll' parameter is supplied, find nearby results.
@@ -325,7 +325,7 @@ class CardBase(base_handler.BaseHandler):
         lat, lon = lat_lon.split(',')
         center = ndb.GeoPt(float(lat), float(lon))
       except ValueError:
-        logging.info('Could not extract center for ?ll parameter')
+        logging.error('Could not extract center for ?ll parameter')
 
     # If neither '?ll' nor '?place' parameters are given, or if ?place
     # value is invalid, use a default place.
@@ -364,7 +364,7 @@ class CardBase(base_handler.BaseHandler):
         self.WriteJson(geojson)
       else:
         geojson['config_json'] = json.dumps(config_json)
-        geojson['places'] = json.dumps(places)
+        geojson['places_json'] = json.dumps(places)
         self.response.out.write(self.RenderTemplate('card.html', geojson))
 
     except Exception, e:  # pylint:disable=broad-except

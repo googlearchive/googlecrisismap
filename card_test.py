@@ -448,6 +448,13 @@ class CardHandlerTest(test_utils.BaseTest):
     response = self.DoGet('/test.com/.card/foo')
     self.assertEquals('foo/t1', response.headers['Location'])
 
+  def testPlacesMenu(self):
+    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
+    response = self.DoGet('/test.com/.card/foo/t2?places=' + json.dumps(
+        [{'id': 'x', 'name': 'Place Foo'}, {'id': 'y', 'name': 'Place Bar'}]))
+    self.assertTrue('Place Foo' in response.body)
+    self.assertTrue('Place Bar' in response.body)
+
   def testGetJsonByLabelAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
     response = self.DoGet('/test.com/.card/foo/t2?output=json')

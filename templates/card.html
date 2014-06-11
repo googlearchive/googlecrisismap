@@ -88,7 +88,7 @@ specific language governing permissions and limitations under the License.
   updateSize();
 
   var config = {{config_json|safe}};
-  var places = {{places|safe}};
+  var places = {{places_json|safe}};
   var place = config.place;
   updateLocationStatus(place && place.name || null);
   fillLocationMenu(config.url_no_loc, places, place && place.id);
