@@ -247,6 +247,28 @@ def RemoveParamsFromUrl(url, *params):
   return base + '?' + query
 
 
+def GetGeoJSON(feature_objects):
+  """Converts feature array to GeoJSON object."""
+  features = []
+  for f in feature_objects:
+    features.append({
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [f.location.lon, f.location.lat]},
+        'properties': {
+            'name': f.name,
+            'description_html': kmlify.HtmlEscape(f.description_html),
+            'distance': f.distance,
+            'distance_mi': f.distance_mi,
+            'distance_km': f.distance_km,
+            'status_color': f.status_color,
+            'answer_text': f.answer_text}
+
+        })
+  return {'type': 'FeatureCollection', 'features': features}
+
+
 class CardBase(base_handler.BaseHandler):
   """Card rendering code common to all the card handlers below.
 
@@ -271,6 +293,7 @@ class CardBase(base_handler.BaseHandler):
     topic = GetTopic(map_root, topic_id)
     if not topic:
       raise base_handler.Error(404, 'No such topic.')
+    output = str(self.request.get('output', ''))
     lat_lon = str(self.request.get('ll', ''))
     max_count = int(self.request.get('n', 5))  # number of results to show
     radius = float(self.request.get('r', 100000))  # radius, metres
@@ -289,17 +312,21 @@ class CardBase(base_handler.BaseHandler):
       FilterFeatures(features, radius, max_count)
       SetAnswersOnFeatures(features, map_root, topic_id, qids)
       lang = base_handler.SelectLanguageForRequest(self.request, map_root)
-      self.response.out.write(self.RenderTemplate('card.html', {
-          'title': topic.get('title', ''),
-          'features': features,
-          'unit': unit,
-          'location': center and RoundGeoPt(center),
-          'lang': lang,
-          'url_no_unit': RemoveParamsFromUrl(self.request.url, 'unit'),
-          'config_json': json.dumps({
-              'url_no_ll': RemoveParamsFromUrl(self.request.url, 'll')
-          })
-      }))
+      config_json = {
+          'url_no_ll': RemoveParamsFromUrl(self.request.url, 'll')
+          }
+      geojson = GetGeoJSON(features)
+      geojson['title'] = topic.get('title', '')
+      geojson['unit'] = unit
+      geojson['location'] = center and RoundGeoPt(center)
+      geojson['lang'] = lang
+      geojson['url_no_unit'] = RemoveParamsFromUrl(self.request.url, 'unit')
+      geojson['config_json'] = config_json
+      if output == 'json':
+        self.WriteJson(geojson)
+      else:
+        geojson['config_json'] = json.dumps(config_json)
+        self.response.out.write(self.RenderTemplate('card.html', geojson))
 
     except Exception, e:  # pylint:disable=broad-except
       logging.exception(e)
@@ -324,6 +351,9 @@ class CardByLabelAndTopic(CardBase):
     if not entry:
       raise base_handler.Error(404, 'No such map.')
     self.GetForMap(entry.map_root, topic_id)
+
+  def Post(self, label, topic_id, user=None, domain=None):
+    self.Get(label, topic_id, user, domain)
 
 
 class CardByLabel(CardBase):

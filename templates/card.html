@@ -57,27 +57,27 @@ specific language governing permissions and limitations under the License.
     <div id="list">
       {% for feature in features %}
         <div class="item">
-          {% if feature.distance != None %}
+          {% if feature.properties.distance != None %}
             <div class="directions">
               <a href="http://maps.google.com/maps?daddr={{feature.location}}">
                 <span class="icon"></span>
                 <div class="distance">
                   {% if unit == 'mi' %}
-                    {{feature.distance_mi|floatformat:1}} mi
+                    {{feature.properties.distance_mi|floatformat:1}} mi
                   {% else %}
-                    {{feature.distance_km|floatformat:1}} km
+                    {{feature.properties.distance_km|floatformat:1}} km
                   {% endif %}
                 </div>
               </a>
             </div>
           {% endif %}
-          <div class="title">{{feature.name|default:"(no name)"}}</div>
+          <div class="title">{{feature.properties.name|default:"(no name)"}}</div>
           <div class="crowd">
-            {% if feature.answer_text %}
-              {% if feature.status_color %}
+            {% if feature.properties.answer_text %}
+              {% if feature.properties.status_color %}
                 <span class="dot" style="background: {{feature.status_color}}">
                 </span
-              >{% endif %}<span class="answers">{{feature.answer_text}}</span>
+              >{% endif %}<span class="answers">{{feature.properties.answer_text}}</span>
             {% endif %}
           </div>
           <div class="clear"></div>

@@ -106,6 +106,19 @@ MAP_ROOT = {
             'title': 'Qux',
             'type': 'NUMBER'
         }]
+    }, {
+        'id': 't2',
+        'title': 'Topic 2',
+        'layer_ids': ['layer2'],
+        'crowd_enabled': True,
+        'questions': [{
+            'id': 'q1',
+            'title': 'Bar',
+            'type': 'CHOICE',
+            'answers': [
+                {'id': 'a1', 'color': '#0f0'},
+                {'id': 'a2', 'color': '#f00'}]
+            }]
     }],
     'layers': [{
         'id': 'layer1',
@@ -374,6 +387,25 @@ class CardTest(test_utils.BaseTest):
     card.FilterFeatures(features, 100, 1)
     self.assertEquals(['name1'], [f.name for f in features])
 
+  def testGetGeoJSON(self):
+    features = [card.Feature('title1', 'description1', ndb.GeoPt(20, -40)),
+                card.Feature('title2', 'description2', ndb.GeoPt(30, -50))]
+    card.SetDistanceOnFeatures(features, ndb.GeoPt(20, -40))
+    geojson = card.GetGeoJSON(features)
+    self.assertEquals('FeatureCollection', geojson['type'])
+    self.assertEquals(2, len(geojson['features']))
+    self.assertEquals({'geometry': {'coordinates': [-40.0, 20.0],
+                                    'type': 'Point'},
+                       'properties': {'answer_text': '',
+                                      'status_color': None,
+                                      'description_html': 'description1',
+                                      'distance': 0.0,
+                                      'distance_km': 0.0,
+                                      'distance_mi': 0.0,
+                                      'name': 'title1'},
+                       'type': 'Feature'},
+                      geojson['features'][0])
+
 
 class CardHandlerTest(test_utils.BaseTest):
   """Tests for request handlers in card.py."""
@@ -405,9 +437,24 @@ class CardHandlerTest(test_utils.BaseTest):
     self.assertTrue('Helsinki' in response.body)
     self.assertTrue('Columbus' in response.body)
 
+  def testPostByLabelAndTopic(self):
+    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
+    response = self.DoPost('/test.com/.card/foo/t1', 'll=60,25&n=1&r=100')
+    self.assertTrue('Topic 1' in response.body)
+    self.assertTrue('Helsinki' in response.body)
+    self.assertFalse('Columbus' in response.body)
+
   def testGetCardByTopic(self):
     response = self.DoGet('/test.com/.card/foo')
     self.assertEquals('foo/t1', response.headers['Location'])
+
+  def testGetJsonByLabelAndTopic(self):
+    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
+    response = self.DoGet('/test.com/.card/foo/t2?output=json')
+    geojson = json.loads(response.body)
+    self.assertEquals('Topic 2', geojson['title'])
+    features = geojson['features']
+    self.assertEquals(2, len(features))
 
 
 if __name__ == '__main__':
