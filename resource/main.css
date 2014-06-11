@@ -1169,7 +1169,7 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
   right: 6px;
   display: none;
 }
-.cm-editors tr:hover .cm-help-icon {
+.cm-editors tr:hover > th .cm-help-icon {
   display: inline-block;
 }
 .cm-editors-tooltip {
@@ -1377,7 +1377,8 @@ textarea.cm-legend-text {
 }
 
 /* Question list, question, and choice editors */
-.cm-editors .cm-question-editor > th {
+.cm-editors .cm-question-editor > th,
+.cm-editors .cm-question-editor > th .help-container {
     padding: 0;
     width: 0;
 }
@@ -1413,9 +1414,6 @@ textarea.cm-legend-text {
 }
 .cm-question-container .cm-editors > tr > th {
     width: 80px;
-}
-.cm-question-container > .cm-button {
-    margin-left: 103px;
 }
 
 /* Collaborate dialog */
