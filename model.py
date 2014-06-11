@@ -517,15 +517,22 @@ class Map(object):
         yield m
 
   @staticmethod
-  def Get(key_name):
-    """Gets a Map by its map ID (key_name), or returns None if none exists."""
+  def Get(key_name, user=None):
+    """Gets a Map by its map ID (key_name), or returns None if none exists.
+
+    Args:
+      key_name: A map ID.
+      user: Optional.  If specified, access checks are done as this user.
+    Returns:
+      A Map object, or None.
+    """
     # We reserve the special ID '0' for an empty map.  Handy for development.
     if key_name == '0':
       return EmptyMap()
     model = MapModel.get_by_key_name(key_name)
     if model and model.deleted == NEVER:
       map_object = Map(model)
-      map_object.AssertAccess(perms.Role.MAP_VIEWER)
+      map_object.AssertAccess(perms.Role.MAP_VIEWER, user)
       return map_object
 
   @staticmethod
@@ -658,7 +665,8 @@ class Map(object):
       version has not been set.  (Version IDs are not necessarily in creation
       order, and are unique within a particular Map but not across all Maps.)
     """
-    self.AssertAccess(perms.Role.MAP_VIEWER)
+    # A Map object can only be retrieved by a user who has MAP_VIEWER access
+    # to it, so we don't need to check access again here.
     struct = utils.StructFromModel(self.current_version)
     # TODO(kpy): These __dict__ shenanigans can go away after we switch to ndb.
     struct.__dict__['map_root'] = json.loads(struct.maproot_json or '{}')
@@ -714,7 +722,8 @@ class Map(object):
 
   def GetMapRoot(self):
     """Gets the current version of the MapRoot definition of this map."""
-    self.AssertAccess(perms.Role.MAP_VIEWER)
+    # A Map object can only be retrieved by a user who has MAP_VIEWER access
+    # to it, so we don't need to check access again here.
     return MAP_ROOT_CACHE.Get(self.id, lambda: self.GetCurrent().map_root)
 
   map_root = property(GetMapRoot)
@@ -884,8 +893,12 @@ class _CrowdReportModel(ndb.Model):
   # was current at the time that the answer was submitted.
   answers_json = ndb.TextProperty()
 
-  # The report's geolocation.
+  # The report's geolocation coordinates.
   location = ndb.GeoPtProperty()
+
+  # An identifier for the place where the report is located.  We don't enforce
+  # any format or semantics for the identifier; it just needs to be unique.
+  place_id = ndb.StringProperty()
 
   # Number of positive and negative votes for this report, respectively.
   upvote_count = ndb.IntegerProperty(default=0)
@@ -951,8 +964,6 @@ class CrowdReport(utils.Struct):
       if entity and (not entity.map_id or is_map_viewable[entity.map_id]):
         yield cls.FromModel(entity)
 
-  # pylint: disable=g-doc-return-or-yield
-  # In these method docstrings, pylint wants "Returns", but "Yields" is correct.
   @classmethod
   def GetForAuthor(cls, author, count, offset=0, hidden=None, reviewed=None):
     """Gets reports by the given author, across maps and topics.
@@ -966,11 +977,11 @@ class CrowdReport(utils.Struct):
       reviewed: A boolean; if specified, only get reports whose reviewed flag
           matches this value.  (Otherwise, include reviewed and unreviewed.)
 
-    Yields:
-      The 'count' most recently updated CrowdReport objects, in order by
-      decreasing update time, that have the given author.  (Note that fewer
-      than 'count' objects may be returned if some are restricted such that
-      the current user cannot see them.)
+    Returns:
+      An iterator giving the 'count' most recently updated CrowdReport objects,
+      in order by decreasing update time, that have the given author.  (Note
+      that fewer than 'count' objects may be returned if some are restricted
+      such that the current user cannot see them.)
     """
     if not author:
       return []
@@ -998,11 +1009,11 @@ class CrowdReport(utils.Struct):
       reviewed: A boolean; if specified, only get reports whose reviewed flag
           matches this value.  (Otherwise, include reviewed and unreviewed.)
 
-    Yields:
-      The 'count' most recently updated CrowdReport objects, in order by
-      decreasing update time, that have any of the given topic_ids.  (Note that
-      fewer than 'count' objects may be returned if some are restricted such
-      that the current user cannot see them.)
+    Returns:
+      An iterator giving the 'count' most recently updated CrowdReport objects,
+      in order by decreasing update time, that have any of the given topic_ids.
+      (Note that fewer than 'count' objects may be returned if some are
+      restricted such that the current user cannot see them.)
     """
     if not topic_ids:
       return []
@@ -1028,9 +1039,9 @@ class CrowdReport(utils.Struct):
       hidden: A boolean; if specified, only get reports whose hidden flag
           matches this value.  (Otherwise, include both hidden and unhidden.)
 
-    Yields:
-      The 'count' most recently updated Report objects, in order by decreasing
-      update time, that meet the criteria:
+    Returns:
+      An iterator giving the 'count' most recently updated Report objects, in
+      order by decreasing update time, that meet the criteria:
         - Has at least one of the specified topic IDs
         - Has no location
         - Has an update time equal to or before 'max_updated'
@@ -1062,9 +1073,9 @@ class CrowdReport(utils.Struct):
       hidden: A boolean; if specified, only get reports whose hidden flag
           matches this value.  (Otherwise, include both hidden and unhidden.)
 
-    Yields:
-      The 'count' most recently updated Report objects, in order by decreasing
-      update time, that meet the criteria:
+    Returns:
+      An iterator giving the 'count' most recently updated Report objects, in
+      order by decreasing update time, that meet the criteria:
         - Has at least one of the specified topic IDs
         - Distance from report location to 'center' is less than the radius
           specified for at least one of its matching topic IDs
@@ -1109,9 +1120,9 @@ class CrowdReport(utils.Struct):
       max_updated: A datetime; if specified, only get reports that were updated
           at or before this time.
 
-    Yields:
-      The 'count' most recently updated Report objects, in order by decreasing
-      update time, that meet the criteria:
+    Returns:
+      An iterator giving the 'count' most recently updated Report objects, in
+      order by decreasing update time, that meet the criteria:
         - Matches the given query
         - Has an update time equal to or before 'max_updated'
       (Note that fewer than 'count' objects may be returned if some are
@@ -1126,15 +1137,24 @@ class CrowdReport(utils.Struct):
 
   @classmethod
   def Create(cls, source, author, effective, text, topic_ids, answers,
-             location, map_id=None):
+             location, published=None, map_id=None, place_id=None,
+             id=None):  # pylint: disable=redefined-builtin
     """Stores one new crowd report and returns it."""
+    # TODO(kpy): We don't currently validate that 'answers' is a dictionary
+    # with keys that are all valid question IDs, or that its values have the
+    # appropriate types for those questions, or that the values are valid
+    # choice IDs for CHOICE questions.  I'm doubtful that we should do this
+    # until we have a clear plan for how these invariants would be enforced
+    # (e.g. what should happen when a topic is edited -- scan all reports?).
     now = datetime.datetime.utcnow()
-    report_id = cls.GenerateId(source)
+    report_id = id or cls.GenerateId(source)
+    if not report_id.startswith(source):
+      raise ValueError('ID %r not valid for source %s' % (report_id, source))
     model = _CrowdReportModel(
         id=report_id, source=source, author=author, effective=effective,
-        published=now, updated=now, text=text, topic_ids=topic_ids,
-        answers_json=json.dumps(answers), location=location or NOWHERE,
-        map_id=map_id)
+        published=published or now, updated=now, text=text,
+        topic_ids=topic_ids or [], answers_json=json.dumps(answers or {}),
+        location=location or NOWHERE, map_id=map_id, place_id=place_id)
     report = cls.FromModel(model)
     document = cls._CreateSearchDocument(model)
 
@@ -1143,7 +1163,6 @@ class CrowdReport(utils.Struct):
     model.put()
     cls.index.put(document)
     return report
-  # pylint: enable=g-doc-return-or-yield
 
   @classmethod
   def _CreateSearchDocument(cls, model):
@@ -1342,7 +1361,7 @@ class _AuthorizationModel(ndb.Model):
   # For crowd_report_write_permission, if this field is non-empty, the posted
   # crowd reports are required to have author URLs beginning with this prefix.
   # Otherwise, any author URL is accepted.
-  author_prefix = ndb.StringProperty()
+  author_prefix = ndb.StringProperty(default='')
 
   @classmethod
   def _get_kind(cls):  # pylint: disable=g-bad-name
@@ -1371,3 +1390,12 @@ class Authorization(utils.Struct):
         map_ids=map_ids or [], author_prefix=author_prefix)
     model.put()
     return cls.FromModel(model)
+
+  @classmethod
+  def SetEnabled(cls, key, enabled):
+    entity = _AuthorizationModel.get_by_id(key)
+    if not entity:
+      raise ValueError('No such Authorization.')
+    entity.is_enabled = enabled
+    entity.put()
+    AUTHORIZATION_CACHE.Delete(key)

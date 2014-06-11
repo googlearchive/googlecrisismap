@@ -34,6 +34,7 @@ MAPROOT = {
 
 
 class MetadataTest(test_utils.BaseTest):
+
   def testGetSourceAddresses(self):
     self.assertEquals(
         {'KML:http://x.com/a', 'GEORSS:http://y.com/b'},

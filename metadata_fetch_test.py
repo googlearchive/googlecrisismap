@@ -158,6 +158,7 @@ METADATA_2 = {'fetch_time': 1234567890, 'fetch_status': 200, 'length': 123456}
 
 
 class MetadataFetchTest(test_utils.BaseTest):
+
   def testGetKml(self):
     # Non-zip file content should be returned as is.
     self.assertEquals('foo', metadata_fetch.GetKml('foo'))

@@ -22,7 +22,7 @@ from google.appengine.ext import ndb
 
 # A special user with ADMIN access.  Real user objects that come from a
 # Google sign-in page always have numeric IDs.
-ROOT = users.User(id='root')
+ROOT = users.User(id='root', email='', ga_domain='')
 
 # Lists of all the _Permission objects for a given subject and/or target, keyed
 # by [subject, target] where subject or target can be '*'.  The 100-ms ULL is
@@ -252,6 +252,7 @@ class AccessPolicy(object):
                      or self.HasRoleCatalogEditor(user, domain))
 
   def _HasMapPermission(self, user, role, map_object):
+    """Checks for permission based on the access lists on the map object."""
     # If the map is blocked, only the first owner can access it.
     if map_object.is_blocked:
       if not (user and [user.id] == map_object.owners[:1]):
@@ -264,7 +265,7 @@ class AccessPolicy(object):
     domain_role = (user.email_domain == map_object.domain and
                    map_object.domain_role) or None
 
-    # Map permissions exist in a hierarchy - editors can always view;
+    # Map permissions exist in a hierarchy: editors can always view;
     # owners can always edit.
     if domain_role == Role.MAP_OWNER or user.id in map_object.owners:
       return True

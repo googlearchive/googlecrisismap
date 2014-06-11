@@ -72,22 +72,21 @@ class MapTests(test_utils.BaseTest):
       self.assertEquals('root', current.creator_uid)
 
   def testWorldReadable(self):
-    # Verify that the current version is only visible to the public after
-    # setting world_readable to True.
+    # Verify that the map is publicly visible only if world_readable is True.
     with test_utils.RootLogin():
       m = model.Map.Create(MAP1, 'xyz.com')
     with test_utils.Login('outsider'):
-      self.assertRaises(perms.AuthorizationError, m.GetCurrent)
+      self.assertRaises(perms.AuthorizationError, model.Map.Get, m.id)
 
     with test_utils.RootLogin():
       m.SetWorldReadable(True)
     with test_utils.Login('outsider'):
-      self.assertEquals(MAP1, m.GetCurrent().map_root)
+      self.assertEquals(MAP1, model.Map.Get(m.id).map_root)
 
     with test_utils.RootLogin():
       m.SetWorldReadable(False)
     with test_utils.Login('outsider'):
-      self.assertRaises(perms.AuthorizationError, m.GetCurrent)
+      self.assertRaises(perms.AuthorizationError, model.Map.Get, m.id)
 
   def testRevokePermission(self):
     """Verifies internal model permission lists are correctly modified."""
@@ -1074,7 +1073,7 @@ class CrowdReportTests(test_utils.BaseTest):
 
 
 class AuthorizationTests(test_utils.BaseTest):
-  """Tests AuthorizationModel."""
+  """Tests for Authorization entities."""
 
   def testAuthorization(self):
     """Creates and reads back an authorization record."""
@@ -1088,6 +1087,16 @@ class AuthorizationTests(test_utils.BaseTest):
     self.assertEquals('http://foo.example.org/', auth.source)
     self.assertEquals(['a', 'b'], auth.map_ids)
     self.assertEquals('tel:+1', auth.author_prefix)
+    self.assertTrue(auth.is_enabled)
+
+    # Try disabling and re-enabling the key.
+    model.Authorization.SetEnabled(key, False)
+    auth = model.Authorization.Get(key)
+    self.assertFalse(auth.is_enabled)
+
+    model.Authorization.SetEnabled(key, True)
+    auth = model.Authorization.Get(key)
+    self.assertTrue(auth.is_enabled)
 
 if __name__ == '__main__':
   test_utils.main()

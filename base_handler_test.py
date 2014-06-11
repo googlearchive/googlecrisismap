@@ -82,7 +82,7 @@ class BaseHandlerTest(test_utils.BaseTest):
     self.assertEquals('x.y._z', base_handler.SanitizeCallback('x.y._z'))
 
   def testGetAuthForRequest(self):
-    """Verifies that self.auth is set propertly according to API key."""
+    """Verifies that self.auth is set properly according to API key."""
     key = model.Authorization.Create(source='xyz').id
 
     # No API key
@@ -103,6 +103,16 @@ class BaseHandlerTest(test_utils.BaseTest):
     # HTTPS request with a valid API key
     request = test_utils.SetupRequest('/foo?key=' + key)
     request.scheme = 'https'
+    auth = base_handler.GetAuthForRequest(request)
+    self.assertEquals('xyz', auth.source)
+
+    # Disabled API key
+    model.Authorization.SetEnabled(key, False)
+    self.assertRaises(
+        base_handler.ApiError, base_handler.GetAuthForRequest, request)
+
+    # Re-enabled API key
+    model.Authorization.SetEnabled(key, True)
     auth = base_handler.GetAuthForRequest(request)
     self.assertEquals('xyz', auth.source)
 

@@ -185,7 +185,7 @@ def NewCrowdReport(source='http://source.com/',
   effective = datetime.datetime.utcnow()
   return model.CrowdReport.Create(
       source, author, effective, text, topic_ids or [], answers or {},
-      location, map_id)
+      location, map_id=map_id)
 
 
 class BaseTest(unittest.TestCase):
@@ -239,18 +239,20 @@ class BaseTest(unittest.TestCase):
         self.cookie_jar = original_cookie_jar
     return contextlib.contextmanager(SetCookieJar)()
 
-  def DoGet(self, path, status=None):
+  def DoGet(self, path, status=None, https=False):
     """Dispatches a GET request according to the routes in app.py.
 
     Args:
       path: The part of the URL path after (not including) the root URL.
       status: If given, expect that the GET will give this HTTP status code.
           Otherwise, expect that the GET will give a non-error code (200-399).
+      https: If True, simulate an HTTPS request.
 
     Returns:
       The HTTP response from the handler as a webapp2.Response object.
     """
     request = SetupRequest(path, cookie_jar=self.cookie_jar)
+    request.scheme = https and 'https' or 'http'
     response = DispatchRequest(request, cookie_jar=self.cookie_jar)
     if status:
       self.assertEquals(status, response.status_int)
@@ -259,7 +261,8 @@ class BaseTest(unittest.TestCase):
       self.assertLess(response.status_int, 400)
     return response
 
-  def DoPost(self, path, data, status=None):
+  def DoPost(self, path, data, status=None,
+             content_type='application/x-www-form-urlencoded', https=False):
     """Dispatches a POST request according to the routes in app.py.
 
     Args:
@@ -267,17 +270,20 @@ class BaseTest(unittest.TestCase):
       data: The POST data as a string, dictionary, or list of pairs.
       status: If given, expect that the POST will return this HTTP status code.
           Otherwise, expect that the POST will return a non-error code (< 400).
+      content_type: Optional.  The content type of the data.
+      https: If True, simulate an HTTPS request.
 
     Returns:
       The HTTP response from the handler as a webapp2.Response object.
     """
     request = SetupRequest(path, cookie_jar=self.cookie_jar)
+    request.scheme = https and 'https' or 'http'
     request.method = 'POST'
     if isinstance(data, dict):
       request.body = urllib.urlencode(data)
     else:
       request.body = str(data)
-    request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    request.headers['Content-Type'] = content_type
     response = DispatchRequest(request, cookie_jar=self.cookie_jar)
     if status:
       self.assertEquals(status, response.status_int)

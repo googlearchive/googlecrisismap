@@ -90,7 +90,7 @@ class Metadata(base_handler.BaseHandler):
   """Retrieves metadata for the specified cache key and source addresses.
 
   Accepts these query parameters:
-    - key: Optional.  A cache key obtained from CacheSourceAddresses.
+    - ck: Optional.  A cache key obtained from CacheSourceAddresses.
     - source: Repeatable.  Any number of addresses of additional sources.
     - callback: Optional.  A callback function name.  If provided, the
           returned JSON is wrapped in a JavaScript function call.

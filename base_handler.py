@@ -153,7 +153,7 @@ def GetAuthForRequest(request):
   if request.scheme != 'https':
     raise ApiError(403, 'HTTPS is required when using an API key.')
   auth = model.Authorization.Get(api_key)
-  if not auth:
+  if not (auth and auth.is_enabled):
     raise ApiError(403, 'Invalid API key.')
   return auth
 
@@ -232,10 +232,11 @@ class BaseHandler(webapp2.RequestHandler):
 
   def GetUserForUrl(self, url):
     """Gets the User entity identified by a URL, or None if there is none."""
-    url_dir, uid = url.rsplit('/', 1)
-    if url_dir == self.request.root_url + '/.users':
-      if not uid.startswith('anonymous.'):
-        return users.Get(uid)
+    if url and url.startswith('http:') and '/' in url:
+      url_dir, uid = url.rsplit('/', 1)
+      if url_dir == self.request.root_url + '/.users':
+        if not uid.startswith('anonymous.'):
+          return users.Get(uid)
 
   def CheckAccess(self):
     """If login_access_list is set, accept only the specified logins."""
@@ -361,6 +362,15 @@ class BaseHandler(webapp2.RequestHandler):
                    logout_url=users.GetLogoutUrl(root + '/.maps'),
                    navbar=self._GetNavbarContext(user))
     return template.render(path, context)
+
+  def GetRequestJson(self):
+    """Gets JSON content from the request body or the 'json' query param."""
+    json_data = (self.request.content_type == 'application/json' and
+                 self.request.body or self.request.get('json'))
+    try:
+      return json.loads(json_data or 'null')
+    except ValueError:
+      raise ApiError(400, 'Invalid JSON data.')
 
   def WriteJson(self, data):
     """Writes out a JSON or JSONP serialization of the given data."""

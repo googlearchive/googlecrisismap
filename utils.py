@@ -14,6 +14,7 @@
 
 import base64
 import calendar
+import datetime
 from HTMLParser import HTMLParseError
 from HTMLParser import HTMLParser
 import os
@@ -43,6 +44,16 @@ class Struct(object):
   @classmethod
   def FromModel(cls, model):
     """Populates a new Struct from an ndb.Model (doesn't take a db.Model)."""
+
+    def GetValue(name):
+      # Work around a bug in ndb: repeated properties sometimes return lists
+      # of _BaseValue objects; copying the list fixes up these objects.  See:
+      # https://code.google.com/p/appengine-ndb-experiment/issues/detail?id=208
+      value = getattr(model, name, None)
+      if type(value) is list:
+        value = value[:]
+      return value
+
     # ._properties is actually a public API; it's just named with "_" in order
     # to avoid collision with property names (see http://goo.gl/xAcU4).
     # We pass None as 3rd arg to getattr to tolerate entities in the datastore
@@ -50,7 +61,7 @@ class Struct(object):
     if model:
       props = model._properties  # pylint: disable=protected-access
       return cls(id=model.key.id(), key=model.key,
-                 **dict((name, getattr(model, name, None)) for name in props))
+                 **{name: GetValue(name) for name in props})
 
 
 def StructFromModel(model):
@@ -149,8 +160,13 @@ def StripHtmlTags(value):
 
 
 def UtcToTimestamp(dt):
-  """Returns a POSIX timestamp to fractions of a second for the UTC datetime."""
+  """Converts a UTC datetime object to a scalar POSIX timestamp."""
   return calendar.timegm(dt.utctimetuple()) + dt.microsecond / 1e6
+
+
+def TimestampToUtc(timestamp):
+  """Converts a scalar POSIX timestamp to a UTC datetime object."""
+  return datetime.datetime.utcfromtimestamp(timestamp)
 
 
 def MakeRandomId():

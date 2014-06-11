@@ -34,7 +34,7 @@ class UtilsSetAndTestTests(test_utils.BaseTest):
     self.set_called += 1
 
   def MockTestTrue(self):
-    self.test_called +=1
+    self.test_called += 1
     return True
 
   def MockTestFalse(self):
@@ -91,14 +91,10 @@ class UtilsSetAndTestTests(test_utils.BaseTest):
 
   def testUtcToTimestamp(self):
     dt = datetime.datetime(2013, 11, 19, 12, 58, 24)
-    self.assertEqual(
-        dt,
-        datetime.datetime.utcfromtimestamp(utils.UtcToTimestamp(dt)))
+    self.assertEqual(dt, utils.TimestampToUtc(utils.UtcToTimestamp(dt)))
 
     dt = datetime.datetime(2013, 11, 19, 12, 58, 24, 123)
-    self.assertEqual(
-        dt,
-        datetime.datetime.utcfromtimestamp(utils.UtcToTimestamp(dt)))
+    self.assertEqual(dt, utils.TimestampToUtc(utils.UtcToTimestamp(dt)))
 
   def testShortAge(self):
     now = datetime.datetime.utcnow()

@@ -41,9 +41,9 @@ class PermsTests(test_utils.BaseTest):
           GetRolesForMap(m))
 
       # Verify an admin can perform all operations.
+      model.Map.Get(m.id)
       version_id = m.PutNewVersion({})
       m.SetWorldReadable(False)
-      m.GetCurrent()
       m.GetVersions()
       m.GetVersion(version_id)
 
@@ -56,9 +56,9 @@ class PermsTests(test_utils.BaseTest):
       # Verify the owner can perform expected operations.
       self.assertRaises(
           perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      model.Map.Get(m.id)
       version_id = m.PutNewVersion({})
       m.SetWorldReadable(False)
-      m.GetCurrent()
       m.GetVersions()
       m.GetVersion(version_id)
 
@@ -70,9 +70,9 @@ class PermsTests(test_utils.BaseTest):
       # Verify the editor can perform expected operations.
       self.assertRaises(
           perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      model.Map.Get(m.id)
       version_id = m.PutNewVersion({})
       self.assertRaises(perms.AuthorizationError, m.SetWorldReadable, False)
-      m.GetCurrent()
       m.GetVersions()
       m.GetVersion(version_id)
 
@@ -83,8 +83,8 @@ class PermsTests(test_utils.BaseTest):
       # Verify the reviewer can perform expected operations.
       self.assertRaises(
           perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      model.Map.Get(m.id)
       self.assertRaises(perms.AuthorizationError, m.PutNewVersion, {})
-      m.GetCurrent()
       self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
       self.assertRaises(perms.AuthorizationError, m.GetVersions)
 
@@ -95,8 +95,8 @@ class PermsTests(test_utils.BaseTest):
       # Verify the viewer can perform expected operations.
       self.assertRaises(
           perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      model.Map.Get(m.id)
       self.assertRaises(perms.AuthorizationError, m.PutNewVersion, {})
-      m.GetCurrent()
       self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
       self.assertRaises(perms.AuthorizationError, m.GetVersions)
 
@@ -105,8 +105,8 @@ class PermsTests(test_utils.BaseTest):
       self.assertEquals(set(), GetRolesForMap(m))
 
       # Verify that all operations fail.
+      self.assertRaises(perms.AuthorizationError, model.Map.Get, m.id)
       self.assertRaises(perms.AuthorizationError, m.PutNewVersion, {})
-      self.assertRaises(perms.AuthorizationError, m.GetCurrent)
       self.assertRaises(perms.AuthorizationError, m.GetVersions)
       self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
 
@@ -119,7 +119,6 @@ class PermsTests(test_utils.BaseTest):
           perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
       self.assertRaises(perms.AuthorizationError, m.PutNewVersion, {})
       self.assertRaises(perms.AuthorizationError, m.SetWorldReadable, True)
-      m.GetCurrent()
       self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
       self.assertRaises(perms.AuthorizationError, m.GetVersions)
 

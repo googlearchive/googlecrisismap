@@ -104,6 +104,8 @@ def connect(url, email=None, password=None, exit_on_failure=False):
         elif isinstance(e, urllib2.URLError):
             reason = hasattr(e.reason, 'args') and e.reason.args[-1] or e.reason
             print >>sys.stderr, 'Cannot connect to %s: %s' % (hostport, reason)
+        else:
+            print >>sys.stderr, 'Connection error: %s' % e
         if exit_on_failure:
             sys.exit(1)
         return None

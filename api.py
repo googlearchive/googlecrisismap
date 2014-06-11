@@ -20,9 +20,11 @@ import json
 import base_handler
 import config
 import model
+import perms
 import protect
 import utils
 
+from google.appengine.api import datastore_errors
 from google.appengine.ext import ndb
 
 # A vote code is a short identifier used in query parameters and in client-side
@@ -82,11 +84,15 @@ def ContainsSpam(text):
 
 
 class MapById(base_handler.BaseHandler):
-  """An HTTP API for fetching and saving map definitions."""
+  """Endpoint for fetching and writing map definitions."""
 
   def Get(self, map_id, domain=''):  # pylint: disable=unused-argument
     """Returns the MapRoot JSON for the specified map."""
-    map_object = model.Map.Get(map_id)
+    if (self.auth and self.auth.map_read_permission and
+        map_id in self.auth.map_ids):
+      map_object = model.Map.Get(map_id, user=perms.ROOT)
+    else:
+      map_object = model.Map.Get(map_id)
     if not map_object:
       raise base_handler.ApiError(404, 'Map %s not found.' % map_id)
     self.WriteJson(map_object.map_root)
@@ -96,16 +102,12 @@ class MapById(base_handler.BaseHandler):
     map_object = model.Map.Get(map_id)
     if not map_object:
       raise base_handler.ApiError(404, 'Map %s not found.' % map_id)
-    try:
-      map_root = json.loads(self.request.get('json'))
-    except ValueError:
-      raise base_handler.ApiError(400, 'Invalid JSON data.')
-    map_object.PutNewVersion(map_root)
+    map_object.PutNewVersion(self.GetRequestJson())
     self.response.set_status(201)
 
 
 class PublishedMaps(base_handler.BaseHandler):
-  """Handler for fetching the JSON of all published maps."""
+  """Unauthenticated endpoint for fetching the JSON of all published maps."""
 
   def Get(self, domain=''):  # pylint: disable=unused-argument
     root = self.request.root_path
@@ -129,6 +131,9 @@ class CrowdReports(base_handler.BaseHandler):
       max_updated: Optional upper bound on report update time in epoch seconds.
       hidden: If non-empty, include reports that are hidden due to low scores.
       votes: If non-empty, include information on votes by the current user.
+
+    Any report that is map-restricted will be omitted from the results unless
+    the current user has permission to view the associated map.
     """
     ll = ParseGeoPt(self.request.get('ll'))
     topic_ids = self.request.get('topic_ids').split(',')
@@ -153,42 +158,36 @@ class CrowdReports(base_handler.BaseHandler):
     self.WriteJson(dicts)
 
   def Post(self):
-    """Adds a crowd report.
+    """Adds one or several crowd reports.
 
-    The accepted form parameters are:
+    If this is invoked as a form submission, we assume it's a single report
+    from a user using the browser UI.  The user's login determines the author,
+    and spam protection is in effect.  The accepted form parameters are:
       cm-ll: Optional latitude and longitude (two floats separated by a comma).
       cm-text: Text of the report.
       cm-topic-ids: Comma-separated list of topic IDs.
       cm-answers-json: JSON-encoded dictionary of {question IDs: answer values}.
-    """
-    # The form parameter names all start with "cm-" because our form protection
-    # mechanism uses the DOM element IDs as parameter names, and we prefix our
-    # element IDs with "cm-" to avoid collision.  See protect.py and xhr.js.
-    if not protect.Verify(
-        self.request, ['cm-topic-ids', 'cm-answers-json', 'cm-ll', 'cm-text']):
-      raise base_handler.ApiError(403, 'Unauthorized crowd report.')
 
-    author = self.GetCurrentUserUrl()
-    topic_ids = self.request.get('cm-topic-ids', '').replace(',', ' ').split()
-    try:
-      answers = dict(json.loads(self.request.get('cm-answers-json') or '{}'))
-    except (TypeError, ValueError):
-      raise base_handler.ApiError(400, 'Invalid answers JSON.')
-    ll = ParseGeoPt(self.request.get('cm-ll'))
-    text = self.request.get('cm-text', '')
-    now = datetime.datetime.utcnow()
-    if ContainsSpam(text):
-      # TODO(kpy): Consider applying a big downvote here instead of a 403.
-      raise base_handler.ApiError(403, 'Crowd report text rejected as spam.')
-    model.CrowdReport.Create(source=self.request.root_url, author=author,
-                             effective=now, text=text, topic_ids=topic_ids,
-                             answers=answers, location=ll)
+    If this is invoked by posting application/json content, we assume it's an
+    upload coming from another repository of reports.  In this case an API key
+    is required, and the JSON content must be an array of report dictionaries.
+    """
+    report_dicts = self.GetRequestJson()
+    if report_dicts:
+      results = CrowdReportJsonPost(self.auth, report_dicts)
+      self.WriteJson(map(self.ReportToDict, results))
+    else:
+      CrowdReportFormPost(self.GetCurrentUserUrl(), self.request)
 
   def ReportToDict(self, report):
     """Converts a model.CrowdReport to a dictionary for JSON serialization."""
+    if type(report) is dict and 'error' in report:
+      # Pass through dicts that we use to signal errors to the client.
+      return report
     user = self.GetUserForUrl(report.author)
     return {
         'id': report.key.id(),
+        'source': report.source,
         'author': report.author,
         'author_email': user and user.email,
         'effective': utils.UtcToTimestamp(report.effective),
@@ -198,9 +197,92 @@ class CrowdReports(base_handler.BaseHandler):
         'topic_ids': report.topic_ids,
         'answers': report.answers,
         'location': [report.location.lat, report.location.lon],
+        'place_id': report.place_id,
         'upvote_count': report.upvote_count,
         'downvote_count': report.downvote_count
     }
+
+
+def CrowdReportFormPost(author, request):
+  """Handles a form submission of a crowd report from the browser UI."""
+  # The form parameter names all start with "cm-" because our form protection
+  # mechanism uses the DOM element IDs as parameter names, and we prefix our
+  # element IDs with "cm-" to avoid collision.  See protect.py and xhr.js.
+  if not protect.Verify(
+      request, ['cm-topic-ids', 'cm-answers-json', 'cm-ll', 'cm-text']):
+    raise base_handler.ApiError(403, 'Unauthorized crowd report.')
+
+  topic_ids = request.get('cm-topic-ids', '').replace(',', ' ').split()
+  try:
+    answers = dict(json.loads(request.get('cm-answers-json') or '{}'))
+  except (TypeError, ValueError):
+    raise base_handler.ApiError(400, 'Invalid answers JSON.')
+  ll = ParseGeoPt(request.get('cm-ll'))
+  text = request.get('cm-text', '')
+  now = datetime.datetime.utcnow()
+  if ContainsSpam(text):
+    # TODO(kpy): Consider applying a big downvote here instead of a 403.
+    raise base_handler.ApiError(403, 'Crowd report text rejected as spam.')
+  model.CrowdReport.Create(source=request.root_url, author=author,
+                           effective=now, text=text, topic_ids=topic_ids,
+                           answers=answers, location=ll)
+
+
+def CrowdReportJsonPost(auth, report_dicts):
+  """Handles a POST submission of crowd report JSON."""
+  if not (auth and auth.crowd_report_write_permission):
+    raise base_handler.ApiError(403, 'Not authorized to submit crowd reports.')
+
+  now = utils.UtcToTimestamp(datetime.datetime.utcnow())
+  # TODO(kpy): Add a spam check here.
+  return [DictToReport(report, auth, now) for report in report_dicts]
+
+
+def DictToReport(report, auth, now):
+  """Converts one incoming dictionary to a CrowdReport or an error message."""
+  report_id = report.get('id')
+  if not report_id:
+    return {'error': 'Required "id" field is missing.'}
+  source = report.get('source', '')
+  if source != auth.source:
+    return {'id': report_id, 'error': 'Not authorized for source %r.' % source}
+  if not report_id.startswith(source):
+    return {'error': 'ID %r not valid for source %r.' % (report_id, source)}
+  author = report.get('author', '')
+  if not author.startswith(auth.author_prefix):
+    return {'id': report_id, 'error': 'Not authorized for author %r.' % author}
+  map_id = report.get('map_id', '')
+  if map_id not in auth.map_ids:
+    return {'id': report_id, 'error': 'Not authorized for map_id %r.' % map_id}
+  topic_ids = report.get('topic_ids', [])
+  if type(topic_ids) != list:
+    return {'id': report_id, 'error': 'An array is required for topic_ids.'}
+  answers = report.get('answers', {})
+  if type(answers) != dict:
+    return {'id': report_id, 'error': 'An object is required for answers.'}
+  text = report.get('text', '')
+  if not isinstance(text, basestring):
+    return {'id': report_id, 'error': 'A string is required for text.'}
+  place_id = report.get('place_id', '')
+  if not isinstance(place_id, basestring):
+    return {'id': report_id, 'error': 'A string is required for place_id.'}
+
+  effective = utils.TimestampToUtc(report.get('effective', now))
+  published = utils.TimestampToUtc(
+      report.get('published', report.get('effective', now)))
+  location = None
+  if 'location' in report:
+    try:
+      location = ndb.GeoPt(*report['location'])
+    except datastore_errors.BadValueError, e:
+      return {'id': report_id, 'error': 'Invalid location: %s' % e}
+  try:
+    return model.CrowdReport.Create(
+        id=report_id, source=source, author=author, effective=effective,
+        published=published, text=text, topic_ids=topic_ids, answers=answers,
+        location=location, place_id=place_id or None, map_id=map_id or None)
+  except (TypeError, ValueError), e:
+    return {'id': report_id, 'error': str(e)}
 
 
 class CrowdVotes(base_handler.BaseHandler):
