@@ -405,51 +405,45 @@ cm.MSG_ANSWER_COLOR_TOOLTIP = goog.getMsg('Background color for the answer ' +
     'label, in hexadecimal RGB notation as used in CSS. ' +
     'Red is #ff0000 or #f00.');
 
-/**
- * @desc Label for a field to enter an multiple-choice answer to a question.
- * This answer appears on a button the user presses to select the asnwer.
- */
+/** @desc Label for a field where the user enters a label for a button. */
 cm.MSG_ANSWER_BUTTON_LABEL = goog.getMsg('Button label');
 
-/** @desc Tooltip for the field to enter a multiple-choice answer. */
+/**
+ * @desc Tooltip for a field where the user enters a short answer for a
+ *     survey question that accepts an answer selected from a list of choices.
+ *     The text entered in the field will be used as a button label.
+ */
 cm.MSG_ANSWER_BUTTON_LABEL_TOOLTIP = goog.getMsg('Short text of the answer. ' +
     'The answer appears on a button the user presses to select it. Often the ' +
     'button label is simply "Yes" or "No".');
 
 /**
- * @desc Label for a field to enter a very short form of the
- * answer that can be understood without seeing the corresponding
- * question.  A successful answer label to the question,
- * "Does this gas station have gas?" would be, "Has Gas".
+ * @desc Label for a field where the user enters an answer for a survey
+ *     question, phrased in such a way that it can stand alone; that is, the
+ *     answer can be understood without seeing the corresponding question.
  */
 cm.MSG_ANSWER_STANDALONE_TEXT = goog.getMsg('Standalone text');
 
 /**
- * @desc Tooltip for the field to enter a label for a multiple-choice answer.
+ * @desc Tooltip for a field where the user enters an answer for a survey
+ *     question, phrased in such a way that it can stand alone.
  */
 cm.MSG_ANSWER_STANDALONE_TEXT_TOOLTIP = goog.getMsg('A label to describe ' +
-   'the selected answer. These labels should be understandable without ' +
+    'the selected answer. These labels should be understandable without ' +
     'seeing the corresponding question and should be unique across all ' +
-    'questions. A useful label to the question, "Does this gas station have ' +
-    'gas?" could be, "Has gas"');
+    'questions.  For example, the question "Does this gas station have ' +
+    'gas?" could have the standalone answers "Has gas" and "No gas".');
 
-/**
- * @desc An affirmative answer.
- */
+/** @desc An affirmative answer. */
 cm.MSG_YES = goog.getMsg('Yes');
 
-/**
- * @desc A negative answer.
- */
+/** @desc A negative answer. */
 cm.MSG_NO = goog.getMsg('No');
 
 
 // Question editor
 
-/** @desc Label for a form to add a multiple choice answer to a question. */
-cm.MSG_ANSWER = goog.getMsg('Answer');
-
-/** @desc Label for a button to add an multiple choice answer to a question. */
+/** @desc Label for a button to add a multiple-choice answer to a question. */
 cm.MSG_ADD_ANSWER = goog.getMsg('Add an answer');
 
 /** @desc Label for a text field for entering the text of a question. */
@@ -457,6 +451,30 @@ cm.MSG_QUESTION_TEXT = goog.getMsg('Question');
 
 /** @desc Tooltip for a text field. */
 cm.MSG_QUESTION_TEXT_TOOLTIP = goog.getMsg('The text of the question.');
+
+/** @desc Label for a text field for entering the title of a question. */
+cm.MSG_QUESTION_TITLE = goog.getMsg('Short title');
+
+/** @desc Tooltip for the short title field. */
+cm.MSG_QUESTION_TITLE_TOOLTIP = goog.getMsg('A short title for the question, ' +
+    'to be used when displaying the collected answers.');
+
+/** @desc Label for a menu for selecting the type of answer for a question. */
+cm.MSG_ANSWER_TYPE = goog.getMsg('Answer type');
+
+/** @desc Tooltip for the answer type selector. */
+cm.MSG_ANSWER_TYPE_TOOLTIP = goog.getMsg('The type of answer to expect for ' +
+    'this question: a textual answer, a numeric answer, or a choice from a ' +
+    'fixed list of choices.');
+
+/** @desc Menu option to set a question to accept a textual answer. */
+cm.MSG_TYPE_TEXT = goog.getMsg('Text');
+
+/** @desc Menu option to set a question to accept a numeric answer. */
+cm.MSG_TYPE_NUMBER = goog.getMsg('Number');
+
+/** @desc Menu option to set a question to accept a multiple-choice answer. */
+cm.MSG_TYPE_CHOICE = goog.getMsg('Choice');
 
 
 // Question list editor
@@ -513,7 +531,7 @@ cm.MSG_OPEN_LAYERS_TAB_LINK = goog.getMsg('View all layers \u00bb');
 /** @desc An invitation to users to contribute a report about a location. */
 cm.MSG_CROWD_REPORT_PROMPT = goog.getMsg('Know something about this location?');
 
-/** @desc Label for an answer to a multiple-choice question. */
+/** @desc Label for an answer button for a multiple-choice question. */
 cm.MSG_NOT_SURE = goog.getMsg('Not sure');
 
 /** @desc Heading for a section containing reports from citizens. */
@@ -522,8 +540,14 @@ cm.MSG_CITIZEN_REPORTS = goog.getMsg('Citizen reports');
 /** @desc Label for the comment entry box. */
 cm.MSG_ENTER_COMMENT = goog.getMsg('Enter a comment');
 
+/** @desc Label asking users to explain how they knew what they entered. */
+cm.MSG_EXPLAIN_YOUR_ANSWERS = goog.getMsg('Explain your answers');
+
 /** @desc A button for posting the user's comment. */
 cm.MSG_POST = goog.getMsg('Post');
+
+/** @desc Placeholder in an input field requiring a number to be entered. */
+cm.MSG_NUMBER = goog.getMsg('Number');
 
 /**
  * @desc A short question asking whether a comment is helpful or not.  "Yes"

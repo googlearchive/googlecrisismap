@@ -408,7 +408,7 @@ specific language governing permissions and limitations under the License.
 }
 
 .cm-question {
-  margin: 6px 0;
+  margin: 6px 0 12px;
 }
 
 .cm-question:first-child {
@@ -425,8 +425,13 @@ specific language governing permissions and limitations under the License.
   margin: 6px 0 12px;
 }
 
+.cm-answer input[type="text"],
 .cm-report-text input[type="text"] {
   width: 100%;
+}
+
+.cm-crowd-report-form .cm-report-text {
+  margin-top: 18px;
 }
 
 .cm-crowd .cm-button-area {
@@ -470,8 +475,8 @@ specific language governing permissions and limitations under the License.
   padding: 1px 3px;
   margin-right: 4px;
   display: inline-block;
-  color: #fff;
-  background: #0a0;
+  color: #000;
+  background: #fff;
 }
 
 .cm-report .cm-time {

@@ -170,7 +170,9 @@ cm.InspectorView.prototype.addEditor = function(
   })(errorSpan);
 
   // Bind the editor to a property on our draft new version of the object.
-  this.draft_.set(editorSpec.key, this.object_.get(editorSpec.key));
+  var value = this.object_.get(editorSpec.key);
+  this.draft_.set(
+      editorSpec.key, value === undefined ? editorSpec.default_value : value);
   editor.bindTo('value', this.draft_, editorSpec.key);
   this.rows_[editorSpec.key] = row;
 

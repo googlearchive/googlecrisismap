@@ -86,11 +86,14 @@ cm.CrowdView = function(parentElem, mapModel, config) {
   /** @private {Array.<string>} Question IDs relevant to the layer, in order. */
   this.questionIds_ = [];
 
+  /** @private {Object.<Object>} A map of question objects by question ID. */
+  this.questionsById_ = {};
+
   /** @private {Object.<Object>} A map of answer objects by answer ID. */
   this.answersById_ = {};
 
-  /** @private {Object} Map of question IDs to currently selected answer IDs. */
-  this.selectedAnswerIds_ = {};
+  /** @private {Object} Map of question IDs to entered answer values. */
+  this.answers_ = {};
 
   /** @private {boolean} If true, form opens in a popup; else opens in place. */
   this.formPopupEnabled_ = false;
@@ -113,6 +116,7 @@ cm.CrowdView.prototype.enableFormPopup = function(enabled) {
  */
 cm.CrowdView.prototype.open = function(featureData) {
   var mapId = this.mapModel_.get('id');
+  var questionsById = this.questionsById_ = {};
   var answersById = this.answersById_ = {};
   var questionIds = this.questionIds_ = [];
   this.layerId_ = featureData.layerId;
@@ -125,6 +129,7 @@ cm.CrowdView.prototype.open = function(featureData) {
     goog.array.forEach(questions, function(question) {
       var qid = mapId + '.' + topic.get('id') + '.' + question.id;
       questionIds.push(qid);
+      questionsById[qid] = question;
       goog.array.forEach(question.answers, function(answer) {
         answersById[qid + '.' + answer.id] = answer;
       });
@@ -144,27 +149,32 @@ cm.CrowdView.prototype.close = function() {
 };
 
 /**
- * Enables the submit button iff any answers are selected or text is entered.
+ * Updates the submit button to reflect whether the form is submittable and
+ * updates the placeholder text in the text input field.
  * @private
  */
-cm.CrowdView.prototype.updateSubmitButton_ = function() {
-  if (!this.isProtectionReady_) {
-    this.submitBtn_.disabled = true;
-    return;
-  }
+cm.CrowdView.prototype.updateForm_ = function() {
+  // Did the user enter any answers (i.e. not null, including 0)?
   var anyAnswer = goog.object.some(
-      this.selectedAnswerIds_, function(aid) { return aid; });
-  this.submitBtn_.disabled = !(anyAnswer || this.textInput_.value.match(/\S/));
+      this.answers_, function(aid) { return aid || aid === 0; });
+  // If the user has entered answers, suggest that they explain them.
+  this.textInput_.setAttribute('placeholder',
+      anyAnswer ? cm.MSG_EXPLAIN_YOUR_ANSWERS : cm.MSG_ENTER_COMMENT);
+  // Enable the submit button only if the form is ready for submission and
+  // something has been entered in one of the answer or comment fields.
+  this.submitBtn_.disabled = !this.isProtectionReady_ ||
+      !(anyAnswer || this.textInput_.value.match(/\S/));
 };
 
 /**
- * Creates the row of answer buttons for a particular question.
+ * Creates the UI widgets for answering a question (an input field or a row of
+ * buttons, as appropriate for the question type).
  * @param {string} topicId The topic ID (including the mapID).
  * @param {Object} question The question object (inside the topic).
- * @return {Array.<Element>} The answer buttons.
+ * @return {Element} A DOM element containing the UI for entering an answer.
  * @private
  */
-cm.CrowdView.prototype.makeAnswerButtons_ = function(topicId, question) {
+cm.CrowdView.prototype.makeAnswerUi_ = function(topicId, question) {
   var self = this;  // this scope uses 'self' throughout instead of 'this'
   var qid = topicId + '.' + question.id;
   var buttons = [];  // held locally so we can deselect other buttons on click
@@ -175,20 +185,55 @@ cm.CrowdView.prototype.makeAnswerButtons_ = function(topicId, question) {
       goog.array.forEach(buttons, function(b) {  // select it, deselect others
         goog.dom.classes.enable(b, cm.css.SELECTED, b === button);
       });
-      self.selectedAnswerIds_[qid] = answer.id;
-      self.answersJsonInput_.value =
-          goog.json.serialize(self.selectedAnswerIds_);
+      self.answers_[qid] = answer.id;
+      self.answersJsonInput_.value = goog.json.serialize(self.answers_);
       cm.Analytics.logAction(
           cm.Analytics.CrowdReportFormAction.ANSWER_BUTTON_CLICKED,
           self.layerId_);
-      self.updateSubmitButton_();
+      self.updateForm_();
     });
     return button;
   }
 
-  var notSure = {title: cm.MSG_NOT_SURE, id: null};
-  buttons = goog.array.map(question.answers.concat(notSure), makeButton);
-  return buttons;
+  function makeTextInput() {
+    var input = cm.ui.create('input', {'type': 'text'});
+    cm.events.listen(input, ['change', 'keyup'], function() {
+      self.answers_[qid] = input.value;
+      self.answersJsonInput_.value = goog.json.serialize(self.answers_);
+      self.updateForm_();
+    });
+    return input;
+  }
+
+  function makeNumberInput() {
+    var input = cm.ui.create('input',
+        {'type': 'text', 'placeholder': cm.MSG_NUMBER, 'class': cm.css.NUMBER});
+    cm.events.listen(input, 'keypress', function(event) {
+      var key = event.keyCode;
+      if (key && !(key >= 48 && key <= 57 || key == 8)) {
+        event.preventDefault();  // allow only digits or backspace
+      }
+    });
+    cm.events.listen(input, ['change', 'keyup'], function() {
+      input.value = input.value.replace(/\D/g, '');
+      self.answers_[qid] = input.value === '' ? null : input.value - 0;
+      self.answersJsonInput_.value = goog.json.serialize(self.answers_);
+      self.updateForm_();
+    });
+    return input;
+  }
+
+  switch (question.type) {
+    case cm.TopicModel.QuestionType.STRING:
+      return makeTextInput();
+    case cm.TopicModel.QuestionType.NUMBER:
+      return makeNumberInput();
+    case cm.TopicModel.QuestionType.CHOICE:
+      var notSure = {title: cm.MSG_NOT_SURE, id: null};
+      buttons = goog.array.map(question.answers.concat(notSure), makeButton);
+      return cm.ui.create('div', cm.css.BUTTON_GROUP, buttons);
+  }
+  return null;
 };
 
 /**
@@ -224,10 +269,11 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
       cm.ui.append(form,
           cm.ui.create('div', cm.css.QUESTION,
               cm.ui.create('h3', {}, question.text),
-              cm.ui.create('div', cm.css.ANSWERS,
-                  cm.ui.create('div', cm.css.BUTTON_GROUP,
-                      self.makeAnswerButtons_(topicId, question)))
-      ));
+              cm.ui.create('div', cm.css.ANSWER,
+                  self.makeAnswerUi_(topicId, question)
+              )
+          )
+      );
     });
   });
 
@@ -265,7 +311,8 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
 
     goog.array.forEach(cm.ui.getAllByClass(cm.css.BUTTON, form),
         function(b) { goog.dom.classes.remove(b, cm.css.SELECTED); });
-    self.selectedAnswerIds_ = {};
+    self.answers_ = {};
+    self.answersJsonInput_.value = '';
     self.textInput_.value = '';
     self.submitBtn_.disabled = true;
     if (event) {  // prevent the click from immediately re-expanding the bubble
@@ -288,9 +335,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
 
   // Text input behaviour
   cm.events.listen(self.textInput_, ['keyup', 'cut', 'paste', 'change'],
-      function() { window.setTimeout(function() {
-        self.updateSubmitButton_();
-      }, 1); }
+      function() { window.setTimeout(function() { self.updateForm_(); }, 1); }
   );
 
   // Hidden fields for other submitted information
@@ -312,7 +357,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
       ['cm-ll', 'cm-text', 'cm-topic-ids', 'cm-answers-json'],
       function() {
         self.isProtectionReady_ = true;
-        self.updateSubmitButton_();
+        self.updateForm_();
       }
   );
   cm.xhr.protectInputs(
@@ -392,15 +437,30 @@ cm.CrowdView.prototype.renderReport_ = function(report) {
   var timeDiv = cm.ui.create('div', cm.css.TIME,
       cm.util.shortAge(report['effective']));
 
-  var answerChips = [], chip;
+  var answerChips = [], chip, answer;
   var answers = report['answers'] || {};
   goog.array.forEach(this.questionIds_, function(qid) {
-    var answer = self.answersById_[qid + '.' + answers[qid]];
-    if (answer) {
-      chip = cm.ui.create('div', cm.css.ANSWER, answer.label || answer.title);
-      chip.style.background = answer.color;
-      chip.style.color = cm.ui.legibleTextColor(answer.color);
-      answerChips.push(chip);
+    var question = self.questionsById_[qid];
+    var title = question.title || question.id;
+    if (answers[qid] || answers[qid] === 0) {
+      switch (question.type) {
+        case cm.TopicModel.QuestionType.STRING:
+        case cm.TopicModel.QuestionType.NUMBER:
+          chip = cm.ui.create('div', cm.css.ANSWER,
+              title + ': ' + answers[qid]);
+          answerChips.push(chip);
+          break;
+        case cm.TopicModel.QuestionType.CHOICE:
+          answer = self.answersById_[qid + '.' + answers[qid]];
+          if (answer) {
+            chip = cm.ui.create('div', cm.css.ANSWER,
+                answer.label || title + ': ' + answer.title);
+            chip.style.background = answer.color || '#fff';
+            chip.style.color = cm.ui.legibleTextColor(answer.color || '#fff');
+            answerChips.push(chip);
+          }
+          break;
+      }
     }
   });
   answerChips = answerChips.length ? answerChips : null;

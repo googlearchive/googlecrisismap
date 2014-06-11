@@ -147,10 +147,41 @@ class CrowdReportsTest(test_utils.BaseTest):
     self.SetForTest(protect, 'Verify', lambda request, keys: False)
     self.DoPost('/.api/reports', {
         'cm-topic-ids': 'bar',
-        'cm-answers-json': 'bar.1.1',
+        'cm-answers-json': '{"bar.1.1": "1"}',
         'cm-text': 'report1',
         'cm-ll': '37.1,-74.2'
     }, 403)  # should be rejected by protect.Verify
+
+  def testLoggedInSingleReportWithNoAnswers(self):
+    with test_utils.EnvContext(USER_ID='123456789',
+                               USER_EMAIL='alice@alpha.test',
+                               USER_ORGANIZATION='alpha.test'):
+      self.DoPost('/.api/reports', {
+          'cm-topic-ids': 'foo,bar',
+          'cm-answers-json': '',
+          'cm-text': 'report1',
+          'xsrf_token': 'XSRF'
+      })  # XSRF check is stubbed in test_utils
+
+    response = self.DoGet('/.api/reports?topic_ids=foo')
+
+    reports = json.loads(response.body)
+    self.assertEquals(1, len(reports))
+    id0 = reports[0].pop('id')
+    self.assertTrue(id0.startswith('http://app.com/root/.reports/'))
+    self.assertDictEqual(
+        {u'answers': {},
+         u'author': u'http://app.com/root/.users/1',
+         u'author_email': u'alice@alpha.test',
+         u'effective': self.default_time_secs,
+         u'location': [model.NOWHERE.lat, model.NOWHERE.lon],
+         u'published': self.default_time_secs,
+         u'topic_ids': [u'foo', u'bar'],
+         u'text': u'report1',
+         u'updated': self.default_time_secs,
+         u'upvote_count': 0,
+         u'downvote_count': 0},
+        reports[0])
 
 
   def testAnonymousMultipleReportsWithLatLng(self):

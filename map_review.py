@@ -178,15 +178,25 @@ class _MapReview(base_handler.BaseHandler):
       IDs and reports is a list of dicts representing reports to review.
     """
     topic_ids = []
-    answer_labels = {}
+    question_types = {}
+    question_titles = {}
     answer_colors = {}
+    answer_labels = {}
     for topic in map_root['topics']:
       topic_ids.append(topic['id'])
       for question in topic.get('questions', []):
         question_id = '%s.%s.%s' % (map_id, topic['id'], question['id'])
-        for answer in question['answers']:
-          answer_labels[question_id, answer['id']] = answer.get('label', '')
+        question_types[question_id] = question.get('type', '')
+        question_titles[question_id] = title = question.get('title', '')
+        for answer in question.get('answers', []):
+          answer_labels[question_id, answer['id']] = (
+              answer.get('label', '') or title + ': ' + answer.get('title', ''))
           answer_colors[question_id, answer['id']] = answer.get('color', '')
+
+    def _DescribeAnswer((question_id, answer)):
+      if question_types.get(question_id) == 'CHOICE':
+        return answer_labels.get((question_id, answer))
+      return '%s: %s' % (question_titles[question_id], answer)
 
     return topic_ids, [{
         'id': report.id,
@@ -201,9 +211,8 @@ class _MapReview(base_handler.BaseHandler):
         'icon_url': _MakeIconUrl(report, answer_colors),
         'updated': report.updated.strftime('%Y-%m-%dT%H:%M:%SZ'),
         'topics': ','.join(tid.split('.')[1] for tid in report.topic_ids),
-        'answers': ', '.join(answer_labels.get((question_id, answer_id), '')
-                             for question_id, answer_id in
-                             json.loads(report.answers_json).items()),
+        'answers': ', '.join(
+            map(_DescribeAnswer, json.loads(report.answers_json).items())),
         'hidden': report.hidden,
         'votes': u'\u2191%d \u2193%d (%.1f)' % (
             report.upvote_count or 0, report.downvote_count or 0,

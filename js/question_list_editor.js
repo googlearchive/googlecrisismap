@@ -67,27 +67,12 @@ cm.QuestionListEditor = function(parentElem, id, options) {
     this.questionIds_.push(nextId);
     var editor = this.inspector_.addEditor(this.newQuestionSpec_(nextId));
     this.registerQuestionEditor_(editor);
-    // Initialize the question with 2 answers
-    var questionTemplate =
-        goog.object.clone(cm.QuestionListEditor.QUESTION_TEMPLATE);
-    questionTemplate.id = nextId;
-    editor.setValid(questionTemplate);
-    editor.updateUi(questionTemplate);
+    var question = {'id': nextId};
+    editor.setValid(question);
+    editor.updateUi(question);
   }, this);
 };
 goog.inherits(cm.QuestionListEditor, cm.Editor);
-
-/**
- * Template used to pre-populate a new question when newQuestionBtn is pressed.
- * @type {Object}
- */
-cm.QuestionListEditor.QUESTION_TEMPLATE = {
-  text: '',
-  answers: [
-    {id: '1', title: cm.MSG_YES, color: '#59AA00'},
-    {id: '2', title: cm.MSG_NO, color: '#D70000'}
-  ]
-};
 
 /** @override */
 cm.QuestionListEditor.prototype.updateUi = function(value) {

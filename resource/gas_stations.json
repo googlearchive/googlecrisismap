@@ -1,49 +1,51 @@
 {
-  "id" : "d3llAbCdDREF-pQc",
-  "title" : "Crowd reporting test",
-  "base_map_type" : "GOOGLE_ROADMAP",
-  "viewport" : {
-   "lat_lon_alt_box" : {
-     "east" : -73.955799999999996,
-     "north" : 40.731780000000001,
-     "south" : 40.711869999999998,
-     "west" : -73.994169999999997
+  "id": "d3llAbCdDREF-pQc",
+  "title": "Crowd reporting test",
+  "base_map_type": "GOOGLE_ROADMAP",
+  "viewport": {
+   "lat_lon_alt_box": {
+     "east": -73.955799999999996,
+     "north": 40.731780000000001,
+     "south": 40.711869999999998,
+     "west": -73.994169999999997
     }
   },
-  "layers" : [
+  "layers": [
     {
-      "title" : "Gas stations",
-      "visibility" : "DEFAULT_ON",
-      "source" : {
-        "kml" : {
-          "url" : "http://mw1.google.com/crisisresponse/testfiles/gas.kml"
+      "title": "Gas stations",
+      "visibility": "DEFAULT_ON",
+      "source": {
+        "kml": {
+          "url": "http://mw1.google.com/crisisresponse/testfiles/gas.kml"
         }
       },
-      "type" : "KML",
-      "id" : "layer0"
+      "type": "KML",
+      "id": "layer0"
     }
   ],
-  "topics" : [
+  "topics": [
     {
-      "title" : "Gas",
-      "id" : "gas",
-      "crowd_enabled" : true,
-      "cluster_radius" : 50,
-      "layer_ids" : [ "layer0" ],
-      "questions" : [
+      "title": "Gas",
+      "id": "gas",
+      "crowd_enabled": true,
+      "cluster_radius": 50,
+      "layer_ids": ["layer0"],
+      "questions": [
         {
-          "id" : "1",
-          "text" : "Does this location have gas?",
-          "answers" : [
+          "id": "1",
+          "text": "Does this location have gas?",
+          "title": "Gas",
+          "type": "CHOICE",
+          "answers": [
             {
-              "color" : "#00c000",
-              "id" : "yes",
-              "title" : "Yes"
+              "color": "#00c000",
+              "id": "yes",
+              "title": "Yes"
             },
             {
-              "color" : "#c00000",
-              "id" : "no",
-              "title" : "No"
+              "color": "#c00000",
+              "id": "no",
+              "title": "No"
             }
           ]
         }

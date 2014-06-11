@@ -855,10 +855,11 @@ class _CrowdReportModel(ndb.Model):
   topic_ids = ndb.StringProperty(repeated=True)
 
   # Survey answers in this report, as a JSON dictionary.  The keys are in the
-  # form topic_id + '.' + question_id, and the values are answer IDs.  Note
-  # that the definitions of questions and answer choices can be edited, and we
-  # do not record the version of the question and choice that was current at
-  # the time that the answer was submitted.
+  # form topic_id + '.' + question_id, and the values are answers (strings
+  # for TEXT questions, numbers for NUMBER questions, or answer IDs for CHOICE
+  # questions).  Note that the definitions of questions and answer choices can
+  # be edited, and we do not record the version of the question and choice that
+  # was current at the time that the answer was submitted.
   answers_json = ndb.TextProperty()
 
   # The report's geolocation.
@@ -886,7 +887,7 @@ class CrowdReport(utils.Struct):
   """Application-level object representing a crowd report."""
   index = search.Index('CrowdReport')
 
-  answers = property(lambda self: json.loads(self.answers_json))
+  answers = property(lambda self: json.loads(self.answers_json or '{}'))
 
   @staticmethod
   def GenerateId(source):

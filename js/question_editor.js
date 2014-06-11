@@ -24,6 +24,7 @@ goog.provide('cm.QuestionEditor');
 
 goog.require('cm.Editor');
 goog.require('cm.InspectorView');
+goog.require('cm.TopicModel');
 goog.require('cm.editors');
 goog.require('cm.events');
 goog.require('cm.ui');
@@ -46,13 +47,14 @@ cm.QuestionEditor = function(parentElem, id, options) {
   /**
    * @private Element
    */
-  this.input_ = cm.ui.create('div', {'class': cm.css.QUESTION_CONTAINER,
-                                     'id': id},
+  this.input_ = cm.ui.create(
+      'div', {'class': cm.css.QUESTION_CONTAINER, 'id': id},
       this.deleteQuestionBtn_ = cm.ui.create('div', cm.css.CLOSE_BUTTON),
       this.tableElem_ = cm.ui.create('table',
           {'class': cm.css.EDITORS, 'cellpadding': '0', 'cellspacing': '0'}),
-      this.newAnswerBtn_ = cm.ui.create('div',
-          {'class': [cm.css.BUTTON]}, cm.MSG_ADD_ANSWER));
+      this.addAnswerBtn_ = cm.ui.create(
+          'div', cm.css.BUTTON, cm.MSG_ADD_ANSWER));
+  this.addAnswerBtn_.style.display = 'none';
   parentElem.appendChild(this.input_);
 
   /**
@@ -67,7 +69,7 @@ cm.QuestionEditor = function(parentElem, id, options) {
    */
   this.answerIds_ = [];
 
-  cm.events.listen(this.newAnswerBtn_, 'click', function() {
+  cm.events.listen(this.addAnswerBtn_, 'click', function() {
     var nextId = this.nextAnswerId_();
     this.answerIds_.push(nextId);
     var editor = this.inspector_.addEditor(this.newAnswerSpec_(nextId));
@@ -101,32 +103,49 @@ goog.inherits(cm.QuestionEditor, cm.Editor);
  * @type Array.<cm.EditorSpec>
  */
 cm.QuestionEditor.QUESTION_FIELDS = [
-      {key: 'text', label: cm.MSG_QUESTION_TEXT, type: cm.editors.Type.TEXT,
-       tooltip: cm.MSG_QUESTION_TEXT_TOOLTIP}
-  ];
+    {key: 'text', label: cm.MSG_QUESTION_TEXT, type: cm.editors.Type.TEXT,
+     tooltip: cm.MSG_QUESTION_TEXT_TOOLTIP},
+    {key: 'title', label: cm.MSG_QUESTION_TITLE, type: cm.editors.Type.TEXT,
+     tooltip: cm.MSG_QUESTION_TITLE_TOOLTIP},
+    {key: 'type', label: cm.MSG_ANSWER_TYPE, type: cm.editors.Type.MENU,
+     tooltip: cm.MSG_ANSWER_TYPE_TOOLTIP, choices: [
+        {value: cm.TopicModel.QuestionType.STRING, label: cm.MSG_TYPE_TEXT},
+        {value: cm.TopicModel.QuestionType.NUMBER, label: cm.MSG_TYPE_NUMBER},
+        {value: cm.TopicModel.QuestionType.CHOICE, label: cm.MSG_TYPE_CHOICE}
+     ]}
+];
+
+/**
+ * Template used to prepopulate answer choices when CHOICE type is selected.
+ * @type {Array}
+ */
+cm.QuestionEditor.DEFAULT_ANSWER_CHOICES = [
+  {id: '1', title: cm.MSG_YES, color: '#59AA00'},
+  {id: '2', title: cm.MSG_NO, color: '#D70000'}
+];
 
 /** @override */
 cm.QuestionEditor.prototype.updateUi = function(value) {
   this.answerIds_ = [];
 
-  var question = /**
-                  * @type {{id: string,
-                  *         text: string,
-                  *         answers: Array.<{id: string,
-                  *                          title: string,
-                  *                          label: string,
-                  *                          color: string}>
-                  *       }}
-                  */(value || {});
+  var question = /** @type {{id: string,
+                             text: string,
+                             title: string,
+                             type: cm.TopicModel.QuestionType,
+                             answers: Array.<{id: string, title: string,
+                                              label: string, color: string}>
+                           }} */(value || {});
   // We use inspector_ to render the input question, but that requires an
   // MVCObject where each answer is a (key, value) pair, not an array.
   // questionChanged_ converts back.
   var questionObj = new google.maps.MVCObject();
-  // InspectorView expects the editable object to have predictable, quoted keys,
-  // but the keys of answer are obfuscated by the closure compiler. We are
-  // careful here not to call setValues but set each property individually.
+  // InspectorView needs the editable MVCObject to have predictable, quoted
+  // keys, but the keys of this.get('value') are obfuscated by the Closure
+  // compiler.  So we must set each property individually, not call setValues.
   questionObj.set('id', question.id || '');
   questionObj.set('text', question.text || '');
+  questionObj.set('title', question.title || '');
+  questionObj.set('type', question.type || cm.TopicModel.QuestionType.STRING);
   questionObj.set('answers', question.answers || []);
 
   goog.array.forEach(question.answers || [], function(answer) {
@@ -138,6 +157,10 @@ cm.QuestionEditor.prototype.updateUi = function(value) {
           goog.array.map(this.answerIds_, this.newAnswerSpec_, this)),
       questionObj);
   goog.array.forEach(editors, this.registerAnswerEditor_, this);
+
+  // cm.QuestionEditor.QUESTION_FIELDS[2] is the question type field.
+  cm.events.onChange(editors[2], 'value', this.typeChanged_, this);
+  this.typeChanged_();  // ensure correct initial state
 };
 
 /**
@@ -147,8 +170,11 @@ cm.QuestionEditor.prototype.updateUi = function(value) {
  * @private
  */
 cm.QuestionEditor.prototype.newAnswerSpec_ = function(id) {
-  return {key: id, type: cm.editors.Type.ANSWER, label: cm.MSG_ANSWER,
-          tooltip: undefined,
+  var isChoiceType = function(type) {
+    return type === cm.TopicModel.QuestionType.CHOICE;
+  };
+  return {key: id, type: cm.editors.Type.ANSWER, label: '',
+          tooltip: undefined, conditions: {'type': isChoiceType},
           delete_callback: goog.bind(this.deleteAnswer_, this, id)};
 };
 
@@ -184,7 +210,7 @@ cm.QuestionEditor.prototype.nextAnswerId_ = function() {
  * @private
  */
 cm.QuestionEditor.prototype.registerAnswerEditor_ = function(editor) {
-  cm.events.listen(editor, 'value_changed', this.questionChanged_, this);
+  cm.events.onChange(editor, 'value', this.questionChanged_, this);
 };
 
 /**
@@ -195,7 +221,9 @@ cm.QuestionEditor.prototype.registerAnswerEditor_ = function(editor) {
 cm.QuestionEditor.prototype.questionChanged_ = function() {
   var old = this.get('value');
   var draft = this.inspector_.collectEdits().draftValues;
-  var value = {text: draft['text'], answers: []};
+  /* this.get('value') and value have unquoted keys (obfuscated by compiler) */
+  var value = {text: draft['text'], title: draft['title'],
+               type: draft['type'], answers: []};
   if (old && old.id) {
     value.id = old.id;
   }
@@ -206,5 +234,24 @@ cm.QuestionEditor.prototype.questionChanged_ = function() {
       value.answers.push(answer);
     }
   }, this);
-  this.setValid(value);
+
+  this.setValid(value);  // set 'value' without triggering updateUi
+};
+
+/**
+ * Updates the UI and (if needed) fills in default answer choices, when the
+ * CHOICE type is selected.
+ * @private
+ */
+cm.QuestionEditor.prototype.typeChanged_ = function() {
+  var draft = this.inspector_.collectEdits().draftValues;
+  var isChoiceType = draft['type'] === cm.TopicModel.QuestionType.CHOICE;
+  this.addAnswerBtn_.style.display = isChoiceType ? '' : 'none';
+
+  if (isChoiceType && !this.answerIds_.length) {
+    var value = this.get('value');
+    this.set('value', {id: value.id, text: draft['text'],
+                       type: draft['type'], title: draft['title'],
+                       answers: cm.QuestionEditor.DEFAULT_ANSWER_CHOICES});
+  }
 };

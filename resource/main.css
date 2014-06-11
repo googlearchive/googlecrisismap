@@ -19,7 +19,8 @@ html, body {
 /* Standard Google input boxes, from the Kennedy spec.
    kd_compontents.css, go/kennedyspec. */
 /* MOE:end_strip */
-.cm-frame input[type=text] {
+.cm-frame input[type=text],
+.cm-crowd-report-form input[type=text] {
   height: 29px;
   background-color: #FFF;
   padding-left: 8px;
@@ -33,14 +34,16 @@ html, body {
   -webkit-border-radius: 1px;
   -webkit-appearance: none;
 }
-.cm-frame input[type=text]:hover {
+.cm-frame input[type=text]:hover,
+.cm-crowd-report-form input[type=text]:hover {
   border: 1px solid #b9b9b9;
   border-top: 1px solid #a0a0a0;
   -webkit-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
   -moz-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
   box-shadow: inset 0px 1px 2px rgba(0,0,0,0.1);
 }
-.cm-frame input[type=text]:focus {
+.cm-frame input[type=text]:focus,
+.cm-crowd-report-form input[type=text]:focus {
   -webkit-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
   -moz-box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
   box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
@@ -48,10 +51,12 @@ html, body {
   border: 1px solid #4d90fe;
 }
 .cm-body, .cm-frame, .cm-frame input, .cm-frame button,
-.cm-popup, .cm-popup input, .cm-about {
+.cm-popup, .cm-popup input, .cm-popup select, .cm-popup textarea {
   font-size: 13px;
   font-family: arial, sans-serif;
   color: #222;
+  margin-left: 0;
+  margin-right: 0;
 }
 .cm-body {
   font-family: arial, sans-serif;
@@ -1075,20 +1080,21 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
   color: #666;
   padding-bottom: 10px;
 }
-.cm-topic-selector-list {
-  padding: 4px 8px;
-}
 .cm-topic-item {
-  padding: 10px 0;
+  padding: 8px;
 }
 .cm-topic-item:hover {
-  background: #efefef;
+  background: #ffc;
 }
 .cm-topic-item .cm-close-button {
   background: url('delete_trashcan.png') no-repeat center center;
-  width: 13px;
-  height: 15px;
-  margin: 12px 2px;
+  width: 14px;
+  height: 18px;
+  margin: 8px;
+  opacity: 0.4;
+}
+.cm-topic-item .cm-close-button:hover {
+  opacity: 1;
 }
 
 /* Tooltips */
@@ -1107,6 +1113,9 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-editors > tr > th, .cm-editors > tr > td {
   padding-top: 8px;
 }
+.cm-editors > tr:first-child > th, .cm-editors > tr:first-child > td {
+  padding-top:  0;
+}
 .cm-editors > tr > th {
   padding-right: 24px;
   font-weight: normal;
@@ -1119,28 +1128,28 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-editors > .cm-text-editor > th,
 .cm-editors > .cm-text-list-editor > th,
 .cm-editors > .cm-url-input-row > th,
-.cm-editors > .cm-url-editor > th,
-.cm-editors > .cm-layer-menu-editor > th {
-  vertical-align: top;
-  padding-top: 12px; /* align label with content of text input field */
+.cm-editors > .cm-url-editor > th {
+  vertical-align: baseline;
 }
 .cm-editors > .cm-text-input-row input[type='text'],
 .cm-editors > .cm-text-editor input[type='text'],
 .cm-editors > .cm-text-list-editor input[type='text'],
-.cm-editors > .cm-url-editor input[type='text'] {
-  width: 100%;
-}
-.cm-editors > .cm-textarea-row > th,
-.cm-editors > .cm-html-editor > th {
-  vertical-align: top;
-  padding-top: 11px; /* align label with first line of text in textarea */
-}
+.cm-editors > .cm-url-editor input[type='text'],
 .cm-editors > .cm-textarea-row textarea,
 .cm-editors > .cm-html-editor textarea {
   width: 100%;
+  box-sizing: border-box;
+}
+.cm-editors > .cm-textarea-row > th,
+.cm-editors > .cm-html-editor > th,
+.cm-editors > .cm-layer-menu-editor > th,
+.cm-editors > .cm-wms-menu-editor > th {
+  vertical-align: top;
+  padding-top: 11px; /* align label with first line of textarea/select */
+}
+.cm-editors > .cm-textarea-row textarea,
+.cm-editors > .cm-html-editor textarea {
   height: 6em;
-  font-family: arial, sans-serif;
-  font-size: 13px;
   padding: 3px 2px;
   border: 1px solid #c0c0c0;
 }
@@ -1274,14 +1283,9 @@ textarea.cm-legend-text {
 
 /* WMS layer editor */
 /* TODO(romano): Improve UI of WMS layer editor. */
+.cm-editors > .cm-layer-menu-editor select,
 .cm-editors > .cm-wms-menu-editor select {
   width: 100%;
-  font-size: 13px;
-  font-family: arial, sans-serif;
-}
-.cm-editors > .cm-wms-menu-editor > th {
-  vertical-align: top;
-  padding-top: 11px; /* align label with first line of text in the multiselect menu */
 }
 .cm-wms-menu-editor-message {
   font-style: italic;
@@ -1370,24 +1374,45 @@ textarea.cm-legend-text {
 }
 
 /* Question list, question, and answer editors */
-.cm-question-editor {
-  border: 1px dashed #efefef;
-}
-.cm-answer-editor {
-  border: 1px dashed #e6e6e6;
+.cm-editors .cm-question-editor > th {
+    padding: 0;
+    width: 0;
 }
 .cm-question-editor .cm-button,
 .cm-question-list-editor .cm-button {
-  margin-top: 10px;
+  margin-top: 8px;
+  margin-bottom: 4px;
 }
 .cm-question-container, .cm-answer-container {
   position: relative;
-  padding: 0 32px 8px 0;
+  padding: 8px 32px 8px 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 4px;
+  margin-left: -1px;
+}
+.cm-answer-container {
+    margin-right: -24px;
+}
+.cm-question-container:hover {
+    background: #ffe;
+}
+.cm-answer-container:hover {
+    background: #efe;
 }
 .cm-answer-container .cm-close-button,
-.cm-question-container .cm-close-button
-{
-  margin: 0 6px;
+.cm-question-container .cm-close-button {
+  margin: 6px;
+  opacity: 0.4;
+}
+.cm-answer-container .cm-close-button:hover,
+.cm-question-container .cm-close-button:hover {
+  opacity: 1;
+}
+.cm-question-container .cm-editors > tr > th {
+    width: 80px;
+}
+.cm-question-container > .cm-button {
+    margin-left: 103px;
 }
 
 /* Collaborate dialog */

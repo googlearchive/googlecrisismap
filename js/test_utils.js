@@ -1310,6 +1310,24 @@ function expectAncestorOf(element, var_args) {
 }
 
 /**
+ * Simulates the selection of an <option> within a <select> element.
+ * @param {Element} option An <option> element.
+ */
+function selectOption(option) {
+  var select = expectAncestorOf(option, isElement('select'));
+  var options = allDescendantsOf(select, isElement('option'));
+  var selectedIndex = -1;
+  for (var i = 0; i < options.length; i++) {
+    options[i].selected = (options[i] === option);
+    if (options[i] === option) {
+      selectedIndex = i;
+    }
+  }
+  select.selectedIndex = selectedIndex;
+  cm.events.emit(select, 'change');
+}
+
+/**
  * Matcher for whether or not an element is shown, based on either its 'display'
  * style and the absence of the cm.css.HIDDEN class.
  * @return {gjstest.Matcher} The visibility matcher.

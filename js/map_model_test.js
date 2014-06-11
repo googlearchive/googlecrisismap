@@ -49,8 +49,17 @@ var DRACULA_MAPROOT = {
     questions: [{
       id: '1',
       text: 'Is there gas available at this location?',
-      answers: [{id: '1', title: 'Yes', color: '#00c000'},
-                {id: '2', title: 'No', color: '#c00000'}]
+      type: 'CHOICE',
+      answers: [{id: '1', title: 'Yes', label: 'Has gas', color: '#00c000'},
+                {id: '2', title: 'No', label: 'No gas', color: '#c00000'}]
+    }, {
+      id: '2',
+      text: 'How many cars are in line?',
+      type: 'NUMBER'
+    }, {
+      id: '3',
+      text: 'What is the name of the gas station?',
+      type: 'STRING'
     }]
   }, {
     id: 'shelter',

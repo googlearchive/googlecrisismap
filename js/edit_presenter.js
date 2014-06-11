@@ -416,7 +416,7 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     tooltip: cm.MSG_CROWD_ENABLED_TOOLTIP},
    {key: 'cluster_radius', label: cm.MSG_CLUSTER_RADIUS,
     type: cm.editors.Type.NUMBER, conditions: {'crowd_enabled': isTrue},
-    tooltip: cm.MSG_CLUSTER_RADIUS_TOOLTIP},
+    default_value: 50, minimum: 1, tooltip: cm.MSG_CLUSTER_RADIUS_TOOLTIP},
    {key: 'questions', label: cm.MSG_SURVEY_QUESTIONS,
     type: cm.editors.Type.QUESTION_LIST,
     conditions: {'crowd_enabled': isTrue},

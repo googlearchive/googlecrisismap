@@ -171,7 +171,7 @@ class CrowdReports(base_handler.BaseHandler):
     author = self.GetCurrentUserUrl()
     topic_ids = self.request.get('cm-topic-ids', '').replace(',', ' ').split()
     try:
-      answers = dict(json.loads(self.request.get('cm-answers-json', '{}')))
+      answers = dict(json.loads(self.request.get('cm-answers-json') or '{}'))
     except (TypeError, ValueError):
       raise base_handler.ApiError(400, 'Invalid answers JSON.')
     ll = ParseGeoPt(self.request.get('cm-ll'))

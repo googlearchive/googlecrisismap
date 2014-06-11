@@ -31,6 +31,8 @@ function CrowdViewTest() {
       'questions': [{
         'id': 'q1',
         'text': 'Is there space available?',
+        'title': 'space',
+        'type': 'CHOICE',
         'answers': [
           {'id': 'y', 'title': 'Yes', 'label': 'space', 'color': '#00c000'},
           {'id': 'n', 'title': 'No', 'label': 'no space', 'color': '#c00000'}
@@ -38,10 +40,22 @@ function CrowdViewTest() {
       }, {
         'id': 'q2',
         'text': 'Are overnight stays allowed?',
+        'title': 'overnight',
+        'type': 'CHOICE',
         'answers': [
-          {'id': 'y', 'title': 'Yes', 'label': 'overnight', 'color': '#00c080'},
-          {'id': 'n', 'title': 'No', 'label': 'day only', 'color': '#c00080'}
+          {'id': 'y', 'title': 'Yes', 'color': '#00c080'},
+          {'id': 'n', 'title': 'No', 'color': '#c00080'}
         ]
+      }, {
+        'id': 'q3',
+        'text': 'How many beds are open?',
+        'title': 'beds',
+        'type': 'NUMBER'
+      }, {
+        'id': 'q4',
+        'text': 'What is the phone number?',
+        'title': 'phone',
+        'type': 'STRING'
       }]
     }]
   };
@@ -86,7 +100,8 @@ CrowdViewTest.prototype.displayReports = function() {
     'text': 'Foo'
   }, {
     'effective': now - 7200,
-    'answers': {'map1.shelter.q1': 'n', 'map1.shelter.q2': 'y'},
+    'answers': {'map1.shelter.q1': 'n', 'map1.shelter.q2': 'y',
+                'map1.shelter.q3': 17, 'map1.shelter.q4': '555-9876'},
     'text': 'Bar'
   }]);
 
@@ -104,7 +119,9 @@ CrowdViewTest.prototype.displayReports = function() {
   r = reports[1];
   expectDescendantOf(r, withClass(cm.css.TIME), withText('2h ago'));
   expectDescendantOf(r, withClass(cm.css.ANSWER), withText('no space'));
-  expectDescendantOf(r, withClass(cm.css.ANSWER), withText('overnight'));
+  expectDescendantOf(r, withClass(cm.css.ANSWER), withText('overnight: Yes'));
+  expectDescendantOf(r, withClass(cm.css.ANSWER), withText('beds: 17'));
+  expectDescendantOf(r, withClass(cm.css.ANSWER), withText('phone: 555-9876'));
   expectDescendantOf(r, '#text', withText('Bar'));
 };
 
@@ -168,10 +185,10 @@ CrowdViewTest.prototype.submitReport = function() {
   var bubble = expectDescendantOf(parent, withClass(cm.css.CROWD_BUBBLE));
   cm.events.emit(bubble, 'click');
 
-  // Verify that both questions appear in the form.
+  // Verify that all 4 questions appear in the form.
   var form = expectDescendantOf(parent, withClass(cm.css.CROWD_REPORT_FORM));
   var questions = allDescendantsOf(form, withClass(cm.css.QUESTION));
-  expectEq(2, questions.length);
+  expectEq(4, questions.length);
 
   var q = questions[0];
   expectDescendantOf(q, 'h3', withText('Is there space available?'));
@@ -185,21 +202,52 @@ CrowdViewTest.prototype.submitReport = function() {
   var q2no = expectDescendantOf(q, withClass(cm.css.BUTTON), withText('No'));
   expectDescendantOf(q, withClass(cm.css.BUTTON), withText('Not sure'));
 
+  q = questions[2];
+  expectDescendantOf(q, 'h3', withText('How many beds are open?'));
+
+  q = questions[3];
+  expectDescendantOf(q, 'h3', withText('What is the phone number?'));
+
   // Set up a mock to expect a report submission.
+  var submissions = [];
   this.setForTest_('cm.xhr.post', createMockFunction());
-  expectCall(cm.xhr.post)(this.config_.report_post_url, {}, _);
+  expectCall(cm.xhr.post)(this.config_.report_post_url, {}, _).willOnce(
+      function() {
+        submissions.push({
+          'cm-ll': cm.ui.get('cm-ll').value,
+          'cm-topic-ids': cm.ui.get('cm-topic-ids').value,
+          'cm-answers-json': cm.ui.get('cm-answers-json').value,
+          'cm-text': cm.ui.get('cm-text').value
+        });
+      }
+  );
 
   // Submit a new report.
   cm.events.emit(q1yes, 'click');
   cm.events.emit(q2no, 'click');
-  var textInput = expectDescendantOf(form, 'input', withAttr('type', 'text'));
-  textInput.value = 'A new comment';
+  var input = expectDescendantOf(questions[2], 'input');
+  input.value = 'abc34def';
+  cm.events.emit(input, 'change');
+  input = expectDescendantOf(questions[3], 'input');
+  input.value = '555-1234';
+  cm.events.emit(input, 'change');
+
+  var textDiv = expectDescendantOf(form, withClass('cm-report-text'));
+  input = expectDescendantOf(textDiv, 'input');
+  input.value = 'A new comment';
   cm.events.emit(expectDescendantOf(form, 'input', withValue('Post')),
                  'click', {'stopPropagation': function() { }});
 
-  // Verify the contents of the report.
-  expectEq('3,4', cm.ui.get('cm-ll').value);
-  expectEq('map1.shelter', cm.ui.get('cm-topic-ids').value);
-  expectEq('{"map1.shelter.q1":"y","map1.shelter.q2":"n"}',
-           cm.ui.get('cm-answers-json').value);
+  // Verify the contents of the submitted report.
+  var r = submissions[0];
+  expectEq('3,4', r['cm-ll']);
+  expectEq('map1.shelter', r['cm-topic-ids']);
+  expectEq({'map1.shelter.q1': 'y', 'map1.shelter.q2': 'n',
+            'map1.shelter.q3': 34, 'map1.shelter.q4': '555-1234'},
+           goog.json.parse(r['cm-answers-json']));
+  expectEq('A new comment', r['cm-text']);
+
+  // Confirm that the data has been cleared from the input fields.
+  expectEq('', expectDescendantOf(form, withId('cm-text')).value);
+  expectEq('', expectDescendantOf(parent, withId('cm-answers-json')).value);
 };

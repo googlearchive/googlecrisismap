@@ -16,6 +16,7 @@ function QuestionListEditorTest() {
   cm.editors.register(cm.editors.Type.ANSWER, cm.AnswerEditor);
   cm.editors.register(cm.editors.Type.QUESTION, cm.QuestionEditor);
   cm.editors.register(cm.editors.Type.TEXT, cm.TextEditor);
+  cm.editors.register(cm.editors.Type.MENU, cm.MenuEditor);
 }
 QuestionListEditorTest.prototype = new cm.TestBase();
 registerTestSuite(QuestionListEditorTest);
@@ -59,42 +60,25 @@ QuestionListEditorTest.prototype.testAddQuestion = function() {
       withText(cm.MSG_ADD_QUESTION));
   cm.events.emit(addQuestionBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(7, inputs.length);
-  expectThat(this.editor_.get('value'), elementsAre(
-      [{'id': '1', 'text': '',
-        'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
-                    {'id': '2', 'title': 'No', 'color': '#D70000'}]}]));
+  expectEq(2, inputs.length);
+  expectThat(this.editor_.get('value'), elementsAre([{'id': '1'}]));
 
   this.type_(inputs[0], 'To be or not to be?');
   expectThat(this.editor_.get('value'), elementsAre(
-      [{'id': '1', 'text': 'To be or not to be?',
-        'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
-                    {'id': '2', 'title': 'No', 'color': '#D70000'}]}]));
-
-  this.type_(inputs[1], 'Not to be');
-  this.type_(inputs[2], 'Not');
-  this.type_(inputs[3], '#f00');
-  expectThat(this.editor_.get('value'), elementsAre(
-      [{'id': '1', 'text': 'To be or not to be?',
-        'answers': [{'id': '1', 'title': 'Not to be', 'label': 'Not',
-                     'color': '#f00'},
-                    {'id': '2', 'title': 'No', 'color': '#D70000'}]}]));
+      [{'id': '1', 'text': 'To be or not to be?', 'title': '',
+        'type': 'STRING', 'answers': []}]));
 
   cm.events.emit(addQuestionBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(14, inputs.length);
+  expectEq(4, inputs.length);
   expectEq('To be or not to be?', inputs[0].value);
-  expectEq('No', inputs[4].value);
 
-  this.type_(inputs[7], 'Second question');
+  this.type_(inputs[2], 'Second question');
   expectThat(this.editor_.get('value'), elementsAre(
-      [{'id': '1', 'text': 'To be or not to be?',
-        'answers': [{'id': '1', 'title': 'Not to be', 'label': 'Not',
-                     'color': '#f00'},
-                    {'id': '2', 'title': 'No', 'color': '#D70000'}]},
-       {'id': '2', 'text': 'Second question',
-        'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
-                    {'id': '2', 'title': 'No', 'color': '#D70000'}]}]));
+      [{'id': '1', 'text': 'To be or not to be?', 'title': '',
+        'type': 'STRING', 'answers': []},
+       {'id': '2', 'text': 'Second question', 'title': '',
+        'type': 'STRING', 'answers': []}]));
 };
 
 /** Tests adding, deleting, then re-adding a question. */
@@ -108,7 +92,7 @@ QuestionListEditorTest.prototype.testAddDeleteAddQuestion = function() {
       withText(cm.MSG_ADD_QUESTION));
   cm.events.emit(addQuestionBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(7, inputs.length);
+  expectEq(2, inputs.length);
 
   this.editor_.deleteQuestion_('1');
   inputs = allDescendantsOf(parent, inputType('text'));
@@ -116,25 +100,22 @@ QuestionListEditorTest.prototype.testAddDeleteAddQuestion = function() {
 
   cm.events.emit(addQuestionBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(7, inputs.length);
+  expectEq(2, inputs.length);
 };
 
 /** Tests editing and deleting an existing question. */
 QuestionListEditorTest.prototype.testEditAndDeleteQuestion = function() {
   var expected = [
-      {'id': '0', 'text': 'To be or not to be?',
-       'answers': [{'id': '1', 'title': 'Not to be', 'label': 'Not',
-                    'color': '#f00'}]},
-      {'id': '1', 'text': 'Second question', 'answers': []}];
+      {'id': '0', 'text': 'To be or not to be?', 'type': 'STRING',
+       'title': '', 'answers': []},
+      {'id': '1', 'text': 'Second question', 'type': 'STRING',
+       'title': '', 'answers': []}];
   var parent = this.createEditor_();
   this.editor_.set('value', expected);
   var inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(5, inputs.length);
+  expectEq(4, inputs.length);
   expectEq('To be or not to be?', inputs[0].value);
-  expectEq('Not to be', inputs[1].value);
-  expectEq('Not', inputs[2].value);
-  expectEq('#f00', inputs[3].value);
-  expectEq('Second question', inputs[4].value);
+  expectEq('Second question', inputs[2].value);
   expectEq(expected, this.editor_.get('value'));
 
   // Change the text of the first question
@@ -144,17 +125,14 @@ QuestionListEditorTest.prototype.testEditAndDeleteQuestion = function() {
 
   // The first question text should have changed, but the rest stays the same.
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(5, inputs.length);
+  expectEq(4, inputs.length);
   expectEq(newQuestionText, inputs[0].value);
-  expectEq('Not to be', inputs[1].value);
-  expectEq('Not', inputs[2].value);
-  expectEq('#f00', inputs[3].value);
-  expectEq('Second question', inputs[4].value);
+  expectEq('Second question', inputs[2].value);
   expectEq(expected, this.editor_.get('value'));
 
   // Now delete the first question.
   this.editor_.deleteQuestion_('0');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(1, inputs.length);
+  expectEq(2, inputs.length);
   expectEq('Second question', inputs[0].value);
 };

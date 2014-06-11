@@ -15,6 +15,7 @@ function QuestionEditorTest() {
   cm.TestBase.call(this);
   cm.editors.register(cm.editors.Type.ANSWER, cm.AnswerEditor);
   cm.editors.register(cm.editors.Type.TEXT, cm.TextEditor);
+  cm.editors.register(cm.editors.Type.MENU, cm.MenuEditor);
 }
 QuestionEditorTest.prototype = new cm.TestBase();
 registerTestSuite(QuestionEditorTest);
@@ -54,43 +55,64 @@ QuestionEditorTest.prototype.testConstructor = function() {
 /** Tests adding an answer. */
 QuestionEditorTest.prototype.testAddAnswer = function() {
   var parent = this.createEditor_();
-  this.editor_.set('value', null);
+  this.editor_.set('value', {'id': '1'});
   var inputs = allDescendantsOf(parent, inputType('text'));
-  // Just the question text
-  expectEq(1, inputs.length);
+  expectEq(2, inputs.length);  // the question text and title
+
+  // When CHOICE is selected, the yes and no answers should appear.
+  selectOption(expectDescendantOf(parent, 'option', withText('Choice')));
+  inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(8, inputs.length);  // question + title + 2 answers * 3 fields each
 
   // Add a new answer and fill in the text
-  var addAnswerBtn = expectDescendantOf(parent, 'div',
-      withText(cm.MSG_ADD_ANSWER));
+  var addAnswerBtn = expectDescendantOf(parent, withText(cm.MSG_ADD_ANSWER));
   cm.events.emit(addAnswerBtn, 'click');
-  inputs = allDescendantsOf(parent, inputType('text'));
-  // The question text plus 3 fields for the answer
-  expectEq(4, inputs.length);
-  this.type_(inputs[0], 'To be or not to be?');
-  expectEq({'text': 'To be or not to be?', 'answers': [{ 'id': '1'}]},
-      this.editor_.get('value'));
 
-  this.type_(inputs[1], 'To be');
-  this.type_(inputs[2], 'Be');
-  this.type_(inputs[3], '#0f0');
-  expectEq({'text': 'To be or not to be?',
-            'answers': [{'id': '1', 'title': 'To be', 'label': 'Be',
+  inputs = allDescendantsOf(parent, inputType('text'));
+  expectEq(11, inputs.length);  // question + title + 3 answers * 3 fields each
+  this.type_(inputs[0], 'To be or not to be?');
+  this.type_(inputs[1], 'Existence');
+  expectEq({'id': '1',
+            'text': 'To be or not to be?',
+            'title': 'Existence',
+            'type': 'CHOICE',
+            'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
+                        {'id': '2', 'title': 'No', 'color': '#D70000'},
+                        {'id': '3'}]},
+           this.editor_.get('value'));
+
+  this.type_(inputs[8], 'To be');
+  this.type_(inputs[9], 'Be');
+  this.type_(inputs[10], '#0f0');
+  expectEq({'id': '1',
+            'text': 'To be or not to be?',
+            'title': 'Existence',
+            'type': 'CHOICE',
+            'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
+                        {'id': '2', 'title': 'No', 'color': '#D70000'},
+                        {'id': '3', 'title': 'To be', 'label': 'Be',
                          'color': '#0f0'}]},
-      this.editor_.get('value'));
+           this.editor_.get('value'));
 
   // Add a second answer and fill in the text
   cm.events.emit(addAnswerBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(7, inputs.length);
+  expectEq(14, inputs.length);
   expectEq('To be or not to be?', inputs[0].value);
-  expectEq('', inputs[4].value);
+  expectEq('', inputs[11].value);
 
-  this.type_(inputs[4], 'Not to be');
-  expectEq({'text': 'To be or not to be?',
-            'answers': [
-              {'id': '1', 'title': 'To be', 'label': 'Be', 'color': '#0f0'},
-              {'id': '2', 'title': 'Not to be', 'label': '', 'color': ''}]},
-      this.editor_.get('value'));
+  this.type_(inputs[11], 'Not to be');
+  expectEq({'id': '1',
+            'text': 'To be or not to be?',
+            'title': 'Existence',
+            'type': 'CHOICE',
+            'answers': [{'id': '1', 'title': 'Yes', 'color': '#59AA00'},
+                        {'id': '2', 'title': 'No', 'color': '#D70000'},
+                        {'id': '3', 'title': 'To be', 'label': 'Be',
+                         'color': '#0f0'},
+                        {'id': '4', 'title': 'Not to be', 'label': '',
+                         'color': ''}]},
+           this.editor_.get('value'));
 };
 
 /** Tests adding, deleting, then re-adding an answer. */
@@ -98,21 +120,20 @@ QuestionEditorTest.prototype.testAddDeleteAddAnswer = function() {
   var parent = this.createEditor_();
   this.editor_.set('value', null);
   var inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(1, inputs.length);
+  expectEq(2, inputs.length);
 
-  var addAnswerBtn = expectDescendantOf(parent, 'div',
-      withText(cm.MSG_ADD_ANSWER));
+  var addAnswerBtn = expectDescendantOf(parent, withText(cm.MSG_ADD_ANSWER));
   cm.events.emit(addAnswerBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(4, inputs.length);
+  expectEq(5, inputs.length);
 
   this.editor_.deleteAnswer_('1');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(1, inputs.length);
+  expectEq(2, inputs.length);
 
   cm.events.emit(addAnswerBtn, 'click');
   var inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(4, inputs.length);
+  expectEq(5, inputs.length);
 };
 
 /** Tests editing and deleting an existing answer. */
@@ -120,60 +141,62 @@ QuestionEditorTest.prototype.testEditAndDeleteAnswer = function() {
   var expected = {
     'id': 'q1',
     'text': 'To be or not to be?',
-    'answers': [
-      {'id': 'foo', 'title': 'To be', 'label': 'Be', 'color': '#0f0'},
-      {'id': 'bar', 'title': 'Not to be'}]};
+    'title': 'Existence',
+    'type': 'CHOICE',
+    'answers': [{'id': 'foo', 'title': 'To be', 'label': 'Be', 'color': '#0f0'},
+                {'id': 'bar', 'title': 'Not to be'}]
+  };
   var parent = this.createEditor_();
   this.editor_.set('value', expected);
   var inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(7, inputs.length);
+  expectEq(8, inputs.length);
   expectEq('To be or not to be?', inputs[0].value);
-  expectEq('To be', inputs[1].value);
-  expectEq('Be', inputs[2].value);
-  expectEq('#0f0', inputs[3].value);
-  expectEq('Not to be', inputs[4].value);
-  expectEq('', inputs[5].value);
+  expectEq('To be', inputs[2].value);
+  expectEq('Be', inputs[3].value);
+  expectEq('#0f0', inputs[4].value);
+  expectEq('Not to be', inputs[5].value);
   expectEq('', inputs[6].value);
+  expectEq('', inputs[7].value);
   expectEq(expected, this.editor_.get('value'));
 
   // Change the text of the first answer.
   var newAnswerText = 'That is a stupid question.';
   expected['answers'][0]['title'] = newAnswerText;
-  this.type_(inputs[1], newAnswerText);
+  this.type_(inputs[2], newAnswerText);
 
   // The first answer text should have changed, but the rest stays the same.
   inputs = allDescendantsOf(parent, inputType('text'));
   expectEq('To be or not to be?', inputs[0].value);
-  expectEq(newAnswerText, inputs[1].value);
-  expectEq('Be', inputs[2].value);
-  expectEq('#0f0', inputs[3].value);
-  expectEq('Not to be', inputs[4].value);
-  expectEq('', inputs[5].value);
+  expectEq(newAnswerText, inputs[2].value);
+  expectEq('Be', inputs[3].value);
+  expectEq('#0f0', inputs[4].value);
+  expectEq('Not to be', inputs[5].value);
   expectEq('', inputs[6].value);
+  expectEq('', inputs[7].value);
   expectEq(expected, this.editor_.get('value'));
 
   // Now delete the first answer.
   this.editor_.deleteAnswer_('foo');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(4, inputs.length);
+  expectEq(5, inputs.length);
   expectEq('To be or not to be?', inputs[0].value);
-  expectEq('Not to be', inputs[1].value);
-  expectEq('', inputs[2].value);
+  expectEq('Not to be', inputs[2].value);
   expectEq('', inputs[3].value);
-  expectEq(
-      {'id': 'q1',
-       'text': 'To be or not to be?',
-       'answers': [
-         {'id': 'bar', 'title': 'Not to be'}]},
-      this.editor_.get('value'));
+  expectEq('', inputs[4].value);
+  expectEq({'id': 'q1',
+            'text': 'To be or not to be?',
+            'title': 'Existence',
+            'type': 'CHOICE',
+            'answers': [{'id': 'bar', 'title': 'Not to be'}]},
+           this.editor_.get('value'));
 
   // Now delete the second answer, default answers shouldn't be put back
   this.editor_.deleteAnswer_('bar');
   inputs = allDescendantsOf(parent, inputType('text'));
-  expectEq(1, inputs.length);
-  expectEq(
-      {'id': 'q1', 'text': 'To be or not to be?', 'answers': []},
-      this.editor_.get('value'));
+  expectEq(2, inputs.length);
+  expectEq({'id': 'q1', 'text': 'To be or not to be?',
+            'title': 'Existence', 'type': 'CHOICE', 'answers': []},
+           this.editor_.get('value'));
 };
 
 /** Tests that the delete question button works */
