@@ -61,7 +61,7 @@
     },
     {
       "title": "Australia Mines",
-      "description": "Source: <a href=\"http://www.australianminesatlas.gov.au\" target=\"_blank\">australianminesatlas.gov.au</a>",
+      "description": "Source: <a href=\"http://www.fake.gov.au\" target=\"_blank\">www.fake.gov.au</a>",
       "visibility": "DEFAULT_OFF",
       "source": {
         "kml": {
