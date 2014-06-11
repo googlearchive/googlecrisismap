@@ -172,7 +172,7 @@ indexes:
 - kind: MapModel
   properties:
   - name: deleted
-  - name: domains
+  - name: domain
   - name: updated
     direction: desc
 
@@ -184,7 +184,7 @@ indexes:
 
 - kind: MapModel
   properties:
-  - name: domains
+  - name: domain
   - name: deleted
   - name: updated
     direction: desc

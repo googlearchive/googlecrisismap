@@ -360,15 +360,9 @@ class MapById(base_handler.BaseHandler):
     if not map_object:
       raise base_handler.Error(404, 'Map %r not found.' % map_id)
 
-    # TODO(kpy): Migrate MapModel to a single 'domain' instead of 'domains'.
-    # (As of 2013-02-21, all existing non-deleted maps have one domain.)
-    if not map_object.domains:
-      raise base_handler.Error(500, 'Map %r has no domain.' % map_id)
-    map_domain = map_object.domains[0]
-
-    if not domain or domain != map_domain:
+    if not domain or domain != map_object.domain:
       # The canonical URL for a map contains both the domain and the map ID.
-      url = '../%s/.maps/%s' % (map_domain, map_id)
+      url = '../%s/.maps/%s' % (map_object.domain, map_id)
       if self.request.GET:  # preserve query params on redirect
         url += '?' + urllib.urlencode(self.request.GET.items())
       return self.redirect(url)

@@ -102,19 +102,11 @@ class MapModel(db.Model):
   # User IDs of users who can view the current version of this map.
   viewers = db.StringListProperty()
 
-  # List of domains that this map belongs to.
-  # TODO(kpy): Replace this with a single required StringProperty.
-  # CAUTION: for not google domains this is potentially problematic,
-  # since there may not be a google apps domain that corresponds to the
-  # gaia ids (and hence no management).
-  domains = db.StringListProperty()  # DEPRECATED
+  # The domain that this map belongs to.  Required for all maps.
+  domain = db.StringProperty(required=True)
 
-  # This is the new domain property.  After data migration, this will become
-  # a required property and we'll delete the 'domains' property above.
-  domain = db.StringProperty()
-
-  # Default role for users in one of the domains listed in the domains property.
-  # domain_role can be set to admin, but we won't honor it.
+  # Default role for users in the map's domain.
+  # (Note: domain_role can be set to ADMIN, but we won't honor it.)
   domain_role = db.StringProperty(choices=list(perms.Role))
 
   # World-readable maps can be viewed by anyone.
@@ -464,8 +456,8 @@ class Map(object):
   for x in ['created', 'creator_uid', 'updated', 'updater_uid',
             'blocked', 'blocker_uid', 'deleted', 'deleter_uid',
             'title', 'description', 'current_version', 'world_readable',
-            'owners', 'editors', 'reviewers', 'viewers', 'domain',
-            'domains', 'domain_role']:
+            'owners', 'editors', 'reviewers', 'viewers',
+            'domain', 'domain_role']:
     locals()[x] = property(lambda self, x=x: getattr(self.model, x))
 
   # Handy access to the user profiles associated with user IDs.
@@ -487,7 +479,7 @@ class Map(object):
     """NO ACCESS CHECK.  Yields all non-deleted maps; can filter by domain."""
     query = MapModel.all().order('-updated').filter('deleted =', NEVER)
     if domain:
-      query = query.filter('domains =', domain)
+      query = query.filter('domain =', domain)
     return (Map(model) for model in query)
 
   @staticmethod
@@ -607,8 +599,8 @@ class Map(object):
         key_name=utils.MakeRandomId(),
         created=datetime.datetime.utcnow(), creator_uid=users.GetCurrent().id,
         owners=owners, editors=editors, reviewers=reviewers, viewers=viewers,
-        domain=domain.name, domains=[domain.name],
-        domain_role=domain.initial_domain_role, world_readable=world_readable))
+        domain=domain.name, domain_role=domain.initial_domain_role,
+        world_readable=world_readable))
     map_object.PutNewVersion(map_root)  # also puts the MapModel
     return map_object
 
@@ -698,7 +690,7 @@ class Map(object):
     """Permanently destroys a map."""
     self.AssertAccess(perms.Role.ADMIN)
     CatalogEntry.DeleteByMapId(self.id)
-    map_id, domain_name = self.id, self.domains[0]
+    map_id, domain_name = self.id, self.domain
     db.delete([self.model] + list(MapVersionModel.all().ancestor(self.model)))
     logs.RecordEvent(logs.Event.MAP_WIPED, domain_name=domain_name,
                      map_id=map_id, uid=users.GetCurrent().id)
@@ -790,8 +782,8 @@ class EmptyMap(Map):
   def __init__(self):
     Map.__init__(self, MapModel(
         key_name='0', owners=[], editors=[], reviewers=[], viewers=[],
-        domain='gmail.com', domains=['gmail.com'],
-        world_readable=True, title=self.TITLE, description=self.DESCRIPTION))
+        domain='gmail.com', world_readable=True,
+        title=self.TITLE, description=self.DESCRIPTION))
 
   def GetCurrent(self):
     key = db.Key.from_path('MapModel', '0', 'MapVersionModel', 1)

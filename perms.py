@@ -255,7 +255,7 @@ class AccessPolicy(object):
       return True
     if not user:
       return False
-    domain_role = (user.email_domain in map_object.domains and
+    domain_role = (user.email_domain == map_object.domain and
                    map_object.domain_role) or None
 
     # Map permissions exist in a hierarchy - editors can always view;
@@ -301,7 +301,7 @@ class AccessPolicy(object):
     # if their domain is a reviewer of the map, if they have domain reviewer
     # access to all maps, or if they have editor access.
     return (self._HasMapPermission(user, Role.MAP_REVIEWER, map_object) or
-            self.HasRoleDomainReviewer(user, map_object.domains[0]) or
+            self.HasRoleDomainReviewer(user, map_object.domain) or
             self.HasRoleMapEditor(user, map_object))
 
   def HasRoleMapViewer(self, user, map_object):

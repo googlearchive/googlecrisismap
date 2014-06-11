@@ -23,7 +23,7 @@ specific language governing permissions and limitations under the License.
   </tr>
   <tr>
     <th>Domain:</th>
-    <td>{{map.domains.0}}</td>
+    <td>{{map.domain}}</td>
   </tr>
   <tr>
     <th>Title:</th>
@@ -97,7 +97,7 @@ specific language governing permissions and limitations under the License.
       <th>Additional access:</th>
       <td>
         {% if map.domain_role %}
-          All users in {{map.domains.0}} also have {{map.domain_role}} access.
+          All users in {{map.domain}} also have {{map.domain_role}} access.
         {% endif %}
         {% if map.world_readable %}
           This map can be viewed by anyone.

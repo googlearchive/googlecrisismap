@@ -159,7 +159,6 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([], m.model.reviewers)
     self.assertEquals([], m.model.viewers)
     self.assertEquals('xyz.com', m.model.domain)
-    self.assertEquals(['xyz.com'], m.model.domains)
     self.assertEquals(m.model.world_readable, False)
 
   def testMapId(self):
