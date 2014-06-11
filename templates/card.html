@@ -59,7 +59,7 @@ specific language governing permissions and limitations under the License.
         <div class="item">
           {% if feature.properties.distance != None %}
             <div class="directions">
-              <a href="http://maps.google.com/maps?daddr={{feature.location}}">
+              <a href="http://maps.google.com/maps?daddr={{feature.properties.location}}">
                 <span class="icon"></span>
                 <div class="distance">
                   {% if unit == 'mi' %}
@@ -75,7 +75,7 @@ specific language governing permissions and limitations under the License.
           <div class="crowd">
             {% if feature.properties.answer_text %}
               {% if feature.properties.status_color %}
-                <span class="dot" style="background: {{feature.status_color}}">
+                <span class="dot" style="background: {{feature.properties.status_color}}">
                 </span
               >{% endif %}<span class="answers">{{feature.properties.answer_text}}</span>
             {% endif %}
