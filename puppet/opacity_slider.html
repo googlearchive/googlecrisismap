@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  // This viewport is chosen so that the tileSrc image will be visible.
+  runTest('/crisismap/.maps/2?layers=&ll=8.2,124.7&z=12',
+          crisis.tab.tabbar.layers, testOpacitySlider);
+};
+
+function testOpacitySlider(isTabbed) {
+  var tileLayer = crisis.getLayerPaths(1, isTabbed);
+  // We have to use the filename of a specific individual image;
+  // otherwise the run(opacity, ...) lines below will fail because
+  // the XPath matches multiple elements.
+  var tileSrc = '/3466_1953_12.png';
+
+  run(shown, tileLayer.container);
+
+  // Clicking on the checkbox should show the opacity slider.
+  run(click, tileLayer.checkbox);
+  run(shown, tileLayer.opacitySlider);
+
+  // In test_maproot the opacity is 50%, so the thumb should be in the middle.
+  run(function() {
+    var width = puppet.elem(tileLayer.opacitySlider).offsetWidth;
+    var position = puppet.elem(tileLayer.opacityThumb).offsetLeft;
+    assert(position > width * 0.4 && position < width * 0.6,  // middle-ish
+           'Expected position to be approximately half of width, ' +
+           'but width is ' + width + ' and position is ' + position);
+  });
+
+  // Dragging the slider should change the layer's opacity.
+  // TODO(kpy): Puppet calculates effective opacity in most browsers but not
+  // IE, so we need to check the image's parent.  Remove the /.. once opacity
+  // is fixed in puppet for IE (see b/6108071).
+  // NOTE(arb): This is done differently on IE9 due to the same puppet bug.
+  if (puppet.userAgent.isIE(9, null)) {
+    run(style, crisis.tile(tileSrc) + '[1]/..', 'opacity', '0.5');
+  } else {
+    run(opacity, crisis.tile(tileSrc) + '[1]/..', 0.499, 0.501);
+  }
+  // For some reason, the drag is flaky unless we drag to the right first.
+  run(drag, tileLayer.opacityThumb, 1, 0);  // drag a bit to the right
+  run(drag, tileLayer.opacityThumb, -80, 0);  // drag to the left
+  if (puppet.userAgent.isIE(9, null)) {
+    run(function() {
+      var o = parseFloat(puppet.elem(crisis.tile(tileSrc) +
+          '[1]/..').style['opacity']);
+      assert((o > 0.1) && (o < 0.4), 'opacity between 0.1 and 0.4, was ' + o);
+    });
+  } else {
+    run(opacity, crisis.tile(tileSrc) + '[1]/..', 0.1, 0.4);
+  }
+
+  // Clicking on the checkbox again should hide the opacity slider.
+  run(click, tileLayer.checkbox);
+  run(not(shown), tileLayer.opacitySlider);
+
+  // Make sure that 'layers' parameter works correctly to show the opacity
+  // slider and overrides the MapRoot value.
+  run(ignoreMapsApiExceptions);  // necessary to avoid failure upon navigation
+  var baseUrl = '/crisismap/.maps/2?layers=1319673871167%3A75' +
+      '&ll=8.2,124.7&z=12';
+  if (isTabbed) {
+    run(load, tabbifyUrl(baseUrl));
+    run(click, crisis.tab.tabbar.layers);
+  } else {
+    run(load, baseUrl);
+  }
+  run(shown, tileLayer.opacitySlider);
+
+  // In the URL the opacity is 75%, so the thumb should be positioned
+  // accordingly, overriding 50% as specified in the MapRoot file.
+  run(function() {
+    var width = puppet.elem(tileLayer.opacitySlider).offsetWidth;
+    var position = puppet.elem(tileLayer.opacityThumb).offsetLeft;
+    assert(position > width * 0.65 && position < width * 0.85,
+           'Expected position to be approximately 3/4 of width, ' +
+           'but width is ' + width + ' and position is ' + position);
+           });
+}
+</script>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  // Tests generic features of the panel.
+  run(load, '/crisismap/.maps/2');
+  run(shown, crisis.layers.panel);
+  run(shown, crisis.layers.header);
+  run(not(shown), crisis.layers.close);
+
+  // Check that there is a least one LayerEntryView.
+  var layer = crisis.getLayerPaths(0, false);
+  run(shown, layer.container);
+
+  // Check that it has a checkbox with a label.
+  run(shown, layer.checkbox);
+  run(shown, layer.label);
+
+  // Check that it has a zoom to area link and a description.
+  run(shown, layer.zoomToArea);
+  run(shown, layer.legendBox);
+  run(shown, layer.description);
+
+  // Collapse and expand the panel.
+  run(shown, crisis.layers.collapse);
+  run(not(shown), crisis.layers.expand);
+  run(click, crisis.layers.collapse);
+
+  run(not(shown), crisis.layers.panel);
+  run(not(shown), crisis.layers.collapse);
+  run(shown, crisis.layers.expand);
+  run(click, crisis.layers.expand);
+
+  run(shown, crisis.layers.collapse);
+  run(not(shown), crisis.layers.expand);
+  run(shown, crisis.layers.panel);
+};
+</script>

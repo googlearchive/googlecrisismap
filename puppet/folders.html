@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  runTest('/crisismap/.maps/2', crisis.tab.tabbar.layers, testFolders);
+};
+
+function testFolders(isTabbed) {
+  var parentLayer = crisis.getLayerPaths(6, isTabbed);
+  var childLayer = parentLayer.item(0);
+  var leafLayer = childLayer.item(1);
+
+  run(shown, parentLayer.container);
+  run(not(shown), childLayer.container);
+
+  // Enable the parent folder
+  run(shown, parentLayer.checkbox);
+  run(not(isChecked), parentLayer.checkbox);
+  run(click, parentLayer.checkbox);
+  run(isChecked, parentLayer.checkbox);
+
+  // Child layer is shown and parent folder's metadata is not shown
+  run(shown, childLayer.container);
+  run(not(shown), parentLayer.zoomToArea);
+
+  // Enable the child folder
+  run(shown, childLayer.checkbox);
+  run(not(isChecked), childLayer.checkbox);
+  run(click, childLayer.checkbox);
+  run(isChecked, childLayer.checkbox);
+
+  // Leaf layer is shown and enabled, and its metadata is shown
+  run(shown, leafLayer.container);
+  run(shown, leafLayer.checkbox);
+  run(not(isChecked), leafLayer.checkbox);
+  run(click, leafLayer.checkbox);
+  run(shown, leafLayer.zoomToArea);
+
+  // Disable the parent folder
+  run(click, parentLayer.checkbox);
+  run(not(isChecked), parentLayer.checkbox);
+
+  // Child and leaf layers disappear
+  run(not(shown), childLayer.container);
+  run(not(shown), leafLayer.container);
+
+  // Re-enable the parent folder
+  run(click, parentLayer.checkbox);
+  run(isChecked, parentLayer.checkbox);
+
+  // Child and leaf layers are shown and remain enabled
+  run(shown, childLayer.container);
+  run(shown, leafLayer.container);
+  run(isChecked, childLayer.checkbox);
+  run(isChecked, leafLayer.checkbox);
+};
+</script>

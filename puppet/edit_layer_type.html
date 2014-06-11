@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+var KML_URL =
+    'http://mw1.google.com/crisisresponse/testfiles/Operating_Mines.kmz';
+var GEORSS_URL = 'http://mw1.google.com/crisisresponse/testfiles/RSSGage.xml';
+var TILE_URL = 'http://mw1.google.com/crisisresponse/2011/' +
+    'tuscaloosa/tornado/ikonos/maptiles/{X}_{Y}_{Z}.png';
+
+window.onload = function() {
+  runTest('/crisismap/empty?dev=1&enable_editing=1', crisis.tab.tabbar.layers,
+          testEditLayerType);
+};
+
+function testEditLayerType(isTabbed) {
+  var layer = crisis.getLayerPaths(0, isTabbed);
+
+  // The object inspector is broken in IE7. b/8204994
+  if (puppet.userAgent.isIE(7)) { return true; }
+  run(hasMapLoaded);
+  run(not(shown), layer.container);
+
+  // Add a layer.
+  run(click, crisis.toolbar.addLayers);
+  run(click, crisis.inspector.ok);
+  run(not(shown), layer.opacitySlider);
+
+  // Test KML
+  run(click, layer.edit);
+  run(select, crisis.inspector.typeOption('KML'));
+  run(text, crisis.inspector.sourceUrl, 'Source URL');
+  run(type, crisis.inspector.sourceUrl + '//input', KML_URL);
+  run(shown, crisis.inspector.showDownloadLink, 'Show download link?');
+  run(selected, crisis.inspector.showDownloadLink + '//input');
+  run(clear, crisis.inspector.showDownloadLink + '//input');
+  run(not(selected), crisis.inspector.showDownloadLink + '//input');
+  run(click, crisis.inspector.ok);
+  if (!puppet.userAgent.isIE(7, 9)) {
+    // IE8 often times out on showing tiles.
+    run(count(shown, 1, null), crisis.anyKmlTile);
+    // The inspector's checkbox fields execute asynchronously due to a bug in
+    // in IE8 where the checked property does not update until after the event.
+    // In IE8, this following line executes before that asynchronous handler,
+    // and so it has not cleared the link yet. Therefore, omit this check in IE.
+    run(not(shown), layer.downloadKML);
+  }
+
+  // Test Tiles
+  run(click, layer.edit);
+  run(select, crisis.inspector.typeOption('Tile service'));
+  run(text, crisis.inspector.sourceUrl, 'Source URL');
+  run(clear, crisis.inspector.sourceUrl + '//input');
+  run(type, crisis.inspector.sourceUrl + '//input', TILE_URL);
+  run(text, crisis.inspector.isTileIndexUrl, 'Tile index URL?');
+  run(not(selected), crisis.inspector.isTileIndexUrl + '//input');
+  run(click, crisis.inspector.ok);
+  run(shown, layer.opacitySlider);
+  // Adjust the viewport to make some tiles visible.
+  run(function() {
+    theMap.setCenter(new google.maps.LatLng(33.2085, -87.4955));
+    theMap.setZoom(11);
+  });
+  run(count(shown, 1, null), crisis.tile(TILE_URL.replace(/[^\/]*$/, '')));
+  run(count(shown, 0), crisis.anyKmlTile);
+
+  // Select tile index box; this tile URL should no longer work.
+  run(click, layer.edit);
+  run(select, crisis.inspector.isTileIndexUrl + '//input');
+  run(selected, crisis.inspector.isTileIndexUrl + '//input');
+  run(click, crisis.inspector.ok);
+  run(shown, layer.opacitySlider);
+  if (!puppet.userAgent.isIE(7, 9)) {
+    // IE8 checkboxes don't work well; checkbox click handler is executed after
+    // the following lines in IE8. Therefore omit these checks, since the map
+    // is not actually updated in time in IE8.
+    run(count(shown, 0), crisis.tile(TILE_URL.replace(/[^\/]*$/, '')));
+  }
+
+  // Test GeoRSS (after Tiles, to make sure that the KML test's tiles are gone)
+  run(click, layer.edit);
+  run(select, crisis.inspector.typeOption('GeoRSS'));
+  run(text, crisis.inspector.sourceUrl, 'Source URL');
+  run(clear, crisis.inspector.sourceUrl + '//input');
+  run(type, crisis.inspector.sourceUrl + '//input', GEORSS_URL);
+  run(shown, crisis.inspector.showDownloadLink, 'Show download link?');
+  run(click, crisis.inspector.ok);
+  if (!puppet.userAgent.isIE(7, 9)) {
+    // IE8 often times out on showing tiles.
+    run(count(shown, 1, null), crisis.anyKmlTile);
+  }
+  // Ensure the opacity slider from the TILES layer is gone
+  run(not(shown), layer.opacitySlider);
+}
+</script>

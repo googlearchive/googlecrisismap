@@ -45,6 +45,10 @@ handlers:
   static_files: js/compiled/\1.js
   upload: js/compiled/(.*).js
 
+# Data setup for functional tests.
+- url: /testdata
+  script: testdata.app
+
 # User-facing request handlers
 - url: .*
   script: app.app

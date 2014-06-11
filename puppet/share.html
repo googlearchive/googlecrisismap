@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+/**
+ * Returns true if value of the specified attribute of the element at the given
+ * path is a URI that has a query parameter with the expected name and value.
+ */
+function attrHasQueryParam(path, attr, param, expectedValue) {
+  var attrValue = puppet.elem(path)[attr];
+  var queryString = attrValue.split('?')[1] || '';
+  var pairs = queryString.split('&');
+  for (var i = 0; i < pairs.length; i++) {
+    var pair = pairs[i].split('=');
+    if (decodeURIComponent(pair[0]) === param &&
+        decodeURIComponent(pair[1]) === expectedValue) {
+      return true;
+    }
+  }
+};
+
+/** Returns true if the three share buttons share the specified URIs. */
+function shareButtonsHaveUris(facebookUri, gplusUri, twitterUri) {
+  // The android test runners can't load the FB or twitter buttons from forge
+  return attrHasQueryParam(crisis.share.gplus, 'href', 'url', gplusUri) &&
+      (puppet.userAgent.isAndroid() || (
+      attrHasQueryParam(crisis.share.facebook, 'src', 'href', facebookUri) &&
+      attrHasQueryParam(crisis.share.twitter, 'src', 'url', twitterUri)));
+}
+
+/** Gets the contents of the URI text field in the Share box. */
+function getShareUri() {
+  return puppet.text(puppet.elem(crisis.share.popup.url));
+}
+
+window.onload = function() {
+  // Set the 'base' parameter to force the share URL to point to google.org.
+  // (Without this parameter, the share URL will point to some other machine
+  // during system testing, and the URL shortener service will reject it.)
+  runTest('/crisismap/empty?base=http://google.org/crisismap/empty',
+          null, testShare);
+};
+
+function testShare(isTabbed) {
+  var uri, shortUri;
+  run(hasMapLoaded);
+  run(shown, crisis.share.button);
+  run(not(shown), crisis.share.popup.box);
+
+  // Open the Share box.
+  run(click, crisis.share.button);
+  run(shown, crisis.share.popup.box);
+  run(text, crisis.share.popup.url, /^http:\/\/google.org\/crisismap\/empty/);
+
+  // All the share buttons should have the same (unshortened) URI.
+  run(function() { uri = getShareUri(); });
+  run(function() { return shareButtonsHaveUris(uri, uri, uri); });
+
+  // After shortening, the URI text field should contain a shortened URI.
+  run(click, crisis.share.popup.shorten);
+
+  // On safari, puppet is flaky about displaying the reply from the URL
+  // shortener service (b/7877785)
+  if (!puppet.userAgent.isSafari()) {
+    run(text, crisis.share.popup.url, /^http:\/\/goo\.gl\//);
+  }
+
+
+  // The Facebook and Twitter buttons should use the shortened URI, but Google+
+  // should keep the long URI because goo.gl isn't whitelisted for Google+.
+  run(function() { shortUri = getShareUri(); });
+  run(function() { return shareButtonsHaveUris(shortUri, uri, shortUri); });
+
+  // Turn off shortening.
+  run(click, crisis.share.popup.shorten);
+  run(function() { return shareButtonsHaveUris(uri, uri, uri); });
+
+  // Change the map zoom level.
+  run(function() { theMap.setZoom(9); });
+
+  // The Share box should now have a different URI because we zoomed the map.
+  run(click, crisis.share.button);
+  run(function() { return getShareUri() != uri; });
+};
+</script>

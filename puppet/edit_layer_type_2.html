@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+var FUSION_TABLE = {
+  id: '767204',
+  column: 'col8',
+  where: 'GUID>1'
+};
+var MAP_DATA = {
+  mapId: '13560186249300745898-09703471281103504055-4',
+  layerKey: 'layer_00001'
+};
+var previousTileXpath = null;
+
+// Wait for the specified tiles to appear, then ensure that the previously
+// expected tiles are no longer shown.
+var runCheckForTiles = function(xpath) {
+  run(count(shown, 1, null), xpath);
+  run(function() {
+    return previousTileXpath ? count(shown, 0)(previousTileXpath) : true;
+  });
+  run(function() { previousTileXpath = xpath; });
+};
+
+window.onload = function() {
+  runTest('/crisismap/empty?dev=1&enable_editing=1', crisis.tab.tabbar.layers,
+          editLayerTest);
+};
+
+function editLayerTest(isTabbed) {
+  var layer = crisis.getLayerPaths(0, isTabbed);
+  run(not(shown), layer.container);
+  // The object inspector is broken in IE7. b/8204994
+  if (puppet.userAgent.isIE(7)) { return true; }
+
+  // Add a layer.
+  run(click, crisis.toolbar.addLayers);
+  run(click, crisis.inspector.ok);
+  run(not(shown), layer.opacitySlider);
+
+  // Test a Fusion Table layer.
+  run(click, layer.edit);
+  run(select, crisis.inspector.typeOption('Google Fusion Tables'));
+  run(text, crisis.inspector.ftTableId, 'Table ID');
+  run(type, crisis.inspector.ftTableId + '//input', FUSION_TABLE.id);
+  run(text, crisis.inspector.ftLocationColumn, 'Location column');
+  run(type, crisis.inspector.ftLocationColumn + '//input', FUSION_TABLE.column);
+  run(text, crisis.inspector.ftWhereClause, 'Filter condition');
+  run(type, crisis.inspector.ftWhereClause + '//input', FUSION_TABLE.where);
+  run(click, crisis.inspector.ok);
+  runCheckForTiles(crisis.anyFtTile);
+
+  // Test a Traffic layer.
+  run(click, layer.edit);
+  run(select, crisis.inspector.typeOption('Traffic (from Google Maps)'));
+  run(click, crisis.inspector.ok);
+  runCheckForTiles(crisis.tile('traffic'));
+
+  if (!puppet.userAgent.isIE(7, 9)) {
+    // Test a Transit layer.
+    run(click, layer.edit);
+    run(select, crisis.inspector.typeOption('Transit (from Google Maps)'));
+    run(click, crisis.inspector.ok);
+    runCheckForTiles(crisis.tile('transit'));
+
+    // Test a Weather layer.
+    run(click, layer.edit);
+    run(select, crisis.inspector.typeOption('Weather (from Google Maps)'));
+    run(text, crisis.inspector.labelColor + '/th', 'Label color');
+    run(select, crisis.inspector.labelColor + '//select' + xtext('White'));
+    run(text, crisis.inspector.temperatureUnit + '/th', 'Temperature unit');
+    run(select, crisis.inspector.temperatureUnit + '//select' +
+        xtext('Fahrenheit'));
+    run(text, crisis.inspector.windSpeedUnit + '/th', 'Wind speed unit');
+    run(select, crisis.inspector.windSpeedUnit + '//select' + xtext('m/s'));
+    run(click, crisis.inspector.ok);
+    runCheckForTiles(crisis.tile('weather_f_ms%7Cinvert%3A0'));
+
+    // Test a Clouds layer.
+    run(click, layer.edit);
+    run(select, crisis.inspector.typeOption('Clouds (from Google Maps)'));
+    run(click, crisis.inspector.ok);
+    runCheckForTiles(crisis.tile('cloud'));
+  }
+
+  // Test a Google Maps Engine / Map Data layer.
+  run(click, layer.edit);
+  run(select, crisis.inspector.typeOption('Google Maps Engine'));
+  run(text, crisis.inspector.gmeMapId, 'Map ID');
+  run(type, crisis.inspector.gmeMapId + '//input', MAP_DATA.mapId);
+  run(text, crisis.inspector.gmeLayerKey, 'Layer key');
+  run(type, crisis.inspector.gmeLayerKey + '//input', MAP_DATA.layerKey);
+  run(click, crisis.inspector.ok);
+  // Adjust the viewport to make some tiles visible.
+  run(function() {
+    theMap.setCenter(new google.maps.LatLng(42.5, -83.5));
+    theMap.setZoom(11);
+  });
+  runCheckForTiles(crisis.anyVdbTile);
+};
+</script>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  runTest('/crisismap/.maps/1' +
+          '?layers=1312926193346&llbox=36.79,-53.61,15.23,-107.11',
+          crisis.tab.tabbar.layers, testZoomFt);
+};
+
+function testZoomFt(isTabbed) {
+  var ftLayer = crisis.getLayerPaths(0, isTabbed);
+  run(shown, ftLayer.container);
+  run(shown, ftLayer.checkbox);
+  run(isChecked, ftLayer.checkbox);
+
+  run(shown, ftLayer.zoomToArea);
+  run(click, ftLayer.zoomToArea);
+
+  run(count(shown, 1, null), crisis.anyFtTile);
+
+  // Verify that expected points are inside the json-defined viewport.
+  run(function checkBounds() {
+    var mapBounds = theMap.getBounds();
+    assert(mapBounds.contains(new google.maps.LatLng(-2, 80)));
+    assert(mapBounds.contains(new google.maps.LatLng(-40, 90)));
+  });
+};
+</script>

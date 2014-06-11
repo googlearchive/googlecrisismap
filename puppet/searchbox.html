@@ -1,0 +1,114 @@
+<!DOCTYPE html public "-//W3C//DTD HTML 4.0 Transitional//en"
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html><head>
+<meta http-equiv="X-UA-Compatible" content="IE=7" />
+<title></title>
+</head>
+<body>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+function latLngInBounds(lat, lng) {
+  var latLng = new google.maps.LatLng(lat, lng);
+  puppet.debug('Bounds expected to contain ' + latLng + ' but was ' +
+      theMap.getBounds());
+  return theMap.getBounds().contains(latLng);
+}
+
+function clickOrEnterItem() {
+  // TODO(arb): Android has something weird going on - clicking on the
+  // first item makes it zoom, rather than select.
+  if (puppet.userAgent.isAndroid()) {
+    type(crisis.searchbox.input, [bot.Keyboard.Keys.ENTER]);
+  } else {
+    click(crisis.searchbox.autocomplete.item(0));
+  }
+}
+
+function containsSubstrings(path, substrings) {
+  var content = puppet.elem(path).innerHTML;
+  for (var i = 0; i < substrings.length; i++) {
+    if (content.indexOf(substrings[i]) === -1) return false;
+  }
+  return true;
+}
+
+var keyboard = new bot.Keyboard();
+window.onload = function() {
+  // Tests the searchbox, which appears for all maps and so an empty default
+  // map will suffice. But start the map in the middle of nowhere so that we
+  // can tell that the center has moved appropriately.
+  runTest('/crisismap/.maps/0?ll=0,0&z=20', null, testSearchbox);
+};
+
+function testSearchbox(isTabbed) {
+  run(shown, crisis.searchbox.input);
+  run(not(shown), crisis.searchbox.autocomplete.container);
+
+  // Click on an item with the mouse.
+  run(clear, crisis.searchbox.input);
+  run(type, crisis.searchbox.input, '1024 Water Plant Road, Fergus');
+  run(count(shown, 1, null), crisis.searchbox.autocomplete.items);
+  run(shown, crisis.searchbox.autocomplete.item(0));
+  run(containsSubstrings, crisis.searchbox.autocomplete.item(0),
+      ['Fergus', 'Falls']);
+  run(clickOrEnterItem);
+  run(not(shown), crisis.searchbox.autocomplete.container);
+  run(latLngInBounds, 46.2928, -96.0433);
+  run(not(latLngInBounds), 37.7577, -122.4376);
+
+  // Check that there is a marker. If a marker is shown, there will be an
+  // element below the div with z-index 103 as the xpath expresses.
+  run(count(1, null), crisis.markerTiles);
+
+  // Use the keyboard to select an item.
+  run(clear, crisis.searchbox.input);
+  run(type, crisis.searchbox.input, 'San Francisco, CA');
+  run(count(shown, 1, null), crisis.searchbox.autocomplete.items);
+  run(containsSubstrings, crisis.searchbox.autocomplete.item(0),
+      ['San Francisco', 'CA']);
+  run(type, crisis.searchbox.input,
+      [bot.Keyboard.Keys.DOWN, bot.Keyboard.Keys.ENTER]);
+  run(not(shown), crisis.searchbox.autocomplete.container);
+  run(latLngInBounds, 37.7577, -122.4376);
+  run(not(latLngInBounds), 46.2928, -96.0433);
+
+  // The marker should have been removed when we don't have an exact address.
+  run(not(shown), crisis.markerTiles);
+
+  // Press enter without selecting the first item in the list.
+  run(clear, crisis.searchbox.input);
+  run(type, crisis.searchbox.input, 'Australia');
+  run(count(shown, 1, null), crisis.searchbox.autocomplete.items);
+  run(containsSubstrings, crisis.searchbox.autocomplete.item(0), ['Australia']);
+  run(type, crisis.searchbox.input, [bot.Keyboard.Keys.ENTER]);
+  run(latLngInBounds, -14.9341, 114.8786);  // NW of Australia
+  run(latLngInBounds, -40.6055, 152.4079);  // SE of Australia
+  run(not(latLngInBounds), 37.7577, -122.4376);
+
+  // Type in a place that is not listed in Autocomplete, but does geocode.
+  run(clear, crisis.searchbox.input);
+  run(type, crisis.searchbox.input, 'Phelps, MN');
+  run(type, crisis.searchbox.input, [bot.Keyboard.Keys.ENTER]);
+  // The result of geocoding "Phelps, MN" is not totally stable, so we only
+  // check that the viewport moved away from Australia (i.e. geocoding gave
+  // *some* result) but don't check for a particular location.
+  run(not(latLngInBounds), -14.9341, 114.8786);  // NW of Australia
+  run(not(latLngInBounds), -40.6055, 152.4079);  // SE of Australia
+}
+</script>
+</body>
+</html>

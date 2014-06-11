@@ -61,7 +61,7 @@
     },
     {
       "title": "Australia Mines",
-      "description": "Source: <a href=\"http://www.australianminesatlas.gov.au\" target=\"_blank\">Australian Mines Atlas</a>",
+      "description": "Source: <a href=\"http://www.australianminesatlas.gov.au\" target=\"_blank\">australianminesatlas.gov.au</a>",
       "visibility": "DEFAULT_OFF",
       "source": {
         "kml": {
@@ -76,26 +76,6 @@
           "south": -61.7,
           "west": 70.4,
           "east": -167.2
-        }
-      }
-    },
-    {
-      "description": "Source: <a href=\"http://www.weather.com\" target=\"_blank\">weather.com</a>",
-      "title": "Global Weather Forecasts",
-      "visibility": "DEFAULT_OFF",
-      "source": {
-        "google_onion": {
-          "id": "weather_f_mph|invert:1"
-        }
-      },
-      "type": "GOOGLE_ONION",
-      "id": "1311026347590",
-      "viewport": {
-        "lat_lon_alt_box": {
-          "north": 52.04,
-          "south": 19.95,
-          "west": -129.77,
-          "east": -66.53
         }
       }
     },

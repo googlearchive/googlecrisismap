@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+window.onload = function() {
+  runTest('/crisismap/.maps/1?dev=1&enable_editing=true',
+          crisis.tab.tabbar.about, testEditMapDetails);
+};
+
+function testEditMapDetails(isTabbed) {
+  // The object inspector is broken in IE7. b/8204994
+  if (puppet.userAgent.isIE(7)) { return true; }
+
+  run(text, crisis.title, 'Godzilla Meets Slobsterfest');
+  run(text, crisis.description, 'Tis the voice of the Lobster.');
+  run(shown, crisis.toolbar.undo);  // wait for edit_module to finish loading
+
+  // Editing the map title and clicking "Cancel" should do nothing.
+  run(click, crisis.title);
+  run(shown, crisis.inspector.ok);  // wait for inspector dialog to pop up
+  run(type, crisis.inspector.item(0) + '//input', 'abcd');
+  run(click, crisis.inspector.cancel);
+  run(text, crisis.title, 'Godzilla Meets Slobsterfest');
+
+  // The "Saved" link should be shown until an edit is made.
+  run(not(shown), crisis.toolbar.save);
+  run(shown, crisis.toolbar.saved);
+
+  // Editing and clicking "OK" should update the title and swap in the
+  // "Save" link.
+  run(click, crisis.title);
+  run(type, crisis.inspector.item(0) + '//input', 'efgh');
+  run(click, crisis.inspector.ok);
+  run(text, crisis.title, 'Godzilla Meets Slobsterfestefgh');
+  run(not(shown), crisis.toolbar.saved);
+  run(shown, crisis.toolbar.save);
+
+  // Undoing should restore the title.
+  run(click, crisis.toolbar.undo);
+  run(text, crisis.title, 'Godzilla Meets Slobsterfest');
+
+  // Undoing again should have no effect.
+  run(click, crisis.toolbar.undo);
+  run(text, crisis.title, 'Godzilla Meets Slobsterfest');
+
+  // Redoing should restore the new title.
+  run(click, crisis.toolbar.redo);
+  run(text, crisis.title, 'Godzilla Meets Slobsterfestefgh');
+
+  // Redoing again should have no effect.
+  run(click, crisis.toolbar.redo);
+  run(text, crisis.title, 'Godzilla Meets Slobsterfestefgh');
+
+  // Edit the description, undo, and redo. Flaky on safari-winxp and ie8-winxp
+  // b/7900775
+  if (!puppet.userAgent.isSafari() && !puppet.userAgent.isIE(7, 9)) {
+    run(click, crisis.title);
+    run(shown, crisis.inspector.ok);  // wait for inspector dialog to pop up
+    run(type, crisis.inspector.item(1) + '//textarea', 'xyz');
+    run(click, crisis.inspector.ok);
+    run(text, crisis.description, 'Tis the voice of the Lobster.xyz');
+
+    run(click, crisis.toolbar.undo);
+    run(text, crisis.description, 'Tis the voice of the Lobster.');
+
+    run(click, crisis.toolbar.redo);
+    run(text, crisis.description, 'Tis the voice of the Lobster.xyz');
+  }
+  circumventSavePrompt()
+}
+</script>

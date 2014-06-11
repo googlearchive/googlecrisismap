@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  // TODO(romano): also write a zoom_to_area_georss_no_viewport.html
+  // test to verify zooming when viewport is not defined (b/7104599)
+
+  // Load map with a viewport not containing the GeoRSS layer.
+  runTest('/crisismap/.maps/1' +
+          '?layers=18343507228075&llbox=43,32,-103,-88',
+          crisis.tab.tabbar.layers, testZoomGeorss);
+};
+
+function testZoomGeorss(isTabbed) {
+  var geoRssLayer = crisis.getLayerPaths(5, isTabbed);
+
+  run(shown, geoRssLayer.container);
+  run(shown, geoRssLayer.checkbox);
+  run(isChecked, geoRssLayer.checkbox);
+
+  run(shown, geoRssLayer.zoomToArea);
+  run(click, geoRssLayer.zoomToArea);
+
+  run(count(shown, 1, null), crisis.anyKmlTile);
+
+  // Verify that expected points are inside the json-defined viewport.
+  run(function checkBounds() {
+    var mapBounds = theMap.getBounds();
+    assert(mapBounds.contains(new google.maps.LatLng(36, -82)));
+    assert(mapBounds.contains(new google.maps.LatLng(34, -80)));
+  });
+}
+</script>

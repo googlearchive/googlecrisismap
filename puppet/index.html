@@ -1,0 +1,153 @@
+<!-- To run the Puppet tests, first run tools/puppet, then open this page. -->
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  #page {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    border: 0;
+    padding: 0;
+  }
+  #status {
+    font-family: monospace;
+    font-size: 15px;
+    color: #777;
+    background: #000;
+    padding: 2px 0;
+  }
+  #counts {
+    float: right;
+    color: #aaa;
+  }
+  .count {
+    display: inline-block;
+    min-width: 30px;
+    text-align: right;
+  }
+  #passed, #failed {
+    padding: 2px 15px 2px 0;
+  }
+  #status.passing #passed {
+    background: #070;
+  }
+  #status.failing #failed {
+    background: #800;
+  }
+  #current-name {
+    color: #fff;
+  }
+</style>
+<table cellpadding="0" cellspacing="0" id="page">
+  <tr style="height: 0">
+    <td id="status">
+      <div id="counts">
+        <span class="count" id="num-completed"
+            >0</span>/<span id="num-tests">0</span> completed</span>
+        <span id="passed">
+          <span class="count" id="num-passed">0</span> passed</span>
+        <span id="failed">
+          <span class="count" id="num-failed">0</span> failed</span>
+      </div>
+      <span class="count" id="current-index"
+          >0</span>/<span id="total-index">0</span>:
+      <span id="current-name"></span>
+      <span id="current-attempt"></span>
+    </td>
+  </tr>
+  <tr style="height: 100%; min-height: 100%; margin: 0; border: 0; padding: 0">
+    <td><iframe id="puppet" width="100%" height="100%"
+            marginwidth="0" marginheight="0" frameborder="0"></iframe></td>
+  </tr>
+</table>
+<script src="../../../../test_names.js"></script>
+<script>
+function $(id) { return document.getElementById(id); }
+var NUM_TESTS = TEST_NAMES.length;  // TEST_NAMES is defined in test_names.js
+var NUM_ATTEMPTS = 3;
+var passes = [], failures = [];
+var logs = {};
+
+function getLog(puppetDoc) {  // returns the text of the Puppet log
+  var log = puppetDoc.getElementById('log');
+  var lines = log ? log.getElementsByTagName('span') : [];
+  var text = '';
+  for (var i = 0; i < lines.length; i++) {
+    text += lines[i].innerText + '\n';
+  }
+  return text;
+}
+
+function getResult(puppetDoc) {  // returns 'pass', 'fail', or null
+  var result = puppetDoc.getElementById('puppet.result');
+  if (result) {
+    return result.getAttribute('result') === 'passed' ? 'pass' : 'fail';
+  }
+  if (getLog(puppetDoc).match(/\n== failed/)) return 'fail';
+}
+
+function run(i, attempt) {
+  attempt = attempt || 0;
+  var name = TEST_NAMES[i];
+  $('num-completed').innerText = i;
+  $('num-tests').innerText = NUM_TESTS;
+  $('num-passed').innerText = passes.length;
+  $('num-failed').innerText = failures.length;
+  $('current-index').innerText = i + 1;
+  $('total-index').innerText = NUM_TESTS;
+  $('current-name').innerText = name;
+  $('current-attempt').innerText =
+      'attempt ' + (attempt + 1) + ' of ' + NUM_ATTEMPTS;
+  if (failures.length) $('status').className = 'failing';
+  else if (passes.length) $('status').className = 'passing';
+  $('passed').title = passes.join(' \n');
+  $('failed').title = failures.join(' \n');
+
+  if (i >= NUM_TESTS) {
+    $('current-name').innerText = 'All done.';
+    return;
+  }
+
+  function watch() {
+    var puppetDoc = $('puppet').contentDocument;
+    var body = puppetDoc.body || document.createElement('div');
+    // Ignore the Puppet document if it's lingering from the previous attempt.
+    var key = name + '.' + attempt;
+    if (!body.getAttribute('name')) body.setAttribute('name', key);
+    if (body.getAttribute('name') === key && (result = getResult(puppetDoc))) {
+      logs[name] = getLog(puppetDoc);
+      if (result === 'pass') {
+        passes.push(name);
+        run(i + 1);
+      } else if (attempt < NUM_ATTEMPTS) {
+        run(i, attempt + 1);
+      } else {
+        failures.push(name);
+        run(i + 1);
+      }
+    } else {
+      setTimeout(watch, 500);
+    }
+  }
+
+  $('puppet').src = name + '.html?attempt=' + attempt;
+  watch();
+}
+
+run(0);
+</script>

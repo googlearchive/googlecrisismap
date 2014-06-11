@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  // Tests that the tab panel loads properly.
+  run(load, '/crisismap/.maps/2?dev=1&use_tab_panel=1');
+  run(shown, crisis.tab.panel);
+  run(shown, crisis.map);
+  run(shown, crisis.footer);
+
+  // Check that the 'Legend' tab is selected.
+  run(text, crisis.tab.selected, 'Legend');
+  run(shown, crisis.tab.content);
+  run(shown, crisis.title);
+
+  // Click on the 'Layers' tab and check that it is selected.
+  run(click, crisis.tab.tabbar.layers);
+  run(text, crisis.tab.selected, 'Layers');
+
+  // Check that there is at least one layer shown.
+  run(shown, crisis.getLayerPaths(0, true).container);
+
+  // Collapse the tab panel and check that content is hidden.
+  run(shown, crisis.tab.chevronup);
+  run(click, crisis.tab.chevronup);
+  run(not(shown), crisis.tab.content);
+
+  // Expand the tab panel and check that content is shown.
+  run(shown, crisis.tab.chevrondown);
+  run(click, crisis.tab.chevrondown);
+  run(shown, crisis.tab.content);
+
+  // The selected tab should not have changed
+  run(text, crisis.tab.selected, 'Layers');
+
+  // Click the selected tab and check that content is hidden
+  run(click, crisis.tab.selected);
+  run(not(shown), crisis.tab.content);
+
+  // Clicking on any tab should reveal and select the tab
+  run(click, crisis.tab.tabbar.about);
+  run(shown, crisis.tab.content);
+  run(text, crisis.tab.selected, 'About');
+
+  // Reload the map with all layers disabled.
+  run(load, '/crisismap/.maps/2?dev=1&use_tab_panel=1&layers=');
+
+  // Check that the 'Legend' tab is disabled and the 'About' tab is selected.
+  run(text, crisis.tab.selected, 'About');
+  run(text, crisis.tab.disabled, 'Legend');
+
+  // Reload the map with the header content hidden and all layers disabled.
+  run(load, '/crisismap/.maps/2?dev=1&use_tab_panel=1&layers=' +
+      '&hide_panel_header=1');
+
+  // Check that the 'About' tab is not shown, and the 'Layers' tab is selected.
+  run(not(shown), crisis.tab.tabbar.about);
+  run(text, crisis.tab.selected, 'Layers');
+}
+</script>

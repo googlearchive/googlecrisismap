@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+var TILE_URL = 'mw1.google.com/crisisresponse/2011/' +
+              'tuscaloosa/tornado/ikonos/maptiles/';
+
+window.onload = function() {
+  runTest('/crisismap/.maps/1?layers=', crisis.tab.tabbar.layers, testTileLayer);
+};
+
+function testTileLayer(isTabbed) {
+  var tileLayer = crisis.getLayerPaths(1, isTabbed);
+
+  // In order for the tiles to load, we must be at a zoom level and center
+  // where they show.
+  run(function() {
+    theMap.setCenter(new google.maps.LatLng(33.2085, -87.4955));
+    theMap.setZoom(11);
+  });
+
+  // Every word longer than ten characters is broken into pieces.
+  // Since the word break character/tag is invisible, the following is true.
+  run(text, tileLayer.title, 'Predicted Mississippi flood areas');
+  // innerHTML should have some characters (HTML entity, tags, etc. based on
+  // browser) to break the word 'Mississippi'.
+  run(property, tileLayer.title, 'innerHTML',
+      new RegExp('Predicted Mississipp.+i flood areas'));
+  // The title does not show up as a contiguous string.
+  run(not(shown), xtext('Predicted Mississippi flood areas', tileLayer.title));
+
+  run(shown, tileLayer.container);
+  run(not(shown), tileLayer.downloadKML);
+  run(shown, tileLayer.checkbox);
+  run(not(isChecked), tileLayer.checkbox);
+
+  // Clicking on the checkbox should show the layer.
+  run(click, tileLayer.checkbox);
+  run(isChecked, tileLayer.checkbox);
+  run(count(shown, 1, null), crisis.tile(TILE_URL));
+
+  // Clicking on the checkbox again should hide the layer.
+  run(click, tileLayer.checkbox);
+  run(not(isChecked), tileLayer.checkbox);
+  run(count(shown, 0), crisis.tile(TILE_URL));
+
+  // Clicking on label elements in IE 7-8 in puppet does not result in the
+  // related input element, or their common ancestor, receiving a click
+  if (!puppet.userAgent.isIE(7, 9)) {
+    // Clicking on the title should also show the layer.
+    run(click, tileLayer.title);
+    run(isChecked, tileLayer.checkbox);
+    run(count(shown, 1, null), crisis.tile(TILE_URL));
+
+    // Clicking on the label again should hide the layer.
+    run(click, tileLayer.label);
+    run(not(isChecked), tileLayer.checkbox);
+    run(count(shown, 0), crisis.tile(TILE_URL));
+  }
+}
+</script>

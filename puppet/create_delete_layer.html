@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  runTest('/crisismap/.maps/0?dev=1&enable_editing=true',
+      crisis.tab.tabbar.layers, layerTest);
+};
+
+function layerTest(isTabbed) {
+  var layer = crisis.getLayerPaths(0, isTabbed);
+  var layer2 = crisis.getLayerPaths(1, isTabbed);
+
+  // The object inspector is broken in IE7. b/8204994
+  if (puppet.userAgent.isIE(7)) { return true; }
+
+  // Add a layer.
+  run(shown, crisis.toolbar.addLayers);
+  run(click, crisis.toolbar.addLayers);
+
+  // The "Create new layer" dialog should have a link to the "Import" dialog.
+  run(shown, crisis.inspector.importLayer);
+
+  // Editing and clicking OK should add the layer.
+  run(type, crisis.inspector.title + '//input', 'New Layer');
+  run(type, crisis.inspector.description + '//textarea', 'Description of layer');
+  run(click, crisis.inspector.ok);
+  run(text, layer.title, 'New Layer');
+  run(text, layer.description, 'Description of layer');
+  run(shown, crisis.toolbar.save);
+
+  // Undoing should delete the layer.
+  run(click, crisis.toolbar.undo);
+  run(not(text), layer.title, 'New Layer');
+
+  // Redoing should restore the layer.
+  run(click, crisis.toolbar.redo);
+  run(text, layer.title, 'New Layer');
+
+  // Delete the layer.
+  run(click, layer.del);
+  run(not(text), layer.title, 'New Layer');
+
+  // Undo the delete and the add.
+  run(click, crisis.toolbar.undo);
+  run(text, layer.title, 'New Layer');
+  run(click, crisis.toolbar.undo);
+  run(not(text), layer.title, 'New Layer');
+
+  // Redo the add and the delete.
+  run(click, crisis.toolbar.redo);
+  run(text, layer.title, 'New Layer');
+  run(click, crisis.toolbar.redo);
+  run(not(text), layer.title, 'New Layer');
+
+  // Cancel creating a layer.
+  run(click, crisis.toolbar.addLayers);
+  run(type, crisis.inspector.title + '//input', 'New Layer');
+  run(click, crisis.inspector.cancel);
+  run(not(text), layer.title, 'New Layer');
+
+  // Create a folder.
+  run(shown, crisis.toolbar.addFolder);
+  run(click, crisis.toolbar.addFolder);
+  run(text, layer.title, 'Untitled Folder');
+  run(present, layer.sublayers);
+  run(click, layer.del)
+
+  // Add two layers. Note the last one added will be crisis.layers.item(0).
+  run(click, crisis.toolbar.addLayers);
+  run(type, crisis.inspector.title + '//input', 'Layer 2');
+  run(click, crisis.inspector.ok);
+
+  run(click, crisis.toolbar.addLayers);
+  run(type, crisis.inspector.title + '//input', 'Layer 1');
+  run(click, crisis.inspector.ok);
+
+  // While editing the first layer, disable another layer[key].
+  // The inspector should still be shown.
+  run(click, layer.edit);
+  run(shown, crisis.inspector.ok)
+  run(click, layer2.checkbox);
+  run(not(isChecked), layer2.checkbox);
+  run(isChecked, layer.checkbox);
+  run(shown, crisis.inspector.ok);
+  run(click, crisis.inspector.cancel);
+  run(click, layer2.checkbox);  // reset layer to enabled.
+
+  // While editing a layer, disable that layer[key].
+  run(click, layer2.edit);
+  run(shown, crisis.inspector.ok)
+  run(click, layer2.checkbox);
+  run(not(isChecked), layer2.checkbox);
+  run(not(shown), crisis.inspector.ok);
+  circumventSavePrompt();
+}
+</script>

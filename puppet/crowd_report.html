@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+window.onload = function() {
+  // TODO(shakusa) Get this test to work on Android. It currently fails
+  // at clickCenterOfMap on forge, but passes in an android emulator locally.
+  if (puppet.userAgent.isAndroid()) { return true; }
+
+  run(load, '/crisismap/.maps/3?dev=1&use_tab_panel=1&use_details_tab=1' +
+     '&ll=40.721143,-73.981423&z=14');
+  run(hasMapLoaded);
+  run(shown, crisis.tab.panel);
+  run(shown, crisis.map);
+  run(shown, crisis.footer);
+
+  // We loaded the map such that a marker sits precisely at the center.
+  // Click there and look for a details tab to appear.
+  // The entire block repeats for up to 30s when false is returned.
+  // Sometimes the KML layer click targets are slow to load.
+  run(clickCenterOfMap);
+
+  // Make sure the details content appears.
+  run(shown, crisis.tab.content);
+  run(shown, crisis.tab.content + xclass('cm-feature-info-content') +
+      xtext('EastSide Service'));
+
+  // Make sure the crowd reporting section loaded.
+  run(shown, crisis.crowd.panel + xtext('Know something about this location?'));
+
+  // Make sure the form opens and closes.
+  run(openCrowdReportForm);
+  run(closeCrowdReportForm);
+
+  // Submit a report, include current time in the report text to ensure
+  // we are testing the current interaction.
+  var reportText = 'Long lines, though @' + new Date().getTime();
+  run(submitReport, 'Yes', reportText);
+
+  // Check the report is submitted.
+  run(checkForReportOrReload, 'Gas: Yes', reportText);
+
+  var latestReport = crisis.crowd.report(0);
+  run(text, latestReport.upvoteCount, '');
+  // Upvote
+  run(function() {
+    click(latestReport.upvote);
+    return text(latestReport.upvoteCount, '1');
+  });
+  // Downvote replaces upvote
+  run(function() {
+    click(latestReport.downvote);
+    return text(latestReport.upvoteCount, '') &&
+      text(latestReport.downvoteCount, '1');
+  });
+  // Undo downvote
+  run(function() {
+    click(latestReport.downvote);
+    return text(latestReport.upvoteCount, '') &&
+      text(latestReport.downvoteCount, '');
+  });
+};
+
+/** Opens the crowd report form and checks the UI updates correctly. */
+function openCrowdReportForm() {
+  click(crisis.crowd.panel + xclass('cm-crowd-report-prompt'));
+  return shown(crisis.crowd.form + xtext('Does this location have gas?')) &&
+    shown(crisis.crowd.form + xtext('Yes'));
+}
+
+/** Closes the crowd report form and checks the UI updates correctly. */
+function closeCrowdReportForm() {
+  click(crisis.crowd.form + xclass('cm-close-button'));
+  return
+    not(shown(crisis.crowd.form + xtext('Does this location have gas?'))) &&
+    not(shown(crisis.crowd.form + xtext('Yes')));
+}
+
+/** Submits a report with the given answer and text. */
+function submitReport(buttonText, reportText) {
+  if (!openCrowdReportForm()) {
+    return false;
+  }
+  if (buttonText) {
+    click(crisis.crowd.form + xtext(buttonText));
+  }
+  if (reportText) {
+    type(crisis.crowd.form + xtype('text'), reportText);
+  }
+
+  // Wait for the submit button to become enabled.
+  if (shown(crisis.crowd.form + '//input[@disabled]')) {
+    return false;
+  }
+
+  return click(crisis.crowd.form + xtype('submit'));
+}
+
+/**
+ * Checks for a submitted report with the given text. If it fails, clicks the
+ * center of the map again where there is a marker that should force comment
+ * reload. We do this because sometimes the reload that happens after report
+ * submit doesn't contain the report that this test submitted.
+ */
+function checkForReportOrReload(buttonText, reportText) {
+  var report = crisis.crowd.panel + xclass('cm-report');
+  if (some(text)(report + xclass('cm-answer'), buttonText.toUpperCase()) &&
+    some(text)(report, new RegExp('.*' + reportText + '.*'))) {
+    return true;
+  }
+  clickCenterOfMap();
+  return false;
+}
+</script>

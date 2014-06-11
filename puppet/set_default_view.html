@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+// Returns an object representing the current view.
+function getViewInfo(layer) {
+  return {
+      type: theMap.getMapTypeId(),
+      bounds: theMap.getBounds(),
+      layerEnabled: puppet.elem(layer.checkbox).checked,
+      layerOpacity: puppet.elem(layer.opacitySlider).getAttribute('aria-valuenow')
+  };
+}
+
+// Returns true if a subset of the given and current views' properties match.
+function matchesCurrentView(view, layer) {
+  var currentView = getViewInfo(layer);
+  return view.type === currentView.type &&
+         view.bounds.equals(currentView.bounds) &&
+         view.layerEnabled === currentView.layerEnabled &&
+         view.layerOpacity === currentView.layerOpacity;
+}
+
+// Change the current basemap type, viewport center, viewport zoom,
+// layer opacity, layer visibliity.
+function changeView(basemap, centerLat, centerLng, zoom, opacity, layer) {
+  theMap.setMapTypeId(basemap);
+  if (!puppet.userAgent.isIE(7, 9)) {
+    // In IE, the 'viewport' field of the AppState is not updating when the
+    // map moves, possibly due to a problem between the puppet test's
+    // asynchronous design and IE's event queue. Therefore, we only change the
+    // viewport in non-IE browsers.
+    theMap.setCenter(new google.maps.LatLng(centerLat, centerLng));
+    theMap.setZoom(zoom);
+  }
+  puppet.elem(layer.opacitySlider)['aria-value-now'] = opacity;
+  if (!puppet.userAgent.isIE(7, 9)) {
+    // Checkboxes do no work well in puppet tests in IE, because their click
+    // handlers are executed asynchronously. Therefore we only test this in
+    // non-IE browsers.
+    run(click, layer.checkbox);
+  }
+  return true;
+}
+
+window.onload = function() {
+  runTest('/crisismap/.maps/1?dev=1&enable_editing=true',
+      crisis.tab.tabbar.layers, testSetDefaultView);
+};
+
+function testSetDefaultView(isTabbed) {
+  var originalView, newView;
+  var layer = crisis.getLayerPaths(3, isTabbed);
+  // Capture the current view and then modify the current view's
+  // map type, viewport, layer opacity, and layer enabled state.
+  run(function() { originalView = getViewInfo(layer); });
+  run(changeView, 'satellite', 30, 40, 11, '49', layer);
+
+  // Capture the current view and set it to be the new default view.
+  run(function() { newView = getViewInfo(layer); });
+  if (isTabbed) {
+    run(click, crisis.tab.tabbar.about);
+    run(click, crisis.layers.links.setDefaultView);
+    run(click, crisis.tab.tabbar.layers);
+  } else {
+    run(click, crisis.layers.links.setDefaultView);
+  }
+
+  // Undo the new default view setting and verify the current view is
+  // the original default view.
+  run(click, crisis.toolbar.undo);
+  run(function() { matchesCurrentView(originalView, layer); });
+
+  // Redo the new default view setting and verify the current view is
+  // the new default view.
+  run(click, crisis.toolbar.redo);
+  run(function() { matchesCurrentView(newView, layer); });
+
+  // Modify the view, then reset it to the default view and verify that
+  // the current view is the new default view.
+  run(changeView, 'roadmap', 50, 60, 10, '33', layer);
+  if (isTabbed) {
+    run(click, crisis.tab.tabbar.about);
+    run(click, crisis.layers.links.resetView);
+    run(click, crisis.tab.tabbar.layers);
+  } else {
+    run(click, crisis.layers.links.resetView);
+  }
+  run(function() { matchesCurrentView(newView, layer); });
+  circumventSavePrompt();
+};
+</script>

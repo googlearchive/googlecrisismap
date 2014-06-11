@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  runTest('/crisismap/.maps/1?layers=', crisis.tab.tabbar.layers, testKmlLayer);
+};
+
+function testKmlLayer(isTabbed) {
+  var kmlLayer = crisis.getLayerPaths(2, isTabbed);
+
+  run(shown, kmlLayer.container);
+  run(shown, xtext('Australia Mines', kmlLayer.title));
+  run(shown, kmlLayer.checkbox);
+  run(not(isChecked), kmlLayer.checkbox);
+
+  // Clicking on the checkbox should show the KML layer.
+  run(click, kmlLayer.checkbox);
+  run(isChecked, kmlLayer.checkbox);
+  run(count(shown, 1, null), crisis.anyKmlTile);
+  run(shown, kmlLayer.downloadKML);
+  run(shown, xhref.c('Operating_Mines.kmz', kmlLayer.downloadKML));
+
+  // Clicking on the checkbox again should hide the KML layer.
+  run(click, kmlLayer.checkbox);
+  run(not(isChecked), kmlLayer.checkbox);
+  run(count(shown, 0), crisis.anyKmlTile);
+
+  // Clicking on label elements in IE 7-8 in puppet does not result in the
+  // related input element, or their common ancestor, receiving a click
+  if (!puppet.userAgent.isIE(7, 9)) {
+    // Clicking on the title should also show the layer.
+    run(click, xtext('Australia Mines', kmlLayer.title));
+    run(isChecked, kmlLayer.checkbox);
+    run(count(shown, 1, null), crisis.anyKmlTile);
+
+    // Clicking on the title again should hide the KML layer.
+    run(click, kmlLayer.title);
+    run(not(isChecked), kmlLayer.checkbox);
+    run(count(shown, 0), crisis.anyKmlTile);
+  }
+}
+</script>

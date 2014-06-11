@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+window.onload = function() {
+  runTest('/crisismap/.maps/1?dev=1&enable_editing=true',
+          crisis.tab.tabbar.layers, editLayerTest);
+};
+
+function editLayerTest(isTabbed) {
+  var layer = crisis.getLayerPaths(0, isTabbed);
+
+  // The object inspector is broken in IE7. b/8204994
+  if (puppet.userAgent.isIE(7)) { return true; }
+
+  // Editing a layer and clicking "Cancel" should do nothing.
+  run(text, layer.title, 'Roz Savage tracks');
+  run(shown, crisis.toolbar.undo);  // wait for edit_module to finish loading
+  run(click, layer.edit);
+  run(shown, crisis.inspector.ok);  // wait for inspector dialog to pop up
+  run(not(shown), crisis.inspector.importLayer);  // should hide import link
+  run(type, crisis.inspector.title + '//input', 'abcd');
+  run(click, crisis.inspector.cancel);
+  run(text, layer.title, 'Roz Savage tracks');
+
+  // The "Saved" link should be shown until an edit is made. Due to b/7375253,
+  // TileOverlay currently changes the model causing the "Saved" link to be
+  // replaced by the "Save" link even though no user edits have been made.
+  // TODO(romano: uncomment when b/7375253 is fixed.
+  // run(not(shown), crisis.toolbar.save);
+  // run(shown, crisis.toolbar.saved);
+
+  // Editing a layer and clicking "OK" should change the title and
+  // activate the "Save" link in the toolbar.
+  run(click, layer.edit);
+  run(type, crisis.inspector.title + '//input', 'efgh');
+  run(click, crisis.inspector.ok);
+  run(text, layer.title, 'Roz Savage tracksefgh');
+  run(not(shown), crisis.toolbar.saved);
+  run(shown, crisis.toolbar.save);
+
+  // Undoing should restore the original title.
+  run(shown, crisis.toolbar.undo);
+  run(click, crisis.toolbar.undo);
+  run(text, layer.title, 'Roz Savage tracks');
+
+  // Redoing should restore the new title.
+  run(click, crisis.toolbar.redo);
+  run(text, layer.title, 'Roz Savage tracksefgh');
+
+  circumventSavePrompt();
+}
+</script>

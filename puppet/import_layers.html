@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+window.onload = function() {
+  runTest('/crisismap/.maps/0?dev=1&enable_editing=true',
+      crisis.tab.tabbar.layers, testImportLayers);
+};
+
+function testImportLayers(isTabbed) {
+  run(shown, crisis.toolbar.addLayers);
+  run(click, crisis.toolbar.addLayers);
+
+  // The "Create new layer" dialog should have a link to the "Import" dialog.
+  run(click, crisis.inspector.importLayer);
+
+  // Open the importer and verify the map title and first layer title exist.
+  var layerItem = crisis.importer.item(0).item;
+  run(text, crisis.importer.list + xclass('cm-map-title'),
+      'Godzilla Meets Slobsterfest');
+  run(text, layerItem, 'Roz Savage tracks');
+
+  // Test selection and deselection of a normal layer.
+  run(click, layerItem);
+  run(hasClass, layerItem, 'cm-layer-selected');
+  run(click, layerItem);
+  run(not(hasClass), layerItem, 'cm-layer-selected');
+
+  // Test expanding and collapsing a folder.
+  var folder = crisis.importer.item(7);
+  var sublayerItem = folder.sublayer(0).item;
+  run(not(shown), sublayerItem);
+  var triangle = folder.triangle;
+  run(not(hasClass), triangle, 'cm-expanded');
+  run(click, triangle);
+  run(hasClass, triangle, 'cm-expanded');
+  run(shown, sublayerItem);
+  run(click, triangle);
+  run(not(hasClass), triangle, 'cm-expanded');
+  run(not(shown), sublayerItem);
+
+  // Test that selecting a folder's sublayer deselects the folder, and vice
+  // versa.
+  run(click, triangle);
+  run(click, folder.item);
+  run(click, sublayerItem);
+  run(not(hasClass), folder.item, 'cm-layer-selected');
+  run(click, folder.item);
+  run(not(hasClass), sublayerItem, 'cm-layer-selected');
+
+  // Clicking Cancel, even when layers were selected in the import window,
+  // should not add layers to the panel,
+  run(shown, xclass('cm-layer-selected'));
+  run(click, crisis.importer.cancel);
+
+  var topLayerInPanel = crisis.getLayerPaths(0, isTabbed);
+  run(not(shown), topLayerInPanel.container);
+
+  // Test selecting and adding layers.
+  run(click, crisis.toolbar.addLayers);
+  run(click, crisis.inspector.importLayer);
+
+  run(click, layerItem);
+  run(click, triangle);
+  run(click, sublayerItem);
+  run(click, crisis.importer.ok);
+  run(text, topLayerInPanel.title, 'Roz Savage tracks');
+  var folderInPanel = crisis.getLayerPaths(1, isTabbed);
+  run(text, folderInPanel.title, 'Assets');
+  run(count(shown, 3), folderInPanel.container +
+      xclass('cm-layer-entry', '/*/*'));
+
+  // Undoing should remove the layers.
+  run(click, crisis.toolbar.undo);
+  run(not(shown), topLayerInPanel.container);
+
+  // Redoing should restore the layers.
+  run(click, crisis.toolbar.redo);
+  run(text, topLayerInPanel.title, 'Roz Savage tracks');
+  run(text, folderInPanel.title, 'Assets');
+  run(count(shown, 3), folderInPanel.container +
+      xclass('cm-layer-entry', '/*/*'));
+
+  // Test map preview exists.
+  run(click, crisis.toolbar.addLayers);
+  run(click, crisis.inspector.importLayer);
+  run(shown, crisis.importer.mapPreviewLink);
+
+  circumventSavePrompt();
+}
+</script>

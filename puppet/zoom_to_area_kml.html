@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+
+window.onload = function() {
+  // Load map with a viewport not containing the KML layer.
+  runTest('/crisismap/.maps/1' +
+          '?layers=13129945004031&llbox=57.79,19.12,-74.77,-135.94',
+          crisis.tab.tabbar.layers, testZoomKml);
+};
+
+function testZoomKml(isTabbed) {
+  var kmlLayer = crisis.getLayerPaths(2, isTabbed);
+
+  run(shown, kmlLayer.container);
+  run(shown, kmlLayer.checkbox);
+  run(isChecked, kmlLayer.checkbox);
+
+  run(shown, kmlLayer.zoomToArea);
+  run(click, kmlLayer.zoomToArea);
+
+  run(count(shown, 1, null), crisis.anyKmlTile);
+
+  // Verify that expected points are inside the json-defined viewport.
+  run(function checkBounds() {
+    var mapBounds = theMap.getBounds();
+    assert(mapBounds.contains(new google.maps.LatLng(-38, 115)));
+    assert(mapBounds.contains(new google.maps.LatLng(-15, 152)));
+  });
+}
+</script>

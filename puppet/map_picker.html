@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title></title>
+<script src="../../../../testing/puppet/puppet.js"></script>
+<script src="../../../../testing/puppet/google.js"></script>
+<script src="main.js"></script>
+<script>
+window.onload = function() {
+  runTest('/crisismap/empty', crisis.tab.tabbar.about, testMapPicker);
+};
+
+function testMapPicker(isTabbed) {
+  var pickerButton = isTabbed ? crisis.picker.tabbedButton : crisis.picker.button;
+  // The dropdown arrow should be initially shown, but not the menu.
+  run(text, crisis.title, 'Empty map');
+  run(shown, pickerButton);
+  run(not(shown), crisis.picker.menu);
+
+  // The picker should show the catalog entry added by /testdata.
+  run(click, pickerButton);
+  run(shown, crisis.picker.menu);
+  run(ignoreMapsApiExceptions);  // necessary to avoid failure upon navigation
+  run(click, xtext('Godzilla Meets Slobsterfest'));
+
+  // The selected map should load.
+  run(text, crisis.title, 'Godzilla Meets Slobsterfest');
+
+  // After using the map picker, we will end up on the default UI, which
+  // is currently untabbed.  Hence the use of crisis.picker.button here,
+  // instead of pickerButton.
+  run(shown, crisis.picker.button);
+  run(not(shown), crisis.picker.menu);
+
+  run(click, crisis.title);
+  run(shown, crisis.picker.menu);
+}
+</script>

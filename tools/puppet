@@ -1,0 +1,64 @@
+#!/bin/bash
+# Copyright 2012 Google Inc.  All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy
+# of the License at: http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distrib-
+# uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+# OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+# specific language governing permissions and limitations under the License.
+
+# Usage:
+#
+# tools/puppet
+#     Starts the App Engine dev server on the source directory (serving the
+#     output of make) for running Puppet tests locally.  To run a test, open:
+#     http://localhost:8000/.static/puppet/1/2/3/puppet/<filename>.html
+
+pushd "$(dirname $0)" >/dev/null && source common.sh && popd >/dev/null
+
+cd $APP_DIR
+
+function setup_data() {
+  while true; do
+    sleep 1
+    if curl -s http://localhost:8000/testdata | grep written; then
+      echo "config.Set('root_path', '/crisismap')" | tools/console :8000
+      echo
+      echo "------------------------------------------------------------"
+      echo "Server is ready.  To run all the tests, go to:"
+      echo
+      echo "http://localhost:8000/.static/puppet/1/2/3/puppet/index.html"
+      echo "------------------------------------------------------------"
+      echo
+      break
+    fi
+  done
+}
+
+# Set up symbolic links so that the Puppet JS files and HTML test pages are
+# visible under /static, at locations such that the <script> tags in each
+# Puppet test HTML page will point to the correct Puppet JS files.
+rm -rf static/puppet
+mkdir -p static/puppet/1/2/3
+mkdir -p static/puppet/testing
+echo "Checking out puppeteer.googlecode.com..."
+svn checkout https://puppeteer.googlecode.com/svn/trunk/ /tmp/puppeteer
+ln -s /tmp/puppeteer static/puppet/testing/puppet
+ln -s ../../../../../puppet static/puppet/1/2/3/puppet
+
+# Generate the test_names.js file, which lists the available Puppet tests.
+echo 'TEST_NAMES = [];' > static/puppet/test_names.js
+for test in puppet/*.html; do
+  filename=$(basename $test)
+  name=${filename%.html}
+  if [[ $name == index ]]; then continue; fi
+  if [[ $name == *internal* ]]; then continue; fi
+  echo "TEST_NAMES.push('$name');" >> static/puppet/test_names.js
+done
+
+# Start up the server and populate its datastore with the test data.
+setup_data &
+make opt run

@@ -1,0 +1,144 @@
+<!doctype html>
+<!--
+Copyright 2014 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License.
+-->
+<title>edit_topic</title>
+<script src="../../../../testing/puppet/puppet.js" type="text/javascript"></script>
+<script src="../../../../testing/puppet/google.js" type="text/javascript"></script>
+<script src="main.js" type="text/javascript"></script>
+<script type="text/javascript">
+window.onload = function() {
+  // The object inspector is broken in IE. b/8204994
+  if (puppet.userAgent.isIE()) { return true; }
+
+  run(load, '/crisismap/.maps/1?dev=1&enable_editing=true&use_tab_panel=1' +
+      '&use_details_tab=1&ll=-28.2200,113.5657&z=14');
+  run(hasMapLoaded);
+  run(shown, crisis.tab.panel);
+  run(shown, crisis.map);
+  run(shown, crisis.footer);
+
+  run(shown, crisis.toolbar.editTopics);
+  run(click, crisis.toolbar.editTopics);
+
+  // Create a new topic
+  run(shown, crisis.topics.newTopic);
+  run(click, crisis.topics.newTopic);
+  run(shown, crisis.topicInspector.ok);  // wait for inspector dialog to pop up
+  run(not(shown), crisis.topics.newTopic); // should hide topic selector
+
+  // Filling in a topic field and clicking "OK" should change the title and
+  // activate the "Save" link in the toolbar.
+  run(type, crisis.topicInspector.title + '//input', 'Shelter');
+  run(click, crisis.topicInspector.ok);
+  run(not(shown), crisis.toolbar.saved);
+  run(shown, crisis.toolbar.save);
+  // Verify the topic was added
+  run(click, crisis.toolbar.editTopics);
+  var topicItem = crisis.topics.item(0);
+  run(text, topicItem.item, 'Shelter');
+
+  // Editing a topic and clicking "Cancel" should do nothing
+  run(click, topicItem.item);
+  run(not(shown), crisis.topicInspector.cluster_radius + '//input');
+  run(click, crisis.topicInspector.crowd_enabled + '//input');
+  // Clicking the crowd_enabled checkbox should reveal the cluster radius field
+  run(shown, crisis.topicInspector.cluster_radius + '//input');
+  run(click, crisis.topicInspector.cancel);
+  run(not(shown), crisis.topicInspector.cancel);
+  // Verify the change was not persisted
+  run(click, crisis.toolbar.editTopics);
+  run(click, topicItem.item);
+  run(not(shown), crisis.topicInspector.cluster_radius + '//input');
+  run(click, crisis.topicInspector.cancel);
+
+  // Undo should remove the topic
+  run(click, crisis.toolbar.undo);
+  run(click, crisis.toolbar.editTopics);
+  run(not(text), topicItem.item, 'Shelter');
+  run(click, crisis.topics.cancel);
+  run(not(shown), crisis.topics.cancel);
+
+  // Redo should restore the topic
+  run(click, crisis.toolbar.redo);
+  run(click, crisis.toolbar.editTopics);
+  run(text, topicItem.item, 'Shelter');
+
+  // Editing a topic and clicking OK persists the change
+  run(click, topicItem.item);
+  run(select, crisis.topicInspector.layer_ids + '//select'
+      + xtext('Roz Savage tracks'));
+  // Puppet doesn't fire a change event on a multi-select for WebKit browsers
+  // so we have to fire it (b/8777319). This was supposed to be fixed by cr/46229533,
+  // but is still failing intermittently on firefox-linux
+  if (puppet.userAgent.isWebKit()) {
+    run(fireEvent, crisis.topicInspector.layer_ids + '//select', 'change');
+  }
+  run(click, crisis.topicInspector.crowd_enabled + '//input');
+  run(type, crisis.topicInspector.cluster_radius + '//input', '50');
+  run(click, crisis.topicInspector.ok);
+  // Verify the change was persisted
+  run(click, crisis.toolbar.editTopics);
+  run(click, topicItem.item);
+  run(selected, crisis.topicInspector.crowd_enabled + '//input');
+  run(text, crisis.topicInspector.cluster_radius + '//input', '50');
+
+  // Add a question, delete it, and add it again
+  run(click, crisis.topicInspector.addQuestion);
+  var question = crisis.topicInspector.question(0);
+  run(shown, question.text);
+  run(click, question.deleteButton);
+  run(not(shown), question.text);
+  run(click, crisis.topicInspector.addQuestion);
+
+  // Fill in some fields and check default choices
+  run(type, question.text +  '//input', 'Is there shelter here?');
+  run(select, question.type + xtext('Choice'));
+  run(text, question.choice(0).title + '//input', 'Yes');
+  run(type, question.choice(0).label +  '//input', 'Shelter available');
+  run(text, question.choice(1).title + '//input', 'No');
+  run(type, question.choice(1).label +  '//input', 'No shelter available');
+
+  // Add a choice and delete it
+  run(click, question.addChoice);
+  run(text, question.choice(2).title + '//input', '');
+  run(click, question.choice(2).deleteButton);
+  run(not(shown), question.choice(2).title);
+
+  // Persist the added question
+  run(click, crisis.topicInspector.ok);
+  run(not(shown), crisis.toolbar.saved);
+  run(shown, crisis.toolbar.save);
+
+  // Make sure adding this topic enables crowd reports with the new question
+  if (puppet.userAgent.isFirefox()) {
+    // On forge, clickCenterOfMap fails to trigger a click event that brings up
+    // the details tab on all but firefox, though it works on Chrome, Safari,
+    // and Android when run locally
+    run(clickCenterOfMap);
+    run(shown,
+        crisis.crowd.panel + xtext('Know something about this location?'));
+    run(function() {
+      click(crisis.crowd.panel + xclass('cm-crowd-report-prompt'));
+      return shown(crisis.crowd.form + xtext('Is there shelter here?'));
+    });
+  }
+
+  // Delete topic
+  run(click, crisis.toolbar.editTopics);
+  run(click, topicItem.deleteButton);
+  run(not(shown), topicItem.item);
+  run(click, crisis.topics.cancel);
+
+  circumventSavePrompt();
+}
+</script>
