@@ -119,13 +119,13 @@ class _MapReview(base_handler.BaseHandler):
     next_url = None
 
     map_id = map_object.key.name()
-    maproot = json.loads(map_object.GetCurrentJson())
+    map_root = map_object.map_root
 
     topic_ids = []
     report_dicts = []
 
-    if 'topics' in maproot:
-      topic_ids, report_dicts = self._ExtractTopicsAndReports(map_id, maproot)
+    if 'topics' in map_root:
+      topic_ids, report_dicts = self._ExtractTopicsAndReports(map_id, map_root)
 
     if len(report_dicts) > self.count:
       report_dicts = report_dicts[:self.count]
@@ -166,12 +166,12 @@ class _MapReview(base_handler.BaseHandler):
         'reviewed': self.reviewed is None and 'true' or '',
     }))
 
-  def _ExtractTopicsAndReports(self, map_id, maproot):
-    """Extracts topics from maproot and loads reports to review from datastore.
+  def _ExtractTopicsAndReports(self, map_id, map_root):
+    """Extracts topics from MapRoot and loads reports to review from datastore.
 
     Args:
       map_id: A string, the id of the map being reviewed.
-      maproot: The MapRoot definition of the map being reviewed.
+      map_root: The MapRoot definition of the map being reviewed.
 
     Returns:
       A pair (topic_ids, reports) where topic_ids is a list of the map's topic
@@ -180,7 +180,7 @@ class _MapReview(base_handler.BaseHandler):
     topic_ids = []
     answer_labels = {}
     answer_colors = {}
-    for topic in maproot['topics']:
+    for topic in map_root['topics']:
       topic_ids.append(topic['id'])
       for question in topic.get('questions', []):
         question_id = '%s.%s.%s' % (map_id, topic['id'], question['id'])

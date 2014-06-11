@@ -244,7 +244,7 @@ cm.ImporterView.prototype.openImporter = function() {
 cm.ImporterView.prototype.renderLayerList_ = function(maps) {
   cm.ui.clear(this.layerListElem_);
   goog.array.forEach(maps, function(map) {
-    var model = cm.MapModel.newFromMapRoot(map['maproot']);
+    var model = cm.MapModel.newFromMapRoot(map['map_root']);
     var layers = model.get('layers');
     if (layers.getLength()) {
       cm.ui.append(this.layerListElem_,

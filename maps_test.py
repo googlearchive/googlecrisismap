@@ -146,8 +146,8 @@ class MapTest(test_utils.BaseTest):
     """Verifies that the 'region' property affects the Maps API URL."""
     with test_utils.RootLogin():
       domains.Domain.Create('x.com')
-      m1 = model.Map.Create('{"title": "no region"}', 'x.com')
-      m2 = model.Map.Create('{"title": "has region", "region": "in"}', 'x.com')
+      m1 = model.Map.Create({'title': 'no region'}, 'x.com')
+      m2 = model.Map.Create({'title': 'has region', 'region': 'in'}, 'x.com')
 
       cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m1.id), m1)
       self.assertTrue('region=' not in cm_config['maps_api_url'])
@@ -200,8 +200,8 @@ class MapListTest(test_utils.BaseTest):
     with test_utils.RootLogin():
       domains.Domain.Create('cows.net')
       domains.Domain.Create('dogs.org')
-      m1 = model.Map.Create('{"title": "Moo"}', 'cows.net', viewers=['viewer'])
-      m2 = model.Map.Create('{"title": "Arf"}', 'dogs.org', viewers=['viewer'])
+      m1 = model.Map.Create({'title': 'Moo'}, 'cows.net', viewers=['viewer'])
+      m2 = model.Map.Create({'title': 'Arf'}, 'dogs.org', viewers=['viewer'])
 
     with test_utils.Login('viewer'):
       result = self.DoGet('/.maps').body

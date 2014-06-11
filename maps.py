@@ -245,16 +245,12 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
 
   # Add the MapRoot data and other map-specific information.
   if catalog_entry:  # published map
-    maproot_json = json.loads(catalog_entry.maproot_json)
-    maproot_json['id'] = catalog_entry.map_id
-    result['map_root'] = maproot_json
+    map_root = result['map_root'] = catalog_entry.map_root
     result['label'] = catalog_entry.label
     result['publisher_name'] = catalog_entry.publisher_name
     key = catalog_entry.map_version_key
   elif map_object:  # draft map
-    maproot_json = json.loads(map_object.GetCurrentJson())
-    maproot_json['id'] = map_object.id
-    result['map_root'] = maproot_json
+    map_root = result['map_root'] = map_object.map_root
     result['map_list_url'] = root + '/.maps'
     result['diff_url'] = root + '/.diff/' + map_object.id + xsrf_qs
     result['save_url'] = root + '/.api/maps/' + map_object.id + xsrf_qs
@@ -269,9 +265,8 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
   # Parameters that depend on the MapRoot, for both published and draft maps.
   ui_region = request.get('gl')
   if map_object or catalog_entry:
-    result['lang'] = base_handler.SelectLanguageForRequest(
-        request, maproot_json)
-    ui_region = maproot_json.get('region', ui_region)
+    result['lang'] = base_handler.SelectLanguageForRequest(request, map_root)
+    ui_region = map_root.get('region', ui_region)
     cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
     result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
     result['metadata_url'] = root + '/.metadata?key=' + cache_key

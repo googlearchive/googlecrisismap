@@ -24,8 +24,13 @@ class CatalogTest(test_utils.BaseTest):
 
   def setUp(self):
     super(CatalogTest, self).setUp()
-    self.map_object = test_utils.CreateMap('{"title": "test map"}')
+    self.map_object = test_utils.CreateMap({'title': 'test map'})
     self.map_id = self.map_object.id
+    # TODO(kpy): Puzzling!  Revoking this grant in a tearDown method causes
+    # failures in MapReviewTest.testPostUpvoteDownvoteFromPublishedMap,
+    # CatalogEntryTests.testDelete, CatalogEntryTests.testPut,
+    # CrowdVoteTests.testUpdateScore, PermsTests.testMapCreatorDomains,
+    # PermsTests.testUserRoles, UsersTest.testGetCurrent_GoogleAccountMapping
     perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
 
   def testGet(self):

@@ -87,23 +87,21 @@ class MapById(base_handler.BaseHandler):
   def Get(self, map_id, domain=''):  # pylint: disable=unused-argument
     """Returns the MapRoot JSON for the specified map."""
     map_object = model.Map.Get(map_id)
-    if map_object:
-      self.WriteJson({
-          'json': json.loads(map_object.GetCurrentJson() or 'null')
-      })
-    else:
-      self.error(404)
-      self.response.out.write('Map %s not found' % map_id)
+    if not map_object:
+      raise base_handler.ApiError(404, 'Map %s not found.' % map_id)
+    self.WriteJson(map_object.map_root)
 
   def Post(self, map_id, domain=''):  # pylint: disable=unused-argument
     """Stores a new version of the MapRoot JSON for the specified map."""
     map_object = model.Map.Get(map_id)
-    if map_object:
-      map_object.PutNewVersion(self.request.get('json'))
-      self.response.set_status(201)
-    else:
-      self.error(404)
-      self.response.out.write('Map %s not found' % map_id)
+    if not map_object:
+      raise base_handler.ApiError(404, 'Map %s not found.' % map_id)
+    try:
+      map_root = json.loads(self.request.get('json'))
+    except ValueError:
+      raise base_handler.ApiError(400, 'Invalid JSON data.')
+    map_object.PutNewVersion(map_root)
+    self.response.set_status(201)
 
 
 class PublishedMaps(base_handler.BaseHandler):
@@ -112,7 +110,7 @@ class PublishedMaps(base_handler.BaseHandler):
   def Get(self, domain=''):  # pylint: disable=unused-argument
     root = self.request.root_path
     self.WriteJson([{'url': root + '/%s/%s' % (entry.domain, entry.label),
-                     'maproot': json.loads(entry.maproot_json)}
+                     'map_root': entry.map_root}
                     for entry in model.CatalogEntry.GetAll()])
 
 

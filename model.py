@@ -215,8 +215,8 @@ class CatalogEntry(object):
   All access from outside this module should go through CatalogEntry (never
   CatalogEntryModel).  Entries should always be created via CatalogEntry.Create.
 
-  The MapRoot JSON content of a CatalogEntry is always considered publicly
-  readable, independent of the permission settings on the Map object.
+  The MapRoot content of a CatalogEntry is always considered publicly readable,
+  independent of the permission settings on the Map object.
   """
 
   def __init__(self, catalog_entry_model):
@@ -372,11 +372,11 @@ class CatalogEntry(object):
     return CatalogEntryModel.map_version.get_value_for_datastore(self.model)
   map_version_key = property(GetMapVersionKey)
 
-  # maproot_json gets the (possibly cached) MapRoot JSON for this entry.
-  def GetMaprootJson(self):
-    return cache.Get([CatalogEntry, self.domain, self.label, 'json'],
-                     lambda: self.model.map_version.maproot_json)
-  maproot_json = property(GetMaprootJson)
+  # map_root gets the (possibly cached) MapRoot data for this entry.
+  def GetMapRoot(self):
+    return cache.Get([CatalogEntry, self.domain, self.label, 'map_root'],
+                     lambda: json.loads(self.model.map_version.maproot_json))
+  map_root = property(GetMapRoot)
 
   # Make the other properties of the CatalogEntryModel visible on CatalogEntry.
   for x in ['domain', 'label', 'map_id', 'title', 'publisher_name',
@@ -424,7 +424,7 @@ class CatalogEntry(object):
     cache.Delete([CatalogEntry, '*', 'listed'])
     cache.Delete([CatalogEntry, domain_name, 'all'])
     cache.Delete([CatalogEntry, domain_name, 'listed'])
-    cache.Delete([CatalogEntry, domain_name, self.label, 'json'])
+    cache.Delete([CatalogEntry, domain_name, self.label, 'map_root'])
 
 
 class Map(object):
@@ -570,14 +570,11 @@ class Map(object):
     return msg_list
 
   @staticmethod
-  def Create(maproot_json, domain, owners=None, editors=None, reviewers=None,
+  def Create(map_root, domain, owners=None, editors=None, reviewers=None,
              viewers=None, world_readable=False):
-    """Stores a new map with the given properties and MapRoot JSON content."""
-    # maproot_json must be syntactically valid JSON, but otherwise any JSON
-    # object is allowed; we don't check for MapRoot validity here.
-
-    # TODO(kpy): Change the map storage API to accept and expose MapRoot objects
-    # instead of JSON strings throughout (Create, PutNewVersion, GetCurrent*).
+    """Stores a new map with the given properties and MapRoot content."""
+    # map_root must be an object serializable as JSON, but otherwise we don't
+    # check for MapRoot validity here.
 
     # TODO(rew): Change the domain argument to take a domains.Domain instead
     # of a string
@@ -612,7 +609,7 @@ class Map(object):
         owners=owners, editors=editors, reviewers=reviewers, viewers=viewers,
         domain=domain.name, domains=[domain.name],
         domain_role=domain.initial_domain_role, world_readable=world_readable))
-    map_object.PutNewVersion(maproot_json)  # also puts the MapModel
+    map_object.PutNewVersion(map_root)  # also puts the MapModel
     return map_object
 
   @staticmethod
@@ -620,19 +617,19 @@ class Map(object):
     """NO ACCESS CHECK.  Returns a map version by its datastore entity key."""
     return utils.StructFromModel(MapVersionModel.get(key))
 
-  def PutNewVersion(self, maproot_json):
+  def PutNewVersion(self, map_root):
     """Stores a new MapVersionModel object for this Map and returns its ID."""
     self.AssertAccess(perms.Role.MAP_EDITOR)
-    maproot = json.loads(maproot_json)  # validate the JSON first
-    maproot['id'] = self.model.key().name()  # enforce correct 'id' property
+    map_root = dict(map_root, id=self.model.key().name())  # ensure correct ID
     now = datetime.datetime.utcnow()
     uid = users.GetCurrent().id
-    new_version = MapVersionModel(parent=self.model, creator_uid=uid,
-                                  created=now, maproot_json=json.dumps(maproot))
+    new_version = MapVersionModel(
+        parent=self.model, creator_uid=uid, created=now,
+        maproot_json=json.dumps(map_root))
 
-    # Update the MapModel from fields in the MapRoot JSON.
-    self.model.title = maproot.get('title', '')
-    self.model.description = maproot.get('description', '')
+    # Update the MapModel from fields in the MapRoot.
+    self.model.title = map_root.get('title', '')
+    self.model.description = map_root.get('description', '')
     self.model.updated = now
     self.model.updater_uid = uid
 
@@ -640,7 +637,7 @@ class Map(object):
       self.model.current_version = new_version.put()
       self.model.put()
     db.run_in_transaction(PutModels)
-    cache.Delete([Map, self.id, 'json'])
+    cache.Delete([Map, self.id, 'map_root'])
     return new_version.key().id()
 
   def GetCurrent(self):
@@ -653,7 +650,11 @@ class Map(object):
       order, and are unique within a particular Map but not across all Maps.)
     """
     self.AssertAccess(perms.Role.MAP_VIEWER)
-    return utils.StructFromModel(self.current_version)
+    struct = utils.StructFromModel(self.current_version)
+    # TODO(kpy): These __dict__ shenanigans can go away after we switch to ndb.
+    struct.__dict__['map_root'] = json.loads(struct.maproot_json or '{}')
+    del struct.__dict__['maproot_json']
+    return struct
 
   def Delete(self):
     """Marks a map as deleted (so it won't be returned by Get or GetAll)."""
@@ -664,7 +665,7 @@ class Map(object):
     self.model.put()
     logs.RecordEvent(logs.Event.MAP_DELETED, map_id=self.id,
                      uid=self.model.deleter_uid)
-    cache.Delete([Map, self.id, 'json'])
+    cache.Delete([Map, self.id, 'map_root'])
 
   def Undelete(self):
     """Unmarks a map as deleted."""
@@ -674,7 +675,7 @@ class Map(object):
     self.model.put()
     logs.RecordEvent(logs.Event.MAP_UNDELETED, map_id=self.id,
                      uid=users.GetCurrent().id)
-    cache.Delete([Map, self.id, 'json'])
+    cache.Delete([Map, self.id, 'map_root'])
 
   def SetBlocked(self, block):
     """Sets whether a map is blocked (private to one user and unpublishable)."""
@@ -691,7 +692,7 @@ class Map(object):
       logs.RecordEvent(logs.Event.MAP_UNBLOCKED, map_id=self.id,
                        uid=users.GetCurrent().id)
     self.model.put()
-    cache.Delete([Map, self.id, 'json'])
+    cache.Delete([Map, self.id, 'map_root'])
 
   def Wipe(self):
     """Permanently destroys a map."""
@@ -702,11 +703,13 @@ class Map(object):
     logs.RecordEvent(logs.Event.MAP_WIPED, domain_name=domain_name,
                      map_id=map_id, uid=users.GetCurrent().id)
 
-  def GetCurrentJson(self):
-    """Gets the current JSON for public viewing only."""
+  def GetMapRoot(self):
+    """Gets the current version of the MapRoot definition of this map."""
     self.AssertAccess(perms.Role.MAP_VIEWER)
-    return cache.Get([Map, self.id, 'json'],
-                     lambda: getattr(self.GetCurrent(), 'maproot_json', None))
+    return cache.Get([Map, self.id, 'map_root'],
+                     lambda: self.GetCurrent().map_root)
+
+  map_root = property(GetMapRoot)
 
   def GetVersions(self):
     """Yields all versions of this map in order from newest to oldest."""
@@ -782,7 +785,7 @@ class EmptyMap(Map):
   # empty map object as the map with ID '0'.
   TITLE = 'Empty map'
   DESCRIPTION = 'This is an empty map for testing.'
-  JSON = '{"title": "%s", "description": "%s"}' % (TITLE, DESCRIPTION)
+  MAP_ROOT = {'title': TITLE, 'description': DESCRIPTION}
 
   def __init__(self):
     Map.__init__(self, MapModel(
@@ -792,7 +795,7 @@ class EmptyMap(Map):
 
   def GetCurrent(self):
     key = db.Key.from_path('MapModel', '0', 'MapVersionModel', 1)
-    return utils.Struct(id=1, key=key, maproot_json=self.JSON)
+    return utils.Struct(id=1, key=key, map_root=self.MAP_ROOT)
 
   def GetVersions(self):
     return [self.GetCurrent()]
@@ -820,7 +823,7 @@ class EmptyCatalogEntry(CatalogEntry):
     CatalogEntry.__init__(self, CatalogEntryModel(
         domain=domain, label='empty', title=EmptyMap.TITLE, map_id='0'))
 
-  maproot_json = property(lambda self: EmptyMap.JSON)
+  map_root = property(lambda self: EmptyMap.MAP_ROOT)
 
   def ReadOnlyError(self, *unused_args, **unused_kwargs):
     raise TypeError('EmptyCatalogEntry is read-only')

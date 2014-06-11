@@ -25,7 +25,7 @@ class Create(base_handler.BaseHandler):
 
   def Post(self, domain, user):  # pylint: disable=unused-argument
     """Creates a new map."""
-    map_object = model.Map.Create('{"title": "Untitled map"}', domain)
+    map_object = model.Map.Create({'title': 'Untitled map'}, domain)
     acceptable_org = bool(self.request.get('acceptable_org'))
     logs.RecordEvent(
         logs.Event.MAP_CREATED,

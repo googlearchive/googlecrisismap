@@ -281,7 +281,7 @@ class CardByIdAndTopic(CardBase):
     map_object = model.Map.Get(map_id)
     if not map_object:
       raise base_handler.Error(404, 'No such map.')
-    self.GetForMap(json.loads(map_object.GetCurrentJson()), topic_id)
+    self.GetForMap(map_object.map_root, topic_id)
 
 
 class CardByLabelAndTopic(CardBase):
@@ -292,7 +292,7 @@ class CardByLabelAndTopic(CardBase):
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
       raise base_handler.Error(404, 'No such map.')
-    self.GetForMap(json.loads(entry.maproot_json), topic_id)
+    self.GetForMap(entry.map_root, topic_id)
 
 
 class CardByLabel(CardBase):
@@ -303,7 +303,7 @@ class CardByLabel(CardBase):
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
       raise base_handler.Error(404, 'No such map.')
-    topics = json.loads(entry.maproot_json).get('topics', [])
+    topics = entry.map_root.get('topics', [])
     if not topics:
       raise base_handler.Error(404, 'Map has no topics.')
     self.redirect('%s/%s' % (label, str(topics[0]['id'])))

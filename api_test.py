@@ -33,13 +33,12 @@ class MapByIdTest(test_utils.BaseTest):
 
   def testGetMap(self):
     """Fetches a map through the API."""
-    json_dict = {'id': self.map.id, 'json': True, 'stuff': [0, 1]}
-    maproot_json = json.dumps(json_dict)
+    map_root = {'id': self.map.id, 'json': True, 'stuff': [0, 1]}
     with test_utils.Login('editor'):
-      self.map.PutNewVersion(maproot_json)
+      self.map.PutNewVersion(map_root)
     with test_utils.Login('viewer'):
       response = self.DoGet('/.api/maps/%s' % self.map.id)
-    self.assertEquals({'json': json_dict}, json.loads(response.body))
+    self.assertEquals(map_root, json.loads(response.body))
 
   def testGetInvalidMap(self):
     """Attempts to fetch a map that doesn't exist."""
@@ -47,15 +46,15 @@ class MapByIdTest(test_utils.BaseTest):
 
   def testPostMap(self):
     """Posts a new version of a map."""
-    maproot_json = '{"id": "%s", "stuff": [0, 1]}' % self.map.id
+    map_root = {'id': self.map.id, 'stuff': [0, 1]}
     with test_utils.Login('editor'):
       self.DoPost('/.api/maps/' + self.map.id,
-                  'json=' + maproot_json + '&xsrf_token=XSRF')
+                  {'json': json.dumps(map_root), 'xsrf_token': 'XSRF'})
     # Now we refetch the map because the object changed underneath us.
     with test_utils.Login('viewer'):
       # Verify that the edited content was saved properly.
       map_object = model.Map.Get(self.map.id)
-      self.assertEqualsJson(maproot_json, map_object.GetCurrentJson())
+      self.assertEquals(map_root, map_object.map_root)
 
 
 class PublishedMapsTest(test_utils.BaseTest):
@@ -80,18 +79,18 @@ class PublishedMapsTest(test_utils.BaseTest):
 
     # Create and publish two maps
     with test_utils.RootLogin():
-      m1 = test_utils.CreateMap(json.dumps(map1))
+      m1 = test_utils.CreateMap(map1)
       model.CatalogEntry.Create('xyz.com', 'label1', m1)
-      m2 = test_utils.CreateMap(json.dumps(map2))
+      m2 = test_utils.CreateMap(map2)
       model.CatalogEntry.Create('xyz.com', 'label2', m2)
       # Create a draft; should not be returned by api.Maps
-      test_utils.CreateMap(json.dumps(draft))
+      test_utils.CreateMap(draft)
 
     response = self.DoGet('/.api/maps')
     map1['id'] = m1.id  # storing the map should have set its 'id' property
     map2['id'] = m2.id  # storing the map should have set its 'id' property
-    self.assertEquals([{'url': '/root/xyz.com/label2', 'maproot': map2},
-                       {'url': '/root/xyz.com/label1', 'maproot': map1}],
+    self.assertEquals([{'url': '/root/xyz.com/label2', 'map_root': map2},
+                       {'url': '/root/xyz.com/label1', 'map_root': map1}],
                       json.loads(response.body))
 
 

@@ -28,7 +28,7 @@ def GetRolesForMap(map_object):
 
 class PermsTests(test_utils.BaseTest):
 
-  def testUserRoles(self):
+  def testUserRoles(self):  # pylint: disable=too-many-statements
     """Verifies that access permissions restrict user actions correctly."""
     m = test_utils.CreateMap(
         owners=['owner'], editors=['editor'], reviewers=['reviewer'],
@@ -41,7 +41,7 @@ class PermsTests(test_utils.BaseTest):
           GetRolesForMap(m))
 
       # Verify an admin can perform all operations.
-      version_id = m.PutNewVersion('{}')
+      version_id = m.PutNewVersion({})
       m.SetWorldReadable(False)
       m.GetCurrent()
       m.GetVersions()
@@ -55,8 +55,8 @@ class PermsTests(test_utils.BaseTest):
 
       # Verify the owner can perform expected operations.
       self.assertRaises(
-          perms.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-      version_id = m.PutNewVersion('{}')
+          perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      version_id = m.PutNewVersion({})
       m.SetWorldReadable(False)
       m.GetCurrent()
       m.GetVersions()
@@ -69,8 +69,8 @@ class PermsTests(test_utils.BaseTest):
 
       # Verify the editor can perform expected operations.
       self.assertRaises(
-          perms.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-      version_id = m.PutNewVersion('{}')
+          perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      version_id = m.PutNewVersion({})
       self.assertRaises(perms.AuthorizationError, m.SetWorldReadable, False)
       m.GetCurrent()
       m.GetVersions()
@@ -82,10 +82,9 @@ class PermsTests(test_utils.BaseTest):
 
       # Verify the reviewer can perform expected operations.
       self.assertRaises(
-          perms.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, '{}')
+          perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, {})
       m.GetCurrent()
-      m.GetCurrentJson()
       self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
       self.assertRaises(perms.AuthorizationError, m.GetVersions)
 
@@ -95,10 +94,9 @@ class PermsTests(test_utils.BaseTest):
 
       # Verify the viewer can perform expected operations.
       self.assertRaises(
-          perms.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, '{}')
+          perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, {})
       m.GetCurrent()
-      m.GetCurrentJson()
       self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
       self.assertRaises(perms.AuthorizationError, m.GetVersions)
 
@@ -107,7 +105,7 @@ class PermsTests(test_utils.BaseTest):
       self.assertEquals(set(), GetRolesForMap(m))
 
       # Verify that all operations fail.
-      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, '{}')
+      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, {})
       self.assertRaises(perms.AuthorizationError, m.GetCurrent)
       self.assertRaises(perms.AuthorizationError, m.GetVersions)
       self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
@@ -118,8 +116,8 @@ class PermsTests(test_utils.BaseTest):
 
       # Verify the user can perform only the expected operations.
       self.assertRaises(
-          perms.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
-      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, '{}')
+          perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
+      self.assertRaises(perms.AuthorizationError, m.PutNewVersion, {})
       self.assertRaises(perms.AuthorizationError, m.SetWorldReadable, True)
       m.GetCurrent()
       self.assertRaises(perms.AuthorizationError, m.GetVersion, version_id)
@@ -131,7 +129,7 @@ class PermsTests(test_utils.BaseTest):
       domain = domains.Domain.Create('foo.com')
       domain.initial_domain_role = 'MAP_OWNER'
       domain.Put()
-      m = model.Map.Create('{}', 'foo.com')
+      m = model.Map.Create({}, 'foo.com')
 
     # Verify that a user in foo.com gets the domain role for foo.com.
     with test_utils.DomainLogin('insider', 'foo.com'):
@@ -161,13 +159,13 @@ class PermsTests(test_utils.BaseTest):
     with test_utils.DomainLogin('insider', 'foo.com'):
       self.assertTrue(perms.CheckAccess(perms.Role.MAP_CREATOR, 'xyz.com'))
       self.assertFalse(perms.CheckAccess(perms.Role.ADMIN))
-      model.Map.Create('{}', 'xyz.com')
+      model.Map.Create({}, 'xyz.com')
 
     # Users in bar.com don't have the CREATOR role.
     with test_utils.DomainLogin('outsider', 'bar.com'):
       self.assertFalse(perms.CheckAccess(perms.Role.MAP_CREATOR, 'xyz.com'))
       self.assertRaises(
-          perms.AuthorizationError, model.Map.Create, '{}', 'xyz.com')
+          perms.AuthorizationError, model.Map.Create, {}, 'xyz.com')
 
     # All users in gmail.test get MAP_CREATOR.
     perms.Grant('gmail.test', perms.Role.MAP_CREATOR, 'gmail.test')

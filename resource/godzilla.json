@@ -1,0 +1,289 @@
+{
+  "id": "foo",
+  "title": "Godzilla Meets Slobsterfest",
+  "description": "Tis the voice of the Lobster.",
+  "base_map_type": "GOOGLE_ROADMAP",
+  "footer": "Text to be shown on the bottom of the map",
+  "viewport": {
+    "lat_lon_alt_box": {
+      "west": 25.8,
+      "east": -123.3,
+      "north": 61.9,
+      "south": -78.5
+    }
+  },
+  "layers": [
+    {
+      "title": "Roz Savage tracks",
+      "description": "Follow Roz Savage. Source: <a href=\"http://www.nyc.gov/html/datamine/html/home/home.shtml\">NYC Datamine</a>, via <a href=\"http://wny.cc/EvacZones\" target=\"_blank\">WNYC.org</a>",
+      "legend": "<fieldset id=\"legend\" style=\"color:black\"><legend>Legend</legend><span style=\"background-color: #e8a317; display:block; float:left; height: 1.5ex; margin: .5ex 1ex 2ex 0; width: 1.5ex;\"></span>Zone A - <a href=\"http://www.nyc.gov/html/oem/html/nycsevereweather/weather_home.shtml#latest\" target=\"_blank\"><b>Mandatory evacuation lifted</b></a>. <br><span style=\"background-color: #ede275; display:block; float:left; height: 1.5ex; margin: .5ex 1ex 2ex 0; width: 1.5ex\"></span>Zone B - Potential flooding from a Category 2+ hurricane. <br><span style=\"background-color: #a4cb09; display:block; float:left; height: 1.5ex; margin: .5ex 1ex 3ex 0; width: 1.5ex;\"></span>Zone C - Potental flooding from a Category 3-4 hurricane hitting just south of NYC. </fieldset>",
+      "visibility": "DEFAULT_ON",
+      "source": {
+        "google_fusion_tables": {
+          "where": "GUID>1",
+          "from": "767204",
+          "select": "col8"
+        }
+      },
+      "type": "GOOGLE_FUSION_TABLES",
+      "id": "1312926193346",
+      "viewport": {
+        "lat_lon_alt_box": {
+          "north": 8.38,
+          "south": -47.77,
+          "west": 50.61,
+          "east": 129.45
+        }
+      }
+    },
+    {
+      "title": "Predicted Mississippi flood areas",
+      "description": "Source: <a href=\"http://www.geoeye.com\" target=\"_blank\">GeoEye</a>",
+      "max_zoom": 13,
+      "visibility": "DEFAULT_OFF",
+      "source": {
+        "google_map_tiles": {
+          "url": "http://mw1.google.com/crisisresponse/2011/tuscaloosa/tornado/ikonos/maptiles/{X}_{Y}_{Z}.png",
+          "url_is_tile_index": false
+        }
+      },
+      "min_zoom": 10,
+      "type": "GOOGLE_MAP_TILES",
+      "id": "1312994500403",
+      "viewport": {
+        "lat_lon_alt_box": {
+          "west": -87.7265,
+          "east": -87.2647,
+          "north": 33.3417,
+          "south": 33.0752
+        }
+      }
+    },
+    {
+      "title": "Australia Mines",
+      "description": "Source: <a href=\"http://www.australianminesatlas.gov.au\" target=\"_blank\">Australian Mines Atlas</a>",
+      "visibility": "DEFAULT_OFF",
+      "source": {
+        "kml": {
+          "url": "http://mw1.google.com/crisisresponse/Operating_Mines.kmz"
+        }
+      },
+      "type": "KML",
+      "id": "13129945004031",
+      "viewport": {
+        "lat_lon_alt_box": {
+          "north": 23.71,
+          "south": -61.7,
+          "west": 70.4,
+          "east": -167.2
+        }
+      }
+    },
+    {
+      "description": "Source: <a href=\"http://www.weather.com\" target=\"_blank\">weather.com</a>",
+      "title": "Global Weather Forecasts",
+      "visibility": "DEFAULT_OFF",
+      "source": {
+        "google_onion": {
+          "id": "weather_f_mph|invert:1"
+        }
+      },
+      "type": "GOOGLE_ONION",
+      "id": "1311026347590",
+      "viewport": {
+        "lat_lon_alt_box": {
+          "north": 52.04,
+          "south": 19.95,
+          "west": -129.77,
+          "east": -66.53
+        }
+      }
+    },
+    {
+      "title": "US Radar Tile Index",
+      "opacity": 60,
+      "description": "Source: <a href=\"http://www.weather.com\" target=\"_blank\">Weather.com</a>",
+      "max_zoom": 18,
+      "min_zoom": 1,
+      "visibility": "DEFAULT_ON",
+      "source": {
+        "google_map_tiles": {
+          "url": "http://mw1.gstatic.com/mw-weather/radar/maptiles/index.js",
+          "url_is_tile_index": true
+        }
+      },
+      "type": "GOOGLE_MAP_TILES",
+      "id": "1325136356262",
+      "viewport": {
+        "lat_lon_alt_box": {
+          "north": 49.2,
+          "south": 19.7,
+          "east": -63.5,
+          "west": -104.2
+        }
+      }
+    },
+    {
+      "id": "13144265226012",
+      "viewport": {
+        "lat_lon_alt_box": {
+          "north": 64.17,
+          "south": 2.81,
+          "east": -37.1,
+          "west": -155.31
+        }
+      },
+      "title": "US Radar KML",
+      "description": "Source: <a href=\"http://www.weather.com\" target=\"_blank\">Weather.com</a>",
+      "suppress_download_link": true,
+      "visibility": "DEFAULT_ON",
+      "source": {
+        "kml": {
+          "url": "http://mw1.gstatic.com/mw-weather/radar/us_radar_refresh_irene.kml"
+        }
+      },
+      "type": "KML",
+      "min_zoom": 1,
+      "max_zoom": 18,
+      "opacity": 60
+    },
+    {
+      "id": "18343507228075",
+      "title": "Rain and Flood Gauge Network",
+      "description": "Source: <a href=\"http://fiman.nc.gov/FIMAN/applogin.aspx?ReturnUrl=%2ffiman%2fDefault.aspx\">NC Floodplain Mapping Program</a>",
+      "visibility": "DEFAULT_ON",
+      "viewport": {
+        "lat_lon_alt_box": {
+          "north": 40.33,
+          "south": 29.78,
+          "east": -73.19,
+          "west": -88.48
+        }
+      },
+      "type": "GEORSS",
+      "source": {
+        "georss": {
+          "url": "http://fiman.nc.gov/fimanrss/RSSGage.aspx"
+        }
+      }
+    },
+    {
+      "id": "19674305823859",
+      "title": "Bay Area Geology - No Viewport",
+      "description": "Source: <a href=\"http://earthquake.usgs.gov\" target=\"_blank\">USGS</a>",
+      "suppress_download_link": true,
+      "visibility": "DEFAULT_OFF",
+      "source": {
+        "kml": {
+          "url": "http://earthquake.usgs.gov/regional/nca/bayarea/kml/geology.kmz"
+        }
+      },
+      "type": "KML"
+    },
+    {
+      "id": "300",
+      "title": "Folder: Thailand Flood Resources",
+      "description": "Top-level folder",
+      "visibility": "DEFAULT_OFF",
+      "type": "FOLDER",
+      "sublayers": [
+        {
+          "id": "3001",
+          "title": "Assets",
+          "description": "Second-level folder",
+          "visibility": "DEFAULT_OFF",
+          "type": "FOLDER",
+          "sublayers": [
+            {
+              "id": "1321565346712",
+              "title": "Ikonos 11/17 Imagery (Maptiles)",
+              "description": "Acquired 2011-11/17 by <a href=\"http://www.geoeye.com\" target=\"_blank\">GeoEye</a> Ikonos",
+              "viewport": {
+                "lat_lon_alt_box": {
+                  "north": 8.31,
+                  "south": 8.30,
+                  "east": 124.67,
+                  "west": 124.64
+                }
+              },
+              "min_zoom": 3,
+              "max_zoom": 18,
+              "clip_to_viewport": true,
+              "visibility": "DEFAULT_OFF",
+              "opacity": 50,
+              "type": "GOOGLE_MAP_TILES",
+              "source": {
+                "google_map_tiles": {
+                  "tile_coordinate_type": "GOOGLE",
+                  "url": "http://mw1.google.com/crisisresponse/2011/bangkok_floods/geoeye/Bangkok_Floods_po_735655_2011-11-12_2011_11_17_maptiles/{X}_{Y}_{Z}.png"
+                }
+              }
+            },
+            {
+              "id": "1318858474855",
+              "title": "Local Community Networks (FT)",
+              "description": "",
+              "viewport": {
+                "lat_lon_alt_box": {
+                  "north": 18.82,
+                  "south": 13.20,
+                  "east": 103.85,
+                  "west": 98.23
+                }
+              },
+              "visibility": "DEFAULT_OFF",
+              "type": "GOOGLE_FUSION_TABLES",
+              "source": {
+                "google_fusion_tables": {
+                  "from": "1842877",
+                  "select": "",
+                  "where": ""
+                }
+              }
+            }, {
+              "id": "1319475227341",
+              "title": "Flood-related photos (KML)",
+              "description": "",
+              "viewport": {
+                "lat_lon_alt_box": {
+                  "north": 18.82,
+                  "south": 13.20,
+                  "east": 103.86,
+                  "west": 98.23
+                }
+              },
+              "visibility": "DEFAULT_ON",
+              "type": "KML",
+              "source": {
+                "kml": {
+                  "url": "http://hugin.ansur.no/un.xml"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1386178282",
+      "title": "Boulder Emergency Flooding",
+      "description": "Source: <a href=\"http://boulderoem.com/emergency-status\" target=\"_blank\">Boulder OEM</a>, <a href=\"http://www.ci.longmont.co.us/emergency.htm\" target=\"_blank\">City of Longmont</a>",
+      "visibility": "DEFAULT_OFF",
+      "viewport": {
+        "lat_lon_alt_box": {
+          "north": 40.80,
+          "south": 39.17,
+          "east": -103.87,
+          "west": -106.11
+        }
+      },
+      "type": "GOOGLE_MAPS_ENGINE_LITE_OR_PRO",
+      "source": {
+        "google_maps_engine_lite_or_pro": {
+          "maps_engine_url": "https://mapsengine.google.com/map/edit?mid=zYYdhADI7PvQ.kzJSidMtEIqY",
+          "url": "https://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY"
+        }
+      }
+    }
+  ]
+}

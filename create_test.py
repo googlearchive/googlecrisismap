@@ -32,7 +32,7 @@ class CreateTest(test_utils.BaseTest):
       # Confirm that a map was created.
       location = response.headers['Location']
       map_object = model.Map.Get(location.split('/')[-1])
-      self.assertTrue('Untitled' in map_object.GetCurrentJson())
+      self.assertTrue('Untitled' in map_object.map_root['title'])
       self.assertLog(logs.Event.MAP_CREATED, uid='creator',
                      map_id=map_object.id, domain_name='xyz.com')
 

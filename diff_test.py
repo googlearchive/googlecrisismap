@@ -31,15 +31,15 @@ class DiffTest(test_utils.BaseTest):
 
   def testDiff(self):
     """Test that a map's versions are diffed against new maproot JSON."""
-    saved_json = json.dumps({'id': 'random_id_1', 'a': 'b', 'c': 'd'})
-    new_json = json.dumps({'id': 'random_id_1', 'a': 'b', 'x': 'y'})
-    catalog_json = json.dumps({'id': 'random_id_1', 'x': 'y', 'c': 'd'})
+    saved_map = {'id': 'random_id_1', 'a': 'b', 'c': 'd'}
+    new_map = {'id': 'random_id_1', 'a': 'b', 'x': 'y'}
+    catalog_map = {'id': 'random_id_1', 'x': 'y', 'c': 'd'}
 
     # Create a saved map and a catalog entry to diff against.
     with test_utils.RootLogin():
-      map_object = model.Map.Create(catalog_json, 'xyz.com', owners=['owner'])
+      map_object = model.Map.Create(catalog_map, 'xyz.com', owners=['owner'])
       model.CatalogEntry.Create('xyz.com', 'Published', map_object)
-      map_object.PutNewVersion(saved_json)
+      map_object.PutNewVersion(saved_map)
 
     # Exercise the diff endpoint.
     saved_diff = 'saved diff'
@@ -47,19 +47,19 @@ class DiffTest(test_utils.BaseTest):
     html_diff = self.mox.CreateMock(difflib.HtmlDiff)
     self.mox.StubOutWithMock(difflib, 'HtmlDiff')
     difflib.HtmlDiff(wrapcolumn=mox.IgnoreArg()).AndReturn(html_diff)
-    html_diff.make_file(diff.FormatJsonForDisplay(saved_json).splitlines(),
-                        diff.FormatJsonForDisplay(new_json).splitlines(),
+    html_diff.make_file(diff.ToNormalizedJson(saved_map).splitlines(),
+                        diff.ToNormalizedJson(new_map).splitlines(),
                         fromdesc='Saved', todesc='Current',
                         context=mox.IgnoreArg()).AndReturn(saved_diff)
-    html_diff.make_file(diff.FormatJsonForDisplay(catalog_json).splitlines(),
-                        diff.FormatJsonForDisplay(new_json).splitlines(),
+    html_diff.make_file(diff.ToNormalizedJson(catalog_map).splitlines(),
+                        diff.ToNormalizedJson(new_map).splitlines(),
                         fromdesc='xyz.com/Published', todesc='Current',
                         context=mox.IgnoreArg()).AndReturn(catalog_diff)
 
     self.mox.ReplayAll()
     with test_utils.Login('owner'):
       self.DoPost('/.diff/' + map_object.id,
-                  'new_json=' + new_json + '&xsrf_token=XSRF')
+                  {'new_json': json.dumps(new_map), 'xsrf_token': 'XSRF'})
 
 
 if __name__ == '__main__':

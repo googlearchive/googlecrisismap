@@ -45,15 +45,15 @@ class PublishTest(test_utils.BaseTest):
           'xyz.com', 'abc', self.map_object, is_listed=True)
 
       # Republish with a new map version.
-      self.map_object.PutNewVersion('{"title": "new version"}')
+      self.map_object.PutNewVersion({'title': 'new version'})
       self.DoPost('/xyz.com/.publish',
                   'label=abc&map=%s&xsrf_token=XSRF' % self.map_id)
 
     # Confirm that the entry is still listed and points at the new version.
     entry = model.CatalogEntry.Get('xyz.com', 'abc')
     self.assertTrue(entry.is_listed)
-    self.assertEqualsJson(
-        '{"id": "random_id_1", "title": "new version"}', entry.maproot_json)
+    self.assertEquals(
+        {'id': 'random_id_1', 'title': 'new version'}, entry.map_root)
 
   def testInvalidLabels(self):
     """Tests to makes sure invalid labels don't get published."""

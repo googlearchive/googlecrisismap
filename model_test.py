@@ -27,13 +27,14 @@ import utils
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
-JSON1_WITHOUT_ID = '{"title": "One", "description": "description1"}'
-JSON2_WRONG_ID = '{"id": "foo", "title": "Two", "description": "description2"}'
-# The "id" property of the first map written during a test will be set to
-# "random_id_1" due to test_utils.MakePredictableId.
-JSON1 = '{"id": "random_id_1", "title": "One", "description": "description1"}'
-JSON2 = '{"id": "random_id_1", "title": "Two", "description": "description2"}'
-JSON3 = '{"id": "random_id_1", "title": "Three", "description": "description3"}'
+
+MAP1_WITHOUT_ID = {'title': 'One', 'description': 'description1'}
+MAP2_WRONG_ID = {'id': 'foo', 'title': 'Two', 'description': 'description2'}
+# The 'id' property of the first map written during a test will be set to
+# 'random_id_1' due to test_utils.MakePredictableId.
+MAP1 = {'id': 'random_id_1', 'title': 'One', 'description': 'description1'}
+MAP2 = {'id': 'random_id_1', 'title': 'Two', 'description': 'description2'}
+MAP3 = {'id': 'random_id_1', 'title': 'Three', 'description': 'description3'}
 
 
 class MapTests(test_utils.BaseTest):
@@ -41,7 +42,7 @@ class MapTests(test_utils.BaseTest):
 
   def CreateMap(self, title, role, user_ids):
     """Creates a map with all users in user_ids assigned a permissions role."""
-    m = test_utils.CreateMap('{"title": "%s"}' % title)
+    m = test_utils.CreateMap({'title': title})
     for u in user_ids:
       m.ChangePermissionLevel(role, u)
     return m
@@ -56,9 +57,9 @@ class MapTests(test_utils.BaseTest):
   def testVersions(self):
     """Verifies that creating and setting versions works properly."""
     with test_utils.RootLogin():
-      m = model.Map.Create(JSON1, 'xyz.com')
+      m = model.Map.Create(MAP1, 'xyz.com')
       id1 = m.GetCurrent().id
-      id2 = m.PutNewVersion(JSON2)
+      id2 = m.PutNewVersion(MAP2)
 
       # Verify that versions are returned in reverse chronological order.
       versions = list(m.GetVersions())
@@ -68,21 +69,21 @@ class MapTests(test_utils.BaseTest):
       # Verify that GetCurrent() sees the most recent version as expected.
       current = m.GetCurrent()
       self.assertEquals(id2, current.id)
-      self.assertEqualsJson(JSON2, current.maproot_json)
+      self.assertEquals(MAP2, current.map_root)
       self.assertEquals('root', current.creator_uid)
 
   def testWorldReadable(self):
     # Verify that the current version is only visible to the public after
     # setting world_readable to True.
     with test_utils.RootLogin():
-      m = model.Map.Create(JSON1, 'xyz.com')
+      m = model.Map.Create(MAP1, 'xyz.com')
     with test_utils.Login('outsider'):
       self.assertRaises(perms.AuthorizationError, m.GetCurrent)
 
     with test_utils.RootLogin():
       m.SetWorldReadable(True)
     with test_utils.Login('outsider'):
-      self.assertEqualsJson(JSON1, m.GetCurrent().maproot_json)
+      self.assertEquals(MAP1, m.GetCurrent().map_root)
 
     with test_utils.RootLogin():
       m.SetWorldReadable(False)
@@ -165,11 +166,11 @@ class MapTests(test_utils.BaseTest):
     """Verifies that the "id" property of maps is enforced to be the map ID."""
     with test_utils.RootLogin():
       # "id" property should be filled in if it's missing.
-      m = test_utils.CreateMap(JSON1_WITHOUT_ID)
-      self.assertEqualsJson(JSON1, m.GetCurrentJson())
+      m = test_utils.CreateMap(MAP1_WITHOUT_ID)
+      self.assertEquals(MAP1, m.map_root)
       # "id" property should be overwritten if it's wrong.
-      m.PutNewVersion(JSON2_WRONG_ID)
-      self.assertEqualsJson(JSON2, m.GetCurrentJson())
+      m.PutNewVersion(MAP2_WRONG_ID)
+      self.assertEquals(MAP2, m.map_root)
 
   def testInitialDomainRole(self):
     """Verifies that map creation sets up initial permissions properly."""
@@ -212,27 +213,27 @@ class MapTests(test_utils.BaseTest):
     self.assertEquals([], m.model.viewers)
 
   def testMapCache(self):
-    """Tests caching of current JSON data."""
+    """Tests caching of MapRoot data."""
     # Verify the default values from Map.Create.
     with test_utils.RootLogin():
-      m = model.Map.Create(JSON1, 'xyz.com', world_readable=True)
-      m.PutNewVersion(JSON2)
-      self.assertEqualsJson(JSON2, m.GetCurrentJson())
+      m = model.Map.Create(MAP1, 'xyz.com', world_readable=True)
+      m.PutNewVersion(MAP2)
+      self.assertEquals(MAP2, m.map_root)
       self.assertEquals(m.title, 'Two')
       self.assertEquals(m.description, 'description2')
-      # GetCurrentJson should have filled the cache.
-      self.assertEqualsJson(JSON2, memcache.get('Map,%s,json' % m.id))
+      # GetMapRoot should have filled the cache.
+      self.assertEquals(MAP2, memcache.get('Map,%s,map_root' % m.id))
 
       # PutVersion should clear the cache.
-      m.PutNewVersion(JSON3)
-      self.assertEquals(None, memcache.get('Map,%s,json' % m.id))
-      self.assertEqualsJson(JSON3, m.GetCurrentJson())
+      m.PutNewVersion(MAP3)
+      self.assertEquals(None, memcache.get('Map,%s,map_root' % m.id))
+      self.assertEquals(MAP3, m.map_root)
 
   def testGetAll(self):
     """Tests Maps.GetAll and Maps.GetViewable."""
     with test_utils.RootLogin() as root:
-      m1 = model.Map.Create('{}', 'xyz.com', world_readable=True)
-      m2 = model.Map.Create('{}', 'xyz.com', world_readable=False)
+      m1 = model.Map.Create({}, 'xyz.com', world_readable=True)
+      m2 = model.Map.Create({}, 'xyz.com', world_readable=False)
 
       def ModelKeys(maps):
         return {m.model.key() for m in maps}
@@ -281,8 +282,8 @@ class MapTests(test_utils.BaseTest):
     with test_utils.RootLogin():
       domains.Domain.Create('cows.net')
       domains.Domain.Create('dogs.org')
-      model.Map.Create('{"title": "Arf"}', 'dogs.org', viewers=['viewer'])
-      model.Map.Create('{"title": "Moo"}', 'cows.net', viewers=['viewer'],
+      model.Map.Create({'title': 'Arf'}, 'dogs.org', viewers=['viewer'])
+      model.Map.Create({'title': 'Moo'}, 'cows.net', viewers=['viewer'],
                        owners=[])
 
       # Check that all the expected maps exist.
@@ -309,7 +310,7 @@ class CatalogEntryTests(test_utils.BaseTest):
   def testCreate(self):
     """Tests creation of a CatalogEntry."""
     m = test_utils.CreateMap(
-        '{"title": "Fancy fancy"}', editors=['publisher', 'outsider'])
+        {'title': 'Fancy fancy'}, editors=['publisher', 'outsider'])
     self.CaptureLog()
 
     with test_utils.Login('outsider'):
@@ -339,7 +340,7 @@ class CatalogEntryTests(test_utils.BaseTest):
       model.CatalogEntry.Create('xyz.com', 'label', m)
 
   def testDelete(self):
-    m = test_utils.CreateMap('{"title": "Bleg"}', viewers=['viewer'])
+    m = test_utils.CreateMap({'title': 'Bleg'}, viewers=['viewer'])
     with test_utils.RootLogin():
       entry = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
       domains.Domain.Create('xyz.com')
@@ -386,12 +387,12 @@ class CatalogEntryTests(test_utils.BaseTest):
     """Tests modification and update of an existing CatalogEntry."""
     perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
     with test_utils.Login('publisher'):
-      m = test_utils.CreateMap(JSON1, editors=['publisher'])
+      m = test_utils.CreateMap(MAP1, editors=['publisher'])
       mc = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
       self.assertEquals('One', mc.title)
 
       # Update the CatalogEntry to point at a new MapVersion.
-      m.PutNewVersion(JSON2)
+      m.PutNewVersion(MAP2)
       mc = model.CatalogEntry.Get('xyz.com', 'label')
       self.assertEquals('One', mc.title)  # no change yet
       mc.is_listed = True
@@ -407,7 +408,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     # The CatalogEntry should now point at the new MapVersion.
     mc = model.CatalogEntry.Get('xyz.com', 'label')
     self.assertEquals('Two', mc.title)
-    self.assertEqualsJson(JSON2, mc.maproot_json)
+    self.assertEquals(MAP2, mc.map_root)
     self.assertEquals(True, mc.is_listed)
 
   def testPut_StickyCatalogEntries(self):
@@ -419,9 +420,9 @@ class CatalogEntryTests(test_utils.BaseTest):
       perms.Grant('coworker', perms.Role.CATALOG_EDITOR, 'xyz.com')
 
     with test_utils.Login('publisher'):
-      m = test_utils.CreateMap(JSON1, editors=['publisher', 'coworker'])
+      m = test_utils.CreateMap(MAP1, editors=['publisher', 'coworker'])
       mc = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
-      m.PutNewVersion(JSON2)
+      m.PutNewVersion(MAP2)
 
     # Even though coworker has CATALOG_EDITOR, she can't overwrite the entry.
     with test_utils.Login('coworker'):

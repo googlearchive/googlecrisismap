@@ -20,7 +20,7 @@ function ImporterViewTest() {
   // Layers will be keyed by title in this.rows_; therefore the titles must be
   // unique.
   this.maps_ = [
-    {url: '/root/example.com/map_a', maproot: {
+    {url: '/root/example.com/map_a', map_root: {
       title: 'Map A', layers: [
         {title: 'Layer A', id: 'layer_a', type: cm.LayerModel.Type.KML},
         {title: 'Folder A', id: 'folder_a', type: cm.LayerModel.Type.FOLDER,
@@ -29,7 +29,7 @@ function ImporterViewTest() {
         ]}
       ]
     }},
-    {url: '/root/example.com/map_b', maproot: {
+    {url: '/root/example.com/map_b', map_root: {
       title: 'Map B', layers: [
         {title: 'Layer B', id: 'layer_b', type: cm.LayerModel.Type.KML},
         {title: 'Folder B', id: 'folder_b', type: cm.LayerModel.Type.FOLDER,
@@ -93,7 +93,7 @@ ImporterViewTest.prototype.openImporter_ = function() {
     }
   };
   goog.array.forEach(this.maps_, function(map) {
-    goog.array.forEach(map.maproot.layers, function(layer) {
+    goog.array.forEach(map.map_root.layers, function(layer) {
       addLayer(layer);
     });
   }, this);
@@ -269,7 +269,7 @@ ImporterViewTest.prototype.testCreateNew = function() {
 /** Tests that preview links are correctly created. */
 ImporterViewTest.prototype.testPreviewLinks = function() {
   this.maps_ = [
-    {url: '/root/example.com/map_a', maproot: {
+    {url: '/root/example.com/map_a', map_root: {
      title: 'Map A', layers: [
        // Leaf layer, default-off.
        {title: 'Layer A', id: 'layer_a', type: cm.LayerModel.Type.KML},

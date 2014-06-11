@@ -13,7 +13,6 @@
 
 __author__ = 'shakusa@google.com (Steve Hakusa)'
 
-import json
 import urllib
 
 import map_review
@@ -27,7 +26,7 @@ class MapReviewTest(test_utils.BaseTest):
 
   def setUp(self):
     super(MapReviewTest, self).setUp()
-    maproot_json = json.dumps({
+    map_root = {
         'id': 'map1',
         'title': 'Map 1',
         'layers': [
@@ -72,8 +71,8 @@ class MapReviewTest(test_utils.BaseTest):
             'crowd_enabled': True,
             'cluster_radius': 987,
         }]
-    })
-    self.map_object = test_utils.CreateMap(maproot_json, reviewers=['reviewer'])
+    }
+    self.map_object = test_utils.CreateMap(map_root, reviewers=['reviewer'])
     self.map_id = self.map_object.id
     self.topic1_id = '%s.shelter' % self.map_id
     self.question1_id = '%s.shelter.q1' % self.map_id

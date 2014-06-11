@@ -629,12 +629,12 @@ class MetadataFetchTest(test_utils.BaseTest):
 
   def testSystem(self):
     """Tests map, metadata_fetch, and metadata, all working together."""
-    map_object = test_utils.CreateMap("""{
-        "layers": [{"type": "KML",
-                    "source": {"kml": {"url": "%s"}}},
-                   {"type": "GEORSS",
-                    "source": {"georss": {"url": "%s"}}}]
-    }""" % (SOURCE_URL, GEORSS_URL), 'xyz.com', owners=['owner'])
+    map_object = test_utils.CreateMap({
+        'layers': [{'type': 'KML',
+                    'source': {'kml': {'url': SOURCE_URL}}},
+                   {'type': 'GEORSS',
+                    'source': {'georss': {'url': GEORSS_URL}}}]
+    }, 'xyz.com', owners=['owner'])
 
     # Simulate the first map load.
     with test_utils.Login('owner'):

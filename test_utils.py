@@ -18,7 +18,6 @@ import base64
 import contextlib
 import cookielib
 import datetime
-import json
 import os
 import rfc822
 import StringIO
@@ -173,9 +172,9 @@ def DatetimeTypeWithFakeNow(now):
                             'now': staticmethod(lambda: now)})
 
 
-def CreateMap(maproot_json='{"title": "Foo"}', domain=DEFAULT_DOMAIN, **kwargs):
+def CreateMap(map_root=None, domain=DEFAULT_DOMAIN, **kwargs):
   with RootLogin():
-    return model.Map.Create(maproot_json, domain, **kwargs)
+    return model.Map.Create(map_root or {}, domain, **kwargs)
 
 
 def NewCrowdReport(source='http://source.com/',
@@ -334,10 +333,6 @@ class BaseTest(unittest.TestCase):
     """Checks that a value is within a desired range."""
     self.assertGreaterEqual(actual, low)
     self.assertLessEqual(actual, high)
-
-  def assertEqualsJson(self, expected, actual):
-    """Checks for a JSON string that has the equivalent deserialization."""
-    self.assertEquals(json.loads(expected), json.loads(actual))
 
   def assertEqualsUrlWithUnorderedParams(self, expected, actual):
     """Checks for an expected URL, ignoring the order of query params."""
