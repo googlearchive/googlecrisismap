@@ -20,7 +20,6 @@ import re
 import StringIO
 import zipfile
 
-import cache
 import config
 import metadata_fetch
 import test_utils
@@ -585,9 +584,11 @@ class MetadataFetchTest(test_utils.BaseTest):
 
     self.mox.ReplayAll()
     self.SetTime(1234567890)
-    cache.Set(['metadata', SOURCE_ADDRESS], METADATA)
+    metadata_fetch.METADATA_CACHE.Set(SOURCE_ADDRESS, METADATA)
     metadata_fetch.UpdateMetadata(SOURCE_ADDRESS)
-    self.assertEquals(METADATA_2, cache.Get(['metadata', SOURCE_ADDRESS]))
+    self.assertEquals(
+        METADATA_2,
+        metadata_fetch.METADATA_CACHE.Get(SOURCE_ADDRESS))
 
     self.mox.VerifyAll()
 
@@ -597,7 +598,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     metadata_fetch.FetchAndUpdateMetadata = lambda *args: self.fail()
 
     self.SetTime(1234567890)
-    cache.Set(['metadata', SOURCE_ADDRESS], METADATA)
+    metadata_fetch.METADATA_CACHE.Set(SOURCE_ADDRESS, METADATA)
     metadata_fetch.UpdateMetadata(SOURCE_ADDRESS)
 
   def testScheduleFetch(self):
@@ -610,8 +611,8 @@ class MetadataFetchTest(test_utils.BaseTest):
 
     # ...when the metadata_active flag is set.
     self.mox.ReplayAll()
-    cache.Set(['metadata', SOURCE_ADDRESS], METADATA)
-    cache.Set(['metadata_active', SOURCE_ADDRESS], 1)
+    metadata_fetch.METADATA_CACHE.Set(SOURCE_ADDRESS, METADATA)
+    metadata_fetch.ACTIVE_CACHE.Set(SOURCE_ADDRESS, 1)
     metadata_fetch.ScheduleFetch(SOURCE_ADDRESS)
 
     self.mox.VerifyAll()
@@ -621,8 +622,9 @@ class MetadataFetchTest(test_utils.BaseTest):
     self.mox.StubOutWithMock(taskqueue, 'add')
 
     # ...when the address is unfetchable.
-    cache.Set(['metadata', SOURCE_ADDRESS], {'fetch_impossible': True})
-    cache.Set(['metadata_active', SOURCE_ADDRESS], 1)
+    metadata_fetch.METADATA_CACHE.Set(
+        SOURCE_ADDRESS, {'fetch_impossible': True})
+    metadata_fetch.ACTIVE_CACHE.Set(SOURCE_ADDRESS, 1)
     metadata_fetch.ScheduleFetch(SOURCE_ADDRESS)
 
     self.mox.VerifyAll()

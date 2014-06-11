@@ -16,37 +16,16 @@ __author__ = 'romano@google.com (Raquel Romano)'
 import os
 import StringIO
 import urllib
-import xml.etree.ElementTree
 import zipfile
 
 import kmlify
-import mox
 import test_utils
 
-from google.appengine.api import memcache
 from google.appengine.api import urlfetch
 
 
-SAMPLE_CSV = """\
-Id,Timestamp,Latitude,Longitude,Name,Contact Number,Description\n
-1,,30.28,78.98,Main Elementary,555-555-5555,<b>Place:</b>Main Elementary\n
-2,,29.84,80.53,Main High School,222-222-2222,<b>Place:</b>Main High School"""
-
-SAMPLE_XML = """<?xml version="1.0" encoding="UTF-8"?>
-                  <kml xmlns="http://earth.google.com/kml/2.2">
-                 <Document><Folder>
-                   <Placemark><Point>
-                     <coordinates>-108.8,36.3,0.0</coordinates>
-                   </Point></Placemark>
-                   <Placemark><Point>
-                     <coordinates>-92.5,46.1,0.0</coordinates>
-                   </Point></Placemark>
-                 </Folder></Document>
-               </kml>"""
-
-
 class UrlResponse(object):
-  """Dummy urlfetch response object."""
+  """A fake urlfetch response object."""
 
   def __init__(self, content):
     self.content = content
@@ -127,88 +106,45 @@ class KmlifyTests(test_utils.BaseTest):
 
   def DoGoldenFileTest(self, input_type, input_name, output_name, url_params,
                        join_name=None):
-    """Perform a golden test, check the response matches expected output.
+    """Perform a test using input and output files in the 'goldentests' dir.
 
     Args:
       input_type: A string, one of 'csv' or 'xml'.
-      input_name: The file containing the input in the 'goldentests' dir.
-      output_name: The file containing the output in the 'goldentests' dir.
-      url_params: A dictionary containing query parameters for the conversion.
-      join_name: File containing the join csv in the 'goldentests' dir, or None.
+      input_name: File containing the input in the 'goldentests' dir.
+      output_name: File containing expected output in the 'goldentests' dir.
+      url_params: Dictionary of the query parameters for kmlify.
+      join_name: File containing the join CSV in the 'goldentests' dir, or None.
     """
-    cwd = os.path.dirname(__file__)
+    data_dir = os.path.join(os.path.dirname(__file__), 'goldentests')
+    input_data = open(os.path.join(data_dir, input_name)).read()
+    expected_data = open(os.path.join(data_dir, output_name)).read()
 
-    infile = open(os.path.join(cwd, 'goldentests', input_name)).read()
-    expectedfile = open(os.path.join(cwd, 'goldentests', output_name)).read()
-    # This is in app startup
-    self.mox.StubOutWithMock(memcache, 'get')
-    memcache.get('Config,root_path').MultipleTimes().AndReturn('')
+    # Set up a fake for urlfetch.  If it is called with an incorrect url,
+    # responses[url] will raise a KeyError.
+    url = 'http://example.com/data.%s' % input_type
+    responses = {url: UrlResponse(input_data)}
+    if 'join' in url_params:
+      join_url = url_params['join'].split(',')[1]
+      join_data = open(os.path.join(data_dir, join_name)).read()
+      responses[join_url] = UrlResponse(join_data)
+    self.mox.stubs.Set(urlfetch, 'fetch', lambda url, **kwargs: responses[url])
 
-    self.mox.StubOutWithMock(kmlify, 'FetchData')
-    kmlify.FetchData(mox.ANY, mox.ANY).AndReturn(infile)
+    # Perform the kmlify request and check the output.
+    response = self.DoGet('/.kmlify?' + urllib.urlencode(
+        dict(url_params, type=input_type, url=url)))
+    output_kmz = zipfile.ZipFile(StringIO.StringIO(response.body))
+    output_data = output_kmz.open('doc.kml').read()
 
-    if join_name:
-      joinfile = open(os.path.join(cwd, 'goldentests', join_name)).read()
-      kmlify.FetchData(mox.IgnoreArg()).AndReturn(joinfile)
+    MaybeUpdateGoldenFile(output_name, output_data)
+    self.assertMultiLineEqual(expected_data, output_data)
 
-    url = 'http://whatever/'
-    memcache.get(mox.StrContains('S\'%s' % url))  # return nothing from cache
-    self.mox.ReplayAll()
-    response = self.DoGet('/.kmlify?type=%s&url=%s&%s' %
-                          (input_type, url, urllib.urlencode(url_params)))
-    self.mox.VerifyAll()
-    outkmz = zipfile.ZipFile(StringIO.StringIO(response.body))
-    outfile = outkmz.open('doc.kml').read()
-
-    MaybeUpdateGoldenFile(output_name, outfile)
-
-    self.assertMultiLineEqual(expectedfile, outfile)
-
-  def testGetCsvWithCaching(self):
-    unused_kml_doc = self.DoGetTest('csv', 'http://geo.com/a.csv', SAMPLE_CSV)
-    # TODO(arb): How much do we want to check the KML? Should we drop this
-    # in favor of the golden tests?
-
-  def testGetXmlWithCaching(self):
-    unused_kml_doc = self.DoGetTest('xml', 'http://geo.com/a.kml', SAMPLE_XML)
-    # TODO(arb): How much do we want to check the KML? Should we drop this
-    # in favor of the golden tests?
-
-  def DoGetTest(self, filetype, url, response, extra_flags=''):
-    self.mox.StubOutWithMock(urlfetch, 'fetch')
-    self.mox.StubOutWithMock(memcache, 'get')
-    self.mox.StubOutWithMock(memcache, 'set')
-    # These are app setup
-    memcache.get('Config,root_path').MultipleTimes().AndReturn('')
-    memcache.set('Config,root_path', '/root', time=10).MultipleTimes()
-    # Check the bit of the pickle we care about.
-    memcache.get(mox.StrContains('S\'%s' % url))
-    urlfetch.fetch(url, deadline=10,
-                   validate_certificate=False).AndReturn(
-                       UrlResponse(response))
-    save_kmz = []
-
-    def SaveMemcacheSet(unused_key, kmz, unused_ttl):
-      save_kmz.append(kmz)
-
-    # Consider a fake rather than a mock?
-    memcache.set(mox.StrContains('S\'%s' % url),
-                 mox.IsA(basestring),
-                 kmlify.Kmlify.TTL_SECONDS).WithSideEffects(SaveMemcacheSet)
-    self.mox.ReplayAll()
-
-    response = self.DoGet('/.kmlify?type=%s&url=%s&%s' % (filetype, url,
-                                                          extra_flags))
-    self.mox.VerifyAll()
-    self.assertEquals(save_kmz[0], response.body)
-    kmz = zipfile.ZipFile(StringIO.StringIO(save_kmz[0]))
-    self.assertEquals(['doc.kml'], kmz.namelist())
-    kml_doc = kmz.open('doc.kml').read()
-    self.CheckValidKml(kml_doc)
-    return kml_doc
-
-  def CheckValidKml(self, kml_doc):
-    xml.etree.ElementTree.fromstring(kml_doc)
+    # The content should be cached now, so repeating the request should yield
+    # the same result even with urlfetch disabled.
+    self.mox.stubs.Set(urlfetch, 'fetch', lambda url, **kwargs: UrlResponse(''))
+    response2 = self.DoGet('/.kmlify?' + urllib.urlencode(
+        dict(url_params, type=input_type, url=url)))
+    self.assertEquals(
+        response.body, response2.body, "kmlify didn't use cache as expected")
 
 
 if __name__ == '__main__':

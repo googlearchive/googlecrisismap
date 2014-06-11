@@ -17,16 +17,18 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 import httplib
 import json
 import logging
-import pickle
 import re
 import urlparse
 
 import base_handler
+import cache
 
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch
 
-CACHE_SECONDS = 120  # seconds to cache each fetched URL
+CACHE_TTL_SECONDS = 60
+CACHE = cache.Cache('jsonp', CACHE_TTL_SECONDS)
+QPM_CACHE = cache.Cache('jsonp.qpm', 0)  # used only for making cache keys
 MAX_OUTBOUND_QPM_PER_IP = 30  # maximum outbound HTTP fetches/min per client IP
 HTTP_TOO_MANY_REQUESTS = 429  # this HTTP status code is not defined in httplib
 
@@ -67,7 +69,9 @@ def ParseJson(json_string):
 
 def AssertRateLimitNotExceeded(client_ip):
   """Raises an error if the given IP exceeds its allowed request rate."""
-  cache_key = pickle.dumps(('jsonp.qpm', client_ip))
+  # We use memcache directly, as our cache abstraction does not support incr(),
+  # but avoid key collision by using a Cache object to produce the cache keys.
+  cache_key = QPM_CACHE.KeyToJson(client_ip)
   if memcache.get(cache_key) >= MAX_OUTBOUND_QPM_PER_IP:
     raise base_handler.Error(HTTP_TOO_MANY_REQUESTS,
                              'Rate limit exceeded; please try again later.')
@@ -95,11 +99,9 @@ def FetchJson(url, post_json, use_cache, client_ip, referrer=None):
     base_handler.Error: The request failed or exceeded the rate limit.
   """
   url = SanitizeUrl(url)
-  cache_key = pickle.dumps(('jsonp.content', url, post_json))
-  value = None
-  if use_cache:
-    value = memcache.get(cache_key)
-  if value is None:
+
+  def Fetch():
+    """Fetch the URL and return the parsed JSON."""
     AssertRateLimitNotExceeded(client_ip)
     method = post_json and 'POST' or 'GET'
     headers = post_json and {'Content-Type': 'application/json'} or {}
@@ -110,9 +112,9 @@ def FetchJson(url, post_json, use_cache, client_ip, referrer=None):
       logging.warn('Request for url=%r post_json=%r returned status %r: %r',
                    url, post_json, result.status_code, result.content)
       raise base_handler.Error(result.status_code, 'Request failed.')
-    value = ParseJson(result.content)
-    memcache.set(cache_key, value, CACHE_SECONDS)
-  return value
+    return ParseJson(result.content)
+
+  return CACHE.Get(url, Fetch) if use_cache and not post_json else Fetch()
 
 
 def PopLocalizedChild(parent, field_name, lang):
@@ -172,7 +174,7 @@ class Jsonp(base_handler.BaseHandler):
     - post_json: Optional.  If non-empty, we do a POST instead of a GET and
       send this data with Content-Type: application/json.
     - no_cache: Optional.  If specified, we fetch the JSON directly from the
-      source URL instead of consulting the cache (up to CACHE_SECONDS old).
+      source URL instead of consulting the cache (up to CACHE_TTL_SECONDS old).
     - callback: Optional.  A callback function name.  If provided, the
       returned JSON is wrapped in a JavaScript function call.
     - hl: Optional.  A BCP 47 language code.  If specified, the JSON is

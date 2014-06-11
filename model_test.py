@@ -24,7 +24,6 @@ import test_utils
 import users
 import utils
 
-from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
 
@@ -214,6 +213,7 @@ class MapTests(test_utils.BaseTest):
   def testMapCache(self):
     """Tests caching of MapRoot data."""
     # Verify the default values from Map.Create.
+    self.SetTime(0)
     with test_utils.RootLogin():
       m = model.Map.Create(MAP1, 'xyz.com', world_readable=True)
       m.PutNewVersion(MAP2)
@@ -221,11 +221,11 @@ class MapTests(test_utils.BaseTest):
       self.assertEquals(m.title, 'Two')
       self.assertEquals(m.description, 'description2')
       # GetMapRoot should have filled the cache.
-      self.assertEquals(MAP2, memcache.get('Map,%s,map_root' % m.id))
+      self.assertEquals(MAP2, model.MAP_ROOT_CACHE.Get(m.id))
 
-      # PutVersion should clear the cache.
-      m.PutNewVersion(MAP3)
-      self.assertEquals(None, memcache.get('Map,%s,map_root' % m.id))
+      m.PutNewVersion(MAP3)  # should update the cache
+      self.SetTime(1)  # advance past the ULL so we see the update
+      self.assertEquals(None, model.MAP_ROOT_CACHE.Get(m.id))
       self.assertEquals(MAP3, m.map_root)
 
   def testGetAll(self):

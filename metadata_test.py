@@ -16,7 +16,6 @@ __author__ = 'cimamoglu@google.com (Cihat Imamoglu)'
 
 import json
 
-import cache
 import metadata
 import test_utils
 
@@ -37,16 +36,16 @@ MAPROOT = {
 class MetadataTest(test_utils.BaseTest):
   def testGetSourceAddresses(self):
     self.assertEquals(
-        set(['KML:http://x.com/a', 'GEORSS:http://y.com/b']),
+        {'KML:http://x.com/a', 'GEORSS:http://y.com/b'},
         set(metadata.GetSourceAddresses(MAPROOT)))
 
   def testCacheSourceAddresses(self):
     cache_key1, sources = metadata.CacheSourceAddresses('abc', MAPROOT)
     self.assertEquals(
-        set(['KML:http://x.com/a', 'GEORSS:http://y.com/b']),
-        set(cache.Get(['source_addresses', cache_key1])))
+        {'KML:http://x.com/a', 'GEORSS:http://y.com/b'},
+        set(metadata.SOURCE_ADDRESS_CACHE.Get(cache_key1)))
     self.assertEquals(
-        set(['KML:http://x.com/a', 'GEORSS:http://y.com/b']),
+        {'KML:http://x.com/a', 'GEORSS:http://y.com/b'},
         set(sources))
 
     # Same map_version_key should yield the same cache key.
@@ -72,8 +71,8 @@ class MetadataTest(test_utils.BaseTest):
 
   def testGet(self):
     cache_key, _ = metadata.CacheSourceAddresses('abc', MAPROOT)
-    cache.Set(['metadata', 'KML:http://x.com/a'], {'length': 123})
-    cache.Set(['metadata', 'KML:http://p.com/q'], {'length': 456})
+    metadata.METADATA_CACHE.Set('KML:http://x.com/a', {'length': 123})
+    metadata.METADATA_CACHE.Set('KML:http://p.com/q', {'length': 456})
 
     # Map cache key, an address with metadata, and an address without metadata.
     response = self.DoGet('/.metadata?ck=' + cache_key +
@@ -90,7 +89,7 @@ class MetadataTest(test_utils.BaseTest):
     self.DoGet('/.metadata?source=KML:http://u.com/v')
 
     # Requesting metadata should activate the source and queue a task.
-    self.assertEquals(1, cache.Get(['metadata_active', 'KML:http://u.com/v']))
+    self.assertEquals(1, metadata.ACTIVE_CACHE.Get('KML:http://u.com/v'))
     urls = sorted(task['url'] for task in self.PopTasks('metadata'))
     self.assertEquals(1, len(urls))
     self.assertEqualsUrlWithUnorderedParams(

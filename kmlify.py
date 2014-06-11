@@ -22,14 +22,14 @@ import collections
 import csv
 import json
 import logging
-import pickle
 import re
 import string
 import urllib
 import xml_utils
 import zipfile
 
-from google.appengine.api import memcache
+import cache
+
 from google.appengine.api import urlfetch
 
 KMZ_CONTENT_TYPE = 'application/vnd.google-earth.kmz'
@@ -51,6 +51,8 @@ OPERATORS = {
     '>': lambda x, y: x > y,
     '>=': lambda x, y: x >= y,
 }
+CACHE_TTL_SECONDS = 60
+CACHE = cache.Cache('kmlify', CACHE_TTL_SECONDS)
 
 
 def Stringify(text, html=False):
@@ -178,7 +180,7 @@ def DecodeRecord(record, encoding):
 
 def GetText(element):
   return (element.text or '') + ''.join(
-      GetText(child) + child.tail for child in element.getchildren())
+      GetText(child) + (child.tail or '') for child in element.getchildren())
 
 
 def FetchData(url, referer=None):
@@ -640,8 +642,6 @@ class Kmlifier(object):
 class Kmlify(base_handler.BaseHandler):
   """Web handler for the kmlify endpoint."""
 
-  TTL_SECONDS = 60  # memcache lifetime; TODO(kpy): configure this per URL
-
   def Get(self):
     """GET handler."""
     url = str(self.request.get('url', ''))
@@ -667,17 +667,16 @@ class Kmlify(base_handler.BaseHandler):
     except ValueError:
       limit = 10000
 
-    cache_key = pickle.dumps((url, data_type, xml_wrapper_tag, record_tag,
-                              name_template, description_template,
-                              location_fields, id_template,
-                              icon_url_template, color_template,
-                              hotspot_template, join, conditions, skip, limit))
+    cache_key = [url, data_type, xml_wrapper_tag, record_tag, name_template,
+                 description_template, location_fields, id_template,
+                 icon_url_template, color_template, hotspot_template,
+                 join, conditions, skip, limit]
 
     # TODO(kpy): Keep track of how much time the cache entry has left, and
     # extend its lifetime if the remote server temporarily fails to respond.
-    kmz = memcache.get(cache_key)
+    kmz = CACHE.Get(cache_key)
     if kmz is not None:
-      logging.info('got %d bytes from memcache', len(kmz))
+      logging.info('got %d bytes from cache', len(kmz))
       return self.RespondWithKmz(kmz)
 
     try:
@@ -715,11 +714,11 @@ class Kmlify(base_handler.BaseHandler):
           'Document', xml_utils.Xml('name', 'Conversion failed: %r' %  e))
       logging.exception(e)
     kmz = MakeKmz(KML_DOCUMENT_TEMPLATE % xml_utils.Serialize(document))
-    memcache.set(cache_key, kmz, self.TTL_SECONDS)
+    CACHE.Set(cache_key, kmz)
     self.RespondWithKmz(kmz)
 
   def RespondWithKmz(self, kmz):
     self.response.headers['Content-Type'] = KMZ_CONTENT_TYPE
     self.response.headers['Cache-Control'] = (
-        'public, max-age=%s, must-revalidate' % self.TTL_SECONDS)
+        'public, max-age=%s, must-revalidate' % CACHE_TTL_SECONDS)
     self.response.out.write(kmz)

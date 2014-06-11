@@ -21,9 +21,9 @@ import urllib
 import urlparse
 
 import base_handler
-import cache
 import config
 import metadata
+import metadata_fetch
 import model
 import perms
 import users
@@ -33,6 +33,7 @@ from google.appengine.ext import db
 
 MAPS_API_BASE_URL = '//maps.google.com/maps/api/js'
 ITEMS_PER_PAGE = 50
+METADATA_CACHE = metadata_fetch.METADATA_CACHE
 
 
 class ClientConfig(db.Model):
@@ -268,7 +269,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
     result['lang'] = base_handler.SelectLanguageForRequest(request, map_root)
     ui_region = map_root.get('region', ui_region)
     cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
-    result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
+    result['metadata'] = {s: METADATA_CACHE.Get(s) for s in sources}
     result['metadata_url'] = root + '/.metadata?ck=' + cache_key
     metadata.ActivateSources(sources)
 

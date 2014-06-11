@@ -27,8 +27,15 @@ import config
 import maproot
 import metadata_fetch
 
-ACTIVE_SECONDS = 24 * 3600  # layers stay active for 24 hours after activation
-ADDRESS_TTL_SECONDS = 24 * 3600  # keep cached source address lists for a day
+# These caches are shared with the metadata_fetch module.
+METADATA_CACHE = metadata_fetch.METADATA_CACHE
+ACTIVE_CACHE = metadata_fetch.ACTIVE_CACHE
+
+# This cache is only used for collision avoidance.
+ACTIVATE_CACHE = cache.Cache('metadata.activate', 10)
+
+# Source addresses are immutable, so they can be cached for a long time.
+SOURCE_ADDRESS_CACHE = cache.Cache('metadata.address', 24 * 3600)
 
 
 def GetSourceAddresses(maproot_object):
@@ -58,7 +65,7 @@ def CacheSourceAddresses(map_version_key, maproot_object):
   hmac_key = config.GetGeneratedKey('source_addresses_key')
   cache_key = hmac.new(hmac_key, str(map_version_key)).hexdigest()
   sources = sorted(set(GetSourceAddresses(maproot_object)))
-  cache.Set(['source_addresses', cache_key], sources, ADDRESS_TTL_SECONDS)
+  SOURCE_ADDRESS_CACHE.Set(cache_key, sources)
   return cache_key, sources
 
 
@@ -66,17 +73,17 @@ def ActivateSources(sources):
   """Marks the specified sources active and queues fetch tasks as necessary."""
   # To avoid hitting memcache N times for each pageview of an N-layer map, we
   # skip activation if the same set of layers has been activated recently.
-  if cache.Add(['metadata_activate', hash(tuple(sources))], 1):
+  if ACTIVATE_CACHE.Add(sources, 1):
     num_fetches = {}  # number of fetches, keyed by hostname
     for address in sources:
-      if cache.Add(['metadata_active', address], 1, ttl_seconds=ACTIVE_SECONDS):
+      if ACTIVE_CACHE.Add(address, 1):
         logging.info('Activating layer: ' + address)
         hostname = maproot.GetHostnameForSource(address)
         num_fetches[hostname] = num_fetches.get(hostname, 0) + 1
         # Spread out the fetches to each origin server.  It's more polite.
         metadata_fetch.ScheduleFetch(address, num_fetches[hostname] * 0.25)
-      else:  # Extend the lifetime of the existing metadata_active flag.
-        cache.Set(['metadata_active', address], 1, ttl_seconds=ACTIVE_SECONDS)
+      else:  # Extend the lifetime of the existing active flag.
+        ACTIVE_CACHE.Set(address, 1)
 
 
 class Metadata(base_handler.BaseHandler):
@@ -92,9 +99,9 @@ class Metadata(base_handler.BaseHandler):
   def Get(self):
     """Retrieves metadata for the specified cache key and source addresses."""
     cache_key = self.request.get('ck')
-    sources = cache.Get(['source_addresses', cache_key]) or []
+    sources = SOURCE_ADDRESS_CACHE.Get(cache_key) or []
     if sources:  # extend the lifetime of the cache entry
-      cache.Set(['source_addresses', cache_key], sources, ADDRESS_TTL_SECONDS)
+      SOURCE_ADDRESS_CACHE.Set(cache_key, sources)
     sources += self.request.get_all('source')
-    self.WriteJson(dict((s, cache.Get(['metadata', s])) for s in sources))
+    self.WriteJson({s: METADATA_CACHE.Get(s) for s in sources})
     ActivateSources(sources)

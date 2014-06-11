@@ -30,8 +30,8 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import ndb  # just for GeoPt
 
 
-XML_CONTENT_TTL = 30  # seconds to keep fetched XML content in cache
-CROWD_REPORT_ANSWERS_TTL = 10  # seconds to keep survey answers in cache
+ANSWER_CACHE = cache.Cache('card.answers', 5)
+XML_CACHE = cache.Cache('card.xml', 30)
 GOOGLE_SPREADSHEET_CSV_URL = (
     'https://docs.google.com/spreadsheet/pub?key=$key&output=csv')
 DEGREES = 3.14159265358979/180
@@ -159,9 +159,8 @@ def GetFeatures(map_root, topic_id, request):
     url = GetKmlUrl(request.root_url, GetLayer(map_root, layer_id) or {})
     if url:
       try:
-        content = cache.Get(['card', url],
-                            lambda: kmlify.FetchData(url, request.host),
-                            XML_CONTENT_TTL)
+        content = XML_CACHE.Get(
+            url, lambda: kmlify.FetchData(url, request.host))
         features += GetFeaturesFromXml(content)
       except (SyntaxError, urlfetch.DownloadError):
         pass
@@ -207,10 +206,9 @@ def SetAnswersOnFeatures(features, map_root, topic_id, qids):
 
   if topic.get('crowd_enabled') and qids:
     for f in features:
-      answers = cache.Get(
-          ['answers', map_id, topic_id, RoundGeoPt(f.location), radius],
-          lambda: GetLatestAnswers(map_id, topic_id, f.location, radius),
-          CROWD_REPORT_ANSWERS_TTL)
+      answers = ANSWER_CACHE.Get(
+          [map_id, topic_id, RoundGeoPt(f.location), radius],
+          lambda: GetLatestAnswers(map_id, topic_id, f.location, radius))
       answer_texts = []
       for i, qid in enumerate(qids):
         question, answer = questions_by_id.get(qid, {}), answers.get(qid)

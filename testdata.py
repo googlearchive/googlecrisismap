@@ -17,13 +17,11 @@ __author__ = 'shakusa@google.com (Steve Hakusa)'
 import json
 import os
 
-import webapp2
-
-import cache
 import config
 import maps
 import model
 import users
+import webapp2
 
 
 def ReadFile(filename):
@@ -78,10 +76,9 @@ class TestData(webapp2.RequestHandler):
 
     # Add a catalog entry with label 'godzilla' pointing at our test map.
     config.Set('primary_domain', 'gmail.com')
-    if not model.CatalogEntry.Get('gmail.com', 'godzilla'):
-      model.CatalogEntryModel.Put(
-          'test1', 'gmail.com', 'godzilla', model.Map.Get('1'), is_listed=True)
-      cache.Delete([model.CatalogEntry, 'gmail.com', 'listed'])
+    model.CatalogEntryModel.Put(
+        'test1', 'gmail.com', 'godzilla', model.Map.Get('1'), is_listed=True)
+    model.CatalogEntry.FlushCaches('gmail.com')
 
     self.response.out.write('Test data written.')
 

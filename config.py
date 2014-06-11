@@ -23,6 +23,12 @@ import cache
 from google.appengine.ext import db
 
 
+# Config settings are written offline, so users never expect to see immediate
+# effects.  The 300-ms ULL is intended to beat the time it takes to manually
+# load an affected a page after changing a config setting in the console.
+CACHE = cache.Cache('config', 600, 0.3)
+
+
 class Config(db.Model):
   """A configuration setting.
 
@@ -33,32 +39,32 @@ class Config(db.Model):
   value_json = db.TextProperty()  # the value, serialized to JSON
 
 
-def Get(key, default=None):
+def Get(key, default=None, stale_ok=True):
   """Fetches the configuration value for a given key.
 
   Args:
     key: A string, the name of the configuration item to get.
     default: An optional default value to return.
-
+    stale_ok: Optional; if False, get the latest value from the datastore.
+        Default is True: the returned value may be up to 1 second stale.
   Returns:
     The configuration value, or the specified default value if not found.
   """
 
-  def Fetcher():
+  def GetFromDatastore():
     config = Config.get_by_key_name(key)
-    if config:
-      return json.loads(config.value_json)
+    return config and json.loads(config.value_json)
+  value = CACHE.Get(key, GetFromDatastore) if stale_ok else GetFromDatastore()
+  if value is None:
     return default
-  return cache.Get([Config, key], Fetcher)
+  return value
 
 
 def GetAll():
   """Returns a dictionary containing all the configuration values."""
-  results = {}
-  for config in Config.all():
-    value = json.loads(config.value_json)
-    cache.Set([Config, config.key().name], value)
-    results[config.key().name()] = value
+  results = {c.key().name(): json.loads(c.value_json) for c in Config.all()}
+  for key, value in results.items():
+    CACHE.Set(key, value)
   return results
 
 
@@ -69,15 +75,14 @@ def Set(key, value):
     key: A string, the name of the configuration item to get.
     value: Any Python data structure that can be serialized to JSON.
   """
-  config = Config(key_name=key, value_json=json.dumps(value))
-  config.put()
-  cache.Delete([Config, key])
+  Config(key_name=key, value_json=json.dumps(value)).put()
+  CACHE.Set(key, value)
 
 
 def Delete(key):
   """Deletes a configuration value."""
   Config(key_name=key).delete()
-  cache.Delete([Config, key])
+  CACHE.Delete(key)
 
 
 def GetGeneratedKey(key):
@@ -98,14 +103,14 @@ def GetGeneratedKey(key):
 
   @db.transactional
   def PutGeneratedKey():
-    if not Get(key):
-      Set(key, binascii.b2a_hex(os.urandom(16)))
+    """Transactionally ensures the key is written exactly once."""
+    value = Get(key, stale_ok=False)
+    if not value:
+      value = binascii.b2a_hex(os.urandom(16))
+      Set(key, value)
+    return value
 
   value = Get(key)
-  while not value:
-    PutGeneratedKey()
-    value = Get(key)
-    # The retry here handles the rare case in which memcache.get returns None
-    # even after memcache.add.  Strange, but we've seen it happen occasionally.
-    # TODO(kpy): Consider factoring out this retry loop if we need it elsewhere.
+  if not value:
+    value = PutGeneratedKey()
   return str(value)  # avoid Unicode; it's just hex digits

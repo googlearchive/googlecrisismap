@@ -48,31 +48,29 @@ class DomainTest(test_utils.BaseTest):
     domain = domains.Domain.Create('MyDomain.com')
     self.assertLog(logs.Event.DOMAIN_CREATED, domain_name='mydomain.com')
 
-    # domain name should have been normalized
+    # The domain name should have been normalized.
     self.assertEqual('mydomain.com', domain.name)
     domain.initial_domain_role = perms.Role.MAP_CREATOR
     with test_utils.RootLogin():
       domain.Put()
 
-    # domains found in the cache should return new instances, but
-    # with identical values
+    # Domains in the cache should come back with the same values.
     other = domains.Domain.Get('MyDomain.com')
-    self.assertTrue(other is not domain)
     self.assertEqual(perms.Role.MAP_CREATOR, other.initial_domain_role)
 
-    # changes to a domain shouldn't be seen until Put() is called
+    # changes to a domain shouldn't be seen until Put() is called.
     domain.default_label = 'fancy-map'
     other = domains.Domain.Get('MyDomain.com')
     self.assertNotEqual(domain.default_label, other.default_label)
 
-    # After a put, the new label should be seen
+    # After a put, the new label should be seen.
     with test_utils.RootLogin():
       domain.Put()
     other = domains.Domain.Get('MyDomain.com')
     self.assertEqual(domain.default_label, other.default_label)
 
-    # Verify the most recent values were written through to the datastore
-    cache.Delete(['Domain', domain.name])
+    # Verify the most recent values were written through to the datastore.
+    cache.Reset()
     other = domains.Domain.Get('MyDomain.com')
     self.assertEqual(domain.default_label, other.default_label)
     self.assertEqual(
@@ -82,7 +80,9 @@ class DomainTest(test_utils.BaseTest):
     domains.Domain.Create('foo.bar.org', initial_domain_role=None)
     domain_model = domains.DomainModel.get_by_key_name('foo.bar.org')
     self.assertEqual(domains.NO_ROLE, domain_model.initial_domain_role)
-    cache.Delete(['Domain', 'foo.bar.org'])
+
+    # Verify that the domain was written through to the datastore.
+    cache.Reset()
     dom2 = domains.Domain.Get('foo.bar.org')
     self.assertIsNone(dom2.initial_domain_role)
 

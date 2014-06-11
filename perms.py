@@ -24,6 +24,12 @@ from google.appengine.ext import ndb
 # Google sign-in page always have numeric IDs.
 ROOT = users.User(id='root')
 
+# Lists of all the _Permission objects for a given subject and/or target, keyed
+# by [subject, target] where subject or target can be '*'.  The 100-ms ULL is
+# intended to beat the time it takes for the domain admin page to redirect back
+# to showing permission lists after the user has edited permissions.
+CACHE = cache.Cache('perms', 60, 0.1)
+
 
 class AuthorizationError(Exception):
   """Subject is not authorized to perform an operation on a domain or a map."""
@@ -90,18 +96,18 @@ _Permission = collections.namedtuple(
     '_Permission', ['subject', 'role', 'target'])
 
 
-def _PermissionCachePath(subject=None, target=None):
-  return [_Permission, subject or '*', target or '*']
-
-
 def _PermissionId(perm):
-  return cache.ToCacheKey([_Permission, perm.subject, perm.role, perm.target])
+  # It's safe to use ',' as a separator because it cannot appear in a domain
+  # name, a uid, a Role constant, or a map ID.  The '_Permission,' prefix is a
+  # holdover from older code, kept for now because removing it would require a
+  # data migration (it's baked into entity IDs in the datastore).
+  return ','.join(['_Permission', perm.subject, perm.role, perm.target])
 
 
 def _FlushRelated(perm):
   for subject in [perm.subject, None]:
     for target in [perm.target, None]:
-      cache.Delete(_PermissionCachePath(subject=subject, target=target))
+      CACHE.Delete([subject or '*', target or '*'])
 
 
 def _LoadPermissions(subject, target):
@@ -129,8 +135,8 @@ def _Query(subject, role, target):
     # When querying for just one item, let NDB take care of caching.
     p = _Permission(subject, role, target)
     return _PermissionModel.get_by_id(_PermissionId(p)) and [p] or []
-  # Otherwise, use cache.Get to put the query result in memcache.
-  perms = cache.Get(_PermissionCachePath(subject=subject, target=target),
+  # Otherwise, cache the list of results in our own cache.
+  perms = CACHE.Get([subject or '*', target or '*'],
                     make_value=lambda: _LoadPermissions(subject, target))
   return [p for p in perms if p.role == role] if role else perms
 

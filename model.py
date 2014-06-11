@@ -34,6 +34,31 @@ NEVER = datetime.datetime.utcfromtimestamp(0)
 # A GeoPt value to represent null (the datastore cannot query on None).
 NOWHERE = ndb.GeoPt(90, 90)
 
+# Lists of all CatalogEntries in a domain or across all domains, keyed by
+# domain name or '*' for all domains.  The 100-ms ULL is intended to beat the
+# time it takes to redirect back to /.maps after the user hits Publish.
+CATALOG_CACHE = cache.Cache('model.catalog', 60, 0.1)
+
+# Lists of the "listed" CatalogEntries in a domain or across all domains, keyed
+# by domain name or '*' for all domains.  The 300-ms ULL is intended to beat
+# the time it takes to manually navigate to any page with a map picker menu
+# after editing which CatalogEntries are listed.
+LISTED_CATALOG_CACHE = cache.Cache('model.listed_catalog', 60, 0.3)
+
+# MapRoot data for published maps, keyed by [domain, label].  The 300-ms ULL
+# is intended to beat the time it takes to manually navigate to a map after
+# the user hits Publish to update the map.
+PUBLISHED_MAP_ROOT_CACHE = cache.Cache('model.published_map_root', 60, 0.3)
+
+# MapRoot data for maps, keyed by map ID.  The 300-ms ULL is intended to beat
+# the time it takes to manually reload a map page after saving edits.
+MAP_ROOT_CACHE = cache.Cache('model.map_root', 60, 0.3)
+
+# Authorization entities are written offline, so users never expect to see
+# immediate effects.  The 300-ms ULL is intended to beat the time it takes for
+# a developer to use an API key after editing an Authorization in the console.
+AUTHORIZATION_CACHE = cache.Cache('model.authorization', 60, 0.3)
+
 
 class MapVersionModel(db.Model):
   """A particular version of the JSON content of a Map.
@@ -43,7 +68,6 @@ class MapVersionModel(db.Model):
 
   If this entity is constructed properly, its parent entity will be a MapModel.
   """
-
   # The JSON string representing the map content, in MapRoot format.
   maproot_json = db.TextProperty()
 
@@ -233,8 +257,8 @@ class CatalogEntry(object):
     """Gets all entries, possibly filtered by domain."""
     # No access control; all catalog entries are publicly visible.
     # We use '*' in the cache key for the list that includes all domains.
-    return cache.Get(
-        [CatalogEntry, domain or '*', 'all'],
+    return CATALOG_CACHE.Get(
+        domain or '*',
         lambda: map(CatalogEntry, CatalogEntryModel.GetAll(domain)))
 
   @staticmethod
@@ -242,8 +266,8 @@ class CatalogEntry(object):
     """Gets all entries marked listed, possibly filtered by domain."""
     # No access control; all catalog entries are publicly visible.
     # We use '*' in the cache key for the list that includes all domains.
-    return cache.Get(
-        [CatalogEntry, domain or '*', 'listed'],
+    return LISTED_CATALOG_CACHE.Get(
+        domain or '*',
         lambda: map(CatalogEntry, CatalogEntryModel.GetListed(domain)))
 
   @staticmethod
@@ -253,8 +277,8 @@ class CatalogEntry(object):
             for model in CatalogEntryModel.GetAll().filter('map_id =', map_id)]
 
   # TODO(kpy): First argument should be a user.
-  @staticmethod
-  def Create(domain_name, label, map_object, is_listed=False):
+  @classmethod
+  def Create(cls, domain_name, label, map_object, is_listed=False):
     """Stores a new CatalogEntry with version set to the map's current version.
 
     If a CatalogEntry already exists with the same label, and the user is
@@ -290,16 +314,20 @@ class CatalogEntry(object):
                      map_version_key=entry.map_version.key().name(),
                      catalog_entry_key=domain_name + ':' + label,
                      uid=users.GetCurrent().id)
-
-    # We use '*' in the cache key for the list that includes all domains.
-    cache.Delete([CatalogEntry, '*', 'all'])
-    cache.Delete([CatalogEntry, '*', 'listed'])
-    cache.Delete([CatalogEntry, domain_name, 'all'])
-    cache.Delete([CatalogEntry, domain_name, 'listed'])
+    cls.FlushCaches(domain_name)
     return CatalogEntry(entry)
 
   @staticmethod
-  def Delete(domain_name, label, user=None):
+  def FlushCaches(domain_name):
+    """Flushes the cached lists of catalog entries for a given domain."""
+    CATALOG_CACHE.Delete(domain_name)
+    LISTED_CATALOG_CACHE.Delete(domain_name)
+    # We use '*' as the cache key for the list that includes all domains.
+    CATALOG_CACHE.Delete('*')
+    LISTED_CATALOG_CACHE.Delete('*')
+
+  @classmethod
+  def Delete(cls, domain_name, label, user=None):
     """Deletes an existing CatalogEntry.
 
     Args:
@@ -333,26 +361,18 @@ class CatalogEntry(object):
     logs.RecordEvent(logs.Event.MAP_UNPUBLISHED, domain_name=domain_name,
                      map_id=map_id, map_version_key=version_key,
                      catalog_entry_key=entry_key, uid=user.id)
-    # We use '*' in the cache key for the list that includes all domains.
-    cache.Delete([CatalogEntry, '*', 'all'])
-    cache.Delete([CatalogEntry, '*', 'listed'])
-    cache.Delete([CatalogEntry, domain_name, 'all'])
-    cache.Delete([CatalogEntry, domain_name, 'listed'])
+    cls.FlushCaches(domain_name)
 
   # TODO(kpy): Make Delete and DeleteByMapId both take a user argument, and
   # reuse Delete here by calling it with an admin user.
-  @staticmethod
-  def DeleteByMapId(map_id):
+  @classmethod
+  def DeleteByMapId(cls, map_id):
     """NO ACCESS CHECK.  Deletes every CatalogEntry pointing at a given map."""
     for entry in CatalogEntry.GetByMapId(map_id):
       domain, label = str(entry.domain), entry.label
       entry = CatalogEntryModel.Get(domain, label)
       entry.delete()
-      # We use '*' in the cache key for the list that includes all domains.
-      cache.Delete([CatalogEntry, '*', 'all'])
-      cache.Delete([CatalogEntry, '*', 'listed'])
-      cache.Delete([CatalogEntry, domain, 'all'])
-      cache.Delete([CatalogEntry, domain, 'listed'])
+      cls.FlushCaches(domain)
 
   is_listed = property(
       lambda self: self.model.is_listed,
@@ -367,8 +387,9 @@ class CatalogEntry(object):
 
   # map_root gets the (possibly cached) MapRoot data for this entry.
   def GetMapRoot(self):
-    return cache.Get([CatalogEntry, self.domain, self.label, 'map_root'],
-                     lambda: json.loads(self.model.map_version.maproot_json))
+    return PUBLISHED_MAP_ROOT_CACHE.Get(
+        [self.domain, self.label],
+        lambda: json.loads(self.model.map_version.maproot_json))
   map_root = property(GetMapRoot)
 
   # Make the other properties of the CatalogEntryModel visible on CatalogEntry.
@@ -411,13 +432,8 @@ class CatalogEntry(object):
                      map_version_key=self.GetMapVersionKey().name(),
                      catalog_entry_key=self.id,
                      uid=users.GetCurrent().id)
-
-    # We use '*' in the cache key for the list that includes all domains.
-    cache.Delete([CatalogEntry, '*', 'all'])
-    cache.Delete([CatalogEntry, '*', 'listed'])
-    cache.Delete([CatalogEntry, domain_name, 'all'])
-    cache.Delete([CatalogEntry, domain_name, 'listed'])
-    cache.Delete([CatalogEntry, domain_name, self.label, 'map_root'])
+    self.FlushCaches(domain_name)
+    PUBLISHED_MAP_ROOT_CACHE.Delete([domain_name, self.label])
 
 
 class Map(object):
@@ -630,7 +646,7 @@ class Map(object):
       self.model.current_version = new_version.put()
       self.model.put()
     db.run_in_transaction(PutModels)
-    cache.Delete([Map, self.id, 'map_root'])
+    MAP_ROOT_CACHE.Delete(self.id)
     return new_version.key().id()
 
   def GetCurrent(self):
@@ -658,7 +674,7 @@ class Map(object):
     self.model.put()
     logs.RecordEvent(logs.Event.MAP_DELETED, map_id=self.id,
                      uid=self.model.deleter_uid)
-    cache.Delete([Map, self.id, 'map_root'])
+    MAP_ROOT_CACHE.Delete(self.id)
 
   def Undelete(self):
     """Unmarks a map as deleted."""
@@ -668,7 +684,7 @@ class Map(object):
     self.model.put()
     logs.RecordEvent(logs.Event.MAP_UNDELETED, map_id=self.id,
                      uid=users.GetCurrent().id)
-    cache.Delete([Map, self.id, 'map_root'])
+    MAP_ROOT_CACHE.Delete(self.id)
 
   def SetBlocked(self, block):
     """Sets whether a map is blocked (private to one user and unpublishable)."""
@@ -685,7 +701,7 @@ class Map(object):
       logs.RecordEvent(logs.Event.MAP_UNBLOCKED, map_id=self.id,
                        uid=users.GetCurrent().id)
     self.model.put()
-    cache.Delete([Map, self.id, 'map_root'])
+    MAP_ROOT_CACHE.Delete(self.id)
 
   def Wipe(self):
     """Permanently destroys a map."""
@@ -699,8 +715,7 @@ class Map(object):
   def GetMapRoot(self):
     """Gets the current version of the MapRoot definition of this map."""
     self.AssertAccess(perms.Role.MAP_VIEWER)
-    return cache.Get([Map, self.id, 'map_root'],
-                     lambda: self.GetCurrent().map_root)
+    return MAP_ROOT_CACHE.Get(self.id, lambda: self.GetCurrent().map_root)
 
   map_root = property(GetMapRoot)
 
@@ -1340,8 +1355,8 @@ class Authorization(utils.Struct):
   @classmethod
   def Get(cls, key):
     """Gets the authorization record for a given API key."""
-    return cache.Get([Authorization, key],
-                     lambda: cls.FromModel(_AuthorizationModel.get_by_id(key)))
+    return AUTHORIZATION_CACHE.Get(
+        key, lambda: cls.FromModel(_AuthorizationModel.get_by_id(key)))
 
   @classmethod
   def Create(cls, contact_name='', contact_email='', organization_name='',

@@ -28,6 +28,7 @@ import urllib2
 import urlparse
 
 import base_handler
+import cache
 import config
 import domains
 import logs
@@ -220,6 +221,7 @@ class BaseTest(unittest.TestCase):
   def tearDown(self):
     self.mox.UnsetStubs()
     self.testbed.deactivate()
+    cache.Reset()
 
   def MakePredictableId(self):
     """A replacement for MakeRandomId() that gives predictable IDs in tests."""

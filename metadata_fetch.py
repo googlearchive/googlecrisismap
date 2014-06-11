@@ -28,16 +28,16 @@ The metadata subsystem has the following external behaviour:
     keep getting periodically refreshed.  After 24 hours pass with no page
     views, the refreshing will stop and the metadata will expire from memcache.
 
-This is implemented using two memcache keys per layer source address:
+This is implemented using two cache keys per layer source address:
 
-  - ['metadata', address] contains the source's metadata.  It expires after
+  - METADATA_CACHE[address] contains the source's metadata.  It expires after
     1 hour -- i.e. metadata will disappear from the UI if we don't update it
     in an hour.  This can only happen if we stop queueing metadata_fetch tasks,
     or if the queue is so busy that it takes over an hour to cycle back to this
     item.  (Even if the remote server goes down, that shouldn't keep us from
     updating the metadata with the fetch_error_occurred flag.)
 
-  - ['metadata_active', address] is a flag indicating that the metadata for a
+  - ACTIVE_CACHE[address] is a flag indicating that the metadata for a
     particular source should be kept up to date.  As long as this flag is
     present, we'll keep queuing metadata_fetch tasks to periodically refetch
     the metadata.  After 24 hours, the flag expires, and the next person to
@@ -52,7 +52,7 @@ Tasks to fetch metadata are queued as follows:
 
   - ActivateSources iterates over all the sources.  For each source that isn't
     active yet (i.e. has no 'metadata_active' flag), it sets the flag and
-    queues a metadata_fetch.py task.  (It uses memcache.add() to atomically set
+    queues a metadata_fetch.py task.  (It uses Cache.Add() to atomically set
     the 'metadata_active' flag only if it is not already set.)  If the flag is
     already set, it extends the lifetime of the flag by 24 hours.
 
@@ -121,7 +121,14 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import db
 
 MAX_FETCH_SECONDS = 30  # time to wait for a response from remote servers
-METADATA_TTL_SECONDS = 3600  # time that a metadata record stays cached
+
+# Metadata can live in the cache for up to 24 hours, even though it is usually
+# updated more frequently than that.  We allow only a bit of staleness after
+# update because we'd like updates to show up in the UI within a second or two.
+METADATA_CACHE = cache.Cache('metadata', 24 * 3600, 1)
+
+# Layers stay active for 24 hours after activation.
+ACTIVE_CACHE = cache.Cache('metadata.active', 24 * 3600)
 
 # When estimating the costs we impose on remote servers, we take the content
 # length in bytes and add 50000 to account for request setup and HTTP headers.
@@ -435,10 +442,10 @@ def UpdateMetadata(address):
     logging.info('Skipped; metadata_max_megabytes_per_day_per_source is 0')
     return
   fetch_time = time.time()
-  metadata = cache.Get(['metadata', address])
+  metadata = METADATA_CACHE.Get(address)
   metadata = FetchAndUpdateMetadata(metadata, address)
   metadata['fetch_time'] = fetch_time
-  cache.Set(['metadata', address], metadata, METADATA_TTL_SECONDS)
+  METADATA_CACHE.Set(address, metadata)
   logging.info('Updated metadata for source: %s %r', address, metadata)
   if config.Get('metadata_fetch_log'):
     MetadataFetchLog.Log(address, metadata)
@@ -446,7 +453,7 @@ def UpdateMetadata(address):
 
 def ScheduleFetch(address, countdown=None):
   """Schedules the next fetch task for a source."""
-  metadata = cache.Get(['metadata', address]) or {}
+  metadata = METADATA_CACHE.Get(address) or {}
   if not metadata.get('fetch_impossible'):
     if countdown is None:
       countdown = DetermineFetchInterval(metadata)
@@ -463,7 +470,7 @@ class MetadataFetch(base_handler.BaseHandler):
   def Get(self):
     """Updates the cached metadata for a source, if it's active."""
     source = self.request.get('source')
-    if cache.Get(['metadata_active', source]):
+    if ACTIVE_CACHE.Get(source):
       UpdateMetadata(source)
       ScheduleFetch(source)
     else:
