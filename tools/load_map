@@ -25,9 +25,9 @@ from pprint import *
 from model import *
 from perms import *
 from maps import *
-import sys, domains, users, test_utils
+import sys, domains, users, test_utils, json
 domains.Domain.Create('gmail.test')
 perms.Grant('root', perms.Role.DOMAIN_ADMIN, 'gmail.test')
-print '/.maps/' + test_utils.CreateMap(sys.stdin.read(), 'gmail.test').id
+print test_utils.CreateMap(json.loads(sys.stdin.read()), 'gmail.test').id
 "
 $PYTHON $TOOLS_DIR/remote_api.py "$@" -c pass
