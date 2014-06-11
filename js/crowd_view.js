@@ -208,14 +208,15 @@ cm.CrowdView.prototype.makeAnswerUi_ = function(topicId, question) {
   function makeNumberInput() {
     var input = cm.ui.create('input',
         {'type': 'text', 'placeholder': cm.MSG_NUMBER, 'class': cm.css.NUMBER});
-    cm.events.listen(input, 'keypress', function(event) {
-      var key = event.keyCode;
-      if (key && !(key >= 48 && key <= 57 || key == 8)) {
-        event.preventDefault();  // allow only digits or backspace
+    cm.events.listen(input, ['keypress', 'keydown'], function(event) {
+      if (event.charCode && !(event.charCode >= 48 && event.charCode <= 57)) {
+        event.preventDefault();  // allow only digits
       }
     });
     cm.events.listen(input, ['change', 'keyup'], function() {
-      input.value = input.value.replace(/\D/g, '');
+      if (input.value.match(/\D/)) {
+        input.value = input.value.replace(/\D/g, '');
+      }
       self.answers_[qid] = input.value === '' ? null : input.value - 0;
       self.answersJsonInput_.value = goog.json.serialize(self.answers_);
       self.updateForm_();
@@ -292,6 +293,8 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
   self.submitBtn_.disabled = true;
 
   // Form opening and closing behaviour
+  self.formIsVisible_ = false;
+
   function openForm(event) {
     goog.dom.classes.remove(form, cm.css.HIDDEN);
     goog.dom.classes.enable(form, cm.css.POPUP, self.formPopupEnabled_);
@@ -303,6 +306,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
       cm.ui.append(bubble, form);
       goog.dom.classes.swap(bubble, cm.css.COLLAPSED, cm.css.EXPANDED);
     }
+    self.formIsVisible_ = true;
   };
 
   function closeForm(event) {
@@ -315,17 +319,20 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
     self.answersJsonInput_.value = '';
     self.textInput_.value = '';
     self.submitBtn_.disabled = true;
-    if (event) {  // prevent the click from immediately re-expanding the bubble
+    if (event) {  // prevent the click from immediately retriggering openForm
       event.stopPropagation && event.stopPropagation();
       event.cancelBubble = true;  // for IE 8
     }
+    self.formIsVisible_ = false;
   }
 
   cm.events.listen(bubble, 'click', function(event) {
-    cm.Analytics.logAction(
-        cm.Analytics.CrowdReportFormAction.PROMPT_BUBBLE_CLICKED,
-        self.layerId_);
-    openForm(event);
+    if (!self.formIsVisible_) {  // don't retrigger openForm if already open
+      cm.Analytics.logAction(
+          cm.Analytics.CrowdReportFormAction.PROMPT_BUBBLE_CLICKED,
+          self.layerId_);
+      openForm(event);
+    }
   });
   cm.events.listen(closeBtn, 'click', function(event) {
     cm.Analytics.logAction(
