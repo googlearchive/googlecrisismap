@@ -538,3 +538,5 @@ function clickCenterOfMap() {
   click(crisis.maptarget, center.x, center.y);
   return text(crisis.tab.selected, 'Details');
 }
+
+puppet.setCommandTimeoutSecs(15);
