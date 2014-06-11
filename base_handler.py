@@ -342,11 +342,26 @@ class BaseHandler(webapp2.RequestHandler):
     """Writes out a JSON or JSONP serialization of the given data."""
     callback = self.request.get('callback', '')
     output = ToHtmlSafeJson(data)
+
+    # Protect against attacks related to browser content sniffing (which
+    # can result in the browser trying to execute our response using a
+    # vulnerable plugin such as Flash or PDF)
+    self.response.headers.update({
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Disposition': 'attachment; filename="f.txt"',
+    })
+
     if callback:  # emit a JavaScript expression with a callback function
-      self.response.headers['Content-Type'] = 'application/javascript'
-      self.response.out.write(SanitizeCallback(callback) + '(' + output + ')')
+      self.response.headers['Content-Type'] = (
+          'application/javascript; charset=utf-8')
+
+      # Prepend response with a JS comment to be sure the user-supplied callback
+      # name is not the first thing the browser sees.  This further reduces the
+      # risk of a content sniffing attack.
+      self.response.out.write('//\n' + SanitizeCallback(callback) +
+                              '(' + output + ')')
     else:  # just emit the JSON literal
-      self.response.headers['Content-Type'] = 'application/json'
+      self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
       self.response.out.write(output)
 
   def _GetNavbarContext(self, user):

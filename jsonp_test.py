@@ -104,5 +104,23 @@ class JsonpTest(test_utils.BaseTest):
     ]}
     self.assertEquals(expected_map_root, map_root)
 
+  def testXssPreventionMeasures(self):
+    # This test is concerned with response headers and formatting, so stub out
+    # the main FetchJson method to always return a dummy value
+    self.SetForTest(jsonp, 'FetchJson', lambda *args, **kwargs: '{}')
+
+    # When callers request a callback, the result should be a JS expression
+    # prefixed with a JS comment and newline.
+    response = self.DoGet('/.jsonp?url=ignored&callback=_mycallback_')
+    self.assertEqual('application/javascript; charset=utf-8',
+                     response.headers.get('Content-Type'))
+    self.assertRegexpMatches(response.body, r'^//\n_mycallback_.*$')
+
+    # When callers do not request a callback, the result should be JSON.
+    response = self.DoGet('/.jsonp?url=ignored')
+    self.assertEqual('application/json; charset=utf-8',
+                     response.headers.get('Content-Type'))
+
+
 if __name__ == '__main__':
   test_utils.main()
