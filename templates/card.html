@@ -34,8 +34,8 @@ specific language governing permissions and limitations under the License.
     <div>
       <div class="title">{{title}}</div>
       <div class="subtitle" id="card-subtitle">
-        <div class="location-status" id="location-status"></div>
-        <div class="change-location-arrow" id="change-location-arrow"></div>
+        <div class="location-name" id="location-name"></div>
+        <div class="location-disclosure"></div>
       </div>
     </div>
     <div id="list">
@@ -85,15 +85,24 @@ specific language governing permissions and limitations under the License.
 </body>
 <script src="{{root}}/.static/card.js"></script>
 <script>
-  window.addEventListener('resize', updateSize);
-  updateSize();
-
   var config = {{config_json|safe}};
   var places = {{places_json|safe}};
   var place = config.place;
-  updateLocationStatus(place && place.name || null);
-  fillLocationMenu(config.url_no_loc, places, place && place.id);
-  var changeLocation = $("card-subtitle")
-  changeLocation.addEventListener("click", showLocationMenu, false);
+
+  window.addEventListener('resize', updateSize);
+  updateSize();
+  window.addEventListener('message', function(event) {
+    if (event.data.type === 'location_unavailable') {
+      // TODO(romano): may also want to pass in event.data.site and
+      // event.data.error, depending on UI message
+      updateLocationMenu(config.url_no_loc, places, place && place.id, true);
+    }
+  });
+  updateLocationMenu(config.url_no_loc, places, place && place.id,
+                     config.location_unavailable);
+  updateLocationName(place && place.name || null);
+
+  var subtitle = $("card-subtitle")
+  subtitle && subtitle.addEventListener("click", showLocationMenu, false);
   window.addEventListener("click", hideLocationMenu, false);
 </script>

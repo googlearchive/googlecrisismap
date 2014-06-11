@@ -94,17 +94,20 @@ body {
   overflow-x: hidden;
   cursor: pointer;
 }
-.card .location-status {
+.card .location-name {
   display: inline-block;
   vertical-align: text-bottom;
 }
-// Currently not used; placeholder for blue dot to highlight when 'My location' is currently chosen.
-.location-icon {
-  background: url('/.static/blue-dot.png') no-repeat center center;
+.card .location-disclosure {
+  background: url(/.static/dark-grey-disclosure-arrow-down.png) center no-repeat;
   height: 11px;
   width: 11px;
-  vertical-align: middle;
+  cursor: pointer;
   display: inline-block;
+  opacity: 0.4;
+}
+.card .location-disclosure:hover {
+  opacity: 0.7;
 }
 .card .location-menu {
   display: none;
@@ -122,29 +125,22 @@ body {
 .card .location-menu .option:hover {
   background-color: #e6e6e6;
 }
+.card .location-menu .option.my-location {
+  border-top: 1px solid #e6e6e6;
+}
 .card .location-menu .option .checkmark {
-  background: url('/.static/checkmark.png') no-repeat center center;
-  width: 16px;
+  background: url(/.static/checkmark.png) no-repeat center center;
   height: 16px;
+  width: 16px;
   vertical-align: middle;
   display: inline-block;
 }
-.location-text {
+.card .location-menu .option .location-text {
   padding-left: 8px;
   display: inline-block;
 }
-.change-location-arrow {
-  background: url(/.static/light-grey-disclosure-arrow-down.png) center no-repeat;
-  height: 11px;
-  width: 11px;
-  display: inline-block;
-}
-.change-location-arrow:hover {
-  background: url(/.static/dark-grey-disclosure-arrow-down.png) center no-repeat;
-  height: 11px;
-  width: 11px;
-  cursor: pointer;
-  display: inline-block;
+.card .location-menu .option .location-text.no-checkmark {
+  padding-left: 24px;
 }
 .card .crowd {
   margin-top: 4px;

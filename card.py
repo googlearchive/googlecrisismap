@@ -347,6 +347,8 @@ class CardBase(base_handler.BaseHandler):
     places_json = self.request.get('places') or '[]'
     place_id = str(self.request.get('place', ''))
     footer_json = self.request.get('footer') or '[]'
+    location_unavailable = self.request.get('location_unavailable',
+                                            None)
     lang = base_handler.SelectLanguageForRequest(self.request, map_root)
 
     try:
@@ -402,7 +404,8 @@ class CardBase(base_handler.BaseHandler):
             'config_json': json.dumps({
                 'url_no_loc': RemoveParamsFromUrl(
                     self.request.url, 'll', 'place'),
-                'place': place
+                'place': place,
+                'location_unavailable': location_unavailable is not None
             }),
             'places_json': json.dumps(places),
             'footer_html': RenderFooter(footer)
