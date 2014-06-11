@@ -287,8 +287,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
       cm.ui.create('div', cm.css.BUTTON_AREA,
           self.submitBtn_ = cm.ui.create(
               'input', {'type': 'submit', 'value': cm.MSG_POST,
-                        'class': [cm.css.BUTTON, cm.css.SUBMIT]})),
-  );
+                        'class': [cm.css.BUTTON, cm.css.SUBMIT]})));
   self.submitBtn_.disabled = true;
 
   // Form opening and closing behaviour
