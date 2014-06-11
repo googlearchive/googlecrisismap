@@ -158,6 +158,14 @@ def GetAuthForRequest(request):
   return auth
 
 
+class RedirectToUrl(Exception):
+  """An exception that redirects to a given URL."""
+
+  def __init__(self, url):
+    Exception.__init__(self, url)
+    self.url = str(url)
+
+
 class Error(Exception):
   """An error that carries an HTTP status and a message to show the user."""
 
@@ -229,14 +237,28 @@ class BaseHandler(webapp2.RequestHandler):
       if not uid.startswith('anonymous.'):
         return users.Get(uid)
 
+  def CheckAccess(self):
+    """If login_access_list is set, accept only the specified logins."""
+    login_access_list = config.Get('login_access_list')
+    if login_access_list is not None:
+      user = users.GetCurrent()
+      if not user:
+        raise RedirectToUrl(users.GetLoginUrl(self.request.url))
+      if user.email not in login_access_list:
+        raise perms.AuthorizationError(user, None, None)
+
   def HandleRequest(self, **kwargs):
     """A wrapper around the Get or Post method defined in the handler class."""
     try:
       method = getattr(self, self.request.method.capitalize(), None)
-      if not method:
-        raise Error(405, '%s method not allowed.' % self.request.method)
       root_path = config.Get('root_path') or ''
       user = users.GetCurrent()
+
+      if not method:
+        raise Error(405, '%s method not allowed.' % self.request.method)
+
+      # Enforce login restrictions.
+      self.CheckAccess()
 
       # Set self.auth according to the API key in the request, if specified.
       self.auth = GetAuthForRequest(self.request)
@@ -261,7 +283,7 @@ class BaseHandler(webapp2.RequestHandler):
                          self.xsrf_token)
 
       # Require a valid XSRF token for all authenticated POST requests.
-      if user and method.__name__ == 'Post':
+      if user and self.request.method == 'POST':
         xsrf_token = self.request.get('xsrf_token', '')
         if not ValidateXsrfToken(user.id, xsrf_token):
           logging.warn('Bad xsrf_token %r for uid %r', xsrf_token, user.id)
@@ -281,6 +303,8 @@ class BaseHandler(webapp2.RequestHandler):
       # Call the handler, making nice pages for errors derived from Error.
       method(**kwargs)
 
+    except RedirectToUrl as exception:
+      return self.redirect(exception.url)
     except perms.AuthorizationError as exception:
       self.response.set_status(403, message=exception.message)
       self.response.out.write(self.RenderTemplate('unauthorized.html', {

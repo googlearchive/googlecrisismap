@@ -14,9 +14,19 @@
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
+import app
 import base_handler
+import config
 import model
 import test_utils
+import webapp2
+
+
+class TestHandler(base_handler.BaseHandler):
+  """A basic handler used to test the BaseHandler class."""
+
+  def Get(self):
+    self.response.out.write('test')
 
 
 class BaseHandlerTest(test_utils.BaseTest):
@@ -95,6 +105,41 @@ class BaseHandlerTest(test_utils.BaseTest):
     request.scheme = 'https'
     auth = base_handler.GetAuthForRequest(request)
     self.assertEquals('xyz', auth.source)
+
+  def RunTestHandler(self, method, path, status, **headers):
+    route = app.RootPathRoute([app.Route('/test', TestHandler)])
+    test_app = webapp2.WSGIApplication([route])
+    request = test_utils.SetupRequest(path)
+    request.method = method
+    request.headers.update(headers)
+    response = webapp2.Response()
+    test_app.app.router.dispatch(request, response)
+    self.assertEquals(status, response.status_int)
+    return request, response
+
+  def testHandleRequest(self):
+    """Exercises the HandleRequest method by simulating a simple request."""
+    request, response = self.RunTestHandler('GET', '/test', 200)
+    self.assertEquals('test', response.body)
+
+    self.assertEquals('en', request.lang)
+    self.assertEquals(test_utils.ROOT_PATH, request.root_path)
+    self.assertEquals(test_utils.ROOT_URL, request.root_url)
+
+  def testLoginAccessList(self):
+    """Ensures that the login_access_list config setting is enforced."""
+    config.Set('login_access_list', ['1@gmail.test', '2@gmail.test'])
+
+    _, response = self.RunTestHandler('GET', '/test', 302)
+    self.assertRegexpMatches(response.headers['Location'], r'/\.login')
+
+    with test_utils.Login('1'):
+      _, response = self.RunTestHandler('GET', '/test', 200)
+      self.assertEquals('test', response.body)
+
+    with test_utils.Login('7'):
+      _, response = self.RunTestHandler('GET', '/test', 403)
+      self.assertTrue("you don't have permission" in response.body)
 
 
 if __name__ == '__main__':

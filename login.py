@@ -10,7 +10,7 @@
 # OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
 # specific language governing permissions and limitations under the License.
 
-"""A fake login page for development."""
+"""A fake login page, for development use only."""
 
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
@@ -21,11 +21,15 @@ import users
 
 
 class Login(base_handler.BaseHandler):
-  def Get(self):
-    """Renders the developer login page."""
+  """A fake login page, for development use only."""
+
+  def CheckAccess(self):
+    """Ensures this page is only accessible to developers."""
     if not users.IsDeveloper():
       raise base_handler.Error(404, 'Not found.')
 
+  def Get(self):
+    """Renders the developer login page."""
     if self.request.get('logout'):
       self.response.delete_cookie('crisismap_login')
       self.response.delete_cookie('dev_appserver_login')
