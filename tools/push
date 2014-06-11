@@ -48,7 +48,7 @@ fi
 
 # Push.
 if hg id >/dev/null; then
-  version=$(hg id -i | sed -e 's/\+$/'$(date +-%Y%m%d-%H%M)/)
+  version=$(hg id -i | sed -e 's/\+$/'$(date -u +-%Y%m%d-%H%M)/)
 else
   echo -n "Specify a version name: "
   read version
