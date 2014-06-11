@@ -25,6 +25,7 @@ import time
 
 import config
 import domains
+import model
 import perms
 import users
 import utils
@@ -144,6 +145,19 @@ def SanitizeCallback(callback):
   raise Error(httplib.BAD_REQUEST, 'Invalid callback name.')
 
 
+def GetAuthForRequest(request):
+  """Gets the Authorization record to use for a request."""
+  api_key = request.get('key')
+  if not api_key:
+    return None
+  if request.scheme != 'https':
+    raise ApiError(403, 'HTTPS is required when using an API key.')
+  auth = model.Authorization.Get(api_key)
+  if not auth:
+    raise ApiError(403, 'Invalid API key.')
+  return auth
+
+
 class Error(Exception):
   """An error that carries an HTTP status and a message to show the user."""
 
@@ -223,6 +237,9 @@ class BaseHandler(webapp2.RequestHandler):
         raise Error(405, '%s method not allowed.' % self.request.method)
       root_path = config.Get('root_path') or ''
       user = users.GetCurrent()
+
+      # Set self.auth according to the API key in the request, if specified.
+      self.auth = GetAuthForRequest(self.request)
 
       # Require/allow domain name and user sign-in based on whether the method
       # takes arguments named 'domain' and 'user'.

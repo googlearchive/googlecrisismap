@@ -1073,5 +1073,21 @@ class CrowdReportTests(test_utils.BaseTest):
                              count=10, max_updated=None))
 
 
+class AuthorizationTests(test_utils.BaseTest):
+  """Tests AuthorizationModel."""
+
+  def testAuthorization(self):
+    """Creates and reads back an authorization record."""
+    key = model.Authorization.Create(
+        crowd_report_write_permission=True, map_read_permission=True,
+        source='http://foo.example.org/', map_ids=['a', 'b'],
+        author_prefix='tel:+1').id
+    auth = model.Authorization.Get(key)
+    self.assertEquals(True, auth.crowd_report_write_permission)
+    self.assertEquals(True, auth.map_read_permission)
+    self.assertEquals('http://foo.example.org/', auth.source)
+    self.assertEquals(['a', 'b'], auth.map_ids)
+    self.assertEquals('tel:+1', auth.author_prefix)
+
 if __name__ == '__main__':
   test_utils.main()

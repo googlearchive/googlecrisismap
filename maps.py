@@ -269,7 +269,7 @@ def GetConfig(request, map_object=None, catalog_entry=None, xsrf_token=''):
     ui_region = map_root.get('region', ui_region)
     cache_key, sources = metadata.CacheSourceAddresses(key, result['map_root'])
     result['metadata'] = dict((s, cache.Get(['metadata', s])) for s in sources)
-    result['metadata_url'] = root + '/.metadata?key=' + cache_key
+    result['metadata_url'] = root + '/.metadata?ck=' + cache_key
     metadata.ActivateSources(sources)
 
   # Construct the URL for the Maps JavaScript API.

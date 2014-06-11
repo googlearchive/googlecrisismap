@@ -641,8 +641,8 @@ class MetadataFetchTest(test_utils.BaseTest):
       response = self.DoGet('/xyz.com/.maps/' + map_object.id)
 
     # Get the metadata cache key mentioned in the map page.
-    key = re.search(r'"metadata_url": "/root/.metadata\?key=(\w+)"',
-                    response.body).group(1)
+    cache_key = re.search(r'"metadata_url": "/root/.metadata\?ck=(\w+)"',
+                          response.body).group(1)
 
     # The map load should have queued two metadata_fetch tasks.
     tasks = sorted(self.PopTasks('metadata'))
@@ -671,7 +671,7 @@ class MetadataFetchTest(test_utils.BaseTest):
     self.mox.VerifyAll()
 
     # metadata.py should now return the cached metadata.
-    response = self.DoGet('/.metadata?key=' + key)
+    response = self.DoGet('/.metadata?ck=' + cache_key)
     self.assertEquals({
         'GEORSS:' + GEORSS_URL: {
             'fetch_time': FETCH_TIME,

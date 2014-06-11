@@ -41,17 +41,17 @@ class MetadataTest(test_utils.BaseTest):
         set(metadata.GetSourceAddresses(MAPROOT)))
 
   def testCacheSourceAddresses(self):
-    key1, sources = metadata.CacheSourceAddresses('abc', MAPROOT)
+    cache_key1, sources = metadata.CacheSourceAddresses('abc', MAPROOT)
     self.assertEquals(
         set(['KML:http://x.com/a', 'GEORSS:http://y.com/b']),
-        set(cache.Get(['source_addresses', key1])))
+        set(cache.Get(['source_addresses', cache_key1])))
     self.assertEquals(
         set(['KML:http://x.com/a', 'GEORSS:http://y.com/b']),
         set(sources))
 
     # Same map_version_key should yield the same cache key.
-    key2, sources = metadata.CacheSourceAddresses('abc', MAPROOT)
-    self.assertEquals(key1, key2)
+    cache_key2, sources = metadata.CacheSourceAddresses('abc', MAPROOT)
+    self.assertEquals(cache_key1, cache_key2)
 
   def testActivateSources(self):
     sources = ['KML:http://x.com/a', 'GEORSS:http://y.com/b']
@@ -71,12 +71,12 @@ class MetadataTest(test_utils.BaseTest):
     self.assertEquals(0, len(self.PopTasks('metadata')))
 
   def testGet(self):
-    key, _ = metadata.CacheSourceAddresses('abc', MAPROOT)
+    cache_key, _ = metadata.CacheSourceAddresses('abc', MAPROOT)
     cache.Set(['metadata', 'KML:http://x.com/a'], {'length': 123})
     cache.Set(['metadata', 'KML:http://p.com/q'], {'length': 456})
 
     # Map cache key, an address with metadata, and an address without metadata.
-    response = self.DoGet('/.metadata?key=' + key +
+    response = self.DoGet('/.metadata?ck=' + cache_key +
                           '&source=KML:http://p.com/q' +
                           '&source=KML:http://z.com/z')
     self.assertEquals({

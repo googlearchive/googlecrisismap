@@ -100,6 +100,7 @@ class MapModel(db.Model):
   reviewers = db.StringListProperty()
 
   # User IDs of users who can view the current version of this map.
+  # (Note that API keys can also be configured to grant access to view a map.)
   viewers = db.StringListProperty()
 
   # The domain that this map belongs to.  Required for all maps.
@@ -1290,3 +1291,68 @@ class CrowdVote(utils.Struct):
     CrowdReport.UpdateScore(report_id, old_vote, vote_type)
     _CrowdVoteModel(id=report_id + '\x00' + voter, report_id=report_id,
                     voter=voter, vote_type=vote_type).put()
+
+
+class _AuthorizationModel(ndb.Model):
+  """API keys and their authorized actions.  key.id() is the API key."""
+
+  # If this flag is False, this API key will be ignored.  Use this to disable
+  # a key without deleting it.
+  is_enabled = ndb.BooleanProperty()
+
+  # Bookkeeping information for humans, not used programmatically.
+  contact_name = ndb.StringProperty()
+  contact_email = ndb.StringProperty()
+  organization_name = ndb.StringProperty()
+
+  # If this flag is True, then 'source' and 'map_ids' are required, and this
+  # API key allows a client to post crowd reports with the specified source URL
+  # and one of the allowed map IDs.
+  crowd_report_write_permission = ndb.BooleanProperty()
+
+  # If this flag is True, then 'map_ids' is required, and this API key allows
+  # a client to read the Map objects with the allowed map IDs.
+  map_read_permission = ndb.BooleanProperty()
+
+  # For crowd_report_write_permission, this specifies the source URL that
+  # posted crowd reports are required to have.  Reports that have non-matching
+  # source URLs are rejected.
+  source = ndb.StringProperty()
+
+  # For crowd_report_write_permission, this specifies the set of map IDs that
+  # are allowed in posted crowd reports.  For map_read_permission, these are
+  # the map IDs of the maps that are allowed to be read.
+  map_ids = ndb.StringProperty(repeated=True)
+
+  # For crowd_report_write_permission, if this field is non-empty, the posted
+  # crowd reports are required to have author URLs beginning with this prefix.
+  # Otherwise, any author URL is accepted.
+  author_prefix = ndb.StringProperty()
+
+  @classmethod
+  def _get_kind(cls):  # pylint: disable=g-bad-name
+    return 'AuthorizationModel'  # so we can name the Python class with a _
+
+
+class Authorization(utils.Struct):
+  """Application-level object representing an API authorization record."""
+
+  @classmethod
+  def Get(cls, key):
+    """Gets the authorization record for a given API key."""
+    return cache.Get([Authorization, key],
+                     lambda: cls.FromModel(_AuthorizationModel.get_by_id(key)))
+
+  @classmethod
+  def Create(cls, contact_name='', contact_email='', organization_name='',
+             crowd_report_write_permission=False, source='',
+             map_read_permission=False, map_ids=None, author_prefix=''):
+    key = utils.MakeRandomId()
+    model = _AuthorizationModel(
+        id=key, is_enabled=True, contact_name=contact_name,
+        contact_email=contact_email, organization_name=organization_name,
+        crowd_report_write_permission=crowd_report_write_permission,
+        map_read_permission=map_read_permission, source=source,
+        map_ids=map_ids or [], author_prefix=author_prefix)
+    model.put()
+    return cls.FromModel(model)

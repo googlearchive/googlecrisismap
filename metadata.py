@@ -91,7 +91,7 @@ class Metadata(base_handler.BaseHandler):
 
   def Get(self):
     """Retrieves metadata for the specified cache key and source addresses."""
-    cache_key = self.request.get('key')
+    cache_key = self.request.get('ck')
     sources = cache.Get(['source_addresses', cache_key]) or []
     if sources:  # extend the lifetime of the cache entry
       cache.Set(['source_addresses', cache_key], sources, ADDRESS_TTL_SECONDS)

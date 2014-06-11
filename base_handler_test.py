@@ -15,6 +15,7 @@
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import base_handler
+import model
 import test_utils
 
 
@@ -69,6 +70,31 @@ class BaseHandlerTest(test_utils.BaseTest):
     self.assertEquals('FooBar3', base_handler.SanitizeCallback('FooBar3'))
     self.assertEquals('x.y', base_handler.SanitizeCallback('x.y'))
     self.assertEquals('x.y._z', base_handler.SanitizeCallback('x.y._z'))
+
+  def testGetAuthForRequest(self):
+    """Verifies that self.auth is set propertly according to API key."""
+    key = model.Authorization.Create(source='xyz').id
+
+    # No API key
+    request = test_utils.SetupRequest('/foo')
+    self.assertEquals(None, base_handler.GetAuthForRequest(request))
+
+    # HTTP request with an API key should be disallowed
+    request = test_utils.SetupRequest('/foo?key=' + key)
+    self.assertRaises(
+        base_handler.ApiError, base_handler.GetAuthForRequest, request)
+
+    # HTTPS request with an unrecognized API key
+    request = test_utils.SetupRequest('/foo?key=abc')
+    request.scheme = 'https'
+    self.assertRaises(
+        base_handler.ApiError, base_handler.GetAuthForRequest, request)
+
+    # HTTPS request with a valid API key
+    request = test_utils.SetupRequest('/foo?key=' + key)
+    request.scheme = 'https'
+    auth = base_handler.GetAuthForRequest(request)
+    self.assertEquals('xyz', auth.source)
 
 
 if __name__ == '__main__':
