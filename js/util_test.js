@@ -258,6 +258,6 @@ UtilTest.prototype.testShortAge = function() {
   expectEq('just now', cm.util.shortAge(now));
   expectEq('just now', cm.util.shortAge(now - 58));
   expectEq('2m ago', cm.util.shortAge(now - 115));
-  expectEq('1.5h ago', cm.util.shortAge(now - 90 * 60));
+  expectEq('2h ago', cm.util.shortAge(now - 110 * 60));
   expectEq('4d ago', cm.util.shortAge(now - 4 * 24 * 3600));
 };

@@ -276,19 +276,17 @@ cm.util.createLanguageChoices = function(langCodes) {
 /**
  * Constructs a short string describing a relative time in the past.
  * @param {number} time A number of seconds since 1970-01-01 00:00:00 UTC.
- * @return {string} A short string like "5.1d" (5.1 days) or "32m" (32 minutes).
+ * @return {string} A short string like "5d" (5 days) or "32m" (32 minutes).
  */
 cm.util.shortAge = function(time) {
-  var age = (new Date).getTime() / 1000 - time;
-  if (age < 60) {
-    return cm.MSG_JUST_NOW;
-  } else if (age / 60 < 60) {
-    return cm.getMsgShortMinutesAgo(Math.round(age / 60));
-  } else if (age / 3600 < 24) {
-    return cm.getMsgShortHoursAgo(Math.round(age / 360) / 10);
-  } else {
-    return cm.getMsgShortDaysAgo(Math.round(age / 8640) / 10);
-  }
+  var seconds = (new Date).getTime() / 1000 - time;
+  var minutes = Math.round(seconds / 60);
+  var hours = Math.round(seconds / 3600);
+  var days = Math.round(seconds / 86400);
+  if (seconds < 60) return cm.MSG_JUST_NOW;
+  if (minutes < 100) return cm.getMsgShortMinutesAgo(minutes);
+  if (hours < 48) return cm.getMsgShortHoursAgo(hours);
+  return cm.getMsgShortDaysAgo(days);
 };
 
 

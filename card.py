@@ -13,6 +13,7 @@
 """Displays a card containing a list of nearby features for a given topic."""
 
 import cgi
+import datetime
 import json
 import logging
 import math
@@ -26,6 +27,7 @@ import config
 import kmlify
 import maproot
 import model
+import utils
 
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb  # just for GeoPt
@@ -33,6 +35,7 @@ from google.appengine.ext import ndb  # just for GeoPt
 
 ANSWER_CACHE = cache.Cache('card.answers', 5)
 XML_CACHE = cache.Cache('card.xml', 30)
+MAX_ANSWER_AGE = datetime.timedelta(days=7)  # ignore answers older than 7 days
 GOOGLE_SPREADSHEET_CSV_URL = (
     'https://docs.google.com/spreadsheet/pub?key=$key&output=csv')
 DEGREES = 3.14159265358979/180
@@ -53,6 +56,7 @@ class Feature(object):
     self.distance = None
     self.status_color = None
     self.answer_text = ''
+    self.answer_time = ''
 
   def __cmp__(self, other):
     return cmp((self.distance, self.name), (other.distance, other.name))
@@ -172,16 +176,21 @@ def GetLatestAnswers(map_id, topic_id, location, radius):
   """Gets the latest CrowdReport answers for the given topic and location."""
   full_topic_id = map_id + '.' + topic_id
   answers = {}
+  answer_times = {}
+  now = datetime.datetime.utcnow()
+  # Assume that all the most recently effective still-relevant answers are
+  # contained among the 100 most recently updated CrowdReport entities.
   for report in model.CrowdReport.GetByLocation(
       location, {full_topic_id: radius}, 100, hidden=False):
-    for question_id, answer in report.answers.items():
-      tid, qid = question_id.rsplit('.', 1)
-      # GetByLocation returns reports in reverse updated order, so we keep
-      # just the first answer that we see for each question.
-      if tid == full_topic_id and qid not in answers:
-        if answer or answer == 0:
-          answers[qid] = answer
-  return answers
+    if now - report.effective < MAX_ANSWER_AGE:
+      for question_id, answer in report.answers.items():
+        tid, qid = question_id.rsplit('.', 1)
+        if tid == full_topic_id:
+          if answer or answer == 0:  # non-empty answer
+            if qid not in answer_times or report.effective > answer_times[qid]:
+              answers[qid] = answer
+              answer_times[qid] = report.effective
+  return answers, max(answer_times.values() or [None])
 
 
 def GetLegibleTextColor(background_color):
@@ -207,7 +216,7 @@ def SetAnswersOnFeatures(features, map_root, topic_id, qids):
 
   if topic.get('crowd_enabled') and qids:
     for f in features:
-      answers = ANSWER_CACHE.Get(
+      answers, answer_time = ANSWER_CACHE.Get(
           [map_id, topic_id, RoundGeoPt(f.location), radius],
           lambda: GetLatestAnswers(map_id, topic_id, f.location, radius))
       answer_texts = []
@@ -223,7 +232,9 @@ def SetAnswersOnFeatures(features, map_root, topic_id, qids):
             f.status_color = choice.get('color') or DEFAULT_STATUS_COLOR
         elif answer or answer == 0:
           answer_texts.append(question.get('title', '') + ': ' + str(answer))
-      f.answer_text = ', '.join(answer_texts)
+      if answer_texts:
+        f.answer_text = ', '.join(answer_texts)
+        f.answer_time = utils.ShortAge(answer_time)
 
 
 def SetDistanceOnFeatures(features, center):
@@ -261,7 +272,8 @@ def GetGeoJson(features):
           'distance_mi': f.distance_mi,
           'distance_km': f.distance_km,
           'status_color': f.status_color,
-          'answer_text': f.answer_text
+          'answer_text': f.answer_text,
+          'answer_time': f.answer_time
       }
   } for f in features]}
 

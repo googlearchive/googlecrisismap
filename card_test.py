@@ -12,6 +12,7 @@
 
 """Tests for card.py."""
 
+import datetime
 import json
 
 import card
@@ -323,16 +324,21 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals([], card.GetFeatures(MAP_ROOT, 'xyz', self.request))
 
   def testGetLatestAnswers(self):
+    now = datetime.datetime.utcnow()
+    seconds = lambda s: datetime.timedelta(seconds=s)
     reports = [
-        model.CrowdReport(answers_json='{"m1.t1.q1": "a1", "m1.t1.q2": "a2"}'),
+        model.CrowdReport(answers_json='{"m1.t1.q1": "a1", "m1.t1.q2": "a2"}',
+                          effective=now),
         # Older answer to m1.t1.q2 should be superceded by recent answer
-        model.CrowdReport(answers_json='{"m1.t1.q2": "a3", "m1.t1.q3": "a3"}'),
+        model.CrowdReport(answers_json='{"m1.t1.q2": "a3", "m1.t1.q3": "a3"}',
+                          effective=now - seconds(1)),
         # Answers for irrelevant maps or topics should be ignored
-        model.CrowdReport(answers_json='{"m1.t2.q4": "a4", "m2.t1.q5": "a5"}')
+        model.CrowdReport(answers_json='{"m1.t2.q4": "a4", "m2.t1.q5": "a5"}',
+                          effective=now - seconds(2))
     ]
     self.SetForTest(model.CrowdReport, 'GetByLocation',
                     staticmethod(lambda *args, **kwargs: reports))
-    self.assertEquals({'q1': 'a1', 'q2': 'a2', 'q3': 'a3'},
+    self.assertEquals(({'q1': 'a1', 'q2': 'a2', 'q3': 'a3'}, now),
                       card.GetLatestAnswers('m1', 't1', 'location', 100))
 
   def testGetLegibleTextColor(self):
@@ -347,9 +353,10 @@ class CardTest(test_utils.BaseTest):
   def testSetAnswersOnFeatures(self):
     features = [card.Feature('title1', 'description1', ndb.GeoPt(1, 1)),
                 card.Feature('title2', 'description2', ndb.GeoPt(2, 2))]
+    now = datetime.datetime.utcnow()
     def FakeGetLatestAnswers(unused_1, unused_2, location, unused_3):
-      return {'q1': 'a1' if location.lat < 1.5 else 'a2',
-              'q2': None if location.lat < 1.5 else 3}
+      return ({'q1': 'a1' if location.lat < 1.5 else 'a2',
+               'q2': None if location.lat < 1.5 else 3}, now)
     self.SetForTest(card, 'GetLatestAnswers', FakeGetLatestAnswers)
     card.SetAnswersOnFeatures(features, MAP_ROOT, 't1', ['q1', 'q2'])
     self.assertEquals('Green', features[0].answer_text)
@@ -397,6 +404,7 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals({'geometry': {'coordinates': [-40.0, 20.0],
                                     'type': 'Point'},
                        'properties': {'answer_text': '',
+                                      'answer_time': '',
                                       'status_color': None,
                                       'description_html': 'description1',
                                       'distance': 0.0,

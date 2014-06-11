@@ -160,3 +160,25 @@ def MakeRandomId():
   # the length is a multiple of 4, it won't have trailing "=" signs.
   return base64.urlsafe_b64encode(
       ''.join(chr(random.randrange(256)) for i in xrange(12)))
+
+
+def ShortAge(dt):
+  """Returns a short string describing a relative time in the past.
+
+  Args:
+    dt: A datetime.
+  Returns:
+    A short string like "5d" (5 days) or "32m" (32 minutes).
+  """
+  # TODO(kpy): This is English-specific and needs localization.
+  seconds = time.time() - UtcToTimestamp(dt)
+  minutes = int(seconds / 60 + 0.5)
+  hours = int(seconds / 3600 + 0.5)
+  days = int(seconds / 86400 + 0.5)
+  if seconds < 60:
+    return 'just now'
+  if minutes < 100:
+    return '%dm ago' % minutes
+  if hours < 48:
+    return '%dh ago' % hours
+  return '%dd ago' % days

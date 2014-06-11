@@ -61,6 +61,9 @@ body {
   float: right;
   text-align: center;
 }
+.card .item .time {
+  color: #999;
+}
 .card .item .directions .icon {
   background-image: url(directions.png);
   width: 22px;

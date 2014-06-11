@@ -100,5 +100,15 @@ class UtilsSetAndTestTests(test_utils.BaseTest):
         dt,
         datetime.datetime.utcfromtimestamp(utils.UtcToTimestamp(dt)))
 
+  def testShortAge(self):
+    now = datetime.datetime.utcnow()
+    seconds = lambda s: datetime.timedelta(seconds=s)
+    self.assertEqual('just now', utils.ShortAge(now + seconds(100)))
+    self.assertEqual('just now', utils.ShortAge(now))
+    self.assertEqual('just now', utils.ShortAge(now - seconds(58)))
+    self.assertEqual('2m ago', utils.ShortAge(now - seconds(115)))
+    self.assertEqual('2h ago', utils.ShortAge(now - seconds(110 * 60)))
+    self.assertEqual('4d ago', utils.ShortAge(now - seconds(4 * 24 * 3500)))
+
 if __name__ == '__main__':
   test_utils.main()
