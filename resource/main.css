@@ -1137,6 +1137,7 @@ div.cm-preview-link:hover, div.cm-preview-link.cm-preview-active {
 .cm-editors > .cm-html-editor textarea {
   width: 100%;
   box-sizing: border-box;
+  min-width: 6em;
 }
 .cm-editors > .cm-textarea-row > th,
 .cm-editors > .cm-html-editor > th,
@@ -1378,7 +1379,7 @@ textarea.cm-legend-text {
 
 /* Question list, question, and choice editors */
 .cm-editors .cm-question-editor > th,
-.cm-editors .cm-question-editor > th .help-container {
+.cm-editors .cm-question-editor > th .cm-help-container {
     padding: 0;
     width: 0;
 }
