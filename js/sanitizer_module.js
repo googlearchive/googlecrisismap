@@ -15,12 +15,12 @@
  */
 goog.require('goog.module');
 
-// This module exports the 'html' symbol from html-sanitizer.js, provided by
-// //third_party/java/caja:html_css_sanitizer.  There is no goog.require(...)
-// here because html-sanitizer.js doesn't have a goog.provide declaration.
+// This module exports the 'html' symbol from html-css-sanitizer.js, which
+// is provided by the Caja project.  There is no goog.require(...) here because
+// html-css-sanitizer.js doesn't have a goog.provide declaration.
 
 // One provide() line for each object to export.
-goog.module.provide('sanitizer', 'html', html);
+goog.module.provide('sanitizer', 'html', window['html']);
 
 // Last, announce that the module has finished loading.
 goog.module.provide('sanitizer');
