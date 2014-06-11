@@ -288,7 +288,6 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
           self.submitBtn_ = cm.ui.create(
               'input', {'type': 'submit', 'value': cm.MSG_POST,
                         'class': [cm.css.BUTTON, cm.css.SUBMIT]})),
-      cm.ui.create('div', cm.css.NOTICE, cm.MSG_CROWD_PRIVACY_DISCLAIMER)
   );
   self.submitBtn_.disabled = true;
 
