@@ -1,0 +1,80 @@
+/* Copyright 2012 Google Inc.  All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License.  You may obtain a copy
+of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distrib-
+uted under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.  See the License for
+specific language governing permissions and limitations under the License. */
+
+@import url("//fonts.googleapis.com/css?family=Roboto:300,400,700");
+
+body {
+  font-family: Roboto, arial, verdana, sans-serif;
+  font-weight: 400;
+  margin: 0;
+  padding: 0;
+}
+.card {
+  color: #555;
+  padding: 20px;
+  background: #fff;
+  font-size: 13px;
+}
+.card h2 {
+  color: #000;
+  font-size: 22px;
+  font-weight: 300;
+  padding: 0 4px 20px;
+  border-bottom: 1px solid #e6e6e6;
+  margin: 0 -4px;
+}
+.card a {
+  color: #4386fc;
+  text-decoration: none;
+}
+.card .menu {
+  float: right;
+  margin-top: 8px;
+  padding-left: 12px;
+}
+.hidden {
+  display: none;
+}
+.card .clear {
+  clear: both;
+}
+.card .item {
+  margin: 0 -4px;
+  padding: 8px 4px 6px;
+  font-size: 14px;
+  border-bottom: 1px solid #e6e6e6;
+}
+.card .item .title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.card .item .directions {
+  float: right;
+  text-align: center;
+}
+.card .item .directions .icon {
+  background-image: url(directions.png);
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+}
+.card .item .directions .distance {
+  font-size: 12px;
+  margin-top: -2px;
+  white-space: nowrap;
+}
+.card .item .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  margin-right: 6px;
+}

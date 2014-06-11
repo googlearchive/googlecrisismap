@@ -35,6 +35,7 @@ CROWD_REPORT_ANSWERS_TTL = 10  # seconds to keep survey answers in cache
 GOOGLE_SPREADSHEET_CSV_URL = (
     'https://docs.google.com/spreadsheet/pub?key=$key&output=csv')
 DEGREES = 3.14159265358979/180
+DEFAULT_STATUS_COLOR = '#eee'
 
 
 def RoundGeoPt(point):
@@ -49,7 +50,8 @@ class Feature(object):
     self.description_html = description_html
     self.location = location  # should be an ndb.GeoPt
     self.distance = None
-    self.answers = []
+    self.status_color = None
+    self.answer_text = ''
 
   def __cmp__(self, other):
     return cmp((self.distance, self.name), (other.distance, other.name))
@@ -169,16 +171,17 @@ def GetFeatures(map_root, topic_id, request):
 def GetLatestAnswers(map_id, topic_id, location, radius):
   """Gets the latest CrowdReport answers for the given topic and location."""
   full_topic_id = map_id + '.' + topic_id
-  aids_by_qid = {}
+  answers = {}
   for report in model.CrowdReport.GetByLocation(
       location, {full_topic_id: radius}, 100, hidden=False):
-    for question_id, aid in report.answers.items():
+    for question_id, answer in report.answers.items():
       tid, qid = question_id.rsplit('.', 1)
-      if tid == full_topic_id:
-        # GetByLocation returns reports in reverse updated order, so we keep
-        # just the first answer that we see for each question.
-        aids_by_qid[qid] = aids_by_qid.get(qid, aid)
-  return aids_by_qid
+      # GetByLocation returns reports in reverse updated order, so we keep
+      # just the first answer that we see for each question.
+      if tid == full_topic_id and qid not in answers:
+        if answer == 0 or answer:
+          answers[qid] = answer
+  return answers
 
 
 def GetLegibleTextColor(background_color):
@@ -191,25 +194,37 @@ def GetLegibleTextColor(background_color):
   return luminance > 128 and '#000' or '#fff'
 
 
-def SetAnswersOnFeatures(features, map_root, topic_id):
-  """Populates the 'answers' lists for all the given Feature objects."""
+def SetAnswersOnFeatures(features, map_root, topic_id, qids):
+  """Populates 'status_color' and 'answer_text' on the given Feature objects."""
   map_id = map_root.get('id') or ''
   topic = GetTopic(map_root, topic_id) or {}
   radius = topic.get('cluster_radius', 100)
-  answers_by_question = {
-      question['id']: {answer['id']: answer for answer in question['answers']}
-      for question in topic.get('questions', [])}
-  for answers in answers_by_question.values():
-    for answer in answers.values():
-      answer['text_color'] = GetLegibleTextColor(answer['color'])
-  if topic.get('crowd_enabled') and answers_by_question:
+
+  questions_by_id = {q['id']: q for q in topic.get('questions', [])}
+  choices_by_id = {(q['id'], a['id']): a
+                   for q in topic.get('questions', [])
+                   for a in q.get('answers', [])}
+
+  if topic.get('crowd_enabled') and qids:
     for f in features:
-      aids_by_qid = cache.Get(
+      answers = cache.Get(
           ['answers', map_id, topic_id, RoundGeoPt(f.location), radius],
           lambda: GetLatestAnswers(map_id, topic_id, f.location, radius),
           CROWD_REPORT_ANSWERS_TTL)
-      f.answers = [answers_by_question.get(qid, {}).get(aid)
-                   for qid, aid in aids_by_qid.items()]
+      answer_texts = []
+      for i, qid in enumerate(qids):
+        question, answer = questions_by_id.get(qid, {}), answers.get(qid)
+        if question.get('type') == 'CHOICE':
+          choice = choices_by_id.get((qid, answer)) or {}
+          if choice:
+            answer_texts.append(
+                choice.get('label', '') or
+                question.get('title', '') + ': ' + choice.get('title', ''))
+          if i == 0:
+            f.status_color = choice.get('color') or DEFAULT_STATUS_COLOR
+        elif answer:
+          answer_texts.append(question.get('title', '') + ': ' + str(answer))
+      f.answer_text = ', '.join(answer_texts)
 
 
 def SetDistanceOnFeatures(features, center):
@@ -233,7 +248,22 @@ def RemoveParamsFromUrl(url, *params):
 
 
 class CardBase(base_handler.BaseHandler):
-  """Card rendering code common to all the card handlers below."""
+  """Card rendering code common to all the card handlers below.
+
+  For all these card handlers, the map and topic are determined from the
+  URL path (the map is specified by ID or label, and the topic ID is either
+  explicit in the path or assumed to be the first existing topic for the map).
+  Use these query parameters to customize the resulting card:
+    - n: Maximum number of items to show.
+    - ll: Geolocation of the center point to search near (in lat,lon format).
+    - r: Search radius in metres.
+    - unit: Distance unit to show (either 'km' or 'mi').
+    - qids: Comma-separated IDs of questions within the topic.  Short text
+          descriptions of the most recently crowd-reported answers to these
+          questions are shown with each item.  The first question in qids is
+          treated specially: if it is a CHOICE question, its answer will also
+          be displayed as a coloured status dot.
+  """
   embeddable = True
   error_template = 'card-error.html'
 
@@ -245,6 +275,7 @@ class CardBase(base_handler.BaseHandler):
     max_count = int(self.request.get('n', 5))  # number of results to show
     radius = float(self.request.get('r', 100000))  # radius, metres
     unit = str(self.request.get('unit', 'km'))
+    qids = self.request.get('qids').replace(',', ' ').split()
     try:
       lat, lon = lat_lon.split(',')
       center = ndb.GeoPt(float(lat), float(lon))
@@ -256,7 +287,7 @@ class CardBase(base_handler.BaseHandler):
       if center:
         SetDistanceOnFeatures(features, center)
       FilterFeatures(features, radius, max_count)
-      SetAnswersOnFeatures(features, map_root, topic_id)
+      SetAnswersOnFeatures(features, map_root, topic_id, qids)
       lang = base_handler.SelectLanguageForRequest(self.request, map_root)
       self.response.out.write(self.RenderTemplate('card.html', {
           'title': topic.get('title', ''),
@@ -277,7 +308,7 @@ class CardBase(base_handler.BaseHandler):
 class CardByIdAndTopic(CardBase):
   """Produces a card given a map ID and topic ID."""
 
-  def Get(self, map_id, topic_id, user=None):
+  def Get(self, map_id, topic_id, user=None, domain=None):
     map_object = model.Map.Get(map_id)
     if not map_object:
       raise base_handler.Error(404, 'No such map.')

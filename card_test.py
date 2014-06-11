@@ -95,10 +95,16 @@ MAP_ROOT = {
         'crowd_enabled': True,
         'questions': [{
             'id': 'q1',
+            'title': 'Foo',
+            'type': 'CHOICE',
             'answers': [
-                {'id': 'a1', 'color': '#0f0'},
-                {'id': 'a2', 'color': '#f00'}
+                {'id': 'a1', 'color': '#0f0', 'label': 'Green'},
+                {'id': 'a2', 'color': '#f00', 'label': 'Red'}
             ]
+        }, {
+            'id': 'q2',
+            'title': 'Qux',
+            'type': 'NUMBER'
         }]
     }],
     'layers': [{
@@ -329,13 +335,14 @@ class CardTest(test_utils.BaseTest):
     features = [card.Feature('title1', 'description1', ndb.GeoPt(1, 1)),
                 card.Feature('title2', 'description2', ndb.GeoPt(2, 2))]
     def FakeGetLatestAnswers(unused_1, unused_2, location, unused_3):
-      return {'q1': location.lat < 1.5 and 'a1' or 'a2'}
+      return {'q1': 'a1' if location.lat < 1.5 else 'a2',
+              'q2': None if location.lat < 1.5 else 3}
     self.SetForTest(card, 'GetLatestAnswers', FakeGetLatestAnswers)
-    card.SetAnswersOnFeatures(features, MAP_ROOT, 't1')
-    self.assertEquals([{'id': 'a1', 'color': '#0f0', 'text_color': '#000'}],
-                      features[0].answers)
-    self.assertEquals([{'id': 'a2', 'color': '#f00', 'text_color': '#fff'}],
-                      features[1].answers)
+    card.SetAnswersOnFeatures(features, MAP_ROOT, 't1', ['q1', 'q2'])
+    self.assertEquals('Green', features[0].answer_text)
+    self.assertEquals('#0f0', features[0].status_color)
+    self.assertEquals('Red, Qux: 3', features[1].answer_text)
+    self.assertEquals('#f00', features[1].status_color)
 
   def testSetDistanceOnFeatures(self):
     features = [card.Feature('title1', 'description1', ndb.GeoPt(1, 1)),

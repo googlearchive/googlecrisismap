@@ -16,57 +16,7 @@ specific language governing permissions and limitations under the License.
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta itemprop="image" content="{{root}}/.static/favicon.ico">
   <meta name="viewport" content="maximum-scale=1.0,initial-scale=1.0,user-scalable=no">
-  <style>
-    body {
-      font-family: Roboto, arial, verdana, sans-serif;
-      font-weight: 400;
-      margin: 0;
-      padding: 0;
-    }
-    .card {
-      color: #555;
-      padding: 20px;
-      background: #fff;
-      font-size: 13px;
-      line-height: 1;
-    }
-    .card h2 {
-      color: #000;
-      font-size: 22px;
-      font-weight: 300;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #e6e6e6;
-      margin: 0 0 20px;
-    }
-    .card a {
-      color: #4386fc;
-      text-decoration: none;
-    }
-    #list {
-      margin: -8px -8px 0;
-    }
-    .card table td {
-      vertical-align: baseline;
-      padding: 8px;
-    }
-    .card .distance {
-      text-align: right;
-      white-space: nowrap;
-    }
-    .card .menu {
-      float: right;
-      margin-top: 8px;
-      padding-left: 12px;
-    }
-    .answer {
-      font-size: 11px;
-      padding: 0 4px 1px;
-      text-transform: uppercase;
-    }
-    .hidden {
-      display: none;
-    }
-  </style>
+  <link rel="stylesheet" href="{{root}}/.static/card.css">
 </head>
 <body>
   <div id="card" class="card">
@@ -105,31 +55,34 @@ specific language governing permissions and limitations under the License.
       {% endif %}
     </div>
     <div id="list">
-      <table width="100%" cellpadding=0 cellspacing=0>
-        {% for feature in features %}
-          <tr>
-            <td width="70%">
-              {{feature.name|default:"(no name)"}}
-              {% for answer in feature.answers %}
-              <span class="answer" style="color: {{answer.text_color}}; background: {{answer.color}}">
-                  {{answer.label}}
-                </span>
-              {% endfor %}
-            </td>
-            <td width="30%" class="distance">
-              {% if feature.distance != None %}
-                <a href="http://maps.google.com/maps?daddr={{feature.location}}">
+      {% for feature in features %}
+        <div class="item">
+          {% if feature.distance != None %}
+            <div class="directions">
+              <a href="http://maps.google.com/maps?daddr={{feature.location}}">
+                <span class="icon"></span>
+                <div class="distance">
                   {% if unit == 'mi' %}
                     {{feature.distance_mi|floatformat:1}} mi
                   {% else %}
                     {{feature.distance_km|floatformat:1}} km
                   {% endif %}
-                </a>
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </table>
+                </div>
+              </a>
+            </div>
+          {% endif %}
+          <div class="title">{{feature.name|default:"(no name)"}}</div>
+          <div class="crowd">
+            {% if feature.answer_text %}
+              {% if feature.status_color %}
+                <span class="dot" style="background: {{feature.status_color}}">
+                </span
+              >{% endif %}<span class="answers">{{feature.answer_text}}</span>
+            {% endif %}
+          </div>
+          <div class="clear"></div>
+        </div>
+      {% endfor %}
     </div>
   </div>
 </body>
