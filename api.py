@@ -234,11 +234,11 @@ def CrowdReportJsonPost(auth, report_dicts):
     raise base_handler.ApiError(403, 'Not authorized to submit crowd reports.')
 
   now = utils.UtcToTimestamp(datetime.datetime.utcnow())
-  # TODO(kpy): Add a spam check here.
-  return [DictToReport(report, auth, now) for report in report_dicts]
+  return [DictToReport(report, auth, now, auth.crowd_report_spam_check)
+          for report in report_dicts]
 
 
-def DictToReport(report, auth, now):
+def DictToReport(report, auth, now, spam_check=True):
   """Converts one incoming dictionary to a CrowdReport or an error message."""
   report_id = report.get('id')
   if not report_id:
@@ -263,6 +263,8 @@ def DictToReport(report, auth, now):
   text = report.get('text', '')
   if not isinstance(text, basestring):
     return {'id': report_id, 'error': 'A string is required for text.'}
+  if spam_check and ContainsSpam(text):
+    return {'id': report_id, 'error': 'Text rejected as spam.'}
   place_id = report.get('place_id', '')
   if not isinstance(place_id, basestring):
     return {'id': report_id, 'error': 'A string is required for place_id.'}

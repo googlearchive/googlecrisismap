@@ -1344,6 +1344,9 @@ class _AuthorizationModel(ndb.Model):
   # and one of the allowed map IDs.
   crowd_report_write_permission = ndb.BooleanProperty()
 
+  # If this flag is True, then incoming crowd reports are checked for spam.
+  crowd_report_spam_check = ndb.BooleanProperty()
+
   # If this flag is True, then 'map_ids' is required, and this API key allows
   # a client to read the Map objects with the allowed map IDs.
   map_read_permission = ndb.BooleanProperty()
@@ -1379,13 +1382,15 @@ class Authorization(utils.Struct):
 
   @classmethod
   def Create(cls, contact_name='', contact_email='', organization_name='',
-             crowd_report_write_permission=False, source='',
-             map_read_permission=False, map_ids=None, author_prefix=''):
+             crowd_report_write_permission=False, crowd_report_spam_check=True,
+             map_read_permission=False, source='', map_ids=None,
+             author_prefix=''):
     key = utils.MakeRandomId()
     model = _AuthorizationModel(
         id=key, is_enabled=True, contact_name=contact_name,
         contact_email=contact_email, organization_name=organization_name,
         crowd_report_write_permission=crowd_report_write_permission,
+        crowd_report_spam_check=crowd_report_spam_check,
         map_read_permission=map_read_permission, source=source,
         map_ids=map_ids or [], author_prefix=author_prefix)
     model.put()

@@ -220,6 +220,7 @@ class CrowdReportsTest(test_utils.BaseTest):
         'place_id': 'a.b.c',
         'text': 'Hello'
     }
+    config.Set('crowd_report_spam_phrases', ['rabbits'])
 
     report_dicts = [
         dict(fields),  # all valid
@@ -231,7 +232,8 @@ class CrowdReportsTest(test_utils.BaseTest):
         dict(fields, answers='what'),  # answers is not a dictionary
         dict(fields, text=[3, 4]),  # text is not a string
         dict(fields, place_id=9),  # place_id is not a string
-        dict(fields, location='a')  # location is not a list of two numbers
+        dict(fields, location='a'),  # location is not a list of two numbers
+        dict(fields, text='Rabbits are bad!')  # contains spam phrase
     ]
 
     # Shouldn't be allowed without the key.
@@ -246,17 +248,12 @@ class CrowdReportsTest(test_utils.BaseTest):
     response = self.DoPost('/.api/reports?key=' + key, json.dumps(report_dicts),
                            content_type='application/json', https=True)
     reports = json.loads(response.body)
-    self.assertEquals(10, len(reports))
+    self.assertEquals(len(report_dicts), len(reports))
     self.assertEquals('Hello', reports[0]['text'])
-    self.assertTrue('error' in reports[1])
-    self.assertTrue('error' in reports[2])
-    self.assertTrue('error' in reports[3])
-    self.assertTrue('error' in reports[4])
-    self.assertTrue('error' in reports[5])
-    self.assertTrue('error' in reports[6])
-    self.assertTrue('error' in reports[7])
-    self.assertTrue('error' in reports[8])
-    self.assertTrue('error' in reports[9])
+    for report_dict, result in zip(report_dicts, reports)[1:]:
+      self.assertTrue(
+          'error' in result, 'Submitted %r expecting an error, '
+          'but instead got %r' % (report_dict, result))
 
     # When not signed in, a search query should fetch nothing.
     response = self.DoGet('/.api/reports?ll=37,-75&topic_ids=1.gas&radii=100')
