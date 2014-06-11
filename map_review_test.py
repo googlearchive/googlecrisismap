@@ -42,14 +42,14 @@ class MapReviewTest(test_utils.BaseTest):
                 'id': 'q1',
                 'text': 'Is there space available?<br>',
                 'type': 'CHOICE',
-                'answers': [
+                'choices': [
                     {'id': 'y', 'title': 'Yes', 'label': '[space]'},
                     {'id': 'n', 'title': 'No', 'label': '[no space]'}]
             }, {
                 'id': 'q2',
                 'text': 'Are overnight stays allowed?',
                 'type': 'CHOICE',
-                'answers': [
+                'choices': [
                     {'id': 'y', 'title': 'Yes', 'label': '[overnight]'},
                     {'id': 'n', 'title': 'No', 'label': '[day only]'}]
             }, {
@@ -73,7 +73,7 @@ class MapReviewTest(test_utils.BaseTest):
                 'id': 'q5',
                 'text': 'Is there water?',
                 'type': 'CHOICE',
-                'answers': [
+                'choices': [
                     {'id': 'y', 'title': 'Yes', 'label': '[water]'},
                     {'id': 'n', 'title': 'No', 'label': '[no water]'}]
             }]

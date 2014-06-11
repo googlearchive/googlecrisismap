@@ -80,7 +80,7 @@ cm.TopicModel.newFromMapRoot = function(maproot, valid_layer_ids) {
    *           text: string,
    *           title: string,
    *           type: cm.TopicModel.QuestionType,
-   *           answers: Array.<{id: string,
+   *           choices: Array.<{id: string,
    *                            title: string,
    *                            label: string,
    *                            color: string}>
@@ -91,7 +91,7 @@ cm.TopicModel.newFromMapRoot = function(maproot, valid_layer_ids) {
    *              STRING (taking a textual answer), NUMBER (taking a numeric
    *              answer), or CHOICE (taking one of a set of possible answers).
    *              For questions of type CHOICE, there is an array of possible
-   *              answers; each answer has an ID unique among answers for that
+   *              choices; each choice has an ID unique among choices for that
    *              question, a title string, a stand-alone label, and a symbol
    *              color in #rrggbb format. */
   model.set('questions',
@@ -102,12 +102,12 @@ cm.TopicModel.newFromMapRoot = function(maproot, valid_layer_ids) {
           text: question['text'] || '',
           title: question['title'] || '',
           type: question['type'] || cm.TopicModel.QuestionType.STRING,
-          answers: goog.array.map(question['answers'] || [], function(answer) {
-            if (!answer['id']) return null;
-            return {id: answer['id'],
-                    title: answer['title'] || '',
-                    label: answer['label'] || '',
-                    color: answer['color'] || ''};
+          choices: goog.array.map(question['choices'] || [], function(choice) {
+            if (!choice['id']) return null;
+            return {id: choice['id'],
+                    title: choice['title'] || '',
+                    label: choice['label'] || '',
+                    color: choice['color'] || ''};
           })
         };
       })
@@ -130,18 +130,18 @@ cm.TopicModel.prototype.toMapRoot = function() {
         this.get('crowd_enabled') && this.get('cluster_radius') || null,
     'questions': goog.array.map(
         /** @type Array */(this.get('questions')), function(question) {
-      var answers = question.type === cm.TopicModel.QuestionType.CHOICE &&
-          question.answers || [];
+      var choices = question.type === cm.TopicModel.QuestionType.CHOICE &&
+          question.choices || [];
       return {
         'id': question.id,
         'title': question.title,
         'text': question.text,
         'type': question.type,
-        'answers': goog.array.map(answers, function(answer) {
-          return {'id': answer.id,
-                  'title': answer.title,
-                  'label': answer.label,
-                  'color': answer.color};
+        'choices': goog.array.map(choices, function(choice) {
+          return {'id': choice.id,
+                  'title': choice.title,
+                  'label': choice.label,
+                  'color': choice.color};
         })
       };
     })

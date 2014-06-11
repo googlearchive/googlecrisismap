@@ -1373,7 +1373,7 @@ textarea.cm-legend-text {
   color: #d43;
 }
 
-/* Question list, question, and answer editors */
+/* Question list, question, and choice editors */
 .cm-editors .cm-question-editor > th {
     padding: 0;
     width: 0;
@@ -1383,29 +1383,29 @@ textarea.cm-legend-text {
   margin-top: 8px;
   margin-bottom: 4px;
 }
-.cm-question-container, .cm-answer-container {
+.cm-question-container, .cm-choice-container {
   position: relative;
   padding: 8px 32px 8px 8px;
   border: 1px solid #ddd;
   margin-bottom: 4px;
   margin-left: -1px;
 }
-.cm-answer-container {
+.cm-choice-container {
     margin-right: -24px;
 }
 .cm-question-container:hover {
     background: #ffe;
 }
-.cm-answer-container:hover {
+.cm-choice-container:hover {
     background: #efe;
 }
-.cm-answer-container .cm-close-button,
-.cm-question-container .cm-close-button {
+.cm-question-container .cm-close-button,
+.cm-choice-container .cm-close-button {
   margin: 6px;
   opacity: 0.4;
 }
-.cm-answer-container .cm-close-button:hover,
-.cm-question-container .cm-close-button:hover {
+.cm-question-container .cm-close-button:hover,
+.cm-choice-container .cm-close-button:hover {
   opacity: 1;
 }
 .cm-question-container .cm-editors > tr > th {

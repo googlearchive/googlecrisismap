@@ -13,7 +13,7 @@
 
 function QuestionListEditorTest() {
   cm.TestBase.call(this);
-  cm.editors.register(cm.editors.Type.ANSWER, cm.AnswerEditor);
+  cm.editors.register(cm.editors.Type.CHOICE, cm.ChoiceEditor);
   cm.editors.register(cm.editors.Type.QUESTION, cm.QuestionEditor);
   cm.editors.register(cm.editors.Type.TEXT, cm.TextEditor);
   cm.editors.register(cm.editors.Type.MENU, cm.MenuEditor);
@@ -66,7 +66,7 @@ QuestionListEditorTest.prototype.testAddQuestion = function() {
   this.type_(inputs[0], 'To be or not to be?');
   expectThat(this.editor_.get('value'), elementsAre(
       [{'id': '1', 'text': 'To be or not to be?', 'title': '',
-        'type': 'STRING', 'answers': []}]));
+        'type': 'STRING', 'choices': []}]));
 
   cm.events.emit(addQuestionBtn, 'click');
   inputs = allDescendantsOf(parent, inputType('text'));
@@ -76,9 +76,9 @@ QuestionListEditorTest.prototype.testAddQuestion = function() {
   this.type_(inputs[2], 'Second question');
   expectThat(this.editor_.get('value'), elementsAre(
       [{'id': '1', 'text': 'To be or not to be?', 'title': '',
-        'type': 'STRING', 'answers': []},
+        'type': 'STRING', 'choices': []},
        {'id': '2', 'text': 'Second question', 'title': '',
-        'type': 'STRING', 'answers': []}]));
+        'type': 'STRING', 'choices': []}]));
 };
 
 /** Tests adding, deleting, then re-adding a question. */
@@ -107,9 +107,9 @@ QuestionListEditorTest.prototype.testAddDeleteAddQuestion = function() {
 QuestionListEditorTest.prototype.testEditAndDeleteQuestion = function() {
   var expected = [
       {'id': '0', 'text': 'To be or not to be?', 'type': 'STRING',
-       'title': '', 'answers': []},
+       'title': '', 'choices': []},
       {'id': '1', 'text': 'Second question', 'type': 'STRING',
-       'title': '', 'answers': []}];
+       'title': '', 'choices': []}];
   var parent = this.createEditor_();
   this.editor_.set('value', expected);
   var inputs = allDescendantsOf(parent, inputType('text'));

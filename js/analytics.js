@@ -148,7 +148,7 @@ cm.Analytics.CrowdReportAction = cm.Analytics.prependUiElement_(
 /** @type {Object.<string, string>} */
 cm.Analytics.CrowdReportFormAction = cm.Analytics.prependUiElement_(
     'Crowd report form', {
-      ANSWER_BUTTON_CLICKED: 'Answer button clicked',
+      CHOICE_BUTTON_CLICKED: 'Choice button clicked',
       CLOSE_BUTTON_CLICKED: 'Close button clicked',
       POST_CLICKED: '"Post" clicked',
       PROMPT_BUBBLE_CLICKED: 'Prompt bubble clicked'

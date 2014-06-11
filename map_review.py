@@ -27,18 +27,18 @@ _ICON_URL_TEMPLATE = ('https://chart.googleapis.com/chart?'
                       '&chld=pin%%7C+%%7C%s%%7C000%%7CF00')
 
 
-def _MakeIconUrl(report, answer_colors):
+def _MakeIconUrl(report, choice_colors):
   """Returns a URL to render an icon for the given report.
 
   Args:
     report: A model.CrowdReport.
-    answer_colors: A dict; keys are (question_id, answer_id) pairs, values
+    choice_colors: A dict; keys are (question_id, choice_id) pairs, values
         are hex color strings.
 
   Returns:
     A string, a URL for a marker icon colored by the first answer, if any.
   """
-  color = report.answers and answer_colors.get(report.answers.items()[0])
+  color = report.answers and choice_colors.get(report.answers.items()[0])
   return _ICON_URL_TEMPLATE % (color or 'aaa').strip('#')
 
 
@@ -180,22 +180,22 @@ class _MapReview(base_handler.BaseHandler):
     topic_ids = []
     question_types = {}
     question_titles = {}
-    answer_colors = {}
-    answer_labels = {}
+    choice_colors = {}
+    choice_labels = {}
     for topic in map_root['topics']:
       topic_ids.append(topic['id'])
       for question in topic.get('questions', []):
         question_id = '%s.%s.%s' % (map_id, topic['id'], question['id'])
         question_types[question_id] = question.get('type', '')
         question_titles[question_id] = title = question.get('title', '')
-        for answer in question.get('answers', []):
-          answer_labels[question_id, answer['id']] = (
-              answer.get('label', '') or title + ': ' + answer.get('title', ''))
-          answer_colors[question_id, answer['id']] = answer.get('color', '')
+        for choice in question.get('choices', []):
+          choice_labels[question_id, choice['id']] = (
+              choice.get('label', '') or title + ': ' + choice.get('title', ''))
+          choice_colors[question_id, choice['id']] = choice.get('color', '')
 
     def _DescribeAnswer((question_id, answer)):
       if question_types.get(question_id) == 'CHOICE':
-        return answer_labels.get((question_id, answer))
+        return choice_labels.get((question_id, answer))
       return '%s: %s' % (question_titles[question_id], answer)
 
     return topic_ids, [{
@@ -208,7 +208,7 @@ class _MapReview(base_handler.BaseHandler):
         'location': '(%.3f, %.3f)' % (report.location.lat, report.location.lon),
         'lat': report.location.lat,
         'lon': report.location.lon,
-        'icon_url': _MakeIconUrl(report, answer_colors),
+        'icon_url': _MakeIconUrl(report, choice_colors),
         'updated': report.updated.strftime('%Y-%m-%dT%H:%M:%SZ'),
         'topics': ','.join(tid.split('.')[1] for tid in report.topic_ids),
         'answers': ', '.join(

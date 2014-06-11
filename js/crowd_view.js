@@ -89,8 +89,8 @@ cm.CrowdView = function(parentElem, mapModel, config) {
   /** @private {Object.<Object>} A map of question objects by question ID. */
   this.questionsById_ = {};
 
-  /** @private {Object.<Object>} A map of answer objects by answer ID. */
-  this.answersById_ = {};
+  /** @private {Object.<Object>} A map of choice objects by choice ID. */
+  this.choicesById_ = {};
 
   /** @private {Object} Map of question IDs to entered answer values. */
   this.answers_ = {};
@@ -117,12 +117,12 @@ cm.CrowdView.prototype.enableFormPopup = function(enabled) {
 cm.CrowdView.prototype.open = function(featureData) {
   var mapId = this.mapModel_.get('id');
   var questionsById = this.questionsById_ = {};
-  var answersById = this.answersById_ = {};
+  var choicesById = this.choicesById_ = {};
   var questionIds = this.questionIds_ = [];
   this.layerId_ = featureData.layerId;
   this.position_ = featureData.position;
 
-  // Set up a map of answer objects by answer ID, for convenient access.
+  // Set up a map of choice objects by choice ID, for convenient access.
   var topics = this.mapModel_.getCrowdTopicsForLayer(this.layerId_);
   goog.array.forEach(topics, function(topic) {
     var questions = /** @type Array.<Object> */(topic.get('questions'));
@@ -130,8 +130,8 @@ cm.CrowdView.prototype.open = function(featureData) {
       var qid = mapId + '.' + topic.get('id') + '.' + question.id;
       questionIds.push(qid);
       questionsById[qid] = question;
-      goog.array.forEach(question.answers, function(answer) {
-        answersById[qid + '.' + answer.id] = answer;
+      goog.array.forEach(question.choices, function(choice) {
+        choicesById[qid + '.' + choice.id] = choice;
       });
     });
   });
@@ -179,16 +179,16 @@ cm.CrowdView.prototype.makeAnswerUi_ = function(topicId, question) {
   var qid = topicId + '.' + question.id;
   var buttons = [];  // held locally so we can deselect other buttons on click
 
-  function makeButton(answer) {
-    var button = cm.ui.create('div', cm.css.BUTTON, answer.title);
+  function makeButton(choice) {
+    var button = cm.ui.create('div', cm.css.BUTTON, choice.title);
     cm.events.listen(button, 'click', function() {
       goog.array.forEach(buttons, function(b) {  // select it, deselect others
         goog.dom.classes.enable(b, cm.css.SELECTED, b === button);
       });
-      self.answers_[qid] = answer.id;
+      self.answers_[qid] = choice.id;
       self.answersJsonInput_.value = goog.json.serialize(self.answers_);
       cm.Analytics.logAction(
-          cm.Analytics.CrowdReportFormAction.ANSWER_BUTTON_CLICKED,
+          cm.Analytics.CrowdReportFormAction.CHOICE_BUTTON_CLICKED,
           self.layerId_);
       self.updateForm_();
     });
@@ -230,7 +230,7 @@ cm.CrowdView.prototype.makeAnswerUi_ = function(topicId, question) {
       return makeNumberInput();
     case cm.TopicModel.QuestionType.CHOICE:
       var notSure = {title: cm.MSG_NOT_SURE, id: null};
-      buttons = goog.array.map(question.answers.concat(notSure), makeButton);
+      buttons = goog.array.map(question.choices.concat(notSure), makeButton);
       return cm.ui.create('div', cm.css.BUTTON_GROUP, buttons);
   }
   return null;
@@ -261,7 +261,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
           form = cm.ui.create('div', cm.css.CROWD_REPORT_FORM,
               closeBtn = cm.ui.create('div', cm.css.CLOSE_BUTTON))));
 
-  // Questions and their answer buttons
+  // Questions with their answer fields and choice buttons
   goog.array.forEach(topics, function(topic) {
     var topicId = mapId + '.' + topic.get('id');
     var questions = /** @type Array.<Object> */(topic.get('questions'));
@@ -437,7 +437,7 @@ cm.CrowdView.prototype.renderReport_ = function(report) {
   var timeDiv = cm.ui.create('div', cm.css.TIME,
       cm.util.shortAge(report['effective']));
 
-  var answerChips = [], chip, answer;
+  var answerChips = [], chip, choice;
   var answers = report['answers'] || {};
   goog.array.forEach(this.questionIds_, function(qid) {
     var question = self.questionsById_[qid];
@@ -451,12 +451,12 @@ cm.CrowdView.prototype.renderReport_ = function(report) {
           answerChips.push(chip);
           break;
         case cm.TopicModel.QuestionType.CHOICE:
-          answer = self.answersById_[qid + '.' + answers[qid]];
-          if (answer) {
+          choice = self.choicesById_[qid + '.' + answers[qid]];
+          if (choice) {
             chip = cm.ui.create('div', cm.css.ANSWER,
-                answer.label || title + ': ' + answer.title);
-            chip.style.background = answer.color || '#fff';
-            chip.style.color = cm.ui.legibleTextColor(answer.color || '#fff');
+                choice.label || title + ': ' + choice.title);
+            chip.style.background = choice.color || '#fff';
+            chip.style.color = cm.ui.legibleTextColor(choice.color || '#fff');
             answerChips.push(chip);
           }
           break;

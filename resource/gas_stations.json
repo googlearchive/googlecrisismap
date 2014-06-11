@@ -36,7 +36,7 @@
           "text": "Does this location have gas?",
           "title": "Gas",
           "type": "CHOICE",
-          "answers": [
+          "choices": [
             {
               "color": "#00c000",
               "id": "yes",

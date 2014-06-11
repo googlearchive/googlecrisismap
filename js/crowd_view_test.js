@@ -33,7 +33,7 @@ function CrowdViewTest() {
         'text': 'Is there space available?',
         'title': 'space',
         'type': 'CHOICE',
-        'answers': [
+        'choices': [
           {'id': 'y', 'title': 'Yes', 'label': 'space', 'color': '#00c000'},
           {'id': 'n', 'title': 'No', 'label': 'no space', 'color': '#c00000'}
         ]
@@ -42,7 +42,7 @@ function CrowdViewTest() {
         'text': 'Are overnight stays allowed?',
         'title': 'overnight',
         'type': 'CHOICE',
-        'answers': [
+        'choices': [
           {'id': 'y', 'title': 'Yes', 'color': '#00c080'},
           {'id': 'n', 'title': 'No', 'color': '#c00080'}
         ]

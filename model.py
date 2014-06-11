@@ -856,9 +856,9 @@ class _CrowdReportModel(ndb.Model):
 
   # Survey answers in this report, as a JSON dictionary.  The keys are in the
   # form topic_id + '.' + question_id, and the values are answers (strings
-  # for TEXT questions, numbers for NUMBER questions, or answer IDs for CHOICE
-  # questions).  Note that the definitions of questions and answer choices can
-  # be edited, and we do not record the version of the question and choice that
+  # for TEXT questions, numbers for NUMBER questions, or choice IDs for CHOICE
+  # questions).  Note that the definitions of questions and choices can be
+  # edited, and we do not record the version of the question and choice that
   # was current at the time that the answer was submitted.
   answers_json = ndb.TextProperty()
 

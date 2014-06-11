@@ -179,7 +179,7 @@ def GetLatestAnswers(map_id, topic_id, location, radius):
       # GetByLocation returns reports in reverse updated order, so we keep
       # just the first answer that we see for each question.
       if tid == full_topic_id and qid not in answers:
-        if answer == 0 or answer:
+        if answer or answer == 0:
           answers[qid] = answer
   return answers
 
@@ -195,15 +195,15 @@ def GetLegibleTextColor(background_color):
 
 
 def SetAnswersOnFeatures(features, map_root, topic_id, qids):
-  """Populates 'status_color' and 'answer_text' on the given Feature objects."""
+  """Populates 'status_color' and 'jnswer_text' on the given Feature objects."""
   map_id = map_root.get('id') or ''
   topic = GetTopic(map_root, topic_id) or {}
   radius = topic.get('cluster_radius', 100)
 
   questions_by_id = {q['id']: q for q in topic.get('questions', [])}
-  choices_by_id = {(q['id'], a['id']): a
+  choices_by_id = {(q['id'], c['id']): c
                    for q in topic.get('questions', [])
-                   for a in q.get('answers', [])}
+                   for c in q.get('choices', [])}
 
   if topic.get('crowd_enabled') and qids:
     for f in features:
@@ -222,7 +222,7 @@ def SetAnswersOnFeatures(features, map_root, topic_id, qids):
                 question.get('title', '') + ': ' + choice.get('title', ''))
           if i == 0:
             f.status_color = choice.get('color') or DEFAULT_STATUS_COLOR
-        elif answer:
+        elif answer or answer == 0:
           answer_texts.append(question.get('title', '') + ': ' + str(answer))
       f.answer_text = ', '.join(answer_texts)
 

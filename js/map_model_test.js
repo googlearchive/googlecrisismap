@@ -50,7 +50,7 @@ var DRACULA_MAPROOT = {
       id: '1',
       text: 'Is there gas available at this location?',
       type: 'CHOICE',
-      answers: [{id: '1', title: 'Yes', label: 'Has gas', color: '#00c000'},
+      choices: [{id: '1', title: 'Yes', label: 'Has gas', color: '#00c000'},
                 {id: '2', title: 'No', label: 'No gas', color: '#c00000'}]
     }, {
       id: '2',

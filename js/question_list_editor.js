@@ -77,15 +77,15 @@ goog.inherits(cm.QuestionListEditor, cm.Editor);
 /** @override */
 cm.QuestionListEditor.prototype.updateUi = function(value) {
   this.questionIds_ = [];
-  var questionList = /**
-                      * @type {Array.<{id: string,
-                      *           text: string,
-                      *           answers: Array.<{id: string,
-                      *                            title: string,
-                      *                            label: string,
-                      *                            color: string}>
-                      *          }>}
-                      */(value || []);
+  var questionList = /** @type {Array.<{id: string,
+                                        text: string,
+                                        title: string,
+                                        type: cm.TopicModel.QuestionType,
+                                        choices: Array.<{id: string,
+                                                         title: string,
+                                                         label: string,
+                                                         color: string}>
+                               }>} */(value || []);
   // We use inspector_ to render the input question list, but that requires an
   // MVCObject where each question is a (key, value) pair, not an array.
   // questionListChanged_ converts back.

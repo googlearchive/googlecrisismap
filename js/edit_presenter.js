@@ -16,10 +16,10 @@
  */
 goog.provide('cm.EditPresenter');
 
-goog.require('cm.AnswerEditor');
 goog.require('cm.ArrangeCommand');
 goog.require('cm.ArrangeView');
 goog.require('cm.CheckboxEditor');
+goog.require('cm.ChoiceEditor');
 goog.require('cm.Command');
 goog.require('cm.CreateLayersCommand');
 goog.require('cm.CreateTopicsCommand');
@@ -57,8 +57,8 @@ goog.require('cm.xhr');
  * @type {Object}
  */
 var EDITORS = goog.object.create(
-    cm.editors.Type.ANSWER, cm.AnswerEditor,
     cm.editors.Type.CHECKBOX, cm.CheckboxEditor,
+    cm.editors.Type.CHOICE, cm.ChoiceEditor,
     cm.editors.Type.HTML, cm.HtmlEditor,
     cm.editors.Type.LAT_LON_BOX, cm.LatLonBoxEditor,
     cm.editors.Type.LAYER_MENU, cm.LayerMenuEditor,

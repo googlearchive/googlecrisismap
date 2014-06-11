@@ -97,7 +97,7 @@ MAP_ROOT = {
             'id': 'q1',
             'title': 'Foo',
             'type': 'CHOICE',
-            'answers': [
+            'choices': [
                 {'id': 'a1', 'color': '#0f0', 'label': 'Green'},
                 {'id': 'a2', 'color': '#f00', 'label': 'Red'}
             ]

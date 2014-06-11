@@ -395,44 +395,43 @@ cm.MSG_INVALID_LEGEND =
 cm.MSG_REVERT = goog.getMsg('Revert');
 
 
-// Answer editor
+// Choice editor
 
 /** @desc Label for a field to enter a color. */
-cm.MSG_ANSWER_COLOR = goog.getMsg('Color');
+cm.MSG_CHOICE_COLOR = goog.getMsg('Color');
 
 /** @desc Tooltip for the field to enter a color. */
-cm.MSG_ANSWER_COLOR_TOOLTIP = goog.getMsg('Background color for the answer ' +
-    'label, in hexadecimal RGB notation as used in CSS. ' +
-    'Red is #ff0000 or #f00.');
+cm.MSG_CHOICE_COLOR_TOOLTIP = goog.getMsg('Color associated with this ' +
+    'choice, in CSS hexadecimal notation (red is #ff0000 or #f00).');
 
-/** @desc Label for a field where the user enters a label for a button. */
-cm.MSG_ANSWER_BUTTON_LABEL = goog.getMsg('Button label');
+/** @desc Label for a field where the user enters a title for a button. */
+cm.MSG_CHOICE_BUTTON_TITLE = goog.getMsg('Button title');
 
 /**
  * @desc Tooltip for a field where the user enters a short answer for a
  *     survey question that accepts an answer selected from a list of choices.
- *     The text entered in the field will be used as a button label.
+ *     The text entered in the field will be used as a button title.
  */
-cm.MSG_ANSWER_BUTTON_LABEL_TOOLTIP = goog.getMsg('Short text of the answer. ' +
-    'The answer appears on a button the user presses to select it. Often the ' +
-    'button label is simply "Yes" or "No".');
+cm.MSG_CHOICE_BUTTON_TITLE_TOOLTIP = goog.getMsg('Short text that appears ' +
+    'on a button for selecting this choice (for example, "Yes" or "No").');
 
 /**
  * @desc Label for a field where the user enters an answer for a survey
  *     question, phrased in such a way that it can stand alone; that is, the
  *     answer can be understood without seeing the corresponding question.
  */
-cm.MSG_ANSWER_STANDALONE_TEXT = goog.getMsg('Standalone text');
+cm.MSG_CHOICE_STANDALONE_LABEL = goog.getMsg('Standalone label');
 
 /**
  * @desc Tooltip for a field where the user enters an answer for a survey
  *     question, phrased in such a way that it can stand alone.
  */
-cm.MSG_ANSWER_STANDALONE_TEXT_TOOLTIP = goog.getMsg('A label to describe ' +
-    'the selected answer. These labels should be understandable without ' +
-    'seeing the corresponding question and should be unique across all ' +
-    'questions.  For example, the question "Does this gas station have ' +
-    'gas?" could have the standalone answers "Has gas" and "No gas".');
+cm.MSG_CHOICE_STANDALONE_LABEL_TOOLTIP = goog.getMsg('A phrase describing ' +
+    'this choice that can be understood without seeing the corresponding ' +
+    'question. This label should be unique across all questions. ' +
+    'For example, if the question "Does this gas station have gas?" ' +
+    'has the two choices "Yes" and "No", then the standalone labels for ' +
+    'those choices could be "Has gas" and "No gas".');
 
 /** @desc An affirmative answer. */
 cm.MSG_YES = goog.getMsg('Yes');
@@ -444,7 +443,7 @@ cm.MSG_NO = goog.getMsg('No');
 // Question editor
 
 /** @desc Label for a button to add a multiple-choice answer to a question. */
-cm.MSG_ADD_ANSWER = goog.getMsg('Add an answer');
+cm.MSG_ADD_CHOICE = goog.getMsg('Add a choice');
 
 /** @desc Label for a text field for entering the text of a question. */
 cm.MSG_QUESTION_TEXT = goog.getMsg('Question');

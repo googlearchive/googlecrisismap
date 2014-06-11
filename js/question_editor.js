@@ -12,11 +12,11 @@
 /**
  * @fileoverview [MODULE: edit] An editor for a topic question.
  *
- * A question can contain a list of answers, which are edited via AnswerEditors.
- * Draft changes to answers are propagated to this editor using the
- * AnswerEditor's 'value_changed' event. When a value changes on an AnswerEditor
+ * A question can contain a list of choices, which are edited in ChoiceEditors.
+ * Draft changes to choices are propagated to this editor using the
+ * ChoiceEditor's 'value_changed' event. When a value changes on a ChoiceEditor
  * this QuestionEditor recomputes its draft value from its properties and the
- * properties of all child answers.
+ * properties of all child choices.
  *
  * @author shakusa@google.com (Steve Hakusa)
  */
@@ -52,9 +52,9 @@ cm.QuestionEditor = function(parentElem, id, options) {
       this.deleteQuestionBtn_ = cm.ui.create('div', cm.css.CLOSE_BUTTON),
       this.tableElem_ = cm.ui.create('table',
           {'class': cm.css.EDITORS, 'cellpadding': '0', 'cellspacing': '0'}),
-      this.addAnswerBtn_ = cm.ui.create(
-          'div', cm.css.BUTTON, cm.MSG_ADD_ANSWER));
-  this.addAnswerBtn_.style.display = 'none';
+      this.addChoiceBtn_ = cm.ui.create(
+          'div', cm.css.BUTTON, cm.MSG_ADD_CHOICE));
+  this.addChoiceBtn_.style.display = 'none';
   parentElem.appendChild(this.input_);
 
   /**
@@ -64,19 +64,19 @@ cm.QuestionEditor = function(parentElem, id, options) {
   this.inspector_ = new cm.InspectorView(this.tableElem_);
 
   /**
-   * The list of answer IDs currently shown in the question inspector.
+   * The list of choice IDs currently shown in the question inspector.
    * @private Array.<string>
    */
-  this.answerIds_ = [];
+  this.choiceIds_ = [];
 
-  cm.events.listen(this.addAnswerBtn_, 'click', function() {
-    var nextId = this.nextAnswerId_();
-    this.answerIds_.push(nextId);
-    var editor = this.inspector_.addEditor(this.newAnswerSpec_(nextId));
-    this.registerAnswerEditor_(editor);
-    var defaultAnswer = {'id': nextId};
-    editor.setValid(defaultAnswer);
-    editor.updateUi(defaultAnswer);
+  cm.events.listen(this.addChoiceBtn_, 'click', function() {
+    var nextId = this.nextChoiceId_();
+    this.choiceIds_.push(nextId);
+    var editor = this.inspector_.addEditor(this.newChoiceSpec_(nextId));
+    this.registerChoiceEditor_(editor);
+    var defaultChoice = {'id': nextId};
+    editor.setValid(defaultChoice);
+    editor.updateUi(defaultChoice);
   }, this);
   if (options.delete_callback) {
     cm.events.listen(this.deleteQuestionBtn_, 'click', options.delete_callback);
@@ -98,8 +98,8 @@ cm.QuestionEditor = function(parentElem, id, options) {
 goog.inherits(cm.QuestionEditor, cm.Editor);
 
 /**
- * An array of editor specs representing the fields of a question without
- * the array of answers.
+ * An array of editor specs representing the fields of a question, not
+ * including the list of choices.
  * @type Array.<cm.EditorSpec>
  */
 cm.QuestionEditor.QUESTION_FIELDS = [
@@ -116,28 +116,28 @@ cm.QuestionEditor.QUESTION_FIELDS = [
 ];
 
 /**
- * Template used to prepopulate answer choices when CHOICE type is selected.
+ * Template used to prepopulate the set of choices when CHOICE type is selected.
  * @type {Array}
  */
-cm.QuestionEditor.DEFAULT_ANSWER_CHOICES = [
+cm.QuestionEditor.DEFAULT_CHOICES = [
   {id: '1', title: cm.MSG_YES, color: '#59AA00'},
   {id: '2', title: cm.MSG_NO, color: '#D70000'}
 ];
 
 /** @override */
 cm.QuestionEditor.prototype.updateUi = function(value) {
-  this.answerIds_ = [];
+  this.choiceIds_ = [];
 
   var question = /** @type {{id: string,
                              text: string,
                              title: string,
                              type: cm.TopicModel.QuestionType,
-                             answers: Array.<{id: string, title: string,
+                             choices: Array.<{id: string, title: string,
                                               label: string, color: string}>
                            }} */(value || {});
   // We use inspector_ to render the input question, but that requires an
-  // MVCObject where each answer is a (key, value) pair, not an array.
-  // questionChanged_ converts back.
+  // MVCObject where each choice is a property on the MVCObject, rather than
+  // an array of choices (questionChanged_ converts back to an array).
   var questionObj = new google.maps.MVCObject();
   // InspectorView needs the editable MVCObject to have predictable, quoted
   // keys, but the keys of this.get('value') are obfuscated by the Closure
@@ -146,17 +146,17 @@ cm.QuestionEditor.prototype.updateUi = function(value) {
   questionObj.set('text', question.text || '');
   questionObj.set('title', question.title || '');
   questionObj.set('type', question.type || cm.TopicModel.QuestionType.STRING);
-  questionObj.set('answers', question.answers || []);
+  questionObj.set('choices', question.choices || []);
 
-  goog.array.forEach(question.answers || [], function(answer) {
-    this.answerIds_.push(answer['id']);
-    questionObj.set(answer['id'], answer);
+  goog.array.forEach(question.choices || [], function(choice) {
+    this.choiceIds_.push(choice['id']);
+    questionObj.set(choice['id'], choice);
   }, this);
   var editors = this.inspector_.inspect(
       cm.QuestionEditor.QUESTION_FIELDS.concat(
-          goog.array.map(this.answerIds_, this.newAnswerSpec_, this)),
+          goog.array.map(this.choiceIds_, this.newChoiceSpec_, this)),
       questionObj);
-  goog.array.forEach(editors, this.registerAnswerEditor_, this);
+  goog.array.forEach(editors, this.registerChoiceEditor_, this);
 
   // cm.QuestionEditor.QUESTION_FIELDS[2] is the question type field.
   cm.events.onChange(editors[2], 'value', this.typeChanged_, this);
@@ -164,58 +164,57 @@ cm.QuestionEditor.prototype.updateUi = function(value) {
 };
 
 /**
- * Creates an editor spec for an answer.
+ * Creates an editor spec for a choice.
  * @param {string} id An id to use for the new editor spec.
- * @return {cm.EditorSpec} An EditorSpec for a new answer
+ * @return {cm.EditorSpec} An EditorSpec for a new choice.
  * @private
  */
-cm.QuestionEditor.prototype.newAnswerSpec_ = function(id) {
+cm.QuestionEditor.prototype.newChoiceSpec_ = function(id) {
   var isChoiceType = function(type) {
     return type === cm.TopicModel.QuestionType.CHOICE;
   };
-  return {key: id, type: cm.editors.Type.ANSWER, label: '',
+  return {key: id, type: cm.editors.Type.CHOICE, label: '',
           tooltip: undefined, conditions: {'type': isChoiceType},
-          delete_callback: goog.bind(this.deleteAnswer_, this, id)};
+          delete_callback: goog.bind(this.deleteChoice_, this, id)};
 };
 
 /**
- * Removes the answer with the given id from this question.
- * @param {string} id The editor key for the answer to be deleted.
+ * Removes the choice with the given id from this question.
+ * @param {string} id The editor key for the choice to be deleted.
  * @private
  */
-cm.QuestionEditor.prototype.deleteAnswer_ = function(id) {
-  goog.array.remove(this.answerIds_, id);
+cm.QuestionEditor.prototype.deleteChoice_ = function(id) {
+  goog.array.remove(this.choiceIds_, id);
   this.inspector_.deleteEditor(id);
 };
 
 /**
- * Finds the first unused answer ID in this.answerIds_, counting up numerically
- * from '1'.
- * @return {string} An unused answer ID.
+ * Finds the lowest choice ID that's not already used in this.choiceIds_,
+ * counting up numerically from '1'.
+ * @return {string} An unused choice ID.
  * @private
  */
-cm.QuestionEditor.prototype.nextAnswerId_ = function() {
-  var nextAnswerId = 1;
-  while (goog.array.contains(this.answerIds_, '' + nextAnswerId)) {
-    nextAnswerId++;
+cm.QuestionEditor.prototype.nextChoiceId_ = function() {
+  var nextChoiceId = 1;
+  while (goog.array.contains(this.choiceIds_, '' + nextChoiceId)) {
+    nextChoiceId++;
   }
-  return '' + nextAnswerId;
+  return '' + nextChoiceId;
 };
 
 /**
- * Ensures this editor's value stays up-to-date as the given answer editor's
+ * Ensures this editor's value stays up-to-date as the given choice editor's
  * value changes.
- * @param {cm.Editor} editor The answer editor for which we need to
- *   track changes.
+ * @param {cm.Editor} editor The choice editor for which to track changes.
  * @private
  */
-cm.QuestionEditor.prototype.registerAnswerEditor_ = function(editor) {
+cm.QuestionEditor.prototype.registerChoiceEditor_ = function(editor) {
   cm.events.onChange(editor, 'value', this.questionChanged_, this);
 };
 
 /**
  * Handles recomputing the value of this editor when the values of its child
- * answers change.
+ * choices change.
  * @private
  */
 cm.QuestionEditor.prototype.questionChanged_ = function() {
@@ -223,15 +222,15 @@ cm.QuestionEditor.prototype.questionChanged_ = function() {
   var draft = this.inspector_.collectEdits().draftValues;
   /* this.get('value') and value have unquoted keys (obfuscated by compiler) */
   var value = {text: draft['text'], title: draft['title'],
-               type: draft['type'], answers: []};
+               type: draft['type'], choices: []};
   if (old && old.id) {
     value.id = old.id;
   }
-  goog.array.forEach(this.answerIds_, function(id) {
-    var answer = draft[id];
-    if (answer) {
-      answer.id = answer.id || id;
-      value.answers.push(answer);
+  goog.array.forEach(this.choiceIds_, function(id) {
+    var choice = draft[id];
+    if (choice) {
+      choice.id = choice.id || id;
+      value.choices.push(choice);
     }
   }, this);
 
@@ -239,19 +238,19 @@ cm.QuestionEditor.prototype.questionChanged_ = function() {
 };
 
 /**
- * Updates the UI and (if needed) fills in default answer choices, when the
+ * Updates the UI and (if needed) fills in the default set of choices, when the
  * CHOICE type is selected.
  * @private
  */
 cm.QuestionEditor.prototype.typeChanged_ = function() {
   var draft = this.inspector_.collectEdits().draftValues;
   var isChoiceType = draft['type'] === cm.TopicModel.QuestionType.CHOICE;
-  this.addAnswerBtn_.style.display = isChoiceType ? '' : 'none';
+  this.addChoiceBtn_.style.display = isChoiceType ? '' : 'none';
 
-  if (isChoiceType && !this.answerIds_.length) {
+  if (isChoiceType && !this.choiceIds_.length) {
     var value = this.get('value');
     this.set('value', {id: value.id, text: draft['text'],
                        type: draft['type'], title: draft['title'],
-                       answers: cm.QuestionEditor.DEFAULT_ANSWER_CHOICES});
+                       choices: cm.QuestionEditor.DEFAULT_CHOICES});
   }
 };

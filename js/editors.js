@@ -23,8 +23,8 @@ goog.require('goog.object');
  * @enum {string}
  */
 cm.editors.Type = {
-  ANSWER: 'ANSWER',
   CHECKBOX: 'CHECKBOX',
+  CHOICE: 'CHOICE',
   HTML: 'HTML',
   LAT_LON_BOX: 'LAT_LON_BOX',
   LAYER_MENU: 'LAYER_MENU',

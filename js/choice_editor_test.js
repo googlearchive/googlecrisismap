@@ -11,23 +11,23 @@
 
 // @author shakusa@google.com (Steve Hakusa)
 
-function AnswerEditorTest() {
+function ChoiceEditorTest() {
   cm.TestBase.call(this);
   cm.editors.register(cm.editors.Type.TEXT, cm.TextEditor);
 }
-AnswerEditorTest.prototype = new cm.TestBase();
-registerTestSuite(AnswerEditorTest);
+ChoiceEditorTest.prototype = new cm.TestBase();
+registerTestSuite(ChoiceEditorTest);
 
 /**
- * Constructs the AnswerEditor and returns its parent.
- * @return {Element} An element containing the new AnswerEditor.
+ * Constructs the ChoiceEditor and returns its parent.
+ * @return {Element} An element containing the new ChoiceEditor.
  * @private
  */
-AnswerEditorTest.prototype.createEditor_ = function() {
+ChoiceEditorTest.prototype.createEditor_ = function() {
   this.deleteCallback_ = createMockFunction();
 
   var parent = cm.ui.create('div');
-  this.editor_ = new cm.AnswerEditor(parent, 'editor1',
+  this.editor_ = new cm.ChoiceEditor(parent, 'editor1',
       {'delete_callback': this.deleteCallback_});
   return parent;
 };
@@ -38,20 +38,20 @@ AnswerEditorTest.prototype.createEditor_ = function() {
  * @param {string} text The new text for the input element.
  * @private
  */
-AnswerEditorTest.prototype.type_ = function(textInput, text) {
+ChoiceEditorTest.prototype.type_ = function(textInput, text) {
   textInput.value = text;
   cm.events.emit(textInput, 'change');
 };
 
-/** Tests construction of the AnswerEditor. */
-AnswerEditorTest.prototype.testConstructor = function() {
+/** Tests construction of the ChoiceEditor. */
+ChoiceEditorTest.prototype.testConstructor = function() {
   var parent = this.createEditor_();
   expectDescendantOf(parent, 'div', withId('editor1'));
   expectDescendantOf(parent, 'div', withClass(cm.css.CLOSE_BUTTON));
 };
 
 /** Tests that an input element propagates to the 'value' property. */
-AnswerEditorTest.prototype.testInputUpdatesProperty = function() {
+ChoiceEditorTest.prototype.testInputUpdatesProperty = function() {
   var parent = this.createEditor_();
   this.editor_.set('value', null);
   var inputs = allDescendantsOf(parent, inputType('text'));
@@ -67,7 +67,7 @@ AnswerEditorTest.prototype.testInputUpdatesProperty = function() {
 };
 
 /** Tests that the 'value' property propagates to the HTML input elements. */
-AnswerEditorTest.prototype.testPropertyUpdatesInput = function() {
+ChoiceEditorTest.prototype.testPropertyUpdatesInput = function() {
   var parent = this.createEditor_();
   this.editor_.set('value', {'title': 'abc', 'label': 'def', 'color': '#f00'});
   var inputs = allDescendantsOf(parent, inputType('text'));
@@ -76,8 +76,8 @@ AnswerEditorTest.prototype.testPropertyUpdatesInput = function() {
   expectEq('#f00', inputs[2].value);
 };
 
-/** Tests that the delete answer button works */
-AnswerEditorTest.prototype.testDeleteButton = function() {
+/** Tests that the delete choice button works */
+ChoiceEditorTest.prototype.testDeleteButton = function() {
   var parent = this.createEditor_();
   var btn = expectDescendantOf(parent, 'div', withClass(cm.css.CLOSE_BUTTON));
 
