@@ -52,3 +52,19 @@ handlers:
 # User-facing request handlers
 - url: .*
   script: app.app
+
+# Hidden files, test files, and temporary products of make and tools/puppet.
+# (Each pathname relative to this directory is matched against these regexes,
+# which are treated as if prefixed with "^", but anchoring to the end requires
+# an explicit "$".  If a directory matches, all its descendants are skipped.)
+skip_files:
+- (.*/)?\.
+- (.*/)?__pycache__
+- .*\.pyc$
+- .*_test\.(js|py)$
+- aux$
+- goldentests$
+- js/compiled/.*list\.
+- js/compiled/.*dbg$
+- js/compiled/.*opt$
+- static/puppet$
