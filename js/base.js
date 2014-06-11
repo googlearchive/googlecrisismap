@@ -868,7 +868,7 @@ cm.MSG_ENABLE_CROWD_REPORTS = goog.getMsg('Enable crowd reports');
  * @desc Label for a text field for entering the radius of a circle inside
  * which geo-located comments from users are clustered to a single point.
  */
-cm.MSG_CLUSTER_RADIUS = goog.getMsg('Cluster radius (in meters)');
+cm.MSG_CLUSTER_RADIUS = goog.getMsg('Cluster radius (meters)');
 
 /** @desc Label for a field to enter questions about a topic. */
 cm.MSG_SURVEY_QUESTIONS = goog.getMsg('Survey questions');

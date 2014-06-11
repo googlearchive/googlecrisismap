@@ -136,11 +136,12 @@ cm.InspectorView.prototype.addEditor = function(
   var cls =
       'cm-' + editorSpec.type.toLowerCase().replace(/_/g, '-') + '-editor';
   var labelElem, helpIcon;
-  cm.ui.append(this.tableElem_, row = cm.ui.create('tr', {'class': cls},
+  cm.ui.append(this.tableElem_, row = cm.ui.create('tr', cls,
       cm.ui.create('th', {},
-          labelElem = cm.ui.create('label', {'for': id}, editorSpec.label),
-          helpIcon = editorSpec.tooltip ?
-              cm.ui.create('div', {'class': cm.css.HELP_ICON}) : null),
+          cm.ui.create('div', cm.css.HELP_CONTAINER,
+              labelElem = cm.ui.create('label', {'for': id}, editorSpec.label),
+              helpIcon = editorSpec.tooltip ?
+                  cm.ui.create('div', cm.css.HELP_ICON) : null)),
       cell = cm.ui.create('td')));
 
   // Display a tooltip when user hovers over the help icon.
@@ -161,7 +162,7 @@ cm.InspectorView.prototype.addEditor = function(
   // Add a validation error indicator next to each editor.
   // TODO(kpy): When we figure out the exact UX we want, we might want to
   // replace this with an icon and a popup or something like that.
-  var errorSpan = cm.ui.create('span', {'class': cm.css.VALIDATION_ERROR});
+  var errorSpan = cm.ui.create('span', cm.css.VALIDATION_ERROR);
   cm.ui.append(cell, errorSpan);
   (function(errorSpan) {  // close over the local variable, errorSpan
     cm.events.onChange(editor, 'validation_error', function() {
