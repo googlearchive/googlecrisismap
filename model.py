@@ -849,9 +849,15 @@ class _CrowdReportModel(ndb.Model):
   # Text of the user's comment.
   text = ndb.TextProperty()
 
-  # Topics (within maps) to which this report belongs.  The value of topic_id
-  # should be globally unique across all topics in all maps.  (As currently
-  # implemented, this field begins with map_id + '.' to ensure said uniqueness.)
+  # Optional map to which this report belongs.  If map_id is empty, this report
+  # is publicly accessible.  If map_id is specified, this report is accessible
+  # only to signed-in users who have MAP_VIEWER access to the specified map.
+  # (There's no requirement for this to match any element of topic_ids.)
+  map_id = ndb.StringProperty()
+
+  # Topics (within maps) to which this report belongs.  Topic IDs should be
+  # globally unique across all topics in all maps.  (As currently implemented,
+  # this field begins with map_id + '.' to ensure said uniqueness.)
   topic_ids = ndb.StringProperty(repeated=True)
 
   # Survey answers in this report, as a JSON dictionary.  The keys are in the
@@ -900,15 +906,37 @@ class CrowdReport(utils.Struct):
     """Gets the report with the given report_id.
 
     Args:
-      report_id: The key().string_id() of the _CrowdReportModel to retrieve
+      report_id: The key.string_id() of the _CrowdReportModel to retrieve
 
     Returns:
-      A struct representing the CrowdReport or None if no such report exists
-      for the report_id.
+      A struct representing the CrowdReport, or None if no such report exists.
     """
     report = _CrowdReportModel.get_by_id(report_id)
-    return report and cls.FromModel(report) or None
+    if report and report.map_id:
+      report = Map.Get(report.map_id) and report  # ensures MAP_VIEWER access
+    return cls.FromModel(report)
 
+  @classmethod
+  def _FilterReports(cls, entities):
+    """Filters out inaccessible reports and yields CrowdReport objects."""
+
+    class MapViewableCache(dict):
+      """Checks and caches whether maps are viewable by the current user."""
+
+      def __missing__(self, map_id):
+        try:
+          self[map_id] = bool(Map.Get(map_id))
+        except perms.AuthorizationError:
+          self[map_id] = False
+        return self[map_id]  # True if map exists and is viewable by user
+
+    is_map_viewable = MapViewableCache()
+    for entity in entities:
+      if entity and (not entity.map_id or is_map_viewable[entity.map_id]):
+        yield cls.FromModel(entity)
+
+  # pylint: disable=g-doc-return-or-yield
+  # In these method docstrings, pylint wants "Returns", but "Yields" is correct.
   @classmethod
   def GetForAuthor(cls, author, count, offset=0, hidden=None, reviewed=None):
     """Gets reports by the given author, across maps and topics.
@@ -924,18 +952,19 @@ class CrowdReport(utils.Struct):
 
     Yields:
       The 'count' most recently updated CrowdReport objects, in order by
-      decreasing update time, that have the given author.
+      decreasing update time, that have the given author.  (Note that fewer
+      than 'count' objects may be returned if some are restricted such that
+      the current user cannot see them.)
     """
     if not author:
-      return
+      return []
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.author == author)
     if hidden is not None:
       query = query.filter(_CrowdReportModel.hidden == hidden)
     if reviewed is not None:
       query = query.filter(_CrowdReportModel.reviewed == reviewed)
-    for report in query.fetch(count, offset=offset):
-      yield cls.FromModel(report)
+    return cls._FilterReports(query.fetch(count, offset=offset))
 
   @classmethod
   def GetForTopics(cls, topic_ids, count, offset=0,
@@ -955,10 +984,12 @@ class CrowdReport(utils.Struct):
 
     Yields:
       The 'count' most recently updated CrowdReport objects, in order by
-      decreasing update time, that have any of the given topic_ids.
+      decreasing update time, that have any of the given topic_ids.  (Note that
+      fewer than 'count' objects may be returned if some are restricted such
+      that the current user cannot see them.)
     """
     if not topic_ids:
-      return
+      return []
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.topic_ids.IN(topic_ids))
     if author is not None:
@@ -967,8 +998,7 @@ class CrowdReport(utils.Struct):
       query = query.filter(_CrowdReportModel.hidden == hidden)
     if reviewed is not None:
       query = query.filter(_CrowdReportModel.reviewed == reviewed)
-    for report in query.fetch(count, offset=offset):
-      yield cls.FromModel(report)
+    return cls._FilterReports(query.fetch(count, offset=offset))
 
   @classmethod
   def GetWithoutLocation(cls, topic_ids, count, max_updated=None, hidden=None):
@@ -988,6 +1018,8 @@ class CrowdReport(utils.Struct):
         - Has at least one of the specified topic IDs
         - Has no location
         - Has an update time equal to or before 'max_updated'
+      (Note that fewer than 'count' objects may be returned if some are
+      restricted such that the current user cannot see them.)
     """
     query = _CrowdReportModel.query().order(-_CrowdReportModel.updated)
     query = query.filter(_CrowdReportModel.location == NOWHERE)
@@ -997,9 +1029,7 @@ class CrowdReport(utils.Struct):
       query = query.filter(_CrowdReportModel.updated <= max_updated)
     if hidden is not None:
       query = query.filter(_CrowdReportModel.hidden == hidden)
-
-    for report in query.fetch(count):
-      yield cls.FromModel(report)
+    return cls._FilterReports(query.fetch(count))
 
   @classmethod
   def GetByLocation(cls, center, topic_radii, count=1000, max_updated=None,
@@ -1023,6 +1053,8 @@ class CrowdReport(utils.Struct):
         - Distance from report location to 'center' is less than the radius
           specified for at least one of its matching topic IDs
         - Has an update time equal to or before 'max_updated'
+      (Note that fewer than 'count' objects may be returned if some are
+      restricted such that the current user cannot see them.)
     """
     query = []
     for topic_id, radius in topic_radii.items():
@@ -1039,10 +1071,7 @@ class CrowdReport(utils.Struct):
     options = search.QueryOptions(limit=count, ids_only=True)
     results = cls.index.search(search.Query(' OR '.join(query), options))
     ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
-    entities = ndb.get_multi(ids)
-    for entity in entities:
-      if entity:
-        yield cls.FromModel(entity)
+    return cls._FilterReports(ndb.get_multi(ids))
 
   @classmethod
   def Search(cls, query, count=1000, max_updated=None):
@@ -1069,27 +1098,27 @@ class CrowdReport(utils.Struct):
       update time, that meet the criteria:
         - Matches the given query
         - Has an update time equal to or before 'max_updated'
+      (Note that fewer than 'count' objects may be returned if some are
+      restricted such that the current user cannot see them.)
     """
     if max_updated:
       query += ' (%s <= %s)' % ('updated', utils.UtcToTimestamp(max_updated))
     options = search.QueryOptions(limit=count, ids_only=True)
     results = cls.index.search(search.Query(query, options))
     ids = [ndb.Key(_CrowdReportModel, result.doc_id) for result in results]
-    entities = ndb.get_multi(ids)
-    for entity in entities:
-      if entity:
-        yield cls.FromModel(entity)
+    return cls._FilterReports(ndb.get_multi(ids))
 
   @classmethod
   def Create(cls, source, author, effective, text, topic_ids, answers,
-             location):
+             location, map_id=None):
     """Stores one new crowd report and returns it."""
     now = datetime.datetime.utcnow()
     report_id = cls.GenerateId(source)
     model = _CrowdReportModel(
         id=report_id, source=source, author=author, effective=effective,
         published=now, updated=now, text=text, topic_ids=topic_ids,
-        answers_json=json.dumps(answers), location=location or NOWHERE)
+        answers_json=json.dumps(answers), location=location or NOWHERE,
+        map_id=map_id)
     report = cls.FromModel(model)
     document = cls._CreateSearchDocument(model)
 
@@ -1098,6 +1127,7 @@ class CrowdReport(utils.Struct):
     model.put()
     cls.index.put(document)
     return report
+  # pylint: enable=g-doc-return-or-yield
 
   @classmethod
   def _CreateSearchDocument(cls, model):

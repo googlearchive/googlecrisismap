@@ -661,6 +661,16 @@ class CrowdVoteTests(test_utils.BaseTest):
 class CrowdReportTests(test_utils.BaseTest):
   """Tests the CrowdReport class."""
 
+  def setUp(self):
+    super(CrowdReportTests, self).setUp()
+    domains.Domain.Create('gmail.test')
+    perms.Grant('gmail.test', perms.Role.MAP_CREATOR, 'gmail.test')
+    self.map_owner_login = test_utils.Login('map_owner')
+    # This map is visible only to map_owner@gmail.test.  A crowd report
+    # attached to this map should also be visible only to map_owner@gmail.test.
+    with self.map_owner_login:
+      self.map_object = model.Map.Create(MAP1, 'gmail.test')
+
   def testGet(self):
     """Tests CrowdReport.Get."""
     cr1 = test_utils.NewCrowdReport(text='testGet')
@@ -675,6 +685,9 @@ class CrowdReportTests(test_utils.BaseTest):
     cr2 = test_utils.NewCrowdReport(author='alpha@gmail.test', text='Report 2')
     self.SetTime(1300000003)
     cr3 = test_utils.NewCrowdReport(author='beta@gmail.test', text='Report 3')
+    self.SetTime(1300000004)
+    cr4 = test_utils.NewCrowdReport(author='beta@gmail.test', text='Report 4',
+                                    map_id=self.map_object.id)
 
     # pylint: disable=g-long-lambda,invalid-name
     GetTextsForAuthor = lambda *args, **kwargs: [
@@ -684,6 +697,9 @@ class CrowdReportTests(test_utils.BaseTest):
     self.assertEquals([], GetTextsForAuthor('unknown', count=10))
     self.assertEquals([cr3.text],
                       GetTextsForAuthor('beta@gmail.test', count=10))
+    with self.map_owner_login:
+      self.assertEquals([cr4.text, cr3.text],
+                        GetTextsForAuthor('beta@gmail.test', count=10))
     self.assertEquals([cr2.text, cr1.text],
                       GetTextsForAuthor('alpha@gmail.test', count=10))
     self.assertEquals([cr2.text],
@@ -730,6 +746,10 @@ class CrowdReportTests(test_utils.BaseTest):
     self.SetTime(1300000003)
     cr3 = test_utils.NewCrowdReport(topic_ids=[topic2, topic3], text='Report 3',
                                     author='beta@gmail.test')
+    self.SetTime(1300000004)
+    cr4 = test_utils.NewCrowdReport(topic_ids=[topic2, topic3], text='Report 4',
+                                    author='beta@gmail.test',
+                                    map_id=self.map_object.id)
 
     # pylint: disable=g-long-lambda,invalid-name
     GetTextsForTopics = lambda *args, **kwargs: [
@@ -738,14 +758,19 @@ class CrowdReportTests(test_utils.BaseTest):
     self.assertEquals([], GetTextsForTopics([], count=10))
     self.assertEquals([], GetTextsForTopics(['unknown'], count=10))
     self.assertEquals([cr3.text], GetTextsForTopics([topic3], count=10))
+    with self.map_owner_login:
+      self.assertEquals([cr4.text, cr3.text],
+                        GetTextsForTopics([topic3], count=10))
     self.assertEquals([cr3.text, cr2.text],
                       GetTextsForTopics([topic2], count=10))
     self.assertEquals([cr3.text, cr2.text, cr1.text],
                       GetTextsForTopics([topic1, topic3], count=10))
-    self.assertEquals([cr3.text],
-                      GetTextsForTopics([topic1, topic3], count=1))
     self.assertEquals([cr2.text, cr1.text],
-                      GetTextsForTopics([topic1, topic3], count=10, offset=1))
+                      GetTextsForTopics([topic1], count=10))
+    self.assertEquals([cr2.text],
+                      GetTextsForTopics([topic1], count=1))
+    self.assertEquals([cr1.text],
+                      GetTextsForTopics([topic1], count=10, offset=1))
 
     model.CrowdReport.MarkAsReviewed([cr3.id, cr2.id])
     self.assertEquals([cr3.text, cr2.text, cr1.text],
@@ -797,12 +822,16 @@ class CrowdReportTests(test_utils.BaseTest):
     self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=4)))
     cr4 = test_utils.NewCrowdReport(topic_ids=['foo', 'bar'])
 
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=5)))
+    cr5 = test_utils.NewCrowdReport(
+        topic_ids=['foo', 'bar'], map_id=self.map_object.id)
+
     self.SetTime(utils.UtcToTimestamp(now))
 
     # pylint: disable=g-long-lambda,invalid-name
     GetEffectiveWithoutLocation = lambda *args, **kwargs: [
-        x.effective for x in model.CrowdReport.GetWithoutLocation(*args,
-                                                                  **kwargs)]
+        x.effective
+        for x in model.CrowdReport.GetWithoutLocation(*args, **kwargs)]
 
     # No topic_id match
     self.assertEquals([],
@@ -821,6 +850,12 @@ class CrowdReportTests(test_utils.BaseTest):
     self.assertEquals([cr3.effective, cr4.effective],
                       GetEffectiveWithoutLocation(topic_ids=['foo'], count=10,
                                                   max_updated=None))
+    # One more map-restricted report is visible when the map owner is logged in.
+    with self.map_owner_login:
+      self.assertEquals([cr3.effective, cr4.effective, cr5.effective],
+                        GetEffectiveWithoutLocation(topic_ids=['foo'], count=10,
+                                                    max_updated=None))
+
     # 2 matches, one updated too late
     self.assertEquals(
         [cr4.effective],
@@ -869,6 +904,12 @@ class CrowdReportTests(test_utils.BaseTest):
                                     # 0.1 ~= 11km
                                     location=ndb.GeoPt(37.1, -74))
 
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=6)))
+    cr6 = test_utils.NewCrowdReport(topic_ids=['foo', 'bez'],
+                                    # 0.1 ~= 11km
+                                    location=ndb.GeoPt(37.1, -74),
+                                    map_id=self.map_object.id)
+
     self.SetTime(utils.UtcToTimestamp(now))
 
     # pylint: disable=g-long-lambda,invalid-name
@@ -912,6 +953,14 @@ class CrowdReportTests(test_utils.BaseTest):
         GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
                                topic_radii={'foo': 200, 'bez': 12000},
                                max_updated=None))
+
+    # One more map-restricted report is visible when the map owner is logged in.
+    with self.map_owner_login:
+      self.assertEquals(
+          [cr3.effective, cr4.effective, cr5.effective, cr6.effective],
+          GetEffectiveByLocation(center=ndb.GeoPt(37, -74),
+                                 topic_radii={'foo': 200, 'bez': 12000},
+                                 max_updated=None))
 
     # Limit to oldest 2 with max_updated
     self.assertEquals(
@@ -962,6 +1011,11 @@ class CrowdReportTests(test_utils.BaseTest):
     cr4 = test_utils.NewCrowdReport(topic_ids=['shelter', 'food'],
                                     text='76 open beds, plenty of water')
 
+    self.SetTime(utils.UtcToTimestamp(TimeAgo(hours=5)))
+    cr5 = test_utils.NewCrowdReport(topic_ids=['shelter', 'food'],
+                                    text='83 open beds, plenty of water',
+                                    map_id=self.map_object.id)
+
     self.SetTime(utils.UtcToTimestamp(now))
 
     # pylint: disable=g-long-lambda,invalid-name
@@ -989,6 +1043,12 @@ class CrowdReportTests(test_utils.BaseTest):
     self.assertEquals([cr4.effective],
                       Search('beds', count=10,
                              max_updated=TimeAgo(hours=3, minutes=30)))
+
+    # One more map-restricted report is visible when the map owner is logged in.
+    with self.map_owner_login:
+      self.assertEquals([cr4.effective, cr5.effective],
+                        Search('beds', count=10,
+                               max_updated=TimeAgo(hours=3, minutes=30)))
 
     # 2 matches, multi-word query
     self.assertEquals([cr1.effective, cr3.effective],

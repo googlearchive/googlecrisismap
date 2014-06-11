@@ -180,10 +180,11 @@ def CreateMap(map_root=None, domain=DEFAULT_DOMAIN, **kwargs):
 def NewCrowdReport(source='http://source.com/',
                    author='http://google.org/crisismap/.users/anonymous/12345',
                    text='Crowd report text',
-                   topic_ids=None, answers=None, location=None):
+                   topic_ids=None, answers=None, location=None, map_id=None):
   effective = datetime.datetime.utcnow()
-  return model.CrowdReport.Create(source, author, effective, text,
-                                  topic_ids or [], answers or {}, location)
+  return model.CrowdReport.Create(
+      source, author, effective, text, topic_ids or [], answers or {},
+      location, map_id)
 
 
 class BaseTest(unittest.TestCase):
