@@ -36,26 +36,8 @@ class BaseHandlerTest(test_utils.BaseTest):
     """Tests the selection of the UI language."""
     self.assertEquals('en', base_handler.SelectLanguage(None, None))
 
-    # "ja" is a supported language.
-    self.assertEquals('ja', base_handler.SelectLanguage('ja', None))
-    self.assertEquals('ja', base_handler.SelectLanguage(None, 'ja'))
-
     # "zz" is not a supported language.
     self.assertEquals('en', base_handler.SelectLanguage('zz', None))
-
-    # "in" is a deprecated code for Indonesian; the proper code is "id".
-    self.assertEquals('id', base_handler.SelectLanguage('in', None))
-
-    # The first parameter takes precedence over the second.
-    self.assertEquals('tr', base_handler.SelectLanguage('tr', 'th'))
-
-    # Can handle variable number of args, and chooses the first valid one.
-    self.assertEquals('de', base_handler.SelectLanguage(
-        'xoxo', None, 'de', 'fr'))
-
-    # Each argument can actually be a comma-separated list of codes.
-    self.assertEquals('de', base_handler.SelectLanguage(
-        'xoxo,oxox', None, 'yoyo,oyoy,de', 'fr'))
 
   def testJsonXssVulnerability(self):
     """Verifies that ToHtmlSafeJson is safe against XSS."""
