@@ -279,12 +279,23 @@ class CardBase(base_handler.BaseHandler):
     - n: Maximum number of items to show.
     - ll: Geolocation of the center point to search near (in lat,lon format).
     - r: Search radius in metres.
+    - output: If 'json', response is returned as GeoJSON; otherwise,
+      it is rendered as HTML.
     - unit: Distance unit to show (either 'km' or 'mi').
     - qids: Comma-separated IDs of questions within the topic.  Short text
           descriptions of the most recently crowd-reported answers to these
           questions are shown with each item.  The first question in qids is
           treated specially: if it is a CHOICE question, its answer will also
           be displayed as a coloured status dot.
+    - places: A specification of the list of possible locations for which the
+          card has content, specified as an array of stringified JSON objects,
+          each the following keys: "id", "name", and "ll". Example:
+            [{"id":"place1", "name":"Centerville", "ll":[10.0,-120.0]},
+             {"id": "place2", "name":"Springfield", "ll":[10.5,-120.5"]}]
+    - place: A place ID, expected to be one of the "ids" of the provided
+          '?places' array. If the given place ID is invalid, a default place
+          is used (the first place in the ?places array). If a valid '?ll' is
+          provided, the '?place' parameter is ignored.
   """
   embeddable = True
   error_template = 'card-error.html'
@@ -299,11 +310,40 @@ class CardBase(base_handler.BaseHandler):
     radius = float(self.request.get('r', 100000))  # radius, metres
     unit = str(self.request.get('unit', 'km'))
     qids = self.request.get('qids').replace(',', ' ').split()
+    places_json = self.request.get('places', '')
+    place_id = str(self.request.get('place', ''))
+    lang = base_handler.SelectLanguageForRequest(self.request, map_root)
+
     try:
-      lat, lon = lat_lon.split(',')
-      center = ndb.GeoPt(float(lat), float(lon))
+      places = json.loads(places_json)
     except ValueError:
-      center = None
+      logging.info('Could not parse ?places= parameter')
+      places = []
+
+    # If '?ll' parameter is supplied, find nearby results.
+    center = None
+    if lat_lon:
+      try:
+        lat, lon = lat_lon.split(',')
+        center = ndb.GeoPt(float(lat), float(lon))
+      except ValueError:
+        logging.info('Could not extract center for ?ll parameter')
+
+    # If neither '?ll' nor '?place' parameters are given, or if ?place
+    # value is invalid, use a default place.
+    place = None
+    if not center:
+      place = {p['id']: p for p in places}.get(place_id, places and places[0])
+
+    # If '?place' parameter is supplied, use it as the center of the
+    # point-radius query.
+    if not center and place:
+      try:
+        lat = place['ll'][0]
+        lon = place['ll'][1]
+        center = ndb.GeoPt(lat, lon)
+      except (ValueError, KeyError):
+        logging.info('Could not extract center for ?place=%s', place_id)
 
     try:
       features = GetFeatures(map_root, topic_id, self.request)
@@ -311,21 +351,22 @@ class CardBase(base_handler.BaseHandler):
         SetDistanceOnFeatures(features, center)
       FilterFeatures(features, radius, max_count)
       SetAnswersOnFeatures(features, map_root, topic_id, qids)
-      lang = base_handler.SelectLanguageForRequest(self.request, map_root)
-      config_json = {
-          'url_no_ll': RemoveParamsFromUrl(self.request.url, 'll')
-          }
       geojson = GetGeoJSON(features)
       geojson['title'] = topic.get('title', '')
       geojson['unit'] = unit
-      geojson['center'] = center and RoundGeoPt(center)
       geojson['lang'] = lang
       geojson['url_no_unit'] = RemoveParamsFromUrl(self.request.url, 'unit')
+      geojson['place'] = place
+      config_json = {
+          'url_no_loc': RemoveParamsFromUrl(self.request.url, 'll', 'place'),
+          'place': place
+          }
       geojson['config_json'] = config_json
       if output == 'json':
         self.WriteJson(geojson)
       else:
         geojson['config_json'] = json.dumps(config_json)
+        geojson['places'] = json.dumps(places)
         self.response.out.write(self.RenderTemplate('card.html', geojson))
 
     except Exception, e:  # pylint:disable=broad-except

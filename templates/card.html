@@ -20,106 +20,79 @@ specific language governing permissions and limitations under the License.
 </head>
 <body>
   <div id="card" class="card">
-    {% if center %}
+    <div id="location-menu" class="location-menu">
+      <div style="font-weight: bold;">See results for</div>
+    </div>
+    {% if features and not place %}
       <div class="menu">
         {% if unit == 'mi' %}
           <a href="{{url_no_unit}}&unit=km">km</a> &#xb7; mi
         {% else %}
           km &#xb7; <a href="{{url_no_unit}}&unit=mi">mi</a>
         {% endif %}
+     </div>
+    {% endif %}
+    <div>
+      <div class="title">{{title}}</div>
+      <div class="subtitle" id="card-subtitle">
+        <div class="location-status" id="location-status"></div>
+        <div class="change-location-arrow" id="change-location-arrow"></div>
       </div>
-    {% endif %}
-    <h2>
-      {% if center %}
-        {% if lang == 'es' or lang == 'es-419' %}
-          {{title}} cerca de usted
-        {% else %}
-          {{title}} near you
-        {% endif %}
-      {% else %}
-        {{title}}
-      {% endif %}
-    </h2>
-    {% if not features %}
-      {% if lang == 'es' or lang == 'es-419' %}
-        No hay lugares cerca de usted.
-      {% else %}
-        No items nearby.
-      {% endif %}
-    {% endif %}
-    <div id="location-message" class="hidden">
-      {% if lang == 'es' or lang == 'es-419' %}
-        Determinar su ubicacion...
-      {% else %}
-        Determining your location...
-      {% endif %}
     </div>
+    {% if not features %}
+      No results found
+      {% if not place %}
+        near you
+      {% endif %}
+    {% endif %}
     <div id="list">
       {% for feature in features %}
-        <div class="item">
-          {% if feature.properties.distance != None %}
-            <div class="directions">
-              <a target="_blank" href="http://maps.google.com/maps?daddr={{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
-                <span class="icon"></span>
-                <div class="distance">
-                  {% if unit == 'mi' %}
-                    {{feature.properties.distance_mi|floatformat:1}} mi
-                  {% else %}
-                    {{feature.properties.distance_km|floatformat:1}} km
-                  {% endif %}
-                </div>
-              </a>
-            </div>
-          {% endif %}
-          <div class="title">{{feature.properties.name|default:"(no name)"}}</div>
-          <div class="crowd">
-            {% if feature.properties.answer_text %}
-              {% if feature.properties.status_color %}
-                <span class="dot" style="background: {{feature.properties.status_color}}">
-                </span
-              >{% endif %}<span class="answers">{{feature.properties.answer_text}}</span>
+        {% if feature.properties.name %}
+          <div class="item">
+            {% if feature.properties.distance != None and not place %}
+              <div class="directions">
+                  <a target="_blank" href="http://maps.google.com/maps?daddr={{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
+                  <span class="icon"></span>
+                  <div class="distance">
+                    {% if unit == 'mi' %}
+                      {{feature.properties.distance_mi|floatformat:1}} mi
+                    {% else %}
+                      {{feature.properties.distance_km|floatformat:1}} km
+                    {% endif %}
+                  </div>
+                </a>
+              </div>
             {% endif %}
+            <div class="title">
+              <a target="_blank" href="http://maps.google.com/maps?q={{feature.properties.name}}%20near%20{{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
+                  {{feature.properties.name}}</a>
+            </div>
+            <div class="crowd">
+              {% if feature.properties.answer_text %}
+                {% if feature.properties.status_color %}
+                  <span class="dot" style="background: {{feature.properties.status_color}}">
+                  </span
+                >{% endif %}<span class="answers">{{feature.properties.answer_text}}</span>
+              {% endif %}
+            </div>
+            <div class="clear"></div>
           </div>
-          <div class="clear"></div>
-        </div>
+        {% endif %}
       {% endfor %}
     </div>
   </div>
 </body>
+<script src="{{root}}/.static/card.js"></script>
 <script>
-  var config = {{config_json|safe}};
-  {% if not center %}
-    if (navigator.geolocation) {
-      var list = document.getElementById('list');
-      list.className = 'hidden';
-      var message = document.getElementById('location-message');
-      message.className = '';
-      navigator.geolocation.getCurrentPosition(function(position) {
-        var coords = position.coords;
-        var ll = coords.latitude.toFixed(4) + ',' + coords.longitude.toFixed(4);
-        window.location = config.url_no_ll + '&ll=' + ll;
-      }, function() {
-        // This is called if the user doesn't consent to sharing their location,
-        // or if the user consents and there is any error obtaining location.
-        list.className = '';
-        message.className = 'hidden';
-      });
-    }
-  {% endif %}
-  function updateSize() {
-    var card = document.getElementById('card');
-    window.parent.postMessage({
-        type: 'resize',
-        width: card.scrollWidth,
-        height: card.scrollHeight
-    }, '*');
-    try {
-      // This call is for older browsers don't support postMessage, but it
-      // will only work if the parent frame has the same origin.
-      window.parent.resizeIframe(window, card.scrollWidth, card.scrollHeight);
-    } catch (e) {
-    }
-  }
   window.addEventListener('resize', updateSize);
   updateSize();
+
+  var config = {{config_json|safe}};
+  var places = {{places|safe}};
+  var place = config.place;
+  updateLocationStatus(place && place.name || null);
+  fillLocationMenu(config.url_no_loc, places, place && place.id);
+  var changeLocation = $("card-subtitle")
+  changeLocation.addEventListener("click", showLocationMenu, false);
+  window.addEventListener("click", hideLocationMenu, false);
 </script>
