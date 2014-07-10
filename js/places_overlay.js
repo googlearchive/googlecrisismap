@@ -36,6 +36,15 @@ cm.PlacesOverlay = function(layer, map) {
   google.maps.MVCObject.call(this);
 
   /**
+   * Google Places API service instance that's shared between different
+   * places layer. Having separate service per layer causes duplicate
+   * listing attributions in the bottom right corner of the map.
+   */
+  if (!cm.PlacesOverlay.placesService) {
+    cm.PlacesOverlay.placesService = new google.maps.places.PlacesService(map);
+  }
+
+  /**
    * @type {cm.LayerModel}
    * @private
    */
@@ -58,12 +67,6 @@ cm.PlacesOverlay = function(layer, map) {
    * @private
    */
   this.onMap_ = false;
-
-  /**
-   * @type {google.maps.places.PlacesService}
-   * @private
-   */
-  this.placesService_ = new google.maps.places.PlacesService(map);
 
   /**
    * @type {Array.<google.maps.places.PlaceResult>}
@@ -133,7 +136,7 @@ cm.PlacesOverlay.prototype.updatePlaces_ = function() {
   // Radar search requires bounds and at least one of keyword, name, types
   // params. Don't issue a request that violates these rules
   if (request.bounds && (request.keyword || request.name || request.types)) {
-    this.placesService_.radarSearch(request,
+    cm.PlacesOverlay.placesService.radarSearch(request,
         goog.bind(this.placesCallback_, this));
   }
 };
@@ -192,7 +195,7 @@ cm.PlacesOverlay.prototype.getPlaceDetails_ = function(marker) {
   var request = /** @type google.maps.places.PlaceDetailsRequest */ ({
     reference: marker.get('_placereference')
   });
-  this.placesService_.getDetails(request,
+  cm.PlacesOverlay.placesService.getDetails(request,
       goog.bind(this.placeDetailsCallback_, this, marker));
 };
 

@@ -17,6 +17,9 @@ function PlacesOverlayTest() {
   this.map_ = this.expectNew_('google.maps.Map');
   this.layerModel_ = new google.maps.MVCObject();
   this.layerModel_.set('places_name', 'cvs');
+
+  // Clear the static variable
+  cm.PlacesOverlay.placesService = null;
   this.placesService_ =
       this.expectNew_('google.maps.places.PlacesService', this.map_);
   this.mapBounds_ = new google.maps.LatLngBounds(
@@ -77,6 +80,20 @@ PlacesOverlayTest.prototype.expectGetDetails_ = function(placeReference,
         callback(result, status);
       });
 };
+
+
+/** Tests two places layer reuse the same Places service. */
+PlacesOverlayTest.prototype.testPlacesServiceSharedBetweenOverlays =
+    function() {
+  // Create the first overlay
+  var placesOverlay = new cm.PlacesOverlay(this.layerModel_, this.map_);
+
+  // Create the second overlay and make sure no new calls to PlacesService
+  // are issued
+  this.expectNoCalls_('google.maps.places.PlacesService');
+  var placesOverlayTwo = new cm.PlacesOverlay(this.layerModel_, this.map_);
+};
+
 
 /** Tests places layer updates on setMap. */
 PlacesOverlayTest.prototype.testPlacesSearchOnSetMap = function() {
