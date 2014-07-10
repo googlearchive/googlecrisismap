@@ -178,6 +178,9 @@ LayerModelTest.prototype.newFromMapRootLayerTypes = function() {
   layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_CLOUD_IMAGERY'});
   expectEq(cm.LayerModel.Type.CLOUD, layerModel.get('type'));
 
+  layerModel = cm.LayerModel.newFromMapRoot({type: 'GOOGLE_PLACES'});
+  expectEq(cm.LayerModel.Type.PLACES, layerModel.get('type'));
+
   layerModel = cm.LayerModel.newFromMapRoot({type: 'FOLDER'});
   expectEq(cm.LayerModel.Type.FOLDER, layerModel.get('type'));
 

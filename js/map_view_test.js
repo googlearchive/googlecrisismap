@@ -112,6 +112,7 @@ registerTestSuite(MapViewTest);
 
 /** Fully qualified names of all types of overlays that we put on the map. */
 MapViewTest.OVERLAY_CLASSES = [
+  'cm.PlacesOverlay',
   'cm.TileOverlay',
   'google.maps.FusionTablesLayer',
   'google.maps.KmlLayer',
@@ -574,6 +575,40 @@ MapViewTest.prototype.addOverlayCloud = function() {
   stub(overlay.getMap)().is(null);
   expectCall(overlay.setMap)(this.map_);
   this.newMapView_(false);
+};
+
+/** Tests adding a Places overlay. */
+MapViewTest.prototype.addOverlayPlaces = function() {
+  var layerModel = this.addLayer_({
+    'id': 'pistachio',
+    'type': cm.LayerModel.Type.PLACES,
+    'places_icon_url': '',
+    'places_keyword': '',
+    'places_name': 'cvs',
+    'places_types': 'pharmacy'
+
+  });
+  this.stubVisibleLayerIds_(['pistachio']);
+
+  var overlay = this.expectNew_('cm.PlacesOverlay', layerModel, this.map_);
+  stub(overlay.getMap)().is(null);
+  expectCall(overlay.setMap)(this.map_);
+  this.newMapView_(false);
+
+  // Change the name param
+  stub(overlay.getMap)().is(this.map_);
+  expectCall(overlay.setMap)(null);
+  layerModel.set('places_name', 'safeway');
+
+  // Change the keyword param
+  stub(overlay.getMap)().is(this.map_);
+  expectCall(overlay.setMap)(null);
+  layerModel.set('places_keyword', 'pharmacy');
+
+  // Change the types param
+  stub(overlay.getMap)().is(this.map_);
+  expectCall(overlay.setMap)(null);
+  layerModel.set('places_types', 'hardware_store');
 };
 
 /** Tests adding a KML overlay with no URL. */

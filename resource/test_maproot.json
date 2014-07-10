@@ -304,6 +304,32 @@
       "type": "GOOGLE_CLOUD_IMAGERY"
     },
     {
+      "id": "places",
+      "title": "Google Places Layer",
+      "visibility": "DEFAULT_OFF",
+      "description": "Hospitals",
+      "type": "GOOGLE_PLACES",
+      "source": {
+        "places": {
+          "keyword": "hospital"
+        }
+      }
+    },
+    {
+      "id": "wms",
+      "title": "WMS",
+      "visibility": "DEFAULT_OFF",
+      "description": "GME WMS Layer Florida",
+      "type": "WMS",
+      "source": {
+        "wms": {
+          "url": "https://earthbuilder.google.com/13560186249300745898-09371596555021502644-4/wms/",
+          "layer_names": ["13560186249300745898-13464369061086462890-4",
+                          "13560186249300745898-02664411750483227641-4"]
+        }
+      }
+    },
+    {
       "id": "google-maps-engine-lite-or-pro",
       "title": "Maps Engine Lite Layer",
       "visibility": "DEFAULT_OFF",

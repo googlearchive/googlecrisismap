@@ -21,6 +21,7 @@ goog.require('cm.AppState');
 goog.require('cm.Html');
 goog.require('cm.LayerModel');
 goog.require('cm.MapModel');
+goog.require('cm.PlacesOverlay');
 goog.require('cm.TileOverlay');
 goog.require('cm.css');
 goog.require('cm.util');
@@ -280,6 +281,7 @@ goog.inherits(cm.MapView, google.maps.MVCObject);
 /** @typedef {google.maps.KmlLayer|google.maps.visualization.MapsEngineLayer|
               google.maps.FusionTablesLayer|
               cm.TileOverlay|
+              cm.PlacesOverlay|
               google.maps.TrafficLayer|
               google.maps.TransitLayer|
               google.maps.weather.WeatherLayer|
@@ -482,7 +484,8 @@ cm.MapView.prototype.addOverlay_ = function(layer) {
                     'ft_select', 'ft_from', 'ft_where', 'ft_heatmap',
                     'maps_engine_map_id', 'maps_engine_layer_key',
                     'layer_id', 'temperature_unit', 'wind_speed_unit',
-                    'label_color', 'wms_layers'];
+                    'label_color', 'wms_layers', 'places_icon_url',
+                    'places_keyword', 'places_name', 'places_types'];
   this.listenerTokens_[layer.get('id')] =
       /** @type Array.<cm.events.ListenerToken> */(cm.events.onChange(
           layer, properties, function() {
@@ -646,6 +649,10 @@ cm.MapView.prototype.updateOverlay_ = function(layer) {
 
     case cm.LayerModel.Type.CLOUD:
       this.overlays_[id] = new google.maps.weather.CloudLayer();
+      break;
+
+    case cm.LayerModel.Type.PLACES:
+      this.overlays_[id] = new cm.PlacesOverlay(layer, this.map_);
       break;
   }
 

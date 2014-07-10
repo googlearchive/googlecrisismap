@@ -65,6 +65,9 @@ class MaprootTest(test_utils.BaseTest):
     self.assertEquals(None, maproot.GetSourceAddress(
         {'type': 'GOOGLE_TRAFFIC'}
     ))
+    self.assertEquals(None, maproot.GetSourceAddress(
+        {'type': 'GOOGLE_PLACES'}
+    ))
 
 if __name__ == '__main__':
   test_utils.main()

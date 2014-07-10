@@ -783,6 +783,9 @@ cm.MSG_LAYER_TYPE_WEATHER = goog.getMsg('Weather (from Google Maps)');
 /** @desc Menu option for the clouds layer from Google Maps. */
 cm.MSG_LAYER_TYPE_CLOUDS = goog.getMsg('Clouds (from Google Maps)');
 
+/** @desc Menu option for the places API layer from Google Maps. */
+cm.MSG_LAYER_TYPE_PLACES = goog.getMsg('Places (from Google Maps)');
+
 /** @desc Menu option for a layer from Google Maps Engine Lite or Pro. */
 cm.MSG_LAYER_TYPE_MAPS_ENGINE_LITE_OR_PRO = goog.getMsg(
     'Google Maps Engine Lite/Pro');
@@ -1013,6 +1016,44 @@ cm.MSG_BING_MAPS_QUADKEYS = goog.getMsg('Bing Maps quadkeys');
 
 /** @desc An option in a menu for selecting a type of coordinates. */
 cm.MSG_TMS_COORDINATES = goog.getMsg('Tile Map Service (TMS) coordinates');
+
+/** @desc Places icon URL. */
+cm.MSG_PLACES_ICON_URL = goog.getMsg('Icon URL');
+
+/** @desc A tooltip for places icon URL. */
+cm.MSG_PLACES_ICON_URL_TOOLTIP = goog.getMsg('URL for custom places icon');
+
+/** @desc Places keyword. */
+cm.MSG_PLACES_KEYWORD = goog.getMsg('Keyword');
+
+/** @desc A tooltip for places keyword. */
+cm.MSG_PLACES_KEYWORD_TOOLTIP = goog.getMsg(
+    'A term to be matched against all content that Google has indexed for ' +
+    'this Place, including but not limited to name, type, and address, as ' +
+    'well as customer reviews and other third-party content.');
+
+/** @desc Places name. */
+cm.MSG_PLACES_NAME = goog.getMsg('Name');
+
+/** @desc A tooltip for places name. */
+cm.MSG_PLACES_NAME_TOOLTIP = goog.getMsg(
+    'One or more terms to be matched against the names of Places, separated ' +
+    'with a space character. Results will be restricted to those containing ' +
+    'the passed name values. Note that a Place may have additional names ' +
+    'associated with it, beyond its listed name. The API will try to match ' +
+    'the passed name value against all of these names; as a result, Places ' +
+    'may be returned in the results whose listed names do not match the ' +
+    'search term, but whose associated names do.');
+
+/** @desc Places types. */
+cm.MSG_PLACES_TYPES = goog.getMsg('Types');
+
+/** @desc A tooltip for places types. */
+cm.MSG_PLACES_TYPES_TOOLTIP = goog.getMsg(
+    'Restricts the results to Places matching at least one of the specified ' +
+    'types. Types should be separated with a pipe symbol (type1|type2|etc). ' +
+    'See the list of <a target="_blank" href="https://developers.google.com/' +
+    'places/documentation/supported_types">supported types</a>');
 
 /**
  * @desc Label for a menu for selecting the type of a folder (in which

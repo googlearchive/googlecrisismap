@@ -50,6 +50,7 @@ cm.LayerModel.Type = {
   TRANSIT: 'TRANSIT',
   WEATHER: 'WEATHER',
   CLOUD: 'CLOUD',
+  PLACES: 'PLACES',
   WMS: 'WMS',
   GOOGLE_MAPS_ENGINE_LITE_OR_PRO: 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO'
 };
@@ -80,7 +81,8 @@ cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
   'GOOGLE_CLOUD_IMAGERY': cm.LayerModel.Type.CLOUD,
   'WMS': cm.LayerModel.Type.WMS,
   'GOOGLE_MAPS_ENGINE_LITE_OR_PRO':
-      cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO
+      cm.LayerModel.Type.GOOGLE_MAPS_ENGINE_LITE_OR_PRO,
+  'GOOGLE_PLACES': cm.LayerModel.Type.PLACES
 };
 
 /** @enum {string} */
@@ -283,6 +285,13 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       model.set('url', wms['url']);
       model.set('wms_layers', wms['layer_names']);
       break;
+    case cm.LayerModel.Type.PLACES:
+      var places = source['places'] || {};
+      model.set('places_icon_url', places['icon_url']);
+      model.set('places_keyword', places['keyword']);
+      model.set('places_name', places['name']);
+      model.set('places_types', places['types']);
+      break;
   }
 
   // Construct sublayer models.
@@ -396,6 +405,14 @@ cm.LayerModel.prototype.toMapRoot = function() {
       source['wms'] = {
         'url': this.get('url'),
         'layer_names': layers
+      };
+      break;
+    case cm.LayerModel.Type.PLACES:
+      source['places'] = {
+        'icon_url': this.get('places_icon_url'),
+        'keyword': this.get('places_keyword'),
+        'name': this.get('places_name'),
+        'types': this.get('places_types')
       };
       break;
   }

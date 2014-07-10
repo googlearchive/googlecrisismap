@@ -223,7 +223,11 @@ function xclass(className, opt_context) {
     'gmeLayerKey',
     'wmsLayers',
     'tileCoordinateType',
-    'folderType'
+    'folderType',
+    'places_icon_url',
+    'places_keyword',
+    'places_name',
+    'places_types'
   ];
 
   for (var i = 0, key; key = inspectorFields[i]; i++) {

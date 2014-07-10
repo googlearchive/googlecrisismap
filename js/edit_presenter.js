@@ -180,7 +180,8 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.LayerModel.Type.TRAFFIC, label: cm.MSG_LAYER_TYPE_TRAFFIC},
     {value: cm.LayerModel.Type.TRANSIT, label: cm.MSG_LAYER_TYPE_TRANSIT},
     {value: cm.LayerModel.Type.WEATHER, label: cm.MSG_LAYER_TYPE_WEATHER},
-    {value: cm.LayerModel.Type.CLOUD, label: cm.MSG_LAYER_TYPE_CLOUDS}
+    {value: cm.LayerModel.Type.CLOUD, label: cm.MSG_LAYER_TYPE_CLOUDS},
+    {value: cm.LayerModel.Type.PLACES, label: cm.MSG_LAYER_TYPE_PLACES}
   ];
 
 
@@ -396,7 +397,26 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
          label: cm.MSG_FOLDER_TYPE_SINGLE_SELECT}
       ],
      conditions: {'type': isType(cm.LayerModel.Type.FOLDER)},
-     tooltip: cm.MSG_FOLDER_TYPE_TOOLTIP}
+     tooltip: cm.MSG_FOLDER_TYPE_TOOLTIP},
+   {key: 'places_icon_url', label: cm.MSG_PLACES_ICON_URL,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.PLACES)},
+     tooltip: cm.MSG_PLACES_ICON_URL_TOOLTIP},
+   {key: 'places_keyword', label: cm.MSG_PLACES_KEYWORD,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.PLACES)},
+     tooltip: cm.MSG_PLACES_KEYWORD_TOOLTIP},
+   {key: 'places_name', label: cm.MSG_PLACES_NAME,
+     type: cm.editors.Type.TEXT,
+     conditions: {'type': isType(cm.LayerModel.Type.PLACES)},
+     tooltip: cm.MSG_PLACES_NAME_TOOLTIP},
+   {key: 'places_types', label: cm.MSG_PLACES_TYPES,
+     type: cm.editors.Type.TEXT, // TODO(user): dropdown or autocomplete
+     conditions: {'type': isType(cm.LayerModel.Type.PLACES)},
+     tooltip: cm.MSG_PLACES_TYPES_TOOLTIP}
+    // TODO(user): as a follow-up CL, maybe add a a language param
+    // to specify what language to show places results in
+
   ];
 
   var topicFields = [
