@@ -26,14 +26,9 @@ class Create(base_handler.BaseHandler):
   def Post(self, domain, user):  # pylint: disable=unused-argument
     """Creates a new map."""
     map_object = model.Map.Create({'title': 'Untitled map'}, domain)
-    acceptable_org = bool(self.request.get('acceptable_org'))
     logs.RecordEvent(
         logs.Event.MAP_CREATED,
         domain_name=domain,
         map_id=map_object.id,
-        acceptable_purpose=bool(self.request.get('acceptable_purpose')),
-        acceptable_org=acceptable_org,
-        org_name=acceptable_org and self.request.get('organization') or '',
         uid=user.id)
-    users.SetMarketingConsent(user.id, self.request.get('marketing_consent'))
     self.redirect('.maps/%s' % map_object.id)

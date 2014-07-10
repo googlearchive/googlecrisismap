@@ -75,8 +75,7 @@ specific language governing permissions and limitations under the License.
               value="{{navbar.creator_domains.0}}">
         {% endif %}
         <input type="button" class="cm-create cm-button"
-            title="Create a new map" value="Create map"
-            onclick="showCreatePopup()">
+            title="Create a new map" value="Create map" onclick="createMap()">
       {% else %}
         <input type="button" class="cm-create cm-button"
             title="Create a new map" value="Create map"
@@ -131,16 +130,6 @@ specific language governing permissions and limitations under the License.
         {% if navbar.is_admin %}
           <li><a href="{{root}}/.admin">Administer maps</a></li>
         {% endif %}
-
-        <li>&nbsp;</li>
-
-        <li><a href="http://www.google.com/intl/en/policies/">
-          Privacy &amp; terms
-        </a></li>
-
-        <li><a href="http://www.google.org/crisisresponse/crisismap/use-policy.html">
-          Acceptable use policy
-        </a></li>
 
       {% endblock navlinks %}
     </ul>

@@ -42,38 +42,10 @@ function showPopup(popup) {
   popup.style.top = Math.round(y) + 'px';
 }
 
-/** Updates the UI of the map create popup. */
-function updateCreatePopup() {
-  $('create-popup-submit').removeAttribute('disabled');
-  // Require organization name only if the acceptable_org checkbox is checked.
-  if ($('acceptable-org').checked) {
-    $('organization-name').style.display = 'block';
-    if ($('organization-input').value.replace(/^\s*/g, '') === '') {
-      $('create-popup-submit').setAttribute('disabled', 'disabled');
-    }
-  } else {
-    $('organization-name').style.display = 'none';
-  }
-  // Require at least one use-case checkbox to be selected.
-  if (!$('acceptable-purpose').checked && !$('acceptable-org').checked) {
-    $('create-popup-submit').setAttribute('disabled', 'disabled');
-  }
-}
-
-/** Displays the popup required before creating a map. */
-function showCreatePopup() {
-  showPopup($('create-popup'));
-  var inputs = $('create-popup').getElementsByTagName('input');
-  for (var i = 0; i < inputs.length; i++) {
-    inputs[i].addEventListener('change', updateCreatePopup);
-    inputs[i].addEventListener('keyup', updateCreatePopup);
-  }
-  updateCreatePopup();
-}
-
-/** Handles clicking on 'Create map' in the popup. */
-function submitCreatePopup() {
-  $('create-popup-domain').value = $('domain').value;
+/** Creates a map. */
+function createMap() {
+  $('create-map-domain').value = $('domain').value;
+  $('create-map-form').submit();
 }
 
 /** Updates the UI of the publish popup. */
