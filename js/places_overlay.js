@@ -216,15 +216,20 @@ cm.PlacesOverlay.prototype.placeDetailsCallback_ = function(marker, result,
   var contentHtml = goog.string.subs(
       '<div id="content">' +
          '<span style="font-weight: bold; font-size:123%">%s</span> ' +
-         '<a href="%s" target="_blank">more info</a>' +
+         '<a href="%s" target="_blank">%s</a>' +
          '<div>%s</div>' +
          '<div>%s</div>' +
          '<div><a href="%s" target="_blank">%s</a></div>' +
          '<div>%s</div>' +
       '</div>',
-      result.name, result.url, result.formatted_address,
-      result.formatted_phone_number, result.website, resultUri.getDomain(),
-      result.htmlAttributions ? result.htmlAttributions.join(' ') : '');
+      result.name || '',
+      result.url || '',
+      result.url ? 'more info' : '',
+      result.formatted_address || '',
+      result.formatted_phone_number || '',
+      result.website || '',
+      result.website ? resultUri.getDomain() : '',
+      result.html_attributions ? result.html_attributions.join(' ') : '');
 
   var event = {};
   event['latLng'] = marker.getPosition();

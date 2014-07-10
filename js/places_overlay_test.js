@@ -165,13 +165,18 @@ PlacesOverlayTest.prototype.testGetPlaceDetails = function() {
   // Mock setup for place getDetails call
   placeResult = {
     reference: placeResult.reference,
-    name: 'SomePlaceName'
+    name: 'SomePlaceName',
+    html_attributions: ['SomeHtmlAttributions']
   };
   this.expectGetDetails_(placeResult.reference, placeResult,
       google.maps.places.PlacesServiceStatus.OK);
   // Set up expectations for a click event on the layer with info window content
   this.expectEvent(placesOverlay, 'click', 1, function(eventProperties) {
-    return eventProperties.featureData.name === placeResult.name;
+    var contentHtml = eventProperties.featureData.infoWindowHtml;
+    return eventProperties.featureData.name === placeResult.name &&
+        goog.string.contains(contentHtml, placeResult.name) &&
+        goog.string.contains(contentHtml, placeResult.html_attributions) &&
+        !goog.string.contains(contentHtml, 'undefined');
   });
 
   // Click on the place marker
