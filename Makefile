@@ -39,9 +39,9 @@ AUX=aux/build_info.js \
     aux/json_files.js \
     aux/maps_api.js
 
-# Files that are used only by JS tests.
+# Files that are used only by JS tests
 TEST_FAKES=js/test_bootstrap.js,aux/maps_api.js
-TEST_DEPS=aux/json_files.js,$(CLOSURE_DIR)/closure/goog/testing/events/events.js,$(CLOSURE_DIR)/closure/goog/testing/objectpropertystring.js,$(CLOSURE_DIR)/closure/goog/testing/propertyreplacer.js,$(CLOSURE_DIR)/closure/goog/testing/watchers.js,$(CLOSURE_DIR)/closure/goog/testing/mockclock.js,js/test_utils.js
+TEST_DEPS=aux/json_files.js,$(CLOSURE_DIR)/closure/goog/testing/events/events.js,$(CLOSURE_DIR)/closure/goog/testing/objectpropertystring.js,$(CLOSURE_DIR)/closure/goog/testing/propertyreplacer.js,$(CLOSURE_DIR)/closure/goog/testing/mockclock.js,js/test_utils.js
 
 # The source files are found in Closure, in aux/, and in js/.
 SOURCE_DIR_OPTIONS=-p $(CLOSURE_DIR)/closure \
@@ -138,7 +138,7 @@ aux/css.js: js/*.js
 # Download the externs file for the Maps API.
 aux/google_maps_api_v3_11.js:
 	@mkdir -p aux
-	curl -o $@ http://closure-compiler.googlecode.com/svn/trunk/contrib/externs/maps/google_maps_api_v3_11.js
+	curl -o $@ https://raw.githubusercontent.com/google/closure-compiler/master/contrib/externs/maps/google_maps_api_v3_11.js
 
 # Build html-css-sanitizer.js from google-caja; requires ant.
 aux/html-css-sanitizer.js:
