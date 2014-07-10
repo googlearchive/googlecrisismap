@@ -196,19 +196,17 @@ cm.PlacesOverlay.prototype.getPlaceDetails_ = function(marker) {
     reference: marker.get('_placereference')
   });
   cm.PlacesOverlay.placesService.getDetails(request,
-      goog.bind(this.placeDetailsCallback_, this, marker));
+      goog.bind(this.placeDetailsCallback_, this));
 };
 
 /**
  * Handles the result of the places API request for single place details.
- * @param {google.maps.Marker} marker Marker that user has clicked on
  * @param {google.maps.places.PlaceResult} result Place details
  * @param {google.maps.places.PlacesServiceStatus} status Status of the Places
  *     API request
  * @private
  */
-cm.PlacesOverlay.prototype.placeDetailsCallback_ = function(marker, result,
-    status) {
+cm.PlacesOverlay.prototype.placeDetailsCallback_ = function(result, status) {
   if (status != google.maps.places.PlacesServiceStatus.OK) {
     // Places API call to get place details has failed
     return;
@@ -235,7 +233,7 @@ cm.PlacesOverlay.prototype.placeDetailsCallback_ = function(marker, result,
       result.html_attributions ? result.html_attributions.join(' ') : '');
 
   var event = {};
-  event['latLng'] = marker.getPosition();
+  event['latLng'] = result.geometry.location;
   event['pixelOffset'] = new google.maps.Size(0, 0);
   event['featureData'] = {
     'name': result.name,

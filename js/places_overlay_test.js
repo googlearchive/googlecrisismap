@@ -46,7 +46,7 @@ PlacesOverlayTest.prototype.createPlaceResult_ = function() {
 
 /**
  * Sets up placesService mock to expect a call to radarSearch.
- * @param {Array.<google.maps.places.PlaceResult>} results Place search results
+ * @param {Array.<google.maps.places.PlaceResult>} results Places search results
  * @param {google.maps.places.PlacesServiceStatus} status Status of the Places
  *     API request
  * @private
@@ -60,6 +60,24 @@ PlacesOverlayTest.prototype.expectRadarSearch_ = function(results, status) {
       .willOnce(function(request, callback) {
         callback(results, status);
       });
+};
+
+/**
+ * Sets up a mock for a new marker corresponding to a Places API search result.
+ * @param {google.maps.places.PlaceResult} placeResult Place search result
+ * @return {google.maps.Marker} Marker mock object
+ * @private
+ */
+PlacesOverlayTest.prototype.expectNewMarker_ = function(placeResult) {
+  // Mock out the Marker, b/c using a real Marker causes errors with gjstest
+  var marker = this.expectNew_('google.maps.Marker',
+      /** @type google.maps.MarkerOptions */({
+        position: placeResult.geometry.location,
+        map: this.map_
+      }));
+  expectCall(marker.set)('_placereference', placeResult.reference).times(1);
+  expectCall(marker.set)('_clickeventtoken', _).times(1);
+  return marker;
 };
 
 /**
@@ -101,21 +119,19 @@ PlacesOverlayTest.prototype.testPlacesSearchOnSetMap = function() {
   this.expectRadarSearch_(
       [placeResult],
       google.maps.places.PlacesServiceStatus.OK);
+  var marker = this.expectNewMarker_(placeResult);
 
   var placesOverlay = new cm.PlacesOverlay(this.layerModel_, this.map_);
   placesOverlay.setMap(this.map_);
   expectEq(1, placesOverlay.markers_.length);
-  expectEq(placeResult.geometry.location, placesOverlay.markers_[0].position);
-  expectEq(this.map_, placesOverlay.markers_[0].map);
-  expectEq(placeResult.reference,
-      placesOverlay.markers_[0].get('_placereference'));
 
   // Make sure the markers are cleared on null map
+  expectCall(marker.setMap)(null);
   placesOverlay.setMap(null);
   expectEq(1, placesOverlay.markers_.length);
-  expectEq(null, placesOverlay.markers_[0].getMap());
 
   // Reset the map and make sure the markers come back
+  expectCall(marker.setMap)(this.map_);
   placesOverlay.setMap(this.map_);
   expectEq(1, placesOverlay.markers_.length);
 };
@@ -173,6 +189,7 @@ PlacesOverlayTest.prototype.testGetPlaceDetails = function() {
   this.expectRadarSearch_(
       [placeResult],
       google.maps.places.PlacesServiceStatus.OK);
+  var marker = this.expectNewMarker_(placeResult);
 
   // Create a new Places layer
   var placesOverlay = new cm.PlacesOverlay(this.layerModel_, this.map_);
@@ -180,7 +197,10 @@ PlacesOverlayTest.prototype.testGetPlaceDetails = function() {
   expectEq(1, placesOverlay.markers_.length);
 
   // Mock setup for place getDetails call
+  expectCall(marker.get)('_placereference').
+      willOnce(returnWith(placeResult.reference));
   placeResult = {
+    geometry: placeResult.geometry,
     reference: placeResult.reference,
     name: 'SomePlaceName',
     html_attributions: ['SomeHtmlAttributions']
@@ -207,6 +227,7 @@ PlacesOverlayTest.prototype.testGetPlaceDetailsFails = function() {
   this.expectRadarSearch_(
       [placeResult],
       google.maps.places.PlacesServiceStatus.OK);
+  var marker = this.expectNewMarker_(placeResult);
 
   // Create a new Places layer
   var placesOverlay = new cm.PlacesOverlay(this.layerModel_, this.map_);
@@ -214,6 +235,8 @@ PlacesOverlayTest.prototype.testGetPlaceDetailsFails = function() {
   expectEq(1, placesOverlay.markers_.length);
 
   // Mock setup for place getDetails call
+  expectCall(marker.get)('_placereference').
+      willOnce(returnWith(placeResult.reference));
   this.expectGetDetails_(placeResult.reference, placeResult,
       google.maps.places.PlacesServiceStatus.UNKNOWN_ERROR);
   // Set up expectations for a click event on the layer with info window content
