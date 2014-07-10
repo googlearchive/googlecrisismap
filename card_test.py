@@ -34,7 +34,7 @@ KML_DATA = '''<?xml version="1.0" encoding="UTF-8" ?>
     </Placemark>
     <Placemark>
       <Point><coordinates>-83,40,1</coordinates></Point>
-      <description>&#x64;escription&lt;2&gt;</description>
+      <description>&#x64;escription&lt;2&gt;two</description>
       <name>Columbus</name>
     </Placemark>
   </Document>
@@ -55,7 +55,7 @@ GEORSS_DATA = '''
     </item>
     <item>
       <georss:point> 40 -83 1 </georss:point>
-      <summary>&#x64;escription&lt;2&gt;</summary>
+      <summary>&#x64;escription&lt;2&gt;two</summary>
       <title>Columbus</title>
     </item>
   </channel>
@@ -73,7 +73,7 @@ ATOM_DATA = '''
   </entry>
   <entry>
     <georss:point> 40 -83 1 </georss:point>
-    <content>&#x64;escription&lt;2&gt;</content>
+    <content>&#x64;escription&lt;2&gt;two</content>
     <title>Columbus</title>
   </entry>
 </feed>
@@ -81,7 +81,7 @@ ATOM_DATA = '''
 
 FEATURE_FIELDS = [
     ('Helsinki', 'description1', ndb.GeoPt(60, 25)),
-    ('Columbus', 'description<2>', ndb.GeoPt(40, -83))
+    ('Columbus', 'description<2>two', ndb.GeoPt(40, -83))
 ]
 
 ROOT_URL = 'http://app.com/root'
@@ -445,6 +445,43 @@ class CardHandlerTest(test_utils.BaseTest):
     self.assertTrue('Topic 1' in response.body)
     self.assertTrue('Helsinki' in response.body)
     self.assertTrue('Columbus' in response.body)
+    # Verify there are no descriptions, since show_desc param isn't set
+    # in the request
+    self.assertFalse('description' in response.body)
+
+  def testGetCardByLabelAndTopicWithDescriptionsEnabled(self):
+    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
+    # Enable descriptions with show_desc=1 param in the request
+    response = self.DoGet('/xyz.com/.card/foo/t1?show_desc=1')
+    self.assertTrue('Topic 1' in response.body)
+    self.assertTrue('Helsinki' in response.body)
+    self.assertTrue('Columbus' in response.body)
+    # Verify descriptions show up (with all the html tags removed)
+    self.assertTrue('description1' in response.body)
+    self.assertFalse('description<2>two' in response.body)
+    self.assertTrue('description two' in response.body)
+
+  def testGetCardByLabelAndTopicWithDescriptionsXss(self):
+    kml_data_with_xss = '''<?xml version="1.0" encoding="UTF-8" ?>
+        <kml xmlns="http://earth.google.com/kml/2.2">
+          <Document>
+            <name>Cities</name>
+            <Placemark>
+              <name>Paris</name>
+              <description>description1<script>EvilScript</script></description>
+              <Point><coordinates>25,60</coordinates></Point>
+            </Placemark>
+          </Document>
+        </kml>
+        '''
+    self.SetForTest(kmlify, 'FetchData', lambda url, host: kml_data_with_xss)
+    # Enable descriptions with show_desc=1 param in the request
+    response = self.DoGet('/xyz.com/.card/foo/t1?show_desc=1')
+    self.assertTrue('Paris' in response.body)
+    # Verify <script> doesn't show up in the description
+    self.assertTrue('description1' in response.body)
+    self.assertFalse('<script>EvilScript</script>' in response.body)
+    self.assertFalse('EvilScript' in response.body)
 
   def testPostByLabelAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)

@@ -77,6 +77,11 @@ specific language governing permissions and limitations under the License.
               <a target="_blank" id="{{feature.properties.layer_id}}-{{feature.geometry.coordinates.1}}-{{feature.geometry.coordinates.0}}" class="place-link" href="http://maps.google.com/maps?q={{feature.properties.name}}%20near%20{{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
                   {{feature.properties.name}}</a>
             </div>
+            {% if show_descriptions and feature.properties.description_html %}
+              <div class="description">
+                {{feature.properties.description_html|safe}}
+              </div>
+            {% endif %}
             <div class="clear"></div>
             {% if feature.properties.answer_text %}
               <div class="crowd" style="border-left-color: {{feature.properties.status_color}}">

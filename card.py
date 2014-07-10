@@ -298,7 +298,11 @@ def GetGeoJson(features):
       },
       'properties': {
           'name': f.name,
-          'description_html': kmlify.HtmlEscape(f.description_html),
+          # For now strip description of all the html tags to prevent XSS
+          # vulnerabilities
+          'description_html':
+              kmlify.HtmlEscape(
+                  re.sub(r'<[^>].*>', ' ', f.description_html or '')),
           'distance': f.distance,
           'distance_mi': f.distance_mi,
           'distance_km': f.distance_km,
@@ -360,6 +364,8 @@ class CardBase(base_handler.BaseHandler):
           '?places' array. If the given place ID is invalid, a default place
           is used (the first place in the ?places array). If a valid '?ll' is
           provided, the '?place' parameter is ignored.
+    - show_desc: If true, then display descriptions under place names.
+          Otherwise, just display the place name.
     - footer: Text and links for the footer, specified as a JSON array where
           each element is either a plain text string or a two-element array
           [url, text], which is rendered as a link.
@@ -390,6 +396,7 @@ class CardBase(base_handler.BaseHandler):
     footer_json = self.request.get('footer') or '[]'
     location_unavailable = self.request.get('location_unavailable')
     lang = base_handler.SelectLanguageForRequest(self.request, map_root)
+    show_descriptions = bool(self.request.get('show_desc'))
 
     try:
       places = json.loads(places_json)
@@ -435,6 +442,7 @@ class CardBase(base_handler.BaseHandler):
       else:
         self.response.out.write(self.RenderTemplate('card.html', {
             'features': geojson['features'],
+            'show_descriptions': show_descriptions,
             'title': topic.get('title', ''),
             'unit': unit,
             'lang': lang,
