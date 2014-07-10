@@ -173,37 +173,46 @@ class MapTests(test_utils.BaseTest):
     """Verifies that map creation sets up initial permissions properly."""
     # Verify the default values from Map.Create.
     perms.Grant('member', perms.Role.MAP_CREATOR, 'xyz.com')
-    domains.Domain.Create('xyz.com', initial_domain_role=perms.Role.MAP_OWNER)
+    with test_utils.RootLogin():
+      domains.Domain.Put('xyz.com', initial_domain_role=perms.Role.MAP_OWNER)
     m = test_utils.CreateMap()
+    self.assertEquals(perms.Role.MAP_OWNER, m.model.domain_role)
     self.assertEquals({'root', 'member'}, set(m.model.owners))
     self.assertEquals([], m.model.editors)
     self.assertEquals([], m.model.reviewers)
     self.assertEquals([], m.model.viewers)
 
-    domains.Domain.Create('xyz.com', initial_domain_role=perms.Role.MAP_EDITOR)
+    with test_utils.RootLogin():
+      domains.Domain.Put('xyz.com', initial_domain_role=perms.Role.MAP_EDITOR)
     m = test_utils.CreateMap()
+    self.assertEquals(perms.Role.MAP_EDITOR, m.model.domain_role)
     self.assertEquals(['root'], m.model.owners)
     self.assertEquals(['member'], m.model.editors)
     self.assertEquals([], m.model.reviewers)
     self.assertEquals([], m.model.viewers)
 
-    domains.Domain.Create('xyz.com',
-                          initial_domain_role=perms.Role.MAP_REVIEWER)
+    with test_utils.RootLogin():
+      domains.Domain.Put('xyz.com', initial_domain_role=perms.Role.MAP_REVIEWER)
     m = test_utils.CreateMap()
+    self.assertEquals(perms.Role.MAP_REVIEWER, m.model.domain_role)
     self.assertEquals(['root'], m.model.owners)
     self.assertEquals([], m.model.editors)
     self.assertEquals(['member'], m.model.reviewers)
     self.assertEquals([], m.model.viewers)
 
-    domains.Domain.Create('xyz.com', initial_domain_role=perms.Role.MAP_VIEWER)
+    with test_utils.RootLogin():
+      domains.Domain.Put('xyz.com', initial_domain_role=perms.Role.MAP_VIEWER)
     m = test_utils.CreateMap()
+    self.assertEquals(perms.Role.MAP_VIEWER, m.model.domain_role)
     self.assertEquals(['root'], m.model.owners)
     self.assertEquals([], m.model.editors)
     self.assertEquals([], m.model.reviewers)
     self.assertEquals(['member'], m.model.viewers)
 
-    domains.Domain.Create('xyz.com', initial_domain_role=None)
+    with test_utils.RootLogin():
+      domains.Domain.Put('xyz.com', initial_domain_role=perms.Role.NONE)
     m = test_utils.CreateMap()
+    self.assertEquals(perms.Role.NONE, m.model.domain_role)
     self.assertEquals(['root'], m.model.owners)
     self.assertEquals([], m.model.editors)
     self.assertEquals([], m.model.reviewers)
@@ -278,8 +287,8 @@ class MapTests(test_utils.BaseTest):
   def testDeleteMapsWithNoOwners(self):
     """Verifies that maps with no owners are deleted."""
     with test_utils.RootLogin():
-      domains.Domain.Create('cows.net')
-      domains.Domain.Create('dogs.org')
+      domains.Domain.Put('cows.net')
+      domains.Domain.Put('dogs.org')
       model.Map.Create({'title': 'Arf'}, 'dogs.org', viewers=['viewer'])
       model.Map.Create({'title': 'Moo'}, 'cows.net', viewers=['viewer'],
                        owners=[])
@@ -341,7 +350,6 @@ class CatalogEntryTests(test_utils.BaseTest):
     m = test_utils.CreateMap({'title': 'Bleg'}, viewers=['viewer'])
     with test_utils.RootLogin():
       entry = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
-      domains.Domain.Create('xyz.com')
 
     # Validate that the CatalogEntry is created successfully.
     self.assertEquals('Bleg', model.CatalogEntry.Get('xyz.com', 'label').title)
@@ -369,7 +377,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     # to delete catalog entries if they are not the owner.
     m = test_utils.CreateMap(editors=['publisher', 'coworker'])
     with test_utils.RootLogin():
-      domains.Domain.Create('xyz.com', has_sticky_catalog_entries=True)
+      domains.Domain.Put('xyz.com', has_sticky_catalog_entries=True)
       perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
       perms.Grant('coworker', perms.Role.CATALOG_EDITOR, 'xyz.com')
 
@@ -413,7 +421,7 @@ class CatalogEntryTests(test_utils.BaseTest):
     # Under the sticky catalog policy, even catalog editors should not be able
     # to update catalog entries if they are not the owner.
     with test_utils.RootLogin():
-      domains.Domain.Create('xyz.com', has_sticky_catalog_entries=True)
+      domains.Domain.Put('xyz.com', has_sticky_catalog_entries=True)
       perms.Grant('publisher', perms.Role.CATALOG_EDITOR, 'xyz.com')
       perms.Grant('coworker', perms.Role.CATALOG_EDITOR, 'xyz.com')
 
@@ -662,7 +670,7 @@ class CrowdReportTests(test_utils.BaseTest):
 
   def setUp(self):
     super(CrowdReportTests, self).setUp()
-    domains.Domain.Create('gmail.test')
+    domains.Domain.Put('gmail.test')
     perms.Grant('gmail.test', perms.Role.MAP_CREATOR, 'gmail.test')
     self.map_owner_login = test_utils.Login('map_owner')
     # This map is visible only to map_owner@gmail.test.  A crowd report

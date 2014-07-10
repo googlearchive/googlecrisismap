@@ -52,7 +52,7 @@ mox.ANY = mox.IgnoreArg()
 ROOT_URL = 'http://app.com/root'
 ROOT_PATH = urlparse.urlsplit(ROOT_URL).path
 
-DEFAULT_DOMAIN = 'xyz.com'
+PRIMARY_DOMAIN = 'xyz.com'
 
 
 def DispatchRequest(request, cookie_jar=None):
@@ -173,7 +173,7 @@ def DatetimeTypeWithFakeNow(now):
                             'now': staticmethod(lambda: now)})
 
 
-def CreateMap(map_root=None, domain=DEFAULT_DOMAIN, **kwargs):
+def CreateMap(map_root=None, domain=PRIMARY_DOMAIN, **kwargs):
   with RootLogin():
     return model.Map.Create(map_root or {}, domain, **kwargs)
 
@@ -208,8 +208,8 @@ class BaseTest(unittest.TestCase):
     os.environ.pop('USER_IS_ADMIN', None)
     os.environ.pop('USER_ORGANIZATION', None)
     config.Set('root_path', ROOT_PATH)
-    config.Set('default_domain', DEFAULT_DOMAIN)
-    domains.Domain.Create(DEFAULT_DOMAIN)
+    config.Set('primary_domain', PRIMARY_DOMAIN)
+    domains.Domain.Put(PRIMARY_DOMAIN)
     self.mox.stubs.Set(
         base_handler, 'GenerateXsrfToken', lambda uid, timestamp=None: 'XSRF')
     self.mox.stubs.Set(
@@ -365,6 +365,9 @@ class BaseTest(unittest.TestCase):
     self.assertTrue(matches, 'No matching logs found.')
     self.assertEqual(1, len(matches), 'Multiple matching logs found.')
     return matches[0]
+
+  def assertAttrs(self, obj, **kwargs):
+    self.assertEqual(kwargs, {name: getattr(obj, name) for name in kwargs})
 
 
 def main():

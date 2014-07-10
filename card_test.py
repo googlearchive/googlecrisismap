@@ -16,7 +16,6 @@ import datetime
 import json
 
 import card
-import domains
 import kmlify
 import model
 import test_utils
@@ -141,7 +140,7 @@ class CardTest(test_utils.BaseTest):
   """Tests for functions in card.py."""
 
   def setUp(self):
-    test_utils.BaseTest.setUp(self)
+    super(CardTest, self).setUp()
     self.request = test_utils.SetupRequest('/.card/foo')
 
   def testRoundGeoPt(self):
@@ -426,52 +425,47 @@ class CardHandlerTest(test_utils.BaseTest):
 
   def setUp(self):
     super(CardHandlerTest, self).setUp()
-    map_model = model.MapModel(key_name='1', domain='test.com',
-                               domains=['test.com'], world_readable=True)
-    map_object = model.Map(map_model)
-    map_version = model.MapVersionModel(
-        parent=map_model, maproot_json=json.dumps(MAP_ROOT))
-    map_model.current_version = map_version.put()
-    map_model.put()
+    map_object = test_utils.CreateMap(MAP_ROOT)
+    self.map_id = map_object.id
     with test_utils.RootLogin():
-      domains.Domain.Create('test.com')
-      model.CatalogEntry.Create('test.com', 'foo', map_object)
+      model.CatalogEntry.Create('xyz.com', 'foo', map_object)
 
   def testGetCardByIdAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoGet('/.card/1.t1')
+    with test_utils.RootLogin():
+      response = self.DoGet('/.card/%s.t1' % self.map_id)
     self.assertTrue('Topic 1' in response.body)
     self.assertTrue('Helsinki' in response.body)
     self.assertTrue('Columbus' in response.body)
 
   def testGetCardByLabelAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoGet('/test.com/.card/foo/t1')
+    response = self.DoGet('/xyz.com/.card/foo/t1')
     self.assertTrue('Topic 1' in response.body)
     self.assertTrue('Helsinki' in response.body)
     self.assertTrue('Columbus' in response.body)
 
   def testPostByLabelAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoPost('/test.com/.card/foo/t1', 'll=60,25&n=1&r=100')
+    response = self.DoPost('/xyz.com/.card/foo/t1', 'll=60,25&n=1&r=100')
     self.assertTrue('Topic 1' in response.body)
     self.assertTrue('Helsinki' in response.body)
     self.assertFalse('Columbus' in response.body)
 
   def testGetCardByTopic(self):
-    response = self.DoGet('/test.com/.card/foo')
+    response = self.DoGet('/xyz.com/.card/foo')
     self.assertEquals('foo/t1', response.headers['Location'])
 
   def testPlacesMenu(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoGet('/test.com/.card/foo/t2?places=' + json.dumps(
+    response = self.DoGet('/xyz.com/.card/foo/t2?places=' + json.dumps(
         [{'id': 'x', 'name': 'Place Foo'}, {'id': 'y', 'name': 'Place Bar'}]))
     self.assertTrue('Place Foo' in response.body)
     self.assertTrue('Place Bar' in response.body)
 
   def testGetJsonByLabelAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoGet('/test.com/.card/foo/t2?output=json')
+    response = self.DoGet('/xyz.com/.card/foo/t2?output=json')
     geojson = json.loads(response.body)
     self.assertEquals('FeatureCollection', geojson['type'])
     features = geojson['features']

@@ -144,11 +144,9 @@ class MapTest(test_utils.BaseTest):
 
   def testMapRegion(self):
     """Verifies that the 'region' property affects the Maps API URL."""
+    m1 = test_utils.CreateMap({'title': 'no region'})
+    m2 = test_utils.CreateMap({'title': 'has region', 'region': 'in'})
     with test_utils.RootLogin():
-      domains.Domain.Create('x.com')
-      m1 = model.Map.Create({'title': 'no region'}, 'x.com')
-      m2 = model.Map.Create({'title': 'has region', 'region': 'in'}, 'x.com')
-
       cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m1.id), m1)
       self.assertTrue('region=' not in cm_config['maps_api_url'])
       cm_config = maps.GetConfig(test_utils.SetupRequest('/.maps/' + m2.id), m2)
@@ -166,9 +164,9 @@ class MapTest(test_utils.BaseTest):
     with test_utils.RootLogin():
       my_map = test_utils.CreateMap()
       my_entry = model.CatalogEntry.Create(
-          test_utils.DEFAULT_DOMAIN, 'label', my_map)
+          test_utils.PRIMARY_DOMAIN, 'label', my_map)
       cfg = maps.GetConfig(
-          test_utils.SetupRequest('/a/%s/label' % test_utils.DEFAULT_DOMAIN),
+          test_utils.SetupRequest('/a/%s/label' % test_utils.PRIMARY_DOMAIN),
           catalog_entry=my_entry)
     self.assertEqual(my_map.id, cfg['map_root']['id'])
 
@@ -198,8 +196,8 @@ class MapListTest(test_utils.BaseTest):
   def testGet(self):
     """Tests the map listing page."""
     with test_utils.RootLogin():
-      domains.Domain.Create('cows.net')
-      domains.Domain.Create('dogs.org')
+      domains.Domain.Put('cows.net')
+      domains.Domain.Put('dogs.org')
       m1 = model.Map.Create({'title': 'Moo'}, 'cows.net', viewers=['viewer'])
       m2 = model.Map.Create({'title': 'Arf'}, 'dogs.org', viewers=['viewer'])
 

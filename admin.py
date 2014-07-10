@@ -22,24 +22,27 @@ import users
 import utils
 
 
-# String used to mean "none of the above" in the HTML
-NO_PERMISSIONS = 'NO_PERMISSIONS'
-
-
+# See admin_domain.html.  These messages are for an option menu that is
+# labelled: "When a new map is created, the members in the list below will:"
 INITIAL_DOMAIN_ROLE_CHOICES = (
-    (NO_PERMISSIONS, 'Have no access to the map'),
-    (perms.Role.MAP_VIEWER, 'Can view the map'),
-    (perms.Role.MAP_REVIEWER, 'Can view and review reports for the map'),
-    (perms.Role.MAP_EDITOR, 'Can view, edit and review reports for the map'),
+    (perms.Role.NONE, 'Not gain access to it'),
+    (perms.Role.MAP_VIEWER, 'Gain access to view it'),
+    (perms.Role.MAP_REVIEWER,
+     'Gain access to view it and review reports on it'),
+    (perms.Role.MAP_EDITOR,
+     'Gain access to view it, review reports on it, and edit it'),
     (perms.Role.MAP_OWNER,
-     'Can view, edit, review reports, and delete the map'),
+     'Gain access to view it, review reports on it, edit it, and delete it'),
 )
 
 DOMAIN_PERMISSION_CHOICES = (
-    (perms.Role.MAP_CREATOR, 'Can create maps'),
-    (perms.Role.DOMAIN_REVIEWER, 'Can review crowd reports for domain'),
-    (perms.Role.CATALOG_EDITOR, 'Can publish maps'),
-    (perms.Role.DOMAIN_ADMIN, 'Can manage domain'),
+    (perms.Role.DOMAIN_REVIEWER, 'Can review reports in this domain'),
+    (perms.Role.MAP_CREATOR,
+     'Can review reports and create maps in this domain'),
+    (perms.Role.CATALOG_EDITOR,
+     'Can review reports, create maps, and publish maps in this domain'),
+    (perms.Role.DOMAIN_ADMIN,
+     'Can review reports, create maps, publish maps, and manage this domain'),
 )
 
 # _MaxRole relies on these being in order from weakest to strongest.
@@ -63,6 +66,8 @@ def SetRolesForDomain(subject_roles, domain_name):
         set will be granted, and all roles not in the set will be revoked.
     domain_name: A domain name.
   """
+  # TODO(kpy): Simplify this to take subject_roles in the form {subject: role},
+  # as this is never called with role sets that have more than one element.
   old_subject_roles = perms.GetSubjectsForTarget(domain_name)
   for subject, new_roles in subject_roles.items():
     old_roles = old_subject_roles.get(subject, set())
@@ -129,19 +134,23 @@ class Admin(base_handler.BaseHandler):
     else:  # user or domain permissions
       inputs = dict(self.request.POST)
       self.AddNewUserIfPresent(inputs, domain)
+      # Set access to this domain for all users with this e-mail domain.
       self.UpdateDomainRole(inputs, domain)
+      # Set access to this domain for individually specified users.
       SetRolesForDomain(self.FindNewPerms(inputs), domain)
     self.redirect(target)
 
   def UpdateDomainSettings(self, inputs, domain_name):
-    domain = domains.Domain.Get(domain_name)
-    domain.default_label = inputs.get('default_label', 'empty')
-    domain.has_sticky_catalog_entries = 'has_sticky_catalog_entries' in inputs
-    domain.initial_domain_role = inputs.get(
-        'initial_domain_role', perms.Role.MAP_VIEWER)
-    if domain.initial_domain_role == NO_PERMISSIONS:
-      domain.initial_domain_role = None
-    domain.Put()
+    # has_sticky_catalog_entries is a checkbox, so it's not in inputs when the
+    # checkbox is unchecked.  We must use False to indicate that we want to
+    # overwrite the existing value (passing None to Put() means "don't change").
+    sticky = inputs.get('has_sticky_catalog_entries', False)
+    domains.Domain.Put(
+        domain_name,
+        default_label=inputs.get('default_label', None),
+        has_sticky_catalog_entries=sticky,
+        initial_domain_role=inputs.get('initial_domain_role', None)
+    )
 
   def AddNewUserIfPresent(self, inputs, domain):
     """Grants domain roles to a new user."""
@@ -158,8 +167,8 @@ class Admin(base_handler.BaseHandler):
     # TODO(rew): Simplify this once perms have been migrated to one
     # role per (subject, target).
     new_role = inputs.pop('domain_role')
-    new_role = set() if new_role == NO_PERMISSIONS else {new_role}
-    SetRolesForDomain({domain_name: new_role}, domain_name)
+    new_role_set = new_role and {new_role} or set()
+    SetRolesForDomain({domain_name: new_role_set}, domain_name)
 
   def FindNewPerms(self, inputs):
     """Looks at inputs and determines the new permissions for all users.
@@ -182,19 +191,12 @@ class Admin(base_handler.BaseHandler):
     return new_perms
 
   def CreateDomain(self, domain_name, user):
-    def GrantPerms():
-      perms.Grant(user.id, perms.Role.DOMAIN_ADMIN, domain_name)
-      perms.Grant(user.id, perms.Role.CATALOG_EDITOR, domain_name)
-      perms.Grant(user.id, perms.Role.MAP_CREATOR, domain_name)
-
-    def TestPerms():
-      return perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name, user)
-
-    domain = domains.Domain.Get(domain_name)
-    if domain:
+    if domains.Domain.Get(domain_name):
       raise base_handler.Error(403, 'Domain %r already exists.' % domain_name)
-    utils.SetAndTest(GrantPerms, TestPerms)
-    domains.Domain.Create(domain_name)
+    domains.Domain.Put(domain_name)
+    utils.SetAndTest(
+        lambda: perms.Grant(user.id, perms.Role.DOMAIN_ADMIN, domain_name),
+        lambda: perms.CheckAccess(perms.Role.DOMAIN_ADMIN, domain_name, user))
 
 
 class AdminMap(base_handler.BaseHandler):

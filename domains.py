@@ -12,110 +12,89 @@
 
 """Model and data object for representing Domains."""
 
+import re
+
 import cache
-import config
 import logs
 import perms
+import utils
 
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 
-# Dictionaries of domain settings, keyed by domain name.  The 100-ms ULL is
-# intended to beat the time it takes for the domain admin page to redirect back
-# to showing the domain settings after the user has edited them.
+# Domain objects keyed by domain name.  The 100-ms ULL is intended to beat the
+# time it takes for the domain admin page to redirect back to showing the
+# domain settings after the user has edited them.
 CACHE = cache.Cache('domains', 300, 0.1)
 
-# The value to put in the datastore to represent an initial_domain_role of None
-# (AppEngine doesn't index None, so we put this value instead).
-NO_ROLE = 'NO_ROLE'
 
-
-class UnknownDomainError(Exception):
-  """Raised when the name of a nonexistent domain is specified."""
-
-  def __init__(self, name):
-    super(UnknownDomainError, self).__init__('No such domain %s' % name)
-    self.name = name
-
-
-class DomainModel(db.Model):
+class _DomainModel(ndb.Model):
   """"A domain that has its own map catalog, permission settings, etc."""
 
   # If True, then catalog entries may only be overwritten by their creator or
   # by a domain admin.  Otherwise, catalog entries may be overwritten by anyone
   # with CATALOG_EDITOR permission for the domain.
-  has_sticky_catalog_entries = db.BooleanProperty(default=False)
+  has_sticky_catalog_entries = ndb.BooleanProperty()
 
   # A label identifying which published map to display by default.
-  default_label = db.StringProperty()
+  default_label = ndb.StringProperty()
 
-  # The domain_role given to new maps created in this domain, and the
-  # role granted to all MAP_CREATORs upon mew map creation
-  initial_domain_role = db.StringProperty()
-
-
-class Domain(object):
-
-  def __init__(self, domain_model):
-    """Constructor not to be called directly; use Get or Create instead."""
-    for attr in ['has_sticky_catalog_entries', 'default_label',
-                 'initial_domain_role']:
-      setattr(self, attr, getattr(domain_model, attr))
-    self.name = domain_model.key().name()
-    if self.initial_domain_role == NO_ROLE:
-      self.initial_domain_role = None
+  # When a new map is created in this domain: (a) this role becomes the new
+  # map's domain_role (which applies to all users with this e-mail domain);
+  # and (b) all users who have access to this domain (any domain-targeted role)
+  # are also individually granted this access role on the new map.
+  initial_domain_role = ndb.StringProperty(
+      choices=[perms.Role.NONE] + perms.MAP_ROLES)
 
   @classmethod
-  def _UpdateCache(cls, domain):
-    CACHE.Set(domain.name, {
-        'has_sticky_catalog_entries': domain.has_sticky_catalog_entries,
-        'default_label': domain.default_label,
-        'initial_domain_role': domain.initial_domain_role
-    })
+  def _get_kind(cls):  # pylint: disable=g-bad-name
+    return 'DomainModel'  # so we can name the Python class with a _
 
-  @staticmethod
-  def NormalizeDomainName(domain_name):
-    return str(domain_name).lower()
+
+def NormalizeDomainName(name):
+  name = str(name).lower()
+  if not re.match('^[a-z0-9.-]+$', name):
+    raise ValueError('Invalid domain name %r' % name)
+  return name
+
+
+class Domain(utils.Struct):
+
+  name = property(lambda self: self.id)
 
   @classmethod
-  def Create(cls, domain_name, has_sticky_catalog_entries=False,
-             default_label='empty', initial_domain_role=perms.Role.MAP_VIEWER,
-             user=None):
+  def Get(cls, name):
+    """Gets a Domain by name."""
+    name = NormalizeDomainName(name)
+    return CACHE.Get(name, lambda: cls.FromModel(_DomainModel.get_by_id(name)))
+
+  @classmethod
+  def Put(cls, name, default_label=None, has_sticky_catalog_entries=None,
+          initial_domain_role=None, user=None):
     """Creates and stores a Domain object, overwriting any existing one."""
-    domain_name = cls.NormalizeDomainName(domain_name)
-    if not initial_domain_role:
-      initial_domain_role = NO_ROLE
-    domain_model = DomainModel(
-        key_name=domain_name, default_label=default_label,
-        has_sticky_catalog_entries=has_sticky_catalog_entries,
-        initial_domain_role=initial_domain_role)
-    domain_model.put()
-    domain = Domain(domain_model)
-    cls._UpdateCache(domain)
-    logs.RecordEvent(logs.Event.DOMAIN_CREATED, domain_name=domain.name,
-                     uid=user.id if user else None)
+    name = NormalizeDomainName(name)
+    domain_model = _DomainModel.get_by_id(name)
+    if domain_model:  # modify an existing entity (DOMAIN_ADMIN is required)
+      perms.AssertAccess(perms.Role.DOMAIN_ADMIN, name, user)
+      if default_label is not None:
+        domain_model.default_label = default_label
+      if has_sticky_catalog_entries is not None:
+        domain_model.has_sticky_catalog_entries = has_sticky_catalog_entries
+      if initial_domain_role is not None:
+        domain_model.initial_domain_role = initial_domain_role
+      domain_model.put()
+    else:  # create a new entity (no permissions are required)
+      if default_label is None:
+        default_label = 'empty'
+      if initial_domain_role is None:
+        initial_domain_role = perms.Role.MAP_VIEWER
+      domain_model = _DomainModel(
+          id=name, default_label=default_label,
+          has_sticky_catalog_entries=bool(has_sticky_catalog_entries),
+          initial_domain_role=initial_domain_role)
+      domain_model.put()
+      logs.RecordEvent(logs.Event.DOMAIN_CREATED, domain_name=name,
+                       uid=user.id if user else None)
+    domain = cls.FromModel(domain_model)
+    CACHE.Set(name, domain)
     return domain
-
-  @classmethod
-  def Get(cls, domain_name):
-    """Gets the domain given its name."""
-    domain_name = domain_name or config.Get('default_domain')
-    domain_name = cls.NormalizeDomainName(domain_name)
-    properties = CACHE.Get(domain_name)
-    if properties:
-      return cls(DomainModel(key_name=domain_name, **properties))
-    domain_model = DomainModel.get_by_key_name(domain_name)
-    if domain_model:
-      domain = cls(domain_model)
-      cls._UpdateCache(domain)
-      return domain
-
-  def Put(self, user=None):
-    """Updates the settings for a domain."""
-    perms.AssertAccess(perms.Role.DOMAIN_ADMIN, self.name, user)
-    domain_model = DomainModel(
-        key_name=self.name, default_label=self.default_label,
-        has_sticky_catalog_entries=self.has_sticky_catalog_entries,
-        initial_domain_role=self.initial_domain_role or NO_ROLE)
-    domain_model.put()
-    self._UpdateCache(self)

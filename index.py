@@ -26,7 +26,7 @@ def GetDestination(request, domain_name):
   # For backward compatibility, support the id= and crisis= parameters.
   label = request.get('id') or request.get('crisis')
   if not label:
-    domain = domains.Domain.Get(domain_name)
+    domain = domains.Domain.Get(domain_name or config.Get('primary_domain'))
     label = domain and domain.default_label or 'empty'
   if domain_name:
     url = request.root_path + '/' + domain_name + '/' + label

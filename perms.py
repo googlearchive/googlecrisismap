@@ -21,7 +21,7 @@ import utils
 from google.appengine.ext import ndb
 
 # A special user with ADMIN access.  Real user objects that come from a
-# Google sign-in page always have numeric IDs.
+# Google sign-in page always have numeric IDs (decimal strings).
 ROOT = users.User(id='root', email='', ga_domain='')
 
 # Lists of all the _Permission objects for a given subject and/or target, keyed
@@ -63,18 +63,28 @@ Role = utils.Struct(
     # Global roles
     ADMIN='ADMIN',  # can view, edit, or change permissions for anything
 
-    # Domain-specific roles
-    CATALOG_EDITOR='CATALOG_EDITOR',  # can edit the catalog for a domain
+    # Domain-targeted roles
     DOMAIN_ADMIN='DOMAIN_ADMIN',  # can grant permissions for the domain
+    CATALOG_EDITOR='CATALOG_EDITOR',  # can edit the catalog for a domain
     MAP_CREATOR='MAP_CREATOR',  # can create new maps
     DOMAIN_REVIEWER='DOMAIN_REVIEWER',  # can review crowd reports in the domain
 
-    # Map-specific roles
+    # Map-targeted roles
     MAP_OWNER='MAP_OWNER',  # can change permissions for a map
     MAP_EDITOR='MAP_EDITOR',  # can save new versions of a map
     MAP_REVIEWER='MAP_REVIEWER',  # can review reports for a map
     MAP_VIEWER='MAP_VIEWER',  # can view current version of a map
+
+    # The datastore cannot index None, but it will index an empty string.
+    NONE=''  # datastore value representing the absence of a role
 )
+
+# Domain-targeted roles, in order: each role implies all preceding roles.
+DOMAIN_ROLES = [Role.DOMAIN_REVIEWER, Role.MAP_CREATOR, Role.CATALOG_EDITOR,
+                Role.DOMAIN_ADMIN]
+# Map-targeted roles, in order: each role implies all preceding roles.
+MAP_ROLES = [Role.MAP_VIEWER, Role.MAP_REVIEWER, Role.MAP_EDITOR,
+             Role.MAP_OWNER]
 
 # Only used for role ADMIN
 GLOBAL_TARGET = '__GLOBAL__'
@@ -141,7 +151,7 @@ def _Query(subject, role, target):
   return [p for p in perms if p.role == role] if role else perms
 
 
-def _QueryForUser(user, role, target):
+def _QueryForUser(user, role=None, target=None):
   """Gets all _Permissions for the user's ID and e-mail domain."""
   return _Query(user.id, role, target) + _Query(user.email_domain, role, target)
 
@@ -152,7 +162,7 @@ def _Exists(subject, role, target):
 
 
 def _ExistsForUser(user, role, target):
-  """Returns True if a _Permission exists for the user's ID or GA domain."""
+  """Returns True if a _Permission exists for the user's ID or e-mail domain."""
   return (_Exists(user.id, role, target) or
           _Exists(user.email_domain, role, target))
 
@@ -322,15 +332,11 @@ class AccessPolicy(object):
 
 def GetAccessibleDomains(user, role):
   """Gets the set of domains for which the user has the specified access."""
-  # Ordered by increasing strength: stronger roles implicitly grant weaker ones.
-  DOMAIN_ROLES = [Role.DOMAIN_REVIEWER, Role.MAP_CREATOR, Role.CATALOG_EDITOR,
-                  Role.DOMAIN_ADMIN]
   if role not in DOMAIN_ROLES:
-    return set()
+    raise ValueError('%r is not a domain-targeted role' % role)
   # This set includes the desired role and all stronger roles.
   qualifying_roles = DOMAIN_ROLES[DOMAIN_ROLES.index(role):]
-  return {p.target for p in _QueryForUser(user, None, None)
-          if p.role in qualifying_roles}
+  return {p.target for p in _QueryForUser(user) if p.role in qualifying_roles}
 
 
 def CheckAccess(role, target=None, user=None, policy=None):
@@ -338,10 +344,9 @@ def CheckAccess(role, target=None, user=None, policy=None):
 
   Args:
     role: A Role constant identifying the desired access role.
-    target: The object to which access is desired.  If 'role' is MAP_OWNER,
-        MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
-        CATALOG_EDITOR, MAP_CREATOR, or DOMAIN_ADMIN, this must be a domain
-        name (a string).  For other roles, this argument is not used.
+    target: The object to which access is desired.  If 'role' is in MAP_ROLES,
+        this should be a Map object; if 'role' is in DOMAIN_ROLES, this should
+        be a domain name (a string); otherwise, this argument is unused.
     user: (optional) A users.User object.  If not specified, access permissions
         are checked for the currently signed-in user.
     policy: The access policy to apply.
@@ -353,14 +358,6 @@ def CheckAccess(role, target=None, user=None, policy=None):
     ValueError: The specified role is not a valid member of Role.
     TypeError: The target has the wrong type for the given role.
   """
-
-  def RequireTargetClass(required_cls, cls_desc):
-    if not isinstance(target, required_cls):
-      raise TypeError('For role %r, target %r must be a %s' %
-                      (role, target, cls_desc))
-
-  if role not in Role:
-    raise ValueError('Invalid role %r' % role)
   policy = policy or AccessPolicy()
   user = user or users.GetCurrent()
 
@@ -369,22 +366,20 @@ def CheckAccess(role, target=None, user=None, policy=None):
     return policy.HasRoleAdmin(user)
 
   # Roles with a domain as the target.
+  if role in DOMAIN_ROLES and not isinstance(target, basestring):
+    raise TypeError('For role %r, target should be a string' % role)
   if role == Role.CATALOG_EDITOR:
-    RequireTargetClass(basestring, 'string')
     return policy.HasRoleCatalogEditor(user, target)
   if role == Role.MAP_CREATOR:
-    RequireTargetClass(basestring, 'string')
     return policy.HasRoleMapCreator(user, target)
   if role == Role.DOMAIN_REVIEWER:
-    RequireTargetClass(basestring, 'string')
     return policy.HasRoleDomainReviewer(user, target)
   if role == Role.DOMAIN_ADMIN:
-    RequireTargetClass(basestring, 'string')
     return policy.HasRoleDomainAdmin(user, target)
 
   # Roles with a Map as the target
-  if target.__class__.__name__ not in ['Map', 'EmptyMap']:
-    raise TypeError('For role %r, target must be a Map' % role)
+  if role in MAP_ROLES and target.__class__.__name__ not in ['Map', 'EmptyMap']:
+    raise TypeError('For role %r, target should be a Map' % role)
   if role == Role.MAP_OWNER:
     return policy.HasRoleMapOwner(user, target)
   if role == Role.MAP_REVIEWER:
@@ -394,16 +389,17 @@ def CheckAccess(role, target=None, user=None, policy=None):
   if role == Role.MAP_VIEWER:
     return policy.HasRoleMapViewer(user, target)
 
+  raise ValueError('Invalid role %r' % role)
+
 
 def AssertAccess(role, target=None, user=None, policy=None):
   """Requires that the given user has the specified access role.
 
   Args:
     role: A Role constant identifying the desired access role.
-    target: The object to which access is desired.  If 'role' is MAP_OWNER,
-        MAP_EDITOR, or MAP_VIEWER, this should be a Map object.  If 'role' is
-        CATALOG_EDITOR, MAP_CREATOR or DOMAIN_ADMIN, this must be a domain name
-        (a string).  For other roles, this argument is not used.
+    target: The object to which access is desired.  If 'role' is in MAP_ROLES,
+        this should be a Map object; if 'role' is in DOMAIN_ROLES, this should
+        be a domain name (a string); otherwise, this argument is unused.
     user: (optional) A users.User object.  If not specified, access permissions
         are checked for the currently signed-in user.
     policy: The access policy to apply.

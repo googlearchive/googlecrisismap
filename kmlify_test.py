@@ -47,9 +47,6 @@ class KmlifyTests(test_utils.BaseTest):
     # Maximum size of diffs that unittest will show (in bytes)
     self.maxDiff = 4096
 
-  def tearDown(self):
-    self.mox.UnsetStubs()
-
   def testStringify(self):
     self.assertEquals('abcdef', kmlify.Stringify('abcdef'))
     self.assertEquals('abcdef', kmlify.Stringify(u'abcdef'))

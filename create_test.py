@@ -29,50 +29,40 @@ class CreateTest(test_utils.BaseTest):
     self.CaptureLog()
     with test_utils.Login('creator'):
       response = self.DoPost('/xyz.com/.create', 'xsrf_token=XSRF', 302)
-      # Confirm that a map was created.
-      location = response.headers['Location']
-      map_object = model.Map.Get(location.split('/')[-1])
-      self.assertTrue('Untitled' in map_object.map_root['title'])
-      self.assertLog(logs.Event.MAP_CREATED, uid='creator',
-                     map_id=map_object.id, domain_name='xyz.com')
+      map_object = model.Map.Get(response.headers['Location'].split('/')[-1])
+    # Confirm that a map was created.
+    self.assertTrue(map_object)
+    self.assertEquals('xyz.com', map_object.domain)
+    self.assertTrue('Untitled' in map_object.map_root['title'])
+    self.assertLog(logs.Event.MAP_CREATED, uid='creator',
+                   map_id=map_object.id, domain_name='xyz.com')
 
   def testCreateWithoutPermission(self):
-    # Without MAP_CREATOR, the user shouldn't be able to create a map.
+    # Without MAP_CREATOR access, the user shouldn't be able to create a map.
     with test_utils.Login('noncreator'):
       self.DoPost('/xyz.com/.create', 'xsrf_token=XSRF', 403)
 
-  def testDomainRole(self):
-    # Start with initial_domain_role == None for our domain
+  def testInitialDomainRole(self):
+    # Start with no initial_domain_role for our domain.
     with test_utils.RootLogin():
-      domain = domains.Domain.Get('xyz.com')
-      domain.initial_domain_role = None
-      domain.Put()
+      domains.Domain.Put('xyz.com', initial_domain_role=perms.Role.NONE)
       perms.Grant('creator', perms.Role.MAP_CREATOR, 'xyz.com')
 
+    # Newly created maps should get a domain_role of perms.Role.NONE.
     with test_utils.Login('creator'):
       response = self.DoPost('/xyz.com/.create', 'xsrf_token=XSRF', 302)
-      location = response.headers['Location']
-      # initial_domain_role is unset so domain_role should be None.
-      map_object = model.Map.Get(location.split('/')[-1])
-      self.assertTrue(map_object is not None)
-      # With no initial_domain_role set, domain_role should be None.
-      self.assertEquals('xyz.com', map_object.domain)
-      self.assertEquals(None, map_object.domain_role)
+      map_object = model.Map.Get(response.headers['Location'].split('/')[-1])
+    self.assertEquals(perms.Role.NONE, map_object.domain_role)
 
     # Now set the initial_domain_role for xyz.com.
     with test_utils.RootLogin():
-      domain.initial_domain_role = perms.Role.MAP_EDITOR
-      domain.Put()
+      domains.Domain.Put('xyz.com', initial_domain_role=perms.Role.MAP_EDITOR)
 
-    # Create another map.
+    # Newly created maps should pick up the new domain_role.
     with test_utils.Login('creator'):
-      response = self.DoPost('/.create?domain=xyz.com', 'xsrf_token=XSRF', 302)
-      location = response.headers['Location']
-      # Check the map; initial_domain_role is set so domain_role should be set.
-      map_object = model.Map.Get(location.split('/')[-1])
-      self.assertTrue(map_object is not None)
-      self.assertEquals('xyz.com', map_object.domain)
-      self.assertEquals(perms.Role.MAP_EDITOR, map_object.domain_role)
+      response = self.DoPost('/xyz.com/.create', 'xsrf_token=XSRF', 302)
+      map_object = model.Map.Get(response.headers['Location'].split('/')[-1])
+    self.assertEquals(perms.Role.MAP_EDITOR, map_object.domain_role)
 
 
 if __name__ == '__main__':

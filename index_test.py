@@ -43,16 +43,12 @@ class IndexTest(test_utils.BaseTest):
                       self.DoGet('/?layers=x', 302).headers['Location'])
 
     with test_utils.RootLogin():
-      domain = domains.Domain.Get(None)
-      domain.default_label = 'qwerty'
-      domain.Put()
+      domains.Domain.Put('xyz.com', default_label='qwerty')
     self.assertEquals('http://app.com/root/qwerty?layers=x',
                       self.DoGet('/?layers=x', 302).headers['Location'])
 
     with test_utils.RootLogin():
-      domain = domains.Domain.Create('foo.org')
-      domain.default_label = 'fancy-label'
-      domain.Put()
+      domains.Domain.Put('foo.org', default_label='fancy-label')
     response = self.DoGet('/foo.org/?layers=x', 302)
     self.assertEquals('http://app.com/root/foo.org/fancy-label?layers=x',
                       response.headers['Location'])

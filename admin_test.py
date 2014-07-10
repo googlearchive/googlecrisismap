@@ -46,7 +46,7 @@ class AdminDomainTest(test_utils.BaseTest):
     return self.DoPost(AdminUrl(domain), post_data, status)
 
   def DoUserPermissionsPost(self, domain, new_perms, new_user=None,
-                            domain_role=None, status=302):
+                            domain_role=perms.Role.NONE, status=302):
     post_data = dict(form='user-permissions', xsrf_token='XSRF')
     for user, role, should_delete in new_perms:
       post_data['%s.permission' % user] = role
@@ -55,7 +55,7 @@ class AdminDomainTest(test_utils.BaseTest):
     new_email, new_role = new_user or ('', perms.Role.MAP_CREATOR)
     post_data['new_user'] = new_email
     post_data['new_user.permission'] = new_role
-    post_data['domain_role'] = domain_role or 'NO_ROLE'
+    post_data['domain_role'] = domain_role
     return self.DoPost(AdminUrl(domain), post_data, status)
 
   def DoNewUserPost(self, domain, email, role, status=302):
@@ -63,10 +63,11 @@ class AdminDomainTest(test_utils.BaseTest):
         domain, [], new_user=(email, role), status=status)
 
   def DoDomainSettingsPost(
-      self, domain, default_label, sticky_entries, initial_role, status=302):
+      self, domain, default_label, has_sticky_catalog_entries,
+      initial_domain_role, status=302):
     post_data = dict(form='domain-settings', default_label=default_label,
-                     initial_domain_role=initial_role, xsrf_token='XSRF')
-    if sticky_entries:
+                     initial_domain_role=initial_domain_role, xsrf_token='XSRF')
+    if has_sticky_catalog_entries:
       post_data['has_sticky_catalog_entries'] = 'on'
     return self.DoPost(AdminUrl(domain), urllib.urlencode(post_data), status)
 
@@ -99,7 +100,7 @@ class AdminDomainTest(test_utils.BaseTest):
 
   def testGet_WelcomeText(self):
     with test_utils.RootLogin():
-      domains.Domain.Create('anydomain.com')
+      domains.Domain.Put('anydomain.com')
       response = self.DoGet(AdminUrl('anydomain.com') + '?welcome=1')
       self.assertIn('domain-welcome-popup', response.body)
 
@@ -119,7 +120,7 @@ class AdminDomainTest(test_utils.BaseTest):
       self.assertIn('nosuchdomain.com', response.body)
 
   def testGet_StaleDefaultLabel(self):
-    domains.Domain.Create('blah.com', default_label='no-such-label')
+    domains.Domain.Put('blah.com', default_label='no-such-label')
     with test_utils.RootLogin():
       response = self.DoGet(AdminUrl('blah.com'))
       self.assertIn('no-such-label', response.body)
@@ -159,8 +160,7 @@ class AdminDomainTest(test_utils.BaseTest):
   def testPost_SetDomainRoleNone(self):
     with test_utils.RootLogin():
       perms.Grant('xyz.com', perms.Role.CATALOG_EDITOR, 'xyz.com')
-      self.DoUserPermissionsPost(
-          'xyz.com', [], domain_role=admin.NO_PERMISSIONS)
+      self.DoUserPermissionsPost('xyz.com', [], domain_role=perms.Role.NONE)
     self.assertNotIn('xyz.com', perms.GetSubjectsForTarget('xyz.com'))
 
   def testPost_MultipleChangesDontInterfere(self):
@@ -222,12 +222,12 @@ class AdminDomainTest(test_utils.BaseTest):
 
   def testCreateDomain_DomainAlreadyExists(self):
     with test_utils.RootLogin():
-      domains.Domain.Create('foo.com')
+      domains.Domain.Put('foo.com')
       response = self.DoCreateDomainPost('foo.com', 403)
       self.assertIn('foo.com', response.status)
 
   def testDomainSettingsPost(self):
-    domains.Domain.Create(
+    domains.Domain.Put(
         'foo.com', has_sticky_catalog_entries=True, default_label='label-a',
         initial_domain_role=perms.Role.MAP_VIEWER)
     perms.Grant('manager', perms.Role.DOMAIN_ADMIN, 'foo.com')
@@ -241,11 +241,10 @@ class AdminDomainTest(test_utils.BaseTest):
 
   def testDomainSettingsPost_NoInitialDomainRole(self):
     with test_utils.RootLogin():
-      domains.Domain.Create(
-          'xyz.com', initial_domain_role=perms.Role.MAP_CREATOR)
-      self.DoDomainSettingsPost(
-          'xyz.com', 'label', False, admin.NO_PERMISSIONS)
-    self.assertEqual(None, domains.Domain.Get('xyz.com').initial_domain_role)
+      domains.Domain.Put('xyz.com', initial_domain_role=perms.Role.MAP_EDITOR)
+      self.DoDomainSettingsPost('xyz.com', 'label', False, perms.Role.NONE)
+    self.assertEqual(
+        perms.Role.NONE, domains.Domain.Get('xyz.com').initial_domain_role)
 
   def testSetRolesForDomain(self):
     # Anyone at xyz.com can create maps on xyz or on abc.com

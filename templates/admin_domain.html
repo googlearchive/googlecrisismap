@@ -28,25 +28,24 @@ specific language governing permissions and limitations under the License.
               {{domain.default_label}} (does not exist)
              </option>
           {% endif %}
+          {% if 'empty' not in labels %}
+            <option value="empty"
+                {% if domain.default_label == 'empty' %}selected{% endif %}>
+              (none)
+            </option>
+          {% endif %}
           {% for label in labels %}
             <option value="{{label}}"
                 {% if label == domain.default_label %}selected{% endif %}>
               {{label}}
             </option>
           {% endfor %}
-          {% if 'empty' not in labels %}
-            <option disabled>
-            <option value="empty"
-                {% if domain.default_label == 'empty' %}selected{% endif %}>
-              &lt;None&gt;
-            </option>
-          {% endif %}
         </select>
       </span>
     </div>
     <div class="cm-perms-setting">
       <span class="cm-perms-setting-label">
-        When a new map is created, all members below:
+        When a new map is created, the members in the list below will:
       </span>
       <span class="cm-perms-setting-value">
         <select name="initial_domain_role">
@@ -82,8 +81,7 @@ specific language governing permissions and limitations under the License.
         </td>
         <td class="cm-perms-role">
           <select name="domain_role">
-            <option value="NO_PERMISSIONS"
-                {% if not domain_role %}selected{% endif %}>
+            <option value="" {% if not domain_role %}selected{% endif %}>
               No default permissions
             </option>
             {% for choice in user_permission_choices %}

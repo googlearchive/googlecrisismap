@@ -22,11 +22,8 @@ import perms
 
 
 def CreateOpenDomain(domain_name):
-  domains.Domain.Create(domain_name)
-  d = domains.DomainModel.get_by_key_name(domain_name)
-  d.has_sticky_catalog_entries = True
-  d.initial_domain_role = None
-  d.put()
+  domains.Domain.Put(domain_name, has_sticky_catalog_entries=True,
+                     initial_domain_role=perms.Role.NONE)
   perms.Grant(domain_name, 'CATALOG_EDITOR', domain_name)
 
 

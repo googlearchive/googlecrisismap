@@ -15,7 +15,6 @@
 __author__ = 'rew@google.com (Becky Willrich)'
 
 import cache
-import config
 import domains
 import logs
 import perms
@@ -25,75 +24,47 @@ import test_utils
 class DomainTest(test_utils.BaseTest):
   """Tests for the domain model."""
 
-  def RemoveDefaultDomain(self):
-    default_model = domains.DomainModel.get_by_key_name(
-        config.Get('default_domain'))
-    default_model.delete()
+  def assertDomain(self, name, default_label, has_sticky_catalog_entries,
+                   initial_domain_role):
+    expected = dict(name=name, default_label=default_label,
+                    has_sticky_catalog_entries=has_sticky_catalog_entries,
+                    initial_domain_role=initial_domain_role)
+    self.assertAttrs(domains.Domain.Get(name), **expected)
+    cache.Reset()  # ensure it's correct in the datastore, not just the cache
+    self.assertAttrs(domains.Domain.Get(name), **expected)
 
-  def testInitialDomainRole(self):
-    domain = domains.Domain.Get('nosuchdomain.com')
-    self.assertIsNone(domain)
-    domain = domains.Domain.Get('xyz.com')
-    self.assertEquals(
-        perms.Role.MAP_VIEWER, domain.initial_domain_role)
-    domain.initial_domain_role = perms.Role.MAP_EDITOR
-    with test_utils.RootLogin():
-      domain.Put()
-    self.assertEquals(perms.Role.MAP_EDITOR,
-                      domains.Domain.Get('xyz.com').initial_domain_role)
-
-  def testDomainCreation(self):
+  def testCreate(self):
+    # First one to create a domain gets to own it; no permissions needed.
     self.assertIsNone(domains.Domain.Get('MyDomain.com'))
     self.CaptureLog()
-    domain = domains.Domain.Create('MyDomain.com')
+    domain = domains.Domain.Put('MyDomain.com')
     self.assertLog(logs.Event.DOMAIN_CREATED, domain_name='mydomain.com')
 
-    # The domain name should have been normalized.
-    self.assertEqual('mydomain.com', domain.name)
-    domain.initial_domain_role = perms.Role.MAP_CREATOR
-    with test_utils.RootLogin():
-      domain.Put()
+    # The name should be normalized and properties should have their default
+    # values, both in the returned object and when refetched.
+    self.assertAttrs(domain, name='mydomain.com', default_label='empty',
+                     has_sticky_catalog_entries=False,
+                     initial_domain_role=perms.Role.MAP_VIEWER)
+    self.assertDomain('mydomain.com', 'empty', False, perms.Role.MAP_VIEWER)
 
-    # Domains in the cache should come back with the same values.
-    other = domains.Domain.Get('MyDomain.com')
-    self.assertEqual(perms.Role.MAP_CREATOR, other.initial_domain_role)
+  def testModify(self):
+    # Overwriting a domain should require DOMAIN_ADMIN access.
+    self.assertTrue(domains.Domain.Get('xyz.com'))
+    self.assertRaises(perms.AuthorizationError, domains.Domain.Put, 'xyz.com')
 
-    # changes to a domain shouldn't be seen until Put() is called.
-    domain.default_label = 'fancy-map'
-    other = domains.Domain.Get('MyDomain.com')
-    self.assertNotEqual(domain.default_label, other.default_label)
+    # After Put(), the domain should come back with the new values.
+    perms.Grant('manager', perms.Role.DOMAIN_ADMIN, 'xyz.com')
+    with test_utils.Login('manager'):
+      domains.Domain.Put('xyz.com', default_label='fancy-map',
+                         has_sticky_catalog_entries=True,
+                         initial_domain_role=perms.Role.MAP_EDITOR)
+    self.assertDomain('xyz.com', 'fancy-map', True, perms.Role.MAP_EDITOR)
+    # TODO(kpy): Check that DOMAIN_CREATED is not logged in this case.
 
-    # After a put, the new label should be seen.
-    with test_utils.RootLogin():
-      domain.Put()
-    other = domains.Domain.Get('MyDomain.com')
-    self.assertEqual(domain.default_label, other.default_label)
-
-    # Verify the most recent values were written through to the datastore.
-    cache.Reset()
-    other = domains.Domain.Get('MyDomain.com')
-    self.assertEqual(domain.default_label, other.default_label)
-    self.assertEqual(
-        domain.initial_domain_role, other.initial_domain_role)
-
-  def testNoneDomainRole_Create(self):
-    domains.Domain.Create('foo.bar.org', initial_domain_role=None)
-    domain_model = domains.DomainModel.get_by_key_name('foo.bar.org')
-    self.assertEqual(domains.NO_ROLE, domain_model.initial_domain_role)
-
-    # Verify that the domain was written through to the datastore.
-    cache.Reset()
-    dom2 = domains.Domain.Get('foo.bar.org')
-    self.assertIsNone(dom2.initial_domain_role)
-
-  def testNoneDomainRole_Set(self):
-    domain = domains.Domain.Create('blah.com')
-    self.assertTrue(domain.initial_domain_role)
-    domain.initial_domain_role = None
-    with test_utils.RootLogin():
-      domain.Put()
-    domain_model = domains.DomainModel.get_by_key_name('blah.com')
-    self.assertEqual(domains.NO_ROLE, domain_model.initial_domain_role)
+    # Specifying just one property should leave the rest unchanged.
+    with test_utils.Login('manager'):
+      domains.Domain.Put('xyz.com', default_label='another-map')
+    self.assertDomain('xyz.com', 'another-map', True, perms.Role.MAP_EDITOR)
 
 
 if __name__ == '__main__':

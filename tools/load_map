@@ -26,7 +26,7 @@ from model import *
 from perms import *
 from maps import *
 import sys, domains, users, test_utils, json
-domains.Domain.Create('gmail.test')
+with test_utils.RootLogin(): domains.Domain.Put('gmail.test')
 perms.Grant('root', perms.Role.DOMAIN_ADMIN, 'gmail.test')
 print test_utils.CreateMap(json.loads(sys.stdin.read()), 'gmail.test').id
 "

@@ -135,9 +135,8 @@ class MapModel(db.Model):
   # The domain that this map belongs to.  Required for all maps.
   domain = db.StringProperty(required=True)
 
-  # Default role for users in the map's domain.
-  # (Note: domain_role can be set to ADMIN, but we won't honor it.)
-  domain_role = db.StringProperty(choices=list(perms.Role))
+  # Default role for users with e-mail domain equal to this map's domain.
+  domain_role = db.StringProperty(choices=[perms.Role.NONE] + perms.MAP_ROLES)
 
   # World-readable maps can be viewed by anyone.
   world_readable = db.BooleanProperty(default=False)
@@ -606,7 +605,7 @@ class Map(object):
     return msg_list
 
   @staticmethod
-  def Create(map_root, domain, owners=None, editors=None, reviewers=None,
+  def Create(map_root, domain_name, owners=None, editors=None, reviewers=None,
              viewers=None, world_readable=False):
     """Stores a new map with the given properties and MapRoot content."""
     # map_root must be an object serializable as JSON, but otherwise we don't
@@ -614,10 +613,9 @@ class Map(object):
 
     # TODO(rew): Change the domain argument to take a domains.Domain instead
     # of a string
-    domain_obj = domains.Domain.Get(domain)
-    if not domain_obj:
-      raise domains.UnknownDomainError(domain)
-    domain = domain_obj
+    domain = domains.Domain.Get(domain_name)
+    if not domain:
+      raise ValueError('No such domain %r' % domain_name)
     perms.AssertAccess(perms.Role.MAP_CREATOR, domain.name)
     if owners is None:
       # TODO(kpy): Take user as an argument instead of calling GetCurrent.

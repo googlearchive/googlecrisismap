@@ -20,10 +20,7 @@ import test_utils
 
 def GetRolesForMap(map_object):
   """Gets the set of all roles that the current user has for a MapModel."""
-  map_roles = set(perms.Role) - set(
-      ['CATALOG_EDITOR', 'MAP_CREATOR', 'DOMAIN_ADMIN', 'DOMAIN_REVIEWER'])
-  return {role for role in map_roles
-          if perms.CheckAccess(role, target=map_object)}
+  return {r for r in perms.MAP_ROLES if perms.CheckAccess(r, target=map_object)}
 
 
 class PermsTests(test_utils.BaseTest):
@@ -35,10 +32,8 @@ class PermsTests(test_utils.BaseTest):
         viewers=['viewer'])
 
     with test_utils.RootLogin():
-      # Check admin roles.
-      self.assertEquals(
-          {'ADMIN', 'MAP_OWNER', 'MAP_EDITOR', 'MAP_REVIEWER', 'MAP_VIEWER'},
-          GetRolesForMap(m))
+      # An admin should have all map roles.
+      self.assertEquals(set(perms.MAP_ROLES), GetRolesForMap(m))
 
       # Verify an admin can perform all operations.
       model.Map.Get(m.id)
@@ -48,10 +43,8 @@ class PermsTests(test_utils.BaseTest):
       m.GetVersion(version_id)
 
     with test_utils.Login('owner'):
-      # Check owner roles.
-      self.assertEquals(
-          {'MAP_OWNER', 'MAP_EDITOR', 'MAP_REVIEWER', 'MAP_VIEWER'},
-          GetRolesForMap(m))
+      # An owner should have all roles.
+      self.assertEquals(set(perms.MAP_ROLES), GetRolesForMap(m))
 
       # Verify the owner can perform expected operations.
       self.assertRaises(
@@ -125,9 +118,7 @@ class PermsTests(test_utils.BaseTest):
   def testDomainRoles(self):
     """Verifies that domain access permissions restrict actions correctly."""
     with test_utils.RootLogin():
-      domain = domains.Domain.Create('foo.com')
-      domain.initial_domain_role = 'MAP_OWNER'
-      domain.Put()
+      domains.Domain.Put('foo.com', initial_domain_role=perms.Role.MAP_OWNER)
       m = model.Map.Create({}, 'foo.com')
 
     # Verify that a user in foo.com gets the domain role for foo.com.
@@ -145,10 +136,6 @@ class PermsTests(test_utils.BaseTest):
 
       m.model.domain_role = perms.Role.MAP_VIEWER
       self.assertEquals({'MAP_VIEWER'}, GetRolesForMap(m))
-
-      # Verify that ADMIN doesn't apply to domains.
-      m.model.domain_role = perms.Role.ADMIN
-      self.assertEquals(set(), GetRolesForMap(m))
 
   def testMapCreatorDomains(self):
     """Verifies that the map_creator_domains setting is respected."""
@@ -248,9 +235,8 @@ class PermsTests(test_utils.BaseTest):
       perms.Grant('privileged', perms.Role.MAP_CREATOR, 'map-creator.com')
       perms.Grant('privileged', perms.Role.CATALOG_EDITOR, 'catalog-editor.com')
       perms.Grant('privileged', perms.Role.DOMAIN_ADMIN, 'domain-admin.com')
-      self.assertEquals(
-          set(),
-          perms.GetAccessibleDomains(outsider, 'not-a-domain-role'))
+      self.assertRaises(ValueError, perms.GetAccessibleDomains,
+                        outsider, 'not-a-domain-role')
       self.assertEquals(
           {'domain-admin.com'},
           perms.GetAccessibleDomains(privileged, perms.Role.DOMAIN_ADMIN))
