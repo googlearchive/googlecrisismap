@@ -109,6 +109,9 @@ specific language governing permissions and limitations under the License.
       // event.data.error to further customize the UI. 
      updateLocationMenu(places, place && place.id, config.url_no_loc, true);
     }
+    if (event.data.type === 'document_click') {
+      documentClickHandler();
+    }
   });
   updateLocationMenu(places, place && place.id, config.url_no_loc,
                      config.location_unavailable);

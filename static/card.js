@@ -368,3 +368,8 @@ function showLocationMenu(e) {
 function hideLocationMenu() {
   $('location-menu').style.display = 'none';
 }
+
+/** Fires when the user has clicked anywhere in the document. */
+function documentClickHandler() {
+  hideLocationMenu();
+}
