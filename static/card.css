@@ -36,7 +36,7 @@ body {
   color: #4386fc;
   text-decoration: none;
 }
-.card .menu {
+.card .unit-menu {
   float: right;
   margin-top: 8px;
   padding-left: 12px;
@@ -125,7 +125,7 @@ body {
 .card .location-menu .option:hover {
   background-color: #e6e6e6;
 }
-.card .location-menu .option.my-location {
+.card .location-menu .option.your-location {
   border-top: 1px solid #e6e6e6;
 }
 .card .location-menu .option .checkmark {

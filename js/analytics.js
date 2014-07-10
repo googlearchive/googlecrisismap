@@ -259,7 +259,7 @@ cm.Analytics.categoryForAction_ = function(action) {
 cm.Analytics.logAction = function(action, layerId, opt_value, opt_topicId) {
   if (layerId) {
     _gaq.push(['_setCustomVar', 1, 'Layer ID',
-               cm.Analytics.currentMapId_ + cm.Analytics.SEPARATOR_ + layerId]);
+               cm.Analytics.currentMapId_ + ':' + layerId]);
   }
   if (opt_topicId) {
     _gaq.push(['_setCustomVar', 5, 'Topic ID', opt_topicId]);

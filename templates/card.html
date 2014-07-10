@@ -17,13 +17,25 @@ specific language governing permissions and limitations under the License.
   <meta itemprop="image" content="{{root}}/.static/favicon.ico">
   <meta name="viewport" content="maximum-scale=1.0,initial-scale=1.0,user-scalable=no">
   <link rel="stylesheet" href="{{root}}/.static/card.css">
+  <script>
+    // Crisis landing page analytics
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-8630973-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
 </head>
 <body>
   <div id="card" class="card">
     <div id="location-menu" class="location-menu">
     </div>
     {% if features and not place %}
-      <div class="menu">
+      <div class="unit-menu">
         {% if unit == 'mi' %}
           <a href="{{url_no_unit}}&unit=km">km</a> &#xb7; mi
         {% else %}
@@ -49,7 +61,7 @@ specific language governing permissions and limitations under the License.
           <div class="item">
             {% if feature.properties.distance != None and not place %}
               <div class="directions">
-                  <a target="_blank" href="http://maps.google.com/maps?daddr={{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
+                  <a target="_blank" id="{{feature.properties.layer_id}}-{{feature.geometry.coordinates.1}}-{{feature.geometry.coordinates.0}}" class="directions-link" href="http://maps.google.com/maps?daddr={{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
                   <span class="icon"></span>
                   <div class="distance">
                     {% if unit == 'mi' %}
@@ -62,7 +74,7 @@ specific language governing permissions and limitations under the License.
               </div>
             {% endif %}
             <div class="title">
-              <a target="_blank" href="http://maps.google.com/maps?q={{feature.properties.name}}%20near%20{{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
+              <a target="_blank" id="{{feature.properties.layer_id}}-{{feature.geometry.coordinates.1}}-{{feature.geometry.coordinates.0}}" class="place-link" href="http://maps.google.com/maps?q={{feature.properties.name}}%20near%20{{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
                   {{feature.properties.name}}</a>
             </div>
             <div class="crowd">
@@ -89,20 +101,28 @@ specific language governing permissions and limitations under the License.
   var places = {{places_json|safe}};
   var place = config.place;
 
-  window.addEventListener('resize', updateSize);
+  addListener(window, 'resize', updateSize);
   updateSize();
-  window.addEventListener('message', function(event) {
+  addListener(window, 'message', function(event) {
     if (event.data.type === 'location_unavailable') {
       // TODO(romano): may also want to pass in event.data.site and
-      // event.data.error, depending on UI message
-      updateLocationMenu(config.url_no_loc, places, place && place.id, true);
+      // event.data.error to further customize the UI. 
+     updateLocationMenu(places, place && place.id, config.url_no_loc, true);
     }
   });
-  updateLocationMenu(config.url_no_loc, places, place && place.id,
+  updateLocationMenu(places, place && place.id, config.url_no_loc,
                      config.location_unavailable);
   updateLocationName(place && place.name || null);
 
   var subtitle = $("card-subtitle")
-  subtitle && subtitle.addEventListener("click", showLocationMenu, false);
-  window.addEventListener("click", hideLocationMenu, false);
+  subtitle && addListener(subtitle, 'click', showLocationMenu);
+  addListener(window, 'click', hideLocationMenu);
+
+  // Set custom variables for all events.
+  window._gaq.push(['_setCustomVar', 2, 'Map ID', config.map_id]);
+  window._gaq.push(['_setCustomVar', 5, 'Topic ID',
+                    config.map_id + '.' + config.topic_id]);
+  window._gaq.push(['_setCustomVar', 21, 'Map label', config.map_label]);
+  window._gaq.push(['_setCustomVar', 22, 'Topic title', config.topic_title]);
+  addClickEventTrackingToLinks(config.map_id);
 </script>

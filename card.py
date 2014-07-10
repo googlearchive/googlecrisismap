@@ -57,9 +57,10 @@ def RoundGeoPt(point):
 class Feature(object):
   """A feature (map item) from a source data layer."""
 
-  def __init__(self, name, description_html, location):
+  def __init__(self, name, description_html, location, layer_id=None):
     self.name = name
     self.description_html = description_html
+    self.layer_id = layer_id
     self.location = location  # should be an ndb.GeoPt
     self.distance = None
     self.status_color = None
@@ -90,7 +91,7 @@ def GetText(element):
   return (element is not None) and element.text or ''
 
 
-def GetFeaturesFromXml(xml_content):
+def GetFeaturesFromXml(xml_content, layer_id=None):
   """Extracts a list of Feature objects from KML, GeoRSS, or Atom content."""
   root = kmlify.ParseXml(xml_content)
   for element in root.getiterator():
@@ -110,7 +111,7 @@ def GetFeaturesFromXml(xml_content):
     texts = {child.tag: GetText(child) for child in item.getchildren()}
     features.append(Feature(texts.get('title') or texts.get('name'),
                             texts.get('description') or texts.get('content') or
-                            texts.get('summary'), location))
+                            texts.get('summary'), location, layer_id))
   return features
 
 
@@ -174,7 +175,7 @@ def GetFeatures(map_root, topic_id, request):
       try:
         content = XML_CACHE.Get(
             url, lambda: kmlify.FetchData(url, request.host))
-        features += GetFeaturesFromXml(content)
+        features += GetFeaturesFromXml(content, layer_id)
       except (SyntaxError, urlfetch.DownloadError):
         pass
   return features
@@ -297,6 +298,7 @@ def GetGeoJson(features):
           'distance': f.distance,
           'distance_mi': f.distance_mi,
           'distance_km': f.distance_km,
+          'layer_id': f.layer_id,
           'status_color': f.status_color,
           'answer_text': f.answer_text,
           'answer_time': f.answer_time
@@ -360,13 +362,14 @@ class CardBase(base_handler.BaseHandler):
   embeddable = True
   error_template = 'card-error.html'
 
-  def GetForMap(self, map_root, map_version_id, topic_id):
+  def GetForMap(self, map_root, map_version_id, topic_id, map_label=None):
     """Renders the card for a particular map and topic.
 
     Args:
       map_root: The MapRoot dictionary for the map.
       map_version_id: The version ID of the MapVersionModel (for a cache key).
       topic_id: The topic ID.
+      map_label: The label of the published map (for analytics).
     """
     topic = GetTopic(map_root, topic_id)
     if not topic:
@@ -436,7 +439,11 @@ class CardBase(base_handler.BaseHandler):
                 'url_no_loc': RemoveParamsFromUrl(
                     self.request.url, 'll', 'place'),
                 'place': place,
-                'location_unavailable': bool(location_unavailable)
+                'location_unavailable': bool(location_unavailable),
+                'map_id': map_root.get('id', ''),
+                'topic_id': topic_id,
+                'map_label': map_label or '',
+                'topic_title': topic.get('title', '')
             }),
             'places_json': json.dumps(places),
             'footer_html': RenderFooter(footer)
@@ -464,7 +471,7 @@ class CardByLabelAndTopic(CardBase):
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
       raise base_handler.Error(404, 'No such map.')
-    self.GetForMap(entry.map_root, entry.map_version_id, topic_id)
+    self.GetForMap(entry.map_root, entry.map_version_id, topic_id, label)
 
   def Post(self, label, topic_id, user=None, domain=None):
     self.Get(label, topic_id, user, domain)

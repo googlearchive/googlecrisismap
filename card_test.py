@@ -292,10 +292,12 @@ class CardTest(test_utils.BaseTest):
   def testGetFeatures(self):
     # Try getting features for a topic with two layers.
     self.SetForTest(kmlify, 'FetchData', lambda url, host: 'data from ' + url)
-    self.SetForTest(card, 'GetFeaturesFromXml', lambda data: ['parsed ' + data])
-    self.assertEquals(['parsed data from http://example.com/one.kml',
-                       'parsed data from http://example.com/three.kml'],
-                      card.GetFeatures(MAP_ROOT, 't1', self.request))
+    self.SetForTest(card, 'GetFeaturesFromXml',
+                    lambda data, layer: ['parsed ' + data + ' for ' + layer])
+    self.assertEquals(
+        ['parsed data from http://example.com/one.kml for layer1',
+         'parsed data from http://example.com/three.kml for layer3'],
+        card.GetFeatures(MAP_ROOT, 't1', self.request))
 
   def testGetFeaturesWithFailedFetches(self):
     # Even if some fetches fail, we should get features from the others.
@@ -304,13 +306,16 @@ class CardTest(test_utils.BaseTest):
         raise urlfetch.DownloadError
       return 'data from ' + url
     self.SetForTest(kmlify, 'FetchData', FetchButSometimesFail)
-    self.SetForTest(card, 'GetFeaturesFromXml', lambda data: ['parsed ' + data])
+    self.SetForTest(card, 'GetFeaturesFromXml',
+                    lambda data, layer: ['parsed ' + data])
     self.assertEquals(['parsed data from http://example.com/three.kml'],
                       card.GetFeatures(MAP_ROOT, 't1', self.request))
 
   def testGetFeaturesWithFailedParsing(self):
     # Even if some files don't parse, we should get features from the others.
-    def ParseButSometimesFail(data):
+    def ParseButSometimesFail(data, layer):
+      if not layer:
+        return
       if 'three.kml' in data:
         raise SyntaxError
       return ['parsed ' + data]
@@ -410,6 +415,7 @@ class CardTest(test_utils.BaseTest):
                                       'distance': 0.0,
                                       'distance_km': 0.0,
                                       'distance_mi': 0.0,
+                                      'layer_id': None,
                                       'name': 'title1'},
                        'type': 'Feature'},
                       geojson['features'][0])
