@@ -180,9 +180,14 @@ cm.EditPresenter = function(appState, mapModel, arranger, opt_config) {
     {value: cm.LayerModel.Type.TRAFFIC, label: cm.MSG_LAYER_TYPE_TRAFFIC},
     {value: cm.LayerModel.Type.TRANSIT, label: cm.MSG_LAYER_TYPE_TRANSIT},
     {value: cm.LayerModel.Type.WEATHER, label: cm.MSG_LAYER_TYPE_WEATHER},
-    {value: cm.LayerModel.Type.CLOUD, label: cm.MSG_LAYER_TYPE_CLOUDS},
-    {value: cm.LayerModel.Type.PLACES, label: cm.MSG_LAYER_TYPE_PLACES}
+    {value: cm.LayerModel.Type.CLOUD, label: cm.MSG_LAYER_TYPE_CLOUDS}
   ];
+
+  // Control Places layer via a config for now
+  if (config['enable_places_layer_editing']) {
+    layerTypeChoices.push({value: cm.LayerModel.Type.PLACES,
+                           label: cm.MSG_LAYER_TYPE_PLACES});
+  }
 
 
   var mapTypeChoices = [

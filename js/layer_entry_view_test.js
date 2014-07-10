@@ -154,6 +154,29 @@ LayerEntryViewTest.prototype.testEnableEditingFlags = function() {
   expectDescendantOf(parent, 'a', withText('Edit'));
   expectDescendantOf(parent, 'a', withText('Delete'));
 
+
+  // Test the enable_places_layer_editing client config variable
+  this.assertConfigControlledLayer_(cm.LayerModel.Type.PLACES,
+      {enable_editing: true, enable_places_layer_editing: true});
+};
+
+/**
+ * Verifies that the Edit and Delete links appear only when there is
+ * a certain config parameter present.
+ * @param {cm.LayerModel.Type} layerType A type of layer that's being tested
+ * @param {Object} configParamsToEnableEdit A list of config parameters
+ *     that should enable 'Edit' link for this specific layer type
+ * @private
+ */
+LayerEntryViewTest.prototype.assertConfigControlledLayer_ = function(
+    layerType, configParamsToEnableEdit) {
+  // Test 'Edit' link is not visible when layer config parameter is not present
+  this.layerModel_.set('type', layerType);
+  parent = this.createView_({enable_editing: true});
+  expectNoDescendantOf(parent, 'a', withText('Edit'));
+  // Verify 'Edit' link is visible now that layer config parameter is present
+  parent = this.createView_(configParamsToEnableEdit);
+  expectDescendantOf(parent, 'a', withText('Edit'));
 };
 
 /**
