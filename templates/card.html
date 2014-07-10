@@ -77,22 +77,25 @@ specific language governing permissions and limitations under the License.
               <a target="_blank" id="{{feature.properties.layer_id}}-{{feature.geometry.coordinates.1}}-{{feature.geometry.coordinates.0}}" class="place-link" href="http://maps.google.com/maps?q={{feature.properties.name}}%20near%20{{feature.geometry.coordinates.1}},{{feature.geometry.coordinates.0}}">
                   {{feature.properties.name}}</a>
             </div>
-            <div class="crowd">
-              {% if feature.properties.answer_text %}
-                {% if feature.properties.status_color %}
-                  <span class="dot" style="background: {{feature.properties.status_color}}">
-                  </span
-                  >{% endif %}<span class="answers">{{feature.properties.answer_text}}</span> <span class="time">{{feature.properties.answer_time}}</span>
-              {% endif %}
-            </div>
             <div class="clear"></div>
+            {% if feature.properties.answer_text %}
+              <div class="crowd" style="border-left-color: {{feature.properties.status_color}}">
+                <div class="answers">"{{feature.properties.answer_text}}"</div>
+                <div class="metadata">
+                  <span class="time">{{feature.properties.answer_time}}</span>
+                  {% if feature.properties.answer_source %}
+                    <span class="source"> · {{feature.properties.answer_source}}</span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
           </div>
         {% endif %}
       {% endfor %}
+      {% if footer_html %}
+        <div class="footer">{{footer_html|safe}}</div>
+      {% endif %}
     </div>
-    {% if footer_html %}
-      <div class="footer">{{footer_html|safe}}</div>
-    {% endif %}
   </div>
 </body>
 <script src="{{root}}/.static/card.js"></script>

@@ -15,22 +15,22 @@ body {
   font-family: Roboto, arial, verdana, sans-serif;
   font-weight: 400;
   margin: 0;
-  padding: 0;
   overflow-y: hidden;
+  padding: 0;
 }
 .card {
-  color: #555;
-  padding: 20px;
   background: #fff;
+  color: #555;
   font-size: 13px;
+  padding: 20px;
 }
 .card h2 {
+  border-bottom: 1px solid #e6e6e6;
   color: #000;
   font-size: 22px;
   font-weight: 300;
-  padding: 0 4px 20px;
-  border-bottom: 1px solid #e6e6e6;
   margin: 0 -4px;
+  padding: 0 4px 20px;
 }
 .card a {
   color: #4386fc;
@@ -48,39 +48,34 @@ body {
   clear: both;
 }
 .card .item {
+  border-top: 1px solid #e6e6e6;
+  font-size: 14px;
   margin: 0 -4px;
   padding: 15px 4px;
-  font-size: 14px;
-  border-top: 1px solid #e6e6e6;
 }
 .card .item .title {
-  font-size: 16px;
+  display: inline-block;
+  font-size: 18px;
   font-weight: 400;
 }
 .card .item .directions {
+  display: inline-block;
   float: right;
   text-align: center;
 }
-.card .item .time {
-  color: #999;
-}
+
 .card .item .directions .icon {
   background-image: url(directions.png);
-  width: 22px;
-  height: 22px;
   display: inline-block;
+  height: 22px;
+  width: 22px;
 }
 .card .item .directions .distance {
-  font-size: 12px;
+  display: block;
+  font-size: 11px;
   margin-top: -2px;
+  margin-right: 2px;
   white-space: nowrap;
-}
-.card .item .dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 4px;
-  margin: 0 4px 2px 0;
 }
 .card .title {
   color: #000;
@@ -89,10 +84,10 @@ body {
   margin: 0 0 5px;
 }
 .card .subtitle {
+  cursor: pointer;
   display: inline-block;
   margin: 1px 0 5px;
   overflow-x: hidden;
-  cursor: pointer;
 }
 .card .location-name {
   display: inline-block;
@@ -110,16 +105,17 @@ body {
   opacity: 0.7;
 }
 .card .location-menu {
-  display: none;
-  position: absolute;
-  top: 80px;
-  left: 20px;
-  z-index: 1;
-  border: 1px solid #e6e6e6;
   background-color: white;
+  border: 1px solid #e6e6e6;
+  display: none;
+  left: 20px;
+  min-width: 168px;
+  position: absolute;
+  top: 86px;
+  z-index: 1;
 }
 .card .location-menu .option {
-  padding: 9px;
+  padding: 8px;
   cursor: pointer;
 }
 .card .location-menu .option:hover {
@@ -130,25 +126,44 @@ body {
 }
 .card .location-menu .option .checkmark {
   background: url(/.static/checkmark.png) no-repeat center center;
-  height: 16px;
-  width: 16px;
-  vertical-align: middle;
   display: inline-block;
+  height: 16px;
+  padding: 0 8px 8px;
+  vertical-align: middle;
+  width: 16px;
 }
 .card .location-menu .option .location-text {
   padding-left: 8px;
   display: inline-block;
+  padding-right: 32px;
 }
 .card .location-menu .option .location-text.no-checkmark {
   padding-left: 24px;
 }
 .card .crowd {
-  margin-top: 4px;
+  background-color: #f0f0f0;
+  border-left-style: solid;
+  border-left-width: 4px;
+  font-size: 13px;
+  margin-top: 10px;
+  padding: 8px;
 }
 .card .crowd .answers {
   font-style: italic;
 }
+.card .crowd .metadata {
+  margin-top: 2px;
+  font-size: 11px;
+}
+.card .crowd .time {
+  color: #999;
+  padding-left: 4px;
+}
+.card .crowd .source {
+  color: #999;
+}
 .card .footer {
   border-top: 1px solid #e6e6e6;
-  padding: 8px 0;
+  font-size: 13px;
+  padding: 12px 0 0;
 }

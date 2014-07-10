@@ -409,6 +409,7 @@ class CardTest(test_utils.BaseTest):
                                     'type': 'Point'},
                        'properties': {'answer_text': '',
                                       'answer_time': '',
+                                      'answer_source': '',
                                       'status_color': None,
                                       'description_html': 'description1',
                                       'distance': 0.0,

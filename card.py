@@ -66,6 +66,7 @@ class Feature(object):
     self.status_color = None
     self.answer_text = ''
     self.answer_time = ''
+    self.answer_source = ''
 
   def __cmp__(self, other):
     return cmp((self.distance, self.name), (other.distance, other.name))
@@ -272,6 +273,9 @@ def SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids):
       if answer_texts:
         f.answer_text = ', '.join(answer_texts)
         f.answer_time = utils.ShortAge(answer_time)
+        # Source information may go away once "Add an update" appears below
+        # the answer text. For now, we only have one source of crowd reports.
+        f.answer_source = 'Crisis Map user'
 
 
 def RemoveParamsFromUrl(url, *params):
@@ -301,7 +305,8 @@ def GetGeoJson(features):
           'layer_id': f.layer_id,
           'status_color': f.status_color,
           'answer_text': f.answer_text,
-          'answer_time': f.answer_time
+          'answer_time': f.answer_time,
+          'answer_source': f.answer_source
       }
   } for f in features]}
 
@@ -446,7 +451,7 @@ class CardBase(base_handler.BaseHandler):
                 'topic_title': topic.get('title', '')
             }),
             'places_json': json.dumps(places),
-            'footer_html': RenderFooter(footer)
+            'footer_html': RenderFooter(footer or [])
         }))
 
     except Exception, e:  # pylint:disable=broad-except
