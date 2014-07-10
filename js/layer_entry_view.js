@@ -157,6 +157,12 @@ cm.LayerEntryView = function(
   this.descriptionElem_;
 
   /**
+   * @type Element
+   * @private
+   */
+  this.attributionElem_;
+
+  /**
    * @type ?Element
    * @private
    */
@@ -275,6 +281,8 @@ cm.LayerEntryView = function(
           this.legendBoxElem_,
           this.descriptionElem_ = cm.ui.create('div',
               {'class': cm.css.LAYER_DESCRIPTION}),
+          this.attributionElem_ = cm.ui.create('div',
+              {'class': cm.css.LAYER_ATTRIBUTION}),
           this.timeElem_ = cm.ui.create('div', {'class': cm.css.TIMESTAMP})
       ),
       this.sublayersElem_ = cm.ui.create('div', {'class': cm.css.SUBLAYERS}),
@@ -300,6 +308,7 @@ cm.LayerEntryView = function(
   // Initialize the entry with the current values.
   this.updateTitle_();
   this.updateDescription_();
+  this.updateAttribution_();
   this.updateDownloadLink_();
   this.updateEnabled_();
   this.updateFolderDecorator_();
@@ -313,6 +322,7 @@ cm.LayerEntryView = function(
   // layer model, the metadata model, and the AppState.
   cm.events.onChange(model, ['title', 'folder_type'], this.updateTitle_, this);
   cm.events.onChange(model, 'description', this.updateDescription_, this);
+  cm.events.onChange(model, 'type', this.updateAttribution_, this);
   cm.events.onChange(model,
                      ['suppress_download_link', 'type', 'url', 'ft_from'],
                      this.updateDownloadLink_, this);
@@ -460,6 +470,16 @@ cm.LayerEntryView.prototype.updateTitle_ = function() {
 cm.LayerEntryView.prototype.updateDescription_ = function() {
   var description = /** @type cm.Html */(this.model_.get('description'));
   description && description.pasteInto(this.descriptionElem_);
+};
+
+/**
+ * @private Updates the layer attribution information.
+ */
+cm.LayerEntryView.prototype.updateAttribution_ = function() {
+  var attribution =
+      cm.LayerModel.LAYER_TYPE_TO_ATTRIBUTION[this.model_.get('type')] || '';
+  var attributionHtml = new cm.Html(attribution);
+  attributionHtml.pasteInto(this.attributionElem_);
 };
 
 /** @private Updates the panel entry's legend to match the model. */

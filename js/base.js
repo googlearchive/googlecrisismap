@@ -369,6 +369,8 @@ cm.MSG_NUMBER_MATCHING_SUBLAYERS = goog.getMsg('{NUM_LAYERS, plural, ' +
   '=1 {1 matching layer in this folder}' +
   'other {# matching layers in this folder}}');
 
+/** @desc Attribution information under a Google Places map layer. */
+cm.MSG_SOURCE_GOOGLE_MAPS = goog.getMsg('Source: Google Maps');
 
 // Legend editor
 

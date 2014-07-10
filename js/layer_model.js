@@ -85,6 +85,15 @@ cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
   'GOOGLE_PLACES': cm.LayerModel.Type.PLACES
 };
 
+/**
+ * Mapping from layer type to attribution information that should always be
+ * displayed for this layer.
+ * @type Object.<string>
+ */
+cm.LayerModel.LAYER_TYPE_TO_ATTRIBUTION = goog.object.create(
+  cm.LayerModel.Type.PLACES, cm.MSG_SOURCE_GOOGLE_MAPS
+);
+
 /** @enum {string} */
 cm.LayerModel.TileCoordinateType = {
   GOOGLE: 'GOOGLE',

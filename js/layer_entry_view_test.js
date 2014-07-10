@@ -100,6 +100,50 @@ LayerEntryViewTest.prototype.testConstructor = function() {
   expectFalse(checkbox.checked);
 };
 
+/**
+ * Tests that attribution shows up for layers that have some default data
+ * source information set.
+ */
+LayerEntryViewTest.prototype.testAttributionInConstructor = function() {
+  this.layerModel_.set('type', cm.LayerModel.Type.PLACES);
+
+  // Not interested in testing the sanitizer here, so just install
+  // a transparent one.
+  this.setForTest_('cm.Html.sanitize_', function(string) { return string; });
+
+  var parent = this.createView_();
+  var contentElem = findDescendantOf(parent, withClass(cm.css.CONTENT));
+  expectThat(contentElem, not(isNull));
+  var attributionElem =
+      findDescendantOf(contentElem, withClass(cm.css.LAYER_ATTRIBUTION),
+          withText('Source: Google Maps'));
+  expectThat(attributionElem, not(isNull));
+};
+
+/**
+ * Tests that attribution shows up for layers that have some default data
+ * source information set.
+ */
+LayerEntryViewTest.prototype.testAttributionOnLayerTypeChange = function() {
+  this.layerModel_.set('type', cm.LayerModel.Type.PLACES);
+
+  // Not interested in testing the sanitizer here, so just install
+  // a transparent one.
+  this.setForTest_('cm.Html.sanitize_', function(string) { return string; });
+
+  var parent = this.createView_();
+  var attributionElem = findDescendantOf(parent,
+      withClass(cm.css.LAYER_ATTRIBUTION),
+      withText('Source: Google Maps'));
+  expectThat(attributionElem, not(isNull));
+
+  // Change layer type and make sure Google Maps attribution is cleared
+  this.layerModel_.set('type', cm.LayerModel.Type.KLM);
+  var attributionElem = findDescendantOf(parent,
+      withClass(cm.css.LAYER_ATTRIBUTION));
+  expectThat(attributionElem, withText(''));
+};
+
 /** Verifies that the Edit and Delete links appear only when they should. */
 LayerEntryViewTest.prototype.testEnableEditingFlags = function() {
   var parent = this.createView_();
