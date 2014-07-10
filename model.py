@@ -34,30 +34,35 @@ NEVER = datetime.datetime.utcfromtimestamp(0)
 # A GeoPt value to represent null (the datastore cannot query on None).
 NOWHERE = ndb.GeoPt(90, 90)
 
+# Individual CatalogEntries, keyed by domain name and label.  The 500-ms ULL
+# is intended to beat the time it takes to manually navigate to a published
+# map at its label after the label has been updated by clicking Publish.
+CATALOG_ENTRY_CACHE = cache.Cache('model.catalog_entry', 300, 0.5)
+
 # Lists of all CatalogEntries in a domain or across all domains, keyed by
 # domain name or '*' for all domains.  The 100-ms ULL is intended to beat the
 # time it takes to redirect back to /.maps after the user hits Publish.
-CATALOG_CACHE = cache.Cache('model.catalog', 60, 0.1)
+CATALOG_CACHE = cache.Cache('model.catalog', 300, 0.1)
 
 # Lists of the "listed" CatalogEntries in a domain or across all domains, keyed
-# by domain name or '*' for all domains.  The 300-ms ULL is intended to beat
+# by domain name or '*' for all domains.  The 500-ms ULL is intended to beat
 # the time it takes to manually navigate to any page with a map picker menu
 # after editing which CatalogEntries are listed.
-LISTED_CATALOG_CACHE = cache.Cache('model.listed_catalog', 60, 0.3)
+LISTED_CATALOG_CACHE = cache.Cache('model.listed_catalog', 300, 0.5)
 
-# MapRoot data for published maps, keyed by [domain, label].  The 300-ms ULL
+# MapRoot data for published maps, keyed by [domain, label].  The 500-ms ULL
 # is intended to beat the time it takes to manually navigate to a map after
 # the user hits Publish to update the map.
-PUBLISHED_MAP_ROOT_CACHE = cache.Cache('model.published_map_root', 60, 0.3)
+PUBLISHED_MAP_ROOT_CACHE = cache.Cache('model.published_map_root', 300, 0.5)
 
-# MapRoot data for maps, keyed by map ID.  The 300-ms ULL is intended to beat
+# MapRoot data for maps, keyed by map ID.  The 500-ms ULL is intended to beat
 # the time it takes to manually reload a map page after saving edits.
-MAP_ROOT_CACHE = cache.Cache('model.map_root', 60, 0.3)
+MAP_ROOT_CACHE = cache.Cache('model.map_root', 300, 0.5)
 
 # Authorization entities are written offline, so users never expect to see
-# immediate effects.  The 300-ms ULL is intended to beat the time it takes for
+# immediate effects.  The 1000-ms ULL is intended to beat the time it takes for
 # a developer to use an API key after editing an Authorization in the console.
-AUTHORIZATION_CACHE = cache.Cache('model.authorization', 60, 0.3)
+AUTHORIZATION_CACHE = cache.Cache('model.authorization', 300, 1)
 
 
 class MapVersionModel(db.Model):
@@ -249,8 +254,11 @@ class CatalogEntry(object):
       return EmptyCatalogEntry(domain)
 
     # No access control; all catalog entries are publicly visible.
-    model = CatalogEntryModel.Get(domain, label)
-    return model and CatalogEntry(model)
+    def GetFromDatastore():
+      model = CatalogEntryModel.Get(domain, label)
+      return model and CatalogEntry(model)
+
+    return CATALOG_ENTRY_CACHE.Get([domain, label], GetFromDatastore)
 
   @staticmethod
   def GetAll(domain=None):
@@ -315,6 +323,7 @@ class CatalogEntry(object):
                      catalog_entry_key=domain_name + ':' + label,
                      uid=users.GetCurrent().id)
     cls.FlushCaches(domain_name)
+    CATALOG_ENTRY_CACHE.Delete([domain_name, label])
     return CatalogEntry(entry)
 
   @staticmethod
@@ -362,6 +371,7 @@ class CatalogEntry(object):
                      map_id=map_id, map_version_key=version_key,
                      catalog_entry_key=entry_key, uid=user.id)
     cls.FlushCaches(domain_name)
+    CATALOG_ENTRY_CACHE.Delete([domain_name, label])
 
   # TODO(kpy): Make Delete and DeleteByMapId both take a user argument, and
   # reuse Delete here by calling it with an admin user.
@@ -372,6 +382,7 @@ class CatalogEntry(object):
       domain, label = str(entry.domain), entry.label
       entry = CatalogEntryModel.Get(domain, label)
       entry.delete()
+      CATALOG_ENTRY_CACHE.Delete([domain, label])
       cls.FlushCaches(domain)
 
   is_listed = property(
@@ -384,6 +395,10 @@ class CatalogEntry(object):
   def GetMapVersionKey(self):
     return CatalogEntryModel.map_version.get_value_for_datastore(self.model)
   map_version_key = property(GetMapVersionKey)
+
+  # A string ID for the map version, in the form <map-id>@<version-id>.
+  map_version_id = property(
+      lambda self: '%s@%s' % tuple(self.map_version_key.to_path()[1::2]))
 
   # map_root gets the (possibly cached) MapRoot data for this entry.
   def GetMapRoot(self):
@@ -434,6 +449,7 @@ class CatalogEntry(object):
                      uid=users.GetCurrent().id)
     self.FlushCaches(domain_name)
     PUBLISHED_MAP_ROOT_CACHE.Delete([domain_name, self.label])
+    CATALOG_ENTRY_CACHE.Delete([domain_name, self.label])
 
 
 class Map(object):
@@ -465,6 +481,10 @@ class Map(object):
   # The datastore key for this map's latest MapVersionModel.
   current_version_key = property(
       lambda self: MapModel.current_version.get_value_for_datastore(self.model))
+
+  # A string ID for the current map version, in the form <map-id>@<version-id>.
+  current_version_id = property(
+      lambda self: '%s@%s' % tuple(self.current_version_key.to_path()[1::2]))
 
   # Map IDs are in base64, so they are safely convertible from Unicode to ASCII.
   id = property(lambda self: str(self.model.key().name()))

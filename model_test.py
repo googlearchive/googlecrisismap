@@ -343,7 +343,7 @@ class CatalogEntryTests(test_utils.BaseTest):
       entry = model.CatalogEntry.Create('xyz.com', 'label', m, is_listed=True)
       domains.Domain.Create('xyz.com')
 
-    # Validate that CatalogEntry is created successfully.
+    # Validate that the CatalogEntry is created successfully.
     self.assertEquals('Bleg', model.CatalogEntry.Get('xyz.com', 'label').title)
     # Trying to delete a nonexisting entry should raise an exception.
     self.assertRaises(ValueError, model.CatalogEntry.Delete, 'xyz.com', 'xyz')

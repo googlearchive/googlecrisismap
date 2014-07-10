@@ -358,7 +358,7 @@ class CardTest(test_utils.BaseTest):
       return ({'q1': 'a1' if location.lat < 1.5 else 'a2',
                'q2': None if location.lat < 1.5 else 3}, now)
     self.SetForTest(card, 'GetLatestAnswers', FakeGetLatestAnswers)
-    card.SetAnswersOnFeatures(features, MAP_ROOT, 't1', ['q1', 'q2'])
+    card.SetAnswersOnFeatures(features, MAP_ROOT, 'm1@1', 't1', ['q1', 'q2'])
     self.assertEquals('Green', features[0].answer_text)
     self.assertEquals('#0f0', features[0].status_color)
     self.assertEquals('Red, Qux: 3', features[1].answer_text)

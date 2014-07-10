@@ -24,9 +24,9 @@ from google.appengine.ext import db
 
 
 # Config settings are written offline, so users never expect to see immediate
-# effects.  The 300-ms ULL is intended to beat the time it takes to manually
-# load an affected a page after changing a config setting in the console.
-CACHE = cache.Cache('config', 600, 0.3)
+# effects.  Because they are so frequently read, we set the ULL a bit higher;
+# developers need to wait 5 s after changing a config setting in the console.
+CACHE = cache.Cache('config', 300, 5)
 
 
 class Config(db.Model):

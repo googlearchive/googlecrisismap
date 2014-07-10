@@ -23,7 +23,7 @@ from google.appengine.ext import db
 # Dictionaries of domain settings, keyed by domain name.  The 100-ms ULL is
 # intended to beat the time it takes for the domain admin page to redirect back
 # to showing the domain settings after the user has edited them.
-CACHE = cache.Cache('domains', 60, 0.1)
+CACHE = cache.Cache('domains', 300, 0.1)
 
 # The value to put in the datastore to represent an initial_domain_role of None
 # (AppEngine doesn't index None, so we put this value instead).

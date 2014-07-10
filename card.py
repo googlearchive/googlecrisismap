@@ -32,9 +32,17 @@ import utils
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb  # just for GeoPt
 
+# Fetched strings of XML content, keyed by URL.
+XML_CACHE = cache.Cache('card.xml', 300)
 
-ANSWER_CACHE = cache.Cache('card.answers', 5)
-XML_CACHE = cache.Cache('card.xml', 30)
+# Lists of Feature objects, keyed by [map_id, map_version_id, topic_id,
+# geolocation_rounded_to_10m, radius, max_count].
+FEATURE_LIST_CACHE = cache.Cache('card.feature_list', 60)
+
+# Pairs ({qid: answer}, {qid: effective_time_of_last_answer}), keyed by
+# [map_id, map_version_id, topic_id, geolocation_rounded_to_10m, radius].
+ANSWER_CACHE = cache.Cache('card.answers', 15)
+
 MAX_ANSWER_AGE = datetime.timedelta(days=7)  # ignore answers older than 7 days
 GOOGLE_SPREADSHEET_CSV_URL = (
     'https://docs.google.com/spreadsheet/pub?key=$key&output=csv')
@@ -172,6 +180,34 @@ def GetFeatures(map_root, topic_id, request):
   return features
 
 
+def SetDistanceOnFeatures(features, center):
+  for f in features:
+    f.distance = EarthDistance(center, f.location)
+
+
+def FilterFeatures(features, radius, max_count):
+  # TODO(kpy): A top-k selection algorithm could be faster than O(n log n)
+  # sort.  It seems likely to me that the gain would be small enough that it's
+  # not worth the code complexity, but it wouldn't hurt to check my hunch.
+  features.sort()  # sorts by distance; see Feature.__cmp__
+  features[:] = [f for f in features[:max_count] if f.distance < radius]
+
+
+def GetFilteredFeatures(map_root, map_version_id, topic_id, request,
+                        center, radius, max_count):
+  """Gets a list of the Feature objects for a topic within the given circle."""
+  def GetFromDatastore():
+    features = GetFeatures(map_root, topic_id, request)
+    if center:
+      SetDistanceOnFeatures(features, center)
+    FilterFeatures(features, radius, max_count)
+    return features
+
+  return FEATURE_LIST_CACHE.Get(
+      [map_root['id'], map_version_id, topic_id,
+       center and RoundGeoPt(center), radius, max_count], GetFromDatastore)
+
+
 def GetLatestAnswers(map_id, topic_id, location, radius):
   """Gets the latest CrowdReport answers for the given topic and location."""
   full_topic_id = map_id + '.' + topic_id
@@ -203,7 +239,7 @@ def GetLegibleTextColor(background_color):
   return luminance > 128 and '#000' or '#fff'
 
 
-def SetAnswersOnFeatures(features, map_root, topic_id, qids):
+def SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids):
   """Populates 'status_color' and 'jnswer_text' on the given Feature objects."""
   map_id = map_root.get('id') or ''
   topic = GetTopic(map_root, topic_id) or {}
@@ -217,7 +253,7 @@ def SetAnswersOnFeatures(features, map_root, topic_id, qids):
   if topic.get('crowd_enabled') and qids:
     for f in features:
       answers, answer_time = ANSWER_CACHE.Get(
-          [map_id, topic_id, RoundGeoPt(f.location), radius],
+          [map_version_id, topic_id, RoundGeoPt(f.location), radius],
           lambda: GetLatestAnswers(map_id, topic_id, f.location, radius))
       answer_texts = []
       for i, qid in enumerate(qids):
@@ -235,16 +271,6 @@ def SetAnswersOnFeatures(features, map_root, topic_id, qids):
       if answer_texts:
         f.answer_text = ', '.join(answer_texts)
         f.answer_time = utils.ShortAge(answer_time)
-
-
-def SetDistanceOnFeatures(features, center):
-  for f in features:
-    f.distance = EarthDistance(center, f.location)
-
-
-def FilterFeatures(features, radius, max_count):
-  features.sort()
-  features[:] = [f for f in features if f.distance < radius][:max_count]
 
 
 def RemoveParamsFromUrl(url, *params):
@@ -334,7 +360,14 @@ class CardBase(base_handler.BaseHandler):
   embeddable = True
   error_template = 'card-error.html'
 
-  def GetForMap(self, map_root, topic_id):
+  def GetForMap(self, map_root, map_version_id, topic_id):
+    """Renders the card for a particular map and topic.
+
+    Args:
+      map_root: The MapRoot dictionary for the map.
+      map_version_id: The version ID of the MapVersionModel (for a cache key).
+      topic_id: The topic ID.
+    """
     topic = GetTopic(map_root, topic_id)
     if not topic:
       raise base_handler.Error(404, 'No such topic.')
@@ -347,8 +380,7 @@ class CardBase(base_handler.BaseHandler):
     places_json = self.request.get('places') or '[]'
     place_id = str(self.request.get('place', ''))
     footer_json = self.request.get('footer') or '[]'
-    location_unavailable = self.request.get('location_unavailable',
-                                            None)
+    location_unavailable = self.request.get('location_unavailable')
     lang = base_handler.SelectLanguageForRequest(self.request, map_root)
 
     try:
@@ -385,11 +417,10 @@ class CardBase(base_handler.BaseHandler):
         logging.error('Could not extract center for ?place=%s', place_id)
 
     try:
-      features = GetFeatures(map_root, topic_id, self.request)
-      if center:
-        SetDistanceOnFeatures(features, center)
-      FilterFeatures(features, radius, max_count)
-      SetAnswersOnFeatures(features, map_root, topic_id, qids)
+      features = GetFilteredFeatures(
+          map_root, map_version_id, topic_id, self.request,
+          center, radius, max_count)
+      SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids)
       geojson = GetGeoJson(features)
       if output == 'json':
         self.WriteJson(geojson)
@@ -405,7 +436,7 @@ class CardBase(base_handler.BaseHandler):
                 'url_no_loc': RemoveParamsFromUrl(
                     self.request.url, 'll', 'place'),
                 'place': place,
-                'location_unavailable': location_unavailable is not None
+                'location_unavailable': bool(location_unavailable)
             }),
             'places_json': json.dumps(places),
             'footer_html': RenderFooter(footer)
@@ -419,10 +450,10 @@ class CardByIdAndTopic(CardBase):
   """Produces a card given a map ID and topic ID."""
 
   def Get(self, map_id, topic_id, user=None, domain=None):
-    map_object = model.Map.Get(map_id)
-    if not map_object:
+    m = model.Map.Get(map_id)
+    if not m:
       raise base_handler.Error(404, 'No such map.')
-    self.GetForMap(map_object.map_root, topic_id)
+    self.GetForMap(m.map_root, m.current_version_id, topic_id)
 
 
 class CardByLabelAndTopic(CardBase):
@@ -433,7 +464,7 @@ class CardByLabelAndTopic(CardBase):
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
       raise base_handler.Error(404, 'No such map.')
-    self.GetForMap(entry.map_root, topic_id)
+    self.GetForMap(entry.map_root, entry.map_version_id, topic_id)
 
   def Post(self, label, topic_id, user=None, domain=None):
     self.Get(label, topic_id, user, domain)
