@@ -52,13 +52,13 @@ class Cleanup(base_handler.BaseHandler):
   # pylint: disable=protected-access
   def Get(self):
     """Deletes expired crowd reports."""
-    # Delete reports published longer ago than max_published
-    max_published = (datetime.datetime.utcnow() -
+    # Delete reports submitted longer ago than max_submitted
+    max_submitted = (datetime.datetime.utcnow() -
                      datetime.timedelta(days=CROWD_REPORT_TTL_DAYS))
 
     query = model._CrowdReportModel.query()
-    query = query.filter(model._CrowdReportModel.published < max_published)
-    query = query.order(model._CrowdReportModel.published)
+    query = query.filter(model._CrowdReportModel.submitted < max_submitted)
+    query = query.order(model._CrowdReportModel.submitted)
 
     count = self.FetchAndDelete(query)
     logging.info('Deleted %d expired CrowdReportModel entries', count)

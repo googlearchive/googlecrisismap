@@ -192,7 +192,7 @@ class CrowdReports(base_handler.BaseHandler):
         'author_email': user and user.email,
         'effective': utils.UtcToTimestamp(report.effective),
         'updated': utils.UtcToTimestamp(report.updated),
-        'published': utils.UtcToTimestamp(report.published),
+        'submitted': utils.UtcToTimestamp(report.submitted),
         'text': report.text,
         'topic_ids': report.topic_ids,
         'answers': report.answers,
@@ -269,9 +269,10 @@ def DictToReport(report, auth, now, spam_check=True):
   if not isinstance(place_id, basestring):
     return {'id': report_id, 'error': 'A string is required for place_id.'}
 
-  effective = utils.TimestampToUtc(report.get('effective', now))
-  published = utils.TimestampToUtc(
-      report.get('published', report.get('effective', now)))
+  effective = utils.TimestampToUtc(report.get('effective') or now)
+  submitted = utils.TimestampToUtc(
+      report.get('submitted') or report.get('published') or
+      report.get('effective') or now)
   location = None
   if 'location' in report:
     try:
@@ -281,7 +282,7 @@ def DictToReport(report, auth, now, spam_check=True):
   try:
     return model.CrowdReport.Create(
         id=report_id, source=source, author=author, effective=effective,
-        published=published, text=text, topic_ids=topic_ids, answers=answers,
+        submitted=submitted, text=text, topic_ids=topic_ids, answers=answers,
         location=location, place_id=place_id or None, map_id=map_id or None)
   except (TypeError, ValueError), e:
     return {'id': report_id, 'error': str(e)}

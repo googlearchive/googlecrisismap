@@ -879,8 +879,9 @@ class _CrowdReportModel(ndb.Model):
   # The time of the observation or prediction that this report is about.
   effective = ndb.DateTimeProperty()
 
-  # The time that this report or its latest edit was posted by the author.
-  published = ndb.DateTimeProperty()
+  # The time that this report or its latest edit was submitted into its
+  # original repository by the author.
+  submitted = ndb.DateTimeProperty()
 
   # The time of the last write to any field owned by this datastore entity.
   # This includes, for example: report created in this repository; report
@@ -1155,7 +1156,7 @@ class CrowdReport(utils.Struct):
 
   @classmethod
   def Create(cls, source, author, effective, text, topic_ids, answers,
-             location, published=None, map_id=None, place_id=None,
+             location, submitted=None, map_id=None, place_id=None,
              id=None):  # pylint: disable=redefined-builtin
     """Stores one new crowd report and returns it."""
     # TODO(kpy): We don't currently validate that 'answers' is a dictionary
@@ -1170,7 +1171,7 @@ class CrowdReport(utils.Struct):
       raise ValueError('ID %r not valid for source %s' % (report_id, source))
     model = _CrowdReportModel(
         id=report_id, source=source, author=author, effective=effective,
-        published=published or now, updated=now, text=text,
+        submitted=submitted or now, updated=now, text=text,
         topic_ids=topic_ids or [], answers_json=json.dumps(answers or {}),
         location=location or NOWHERE, map_id=map_id, place_id=place_id)
     report = cls.FromModel(model)
