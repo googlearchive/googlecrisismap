@@ -58,7 +58,17 @@ def NormalizeDomainName(name):
   return name
 
 
+def AddDomainNamePrefixForCache(name):
+  # TODO(user): since the value type for the domain cache key has changed
+  # between releases, we need to make sure there are no key collisions b/w
+  # the old version in prod and new version in RC. So use a prefix for now
+  # to differentiate new domain keys. Revert this once the new release is out
+  # to prod with this change
+  return 'domain.struct.' + name
+
+
 class Domain(utils.Struct):
+  """"Class for managing DomainModel storage and retrieval (incl. caching)."""
 
   name = property(lambda self: self.id)
 
@@ -66,7 +76,8 @@ class Domain(utils.Struct):
   def Get(cls, name):
     """Gets a Domain by name."""
     name = NormalizeDomainName(name)
-    return CACHE.Get(name, lambda: cls.FromModel(_DomainModel.get_by_id(name)))
+    return CACHE.Get(AddDomainNamePrefixForCache(name),
+                     lambda: cls.FromModel(_DomainModel.get_by_id(name)))
 
   @classmethod
   def Put(cls, name, default_label=None, has_sticky_catalog_entries=None,
@@ -96,5 +107,5 @@ class Domain(utils.Struct):
       logs.RecordEvent(logs.Event.DOMAIN_CREATED, domain_name=name,
                        uid=user.id if user else None)
     domain = cls.FromModel(domain_model)
-    CACHE.Set(name, domain)
+    CACHE.Set(AddDomainNamePrefixForCache(name), domain)
     return domain
