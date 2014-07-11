@@ -197,8 +197,8 @@ PlacesOverlayTest.prototype.testGetPlaceDetails = function() {
   expectEq(1, placesOverlay.markers_.length);
 
   // Mock setup for place getDetails call
-  expectCall(marker.get)('_placereference').
-      willOnce(returnWith(placeResult.reference));
+  expectCall(marker.get)('_placereference')
+      .willOnce(returnWith(placeResult.reference));
   placeResult = {
     geometry: placeResult.geometry,
     reference: placeResult.reference,
@@ -235,8 +235,8 @@ PlacesOverlayTest.prototype.testGetPlaceDetailsFails = function() {
   expectEq(1, placesOverlay.markers_.length);
 
   // Mock setup for place getDetails call
-  expectCall(marker.get)('_placereference').
-      willOnce(returnWith(placeResult.reference));
+  expectCall(marker.get)('_placereference')
+      .willOnce(returnWith(placeResult.reference));
   this.expectGetDetails_(placeResult.reference, placeResult,
       google.maps.places.PlacesServiceStatus.UNKNOWN_ERROR);
   // Set up expectations for a click event on the layer with info window content

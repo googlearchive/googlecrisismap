@@ -192,7 +192,7 @@ cm.PlacesOverlay.prototype.placesCallback_ = function(results, status) {
  * @private
  */
 cm.PlacesOverlay.prototype.getPlaceDetails_ = function(marker) {
-  var request = /** @type google.maps.places.PlaceDetailsRequest */ ({
+  var request = /** @type google.maps.places.PlaceDetailsRequest */({
     reference: marker.get('_placereference')
   });
   cm.PlacesOverlay.placesService.getDetails(request,
