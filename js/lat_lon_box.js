@@ -374,13 +374,15 @@ cm.LatLonBox.prototype.getEastWestMeters = function() {
 };
 
 /**
- * Tests whether the given point is contained by the box.
+ * Tests whether the given point is contained in, or on an edge of, the box.
  * @param {google.maps.LatLng} point The point to test.
- * @return {boolean} Whether this lat/lon box contains the point.
+ * @return {boolean} True if the point is inside or on an edge of this box.
  *
  */
 cm.LatLonBox.prototype.contains = function(point) {
-  return point.lat() < this.north_ && point.lat() > this.south_ &&
-      ((point.lng() < this.east_ && point.lng() > this.west_) ||
-      this.lonSpan_ === 360);
+  var boxContains180Meridian = this.west_ > this.east_ || this.lonSpan_ === 360;
+  return point.lat() <= this.north_ && point.lat() >= this.south_ &&
+      (boxContains180Meridian ?
+          (point.lng() <= this.east_ || point.lng() >= this.west_) :
+          (point.lng() <= this.east_ && point.lng() >= this.west_));
 };

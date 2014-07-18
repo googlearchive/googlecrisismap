@@ -373,13 +373,14 @@ LatLonBoxTest.prototype.testRound = function() {
   expectThat(box.round(0), isBox(50, -40, 120, -160));
 };
 
-/** Tests the containsPoint() method. */
-LatLonBoxTest.prototype.testContainsPoint = function() {
+/** Tests the contains() method. */
+LatLonBoxTest.prototype.testContains = function() {
   var box = new cm.LatLonBox(60, -60, 100, -100);
   expectTrue(box.contains(new google.maps.LatLng(0, 0)));
   expectFalse(box.contains(new google.maps.LatLng(0, 120)));
   expectFalse(box.contains(new google.maps.LatLng(-70, 0)));
-  expectFalse(box.contains(new google.maps.LatLng(60, 100)));
+  expectTrue(box.contains(new google.maps.LatLng(0, 100)));
+  expectTrue(box.contains(new google.maps.LatLng(60, 100)));
 
   // A box with 360-degree longitude span (east=west and 0-valued
   // longitude span not allowed).
@@ -387,7 +388,8 @@ LatLonBoxTest.prototype.testContainsPoint = function() {
   expectTrue(box.contains(new google.maps.LatLng(0, 0)));
   expectTrue(box.contains(new google.maps.LatLng(0, 120)));
   expectFalse(box.contains(new google.maps.LatLng(-70, 0)));
-  expectFalse(box.contains(new google.maps.LatLng(60, 100)));
+  expectTrue(box.contains(new google.maps.LatLng(0, 100)));
+  expectTrue(box.contains(new google.maps.LatLng(60, 100)));
 
   // A box with 0-degree longitude span (east=west and 0-valued
   // longitude span allowed).
@@ -395,6 +397,20 @@ LatLonBoxTest.prototype.testContainsPoint = function() {
   expectFalse(box.contains(new google.maps.LatLng(0, 0)));
   expectFalse(box.contains(new google.maps.LatLng(0, 120)));
   expectFalse(box.contains(new google.maps.LatLng(-70, 0)));
-  expectFalse(box.contains(new google.maps.LatLng(60, 100)));
+  expectTrue(box.contains(new google.maps.LatLng(0, 100)));
+  expectTrue(box.contains(new google.maps.LatLng(60, 100)));
+
+  // A box that crosses the 180-degree meridian.
+  box = new cm.LatLonBox(60, -60, -170, 170);
+  expectFalse(box.contains(new google.maps.LatLng(0, 0)));
+  expectFalse(box.contains(new google.maps.LatLng(0, 165)));
+  expectTrue(box.contains(new google.maps.LatLng(60, 170)));
+  expectTrue(box.contains(new google.maps.LatLng(0, 170)));
+  expectTrue(box.contains(new google.maps.LatLng(0, 175)));
+  expectTrue(box.contains(new google.maps.LatLng(0, 180)));
+  expectTrue(box.contains(new google.maps.LatLng(0, -180)));
+  expectTrue(box.contains(new google.maps.LatLng(0, -170)));
+  expectTrue(box.contains(new google.maps.LatLng(-60, -170)));
+  expectFalse(box.contains(new google.maps.LatLng(0, -165)));
 
 };
