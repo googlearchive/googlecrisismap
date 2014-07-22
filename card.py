@@ -35,6 +35,9 @@ from google.appengine.ext import ndb  # just for GeoPt
 # Fetched strings of XML content, keyed by URL.
 XML_CACHE = cache.Cache('card.xml', 300)
 
+# Fetched strings of Google Places API JSON results, keyed by request URL.
+JSON_PLACES_API_CACHE = cache.Cache('card.places', 300)
+
 # Lists of Feature objects, keyed by [map_id, map_version_id, topic_id,
 # geolocation_rounded_to_10m, radius, max_count].
 FEATURE_LIST_CACHE = cache.Cache('card.feature_list', 60)
@@ -48,6 +51,9 @@ GOOGLE_SPREADSHEET_CSV_URL = (
     'https://docs.google.com/spreadsheet/pub?key=$key&output=csv')
 DEGREES = 3.14159265358979/180
 DEFAULT_STATUS_COLOR = '#eee'
+DEADLINE = 10
+MAPS_API_NEARBY_SEARCH_URL = (
+    'https://maps.googleapis.com/maps/api/place/nearbysearch/json?')
 
 
 def RoundGeoPt(point):
@@ -158,6 +164,80 @@ def GetKmlUrl(root_url, layer):
             urllib.urlencode([(k, v) for k, v in params if v]))
 
 
+def GetJsonFromGooglePlacesApi(layer, location):
+  """Gets a list of places for a Places layer around a given location.
+
+  Args:
+    layer: Places layer that defines the criteria for places query
+    location: db.GeoPt around which to retrieve places
+
+  Returns:
+    A list of dictionaries with the Places API results
+  """
+  # Construct Google Places API request URL based on the layer parameters
+  # as defined in geo/enterprise/maproot/proto/maproot.proto
+  places_layer = layer.get('source').get('places')
+  google_api_server_key = config.Get('google_api_server_key')
+  if not google_api_server_key:
+    raise base_handler.Error(
+        500, 'google_api_server_key is not set in the config')
+  places_request_params = [
+      ('key', google_api_server_key),
+      ('location', location),
+      ('rankby', 'distance'),
+      ('keyword', places_layer.get('keyword')),
+      ('name', places_layer.get('name')),
+      ('types', places_layer.get('types'))]
+  url = (MAPS_API_NEARBY_SEARCH_URL +
+         urllib.urlencode([(k, v) for k, v in places_request_params if v]))
+
+  # Call Places API if cache doesn't have a corresponding entry for the url
+  response = JSON_PLACES_API_CACHE.Get(
+      url, lambda: urlfetch.fetch(url=url, deadline=DEADLINE))
+
+  # Parse JSON results
+  response_content = json.loads(response.content)
+  status = response_content.get('status')
+  if status != 'OK' and status != 'ZERO_RESULTS':
+    # Something went wrong with the request, log the error
+    logging.error('Places API request failed with error %s', status)
+    return []
+  return response_content.get('results')
+
+
+def GetGeoPt(place):
+  """Returns a geo location of a given place.
+
+  Args:
+    place: Google Places API place
+
+  Returns:
+    GeoPt corresponding to the place location
+  """
+  location = place['geometry']['location']
+  return ndb.GeoPt(location['lat'], location['lng'])
+
+
+def GetFeaturesFromGooglePlacesJson(place_results):
+  """Builds a list of Feature objects from an array of given Place results.
+
+  Args:
+    place_results: An array of results from Google Places API search
+
+  Returns:
+    A list of Feature objects representing Google Places.
+  """
+  features = []
+  for place in place_results:
+    # TODO(user): Places API nearby search doesn't return address, so
+    # for now we display vicinity. We probably would want to query for place
+    # details to have actual address and phone number
+    features.append(Feature(place['name'],
+                            place.get('vicinity') or '',
+                            GetGeoPt(place)))
+  return features
+
+
 def GetTopic(root, topic_id):
   return {topic['id']: topic for topic in root['topics']}.get(topic_id)
 
@@ -166,19 +246,42 @@ def GetLayer(root, layer_id):
   return {layer['id']: layer for layer in root['layers']}.get(layer_id)
 
 
-def GetFeatures(map_root, topic_id, request):
-  """Gets a list of the Feature objects for a given topic."""
+def GetFeatures(map_root, topic_id, request, location_center):
+  """Gets a list of Feature objects for a given topic.
+
+  Args:
+    map_root: A dictionary with all the topics and layers information
+    topic_id: Id of the crowd report topic; features are retrieved from the
+        layers associated with this topic
+    request: Original card request
+    location_center: db.GeoPt around which to retrieve features. So far only
+        Places layer uses this to narrow results according to the
+        distance from this location. All other layers ignore this for now
+        and just return all features. Note that Places layer doesn't have a set
+        radius around location_center, it just tries to find features
+        as close as possible to location_center.
+
+  Returns:
+    A list of Feature objects associated with layers of a given topic in a given
+    map.
+  """
   topic = GetTopic(map_root, topic_id) or {}
   features = []
   for layer_id in topic.get('layer_ids', []):
-    url = GetKmlUrl(request.root_url, GetLayer(map_root, layer_id) or {})
-    if url:
-      try:
-        content = XML_CACHE.Get(
-            url, lambda: kmlify.FetchData(url, request.host))
-        features += GetFeaturesFromXml(content, layer_id)
-      except (SyntaxError, urlfetch.DownloadError):
-        pass
+    layer = GetLayer(map_root, layer_id)
+    if layer.get('type') == maproot.LayerType.GOOGLE_PLACES:
+      # Get features from the Google Places API
+      place_results_json = GetJsonFromGooglePlacesApi(layer, location_center)
+      features += GetFeaturesFromGooglePlacesJson(place_results_json)
+    else:
+      url = GetKmlUrl(request.root_url, layer or {})
+      if url:
+        try:
+          content = XML_CACHE.Get(
+              url, lambda: kmlify.FetchData(url, request.host))
+          features += GetFeaturesFromXml(content, layer_id)
+        except (SyntaxError, urlfetch.DownloadError):
+          pass
   return features
 
 
@@ -199,7 +302,7 @@ def GetFilteredFeatures(map_root, map_version_id, topic_id, request,
                         center, radius, max_count):
   """Gets a list of the Feature objects for a topic within the given circle."""
   def GetFromDatastore():
-    features = GetFeatures(map_root, topic_id, request)
+    features = GetFeatures(map_root, topic_id, request, center)
     if center:
       SetDistanceOnFeatures(features, center)
     FilterFeatures(features, radius, max_count)
@@ -432,6 +535,7 @@ class CardBase(base_handler.BaseHandler):
         logging.error('Could not extract center for ?place=%s', place_id)
 
     try:
+      # Find POIs associated with the topic layers
       features = GetFilteredFeatures(
           map_root, map_version_id, topic_id, self.request,
           center, radius, max_count)

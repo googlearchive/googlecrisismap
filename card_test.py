@@ -16,9 +16,11 @@ import datetime
 import json
 
 import card
+import config
 import kmlify
 import model
 import test_utils
+import utils
 
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb  # just for GeoPt
@@ -79,6 +81,32 @@ ATOM_DATA = '''
 </feed>
 '''
 
+GOOGLE_PLACES_JSON = {
+    'status': 'OK',
+    'html_attributions': [],
+    'results': [{
+        'vicinity': 'description1',
+        'geometry': {
+            'location': {
+                'lat': 60,
+                'lng': 25
+            }
+        },
+        'name': 'Helsinki'
+    }, {
+        'vicinity': 'description<2>two',
+        'geometry': {
+            'location': {
+                'lat': 40,
+                'lng': -83
+            }
+        },
+        'name': 'Columbus'
+    }]
+}
+
+GOOGLE_PLACES_JSON_STR = json.dumps(GOOGLE_PLACES_JSON)
+
 FEATURE_FIELDS = [
     ('Helsinki', 'description1', ndb.GeoPt(60, 25)),
     ('Columbus', 'description<2>two', ndb.GeoPt(40, -83))
@@ -119,6 +147,19 @@ MAP_ROOT = {
                 {'id': 'a1', 'color': '#0f0'},
                 {'id': 'a2', 'color': '#f00'}]
             }]
+    }, {
+        'id': 't3',
+        'title': 'Topic 3',
+        'layer_ids': ['layer4'],
+        'crowd_enabled': True,
+        'questions': [{
+            'id': 'q1',
+            'title': 'Pharmacies with foo',
+            'type': 'CHOICE',
+            'answers': [
+                {'id': 'a1', 'color': '#0f0'},
+                {'id': 'a2', 'color': '#f00'}]
+            }]
     }],
     'layers': [{
         'id': 'layer1',
@@ -132,6 +173,10 @@ MAP_ROOT = {
         'id': 'layer3',
         'type': 'KML',
         'source': {'kml': {'url': 'http://example.com/three.kml'}}
+    }, {
+        'id': 'layer4',
+        'type': 'GOOGLE_PLACES',
+        'source': {'places': {'types': 'pharmacy'}}
     }]
 }
 
@@ -184,6 +229,19 @@ class CardTest(test_utils.BaseTest):
     feature_fields = [(f.name, f.description_html, f.location)
                       for f in card.GetFeaturesFromXml(ATOM_DATA)]
     self.assertEquals(FEATURE_FIELDS, feature_fields)
+
+  def testGetFeaturesFromGooglePlacesJson(self):
+    places_results = GOOGLE_PLACES_JSON['results']
+    feature_fields = [(f.name, f.description_html, f.location)
+                      for f in
+                      card.GetFeaturesFromGooglePlacesJson(places_results)]
+    self.assertEquals(FEATURE_FIELDS, feature_fields)
+
+  def testGetFeaturesFromGooglePlacesJson_WithEmptyArray(self):
+    feature_fields = [(f.name, f.description_html, f.location)
+                      for f in
+                      card.GetFeaturesFromGooglePlacesJson([])]
+    self.assertEquals([], feature_fields)
 
   def testGetKmlUrl(self):
     self.assertEquals('http://example.com/foo.kml', card.GetKmlUrl(ROOT_URL, {
@@ -288,6 +346,64 @@ class CardTest(test_utils.BaseTest):
         }
     }))
 
+  def testGetJsonFromGooglePlacesApi(self):
+    self.AssertGetJsonFromGooglePlacesApi(
+        GOOGLE_PLACES_JSON_STR,
+        GOOGLE_PLACES_JSON['results'])
+
+    # Try the same request again and make sure the result comes from cache
+    # (i.e. there are no calls to the urlfetch)
+    self.mox.StubOutWithMock(urlfetch, 'fetch')
+    self.mox.ReplayAll()
+    self.assertEquals(GOOGLE_PLACES_JSON['results'],
+                      card.GetJsonFromGooglePlacesApi(MAP_ROOT.get('layers')[3],
+                                                      ndb.GeoPt(20, 50)))
+
+  def testGetJsonFromGooglePlacesApi_WithBadResponseStatus(self):
+    self.AssertGetJsonFromGooglePlacesApi(
+        '{"status": "REQUEST_DENIED", "results": []}',
+        [])
+
+  def testGetJsonFromGooglePlacesApi_WithZeroResults(self):
+    self.AssertGetJsonFromGooglePlacesApi(
+        '{"status": "ZERO_RESULTS", "results": []}',
+        [])
+
+  def AssertGetJsonFromGooglePlacesApi(self,
+                                       response_content,
+                                       expected_results):
+    """Verifies GetJsonFromGooglePlacesApi with given input and output.
+
+    Prepares a mock for urlfetch to return given response_content on a call to
+    Places API. Verifies that GetJsonFromGooglePlacesApi returns
+    expected_results given the urlfetch mock setup.
+
+    Args:
+      response_content: Content that urlfetch should return
+      expected_results: an array of Places results that
+          GetJsonFromGooglePlacesApi should return
+    """
+
+    config.Set('google_api_server_key', 'someFakeApiKey')
+
+    # Simulate a successful fetch from Places API by setting up a fake
+    # for urlfetch
+    url = (
+        'https://maps.googleapis.com/maps/api/place/nearbysearch/json?'
+        'key=someFakeApiKey'
+        '&location=20.0%2C50.0'
+        '&rankby=distance'
+        '&types=pharmacy')
+    url_responses = {url: utils.Struct(content=response_content)}
+    self.mox.stubs.Set(
+        urlfetch, 'fetch', lambda url, **kwargs: url_responses[url])
+
+    # Get JSON from Google Places API for a GOOGLE_PLACES layer
+    self.assertEquals(expected_results,
+                      card.GetJsonFromGooglePlacesApi(MAP_ROOT.get('layers')[3],
+                                                      ndb.GeoPt(20, 50)))
+    self.mox.UnsetStubs()
+
   def testGetFeatures(self):
     # Try getting features for a topic with two layers.
     self.SetForTest(kmlify, 'FetchData', lambda url, host: 'data from ' + url)
@@ -296,7 +412,7 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals(
         ['parsed data from http://example.com/one.kml for layer1',
          'parsed data from http://example.com/three.kml for layer3'],
-        card.GetFeatures(MAP_ROOT, 't1', self.request))
+        card.GetFeatures(MAP_ROOT, 't1', self.request, ndb.GeoPt(20, 50)))
 
   def testGetFeaturesWithFailedFetches(self):
     # Even if some fetches fail, we should get features from the others.
@@ -308,7 +424,8 @@ class CardTest(test_utils.BaseTest):
     self.SetForTest(card, 'GetFeaturesFromXml',
                     lambda data, layer: ['parsed ' + data])
     self.assertEquals(['parsed data from http://example.com/three.kml'],
-                      card.GetFeatures(MAP_ROOT, 't1', self.request))
+                      card.GetFeatures(MAP_ROOT, 't1', self.request,
+                                       ndb.GeoPt(20, 50)))
 
   def testGetFeaturesWithFailedParsing(self):
     # Even if some files don't parse, we should get features from the others.
@@ -321,11 +438,13 @@ class CardTest(test_utils.BaseTest):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: 'data from ' + url)
     self.SetForTest(card, 'GetFeaturesFromXml', ParseButSometimesFail)
     self.assertEquals(['parsed data from http://example.com/one.kml'],
-                      card.GetFeatures(MAP_ROOT, 't1', self.request))
+                      card.GetFeatures(MAP_ROOT, 't1', self.request,
+                                       ndb.GeoPt(20, 50)))
 
   def testGetFeaturesWithInvalidTopicId(self):
     # GetFeatures should accept a nonexistent topic without raising exceptions.
-    self.assertEquals([], card.GetFeatures(MAP_ROOT, 'xyz', self.request))
+    self.assertEquals([], card.GetFeatures(MAP_ROOT, 'xyz', self.request,
+                                           ndb.GeoPt(20, 50)))
 
   def testGetLatestAnswers(self):
     now = datetime.datetime.utcnow()
