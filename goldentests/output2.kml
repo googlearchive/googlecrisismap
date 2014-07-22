@@ -35,5 +35,18 @@
     </Point>
     <styleUrl>#style1</styleUrl>
   </Placemark>
+  <Placemark>
+    <name>Backup High School</name>
+    <description>&lt;b&gt;Place:&lt;/b&gt; Backup High School&lt;input type="hidden" name="kmlify-location" value="0.000000,100.000000"&gt;</description>
+    <MultiGeometry>
+      <Point>
+        <coordinates>100.0,0.0</coordinates>
+      </Point>
+      <LineString>
+        <coordinates>101.0,0.0 102.0,1.0</coordinates>
+      </LineString>
+    </MultiGeometry>
+    <styleUrl>#style1</styleUrl>
+  </Placemark>
 </Document>
 </kml>

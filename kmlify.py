@@ -230,6 +230,10 @@ def KmlGeometryFromJson(geom):
         KmlGeometryFromJson({'type': t[5:], 'coordinates': subcoords})
         for subcoords in coords
     ))
+  if t == 'GeometryCollection':
+    return xml('MultiGeometry', *(
+        KmlGeometryFromJson(geometry) for geometry in geom.get('geometries', [])
+    ))
   if t in ['Point', 'LineString']:
     return xml(t, xml('coordinates', KmlCoordinatesFromJson(coords)))
   if t == 'Polygon':
