@@ -632,6 +632,8 @@ class MetadataFetchTest(test_utils.BaseTest):
 
   def testSystem(self):
     """Tests map, metadata_fetch, and metadata, all working together."""
+    self.SetTime(FETCH_TIME)
+
     map_object = test_utils.CreateMap({
         'layers': [{'type': 'KML',
                     'source': {'kml': {'url': SOURCE_URL}}},
@@ -666,7 +668,6 @@ class MetadataFetchTest(test_utils.BaseTest):
         status_code=200, headers=RESPONSE_HEADERS_2, content=SIMPLE_KML))
 
     self.mox.ReplayAll()
-    self.SetTime(FETCH_TIME)
     self.ExecuteTask(tasks[0])
     self.SetTime(FETCH_TIME_2)
     self.ExecuteTask(tasks[1])

@@ -201,8 +201,6 @@ class Cache(object):
 
     # Not found, so look for the key in memcache.
     expiration, value_pickle = memcache.get(key_json) or (0, None)
-    if now >= expiration:
-      value_pickle = None
 
     # Not found, so generate the value and store it in memcache.
     if make_value and not value_pickle:

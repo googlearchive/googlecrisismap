@@ -41,8 +41,10 @@ import utils
 import webapp2
 import webob
 
+from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore_types
 from google.appengine.api import taskqueue
+from google.appengine.api.memcache import memcache_stub
 from google.appengine.ext import testbed
 
 # mox.IgnoreArg() is such a horrible way to spell "I don't care".
@@ -197,8 +199,16 @@ class BaseTest(unittest.TestCase):
     self.testbed.activate()
     root = os.path.dirname(__file__) or '.'
     self.testbed.init_datastore_v3_stub(require_indexes=True, root_path=root)
-    self.testbed.init_memcache_stub()
     self.testbed.init_taskqueue_stub(root_path=root)
+
+    # Register memcache stub with a custom gettime function, so we can control
+    # time in memcache through self.SetTime(..)
+    # pylint: disable=unnecessary-lambda
+    apiproxy_stub_map.apiproxy.RegisterStub(
+        'memcache',
+        memcache_stub.MemcacheServiceStub(lambda: time.time()))
+    # pylint: enable=unnecessary-lambda
+
     self.testbed.init_urlfetch_stub()
     self.testbed.init_user_stub()
     self.testbed.init_search_stub()
