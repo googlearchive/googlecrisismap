@@ -24,28 +24,28 @@ import test_utils
 class DomainTest(test_utils.BaseTest):
   """Tests for the domain model."""
 
-  def assertDomain(self, name, default_label, has_sticky_catalog_entries,
+  def AssertDomain(self, name, default_label, has_sticky_catalog_entries,
                    initial_domain_role):
     expected = dict(name=name, default_label=default_label,
                     has_sticky_catalog_entries=has_sticky_catalog_entries,
                     initial_domain_role=initial_domain_role)
-    self.assertAttrs(domains.Domain.Get(name), **expected)
+    self.AssertAttrs(domains.Domain.Get(name), **expected)
     cache.Reset()  # ensure it's correct in the datastore, not just the cache
-    self.assertAttrs(domains.Domain.Get(name), **expected)
+    self.AssertAttrs(domains.Domain.Get(name), **expected)
 
   def testCreate(self):
     # First one to create a domain gets to own it; no permissions needed.
     self.assertIsNone(domains.Domain.Get('MyDomain.com'))
     self.CaptureLog()
     domain = domains.Domain.Put('MyDomain.com')
-    self.assertLog(logs.Event.DOMAIN_CREATED, domain_name='mydomain.com')
+    self.AssertLog(logs.Event.DOMAIN_CREATED, domain_name='mydomain.com')
 
     # The name should be normalized and properties should have their default
     # values, both in the returned object and when refetched.
-    self.assertAttrs(domain, name='mydomain.com', default_label='empty',
+    self.AssertAttrs(domain, name='mydomain.com', default_label='empty',
                      has_sticky_catalog_entries=False,
                      initial_domain_role=perms.Role.MAP_VIEWER)
-    self.assertDomain('mydomain.com', 'empty', False, perms.Role.MAP_VIEWER)
+    self.AssertDomain('mydomain.com', 'empty', False, perms.Role.MAP_VIEWER)
 
   def testModify(self):
     # Overwriting a domain should require DOMAIN_ADMIN access.
@@ -58,13 +58,13 @@ class DomainTest(test_utils.BaseTest):
       domains.Domain.Put('xyz.com', default_label='fancy-map',
                          has_sticky_catalog_entries=True,
                          initial_domain_role=perms.Role.MAP_EDITOR)
-    self.assertDomain('xyz.com', 'fancy-map', True, perms.Role.MAP_EDITOR)
+    self.AssertDomain('xyz.com', 'fancy-map', True, perms.Role.MAP_EDITOR)
     # TODO(kpy): Check that DOMAIN_CREATED is not logged in this case.
 
     # Specifying just one property should leave the rest unchanged.
     with test_utils.Login('manager'):
       domains.Domain.Put('xyz.com', default_label='another-map')
-    self.assertDomain('xyz.com', 'another-map', True, perms.Role.MAP_EDITOR)
+    self.AssertDomain('xyz.com', 'another-map', True, perms.Role.MAP_EDITOR)
 
 
 if __name__ == '__main__':

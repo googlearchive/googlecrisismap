@@ -23,7 +23,7 @@ import test_utils
 
 
 class JsonpTest(test_utils.BaseTest):
-  def assertRaisesErrorWithStatus(self, expected_status, callable_obj, *args):
+  def AssertRaisesErrorWithStatus(self, expected_status, callable_obj, *args):
     """Asserts that jsonp.Error is raised with the given status code."""
     try:
       callable_obj(*args)
@@ -38,9 +38,9 @@ class JsonpTest(test_utils.BaseTest):
                       jsonp.SanitizeUrl('http://example.org/foo?a=b'))
     self.assertEquals('https://example.com:8080/bar?p=q',
                       jsonp.SanitizeUrl('https://example.com:8080/bar?p=q'))
-    self.assertRaisesErrorWithStatus(
+    self.AssertRaisesErrorWithStatus(
         httplib.BAD_REQUEST, jsonp.SanitizeUrl, 'ftp://example.net/foo')
-    self.assertRaisesErrorWithStatus(
+    self.AssertRaisesErrorWithStatus(
         httplib.BAD_REQUEST, jsonp.SanitizeUrl, 'example.us/foo')
 
   def testParseJson(self):
@@ -49,9 +49,9 @@ class JsonpTest(test_utils.BaseTest):
     self.assertEquals(3, jsonp.ParseJson('3'))
     self.assertEquals(3, jsonp.ParseJson('foo(3)'))
     self.assertEquals(3, jsonp.ParseJson('foo(3) ;\n '))
-    self.assertRaisesErrorWithStatus(
+    self.AssertRaisesErrorWithStatus(
         httplib.FORBIDDEN, jsonp.ParseJson, 'x')
-    self.assertRaisesErrorWithStatus(
+    self.AssertRaisesErrorWithStatus(
         httplib.FORBIDDEN, jsonp.ParseJson, 'foo(3')
 
   def testLocalizeMapRoot(self):

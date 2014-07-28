@@ -559,23 +559,23 @@ class MetadataFetchTest(test_utils.BaseTest):
 
   def testDetermineFetchInterval(self):
     # Small files should be fetched every couple of minutes.
-    self.assertBetween(60, 180, metadata_fetch.DetermineFetchInterval(
+    self.AssertBetween(60, 180, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 200, 'fetch_length': 100}))
 
     # Medium-sized files should be fetched less often.
-    self.assertBetween(180, 600, metadata_fetch.DetermineFetchInterval(
+    self.AssertBetween(180, 600, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 200, 'fetch_length': 100e3}))
 
     # Big files should be fetched every hour or so.
-    self.assertBetween(600, 7200, metadata_fetch.DetermineFetchInterval(
+    self.AssertBetween(600, 7200, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 200, 'fetch_length': 1e6}))
 
     # Update at least once a day, no matter how huge the file is.
-    self.assertBetween(7200, 86400, metadata_fetch.DetermineFetchInterval(
+    self.AssertBetween(7200, 86400, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 200, 'fetch_length': 100e6}))
 
     # If we got a 304, interval should depend on fetch_length instead of length.
-    self.assertBetween(60, 180, metadata_fetch.DetermineFetchInterval(
+    self.AssertBetween(60, 180, metadata_fetch.DetermineFetchInterval(
         {'fetch_status': 304, 'fetch_length': 100, 'length': 1e6}))
 
   def testUpdateMetadata(self):

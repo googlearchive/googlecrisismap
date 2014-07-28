@@ -348,12 +348,12 @@ class BaseTest(unittest.TestCase):
                     staticmethod(FakeDetermineEtaPosix))
     return now
 
-  def assertBetween(self, low, high, actual):
+  def AssertBetween(self, low, high, actual):
     """Checks that a value is within a desired range."""
     self.assertGreaterEqual(actual, low)
     self.assertLessEqual(actual, high)
 
-  def assertEqualsUrlWithUnorderedParams(self, expected, actual):
+  def AssertEqualsUrlWithUnorderedParams(self, expected, actual):
     """Checks for an expected URL, ignoring the order of query params."""
     e_scheme, e_host, e_path, e_query, e_frag = urlparse.urlsplit(expected)
     a_scheme, a_host, a_path, a_query, a_frag = urlparse.urlsplit(actual)
@@ -368,7 +368,7 @@ class BaseTest(unittest.TestCase):
     self.mox.stubs.Set(logs, 'RecordEvent', self.MockRecordEvent)
     self.logs = []
 
-  def assertLog(self, event, **kwargs):
+  def AssertLog(self, event, **kwargs):
     expected_items = dict(event=event, **kwargs).items()
     matches = [log_dict for log_dict in self.logs
                if set(log_dict.items()).issuperset(expected_items)]
@@ -376,7 +376,7 @@ class BaseTest(unittest.TestCase):
     self.assertEqual(1, len(matches), 'Multiple matching logs found.')
     return matches[0]
 
-  def assertAttrs(self, obj, **kwargs):
+  def AssertAttrs(self, obj, **kwargs):
     self.assertEqual(kwargs, {name: getattr(obj, name) for name in kwargs})
 
 

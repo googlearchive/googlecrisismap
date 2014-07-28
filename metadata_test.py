@@ -60,9 +60,9 @@ class MetadataTest(test_utils.BaseTest):
     # Both sources should now be queued for metadata fetches.
     urls = sorted(task['url'] for task in self.PopTasks('metadata'))
     self.assertEquals(2, len(urls))
-    self.assertEqualsUrlWithUnorderedParams(
+    self.AssertEqualsUrlWithUnorderedParams(
         '/root/.metadata_fetch?source=GEORSS:http://y.com/b', urls[0])
-    self.assertEqualsUrlWithUnorderedParams(
+    self.AssertEqualsUrlWithUnorderedParams(
         '/root/.metadata_fetch?source=KML:http://x.com/a', urls[1])
 
     # Activating multiple times should not add redundant tasks.
@@ -93,7 +93,7 @@ class MetadataTest(test_utils.BaseTest):
     self.assertEquals(1, metadata.ACTIVE_CACHE.Get('KML:http://u.com/v'))
     urls = sorted(task['url'] for task in self.PopTasks('metadata'))
     self.assertEquals(1, len(urls))
-    self.assertEqualsUrlWithUnorderedParams(
+    self.AssertEqualsUrlWithUnorderedParams(
         '/root/.metadata_fetch?source=KML:http://u.com/v', urls[0])
 
     # Requesting multiple times should not add redundant tasks.

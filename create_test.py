@@ -34,7 +34,7 @@ class CreateTest(test_utils.BaseTest):
     self.assertTrue(map_object)
     self.assertEquals('xyz.com', map_object.domain)
     self.assertTrue('Untitled' in map_object.map_root['title'])
-    self.assertLog(logs.Event.MAP_CREATED, uid='creator',
+    self.AssertLog(logs.Event.MAP_CREATED, uid='creator',
                    map_id=map_object.id, domain_name='xyz.com')
 
   def testCreateWithoutPermission(self):

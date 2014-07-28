@@ -260,7 +260,7 @@ class CardTest(test_utils.BaseTest):
             }
         }
     }))
-    self.assertEqualsUrlWithUnorderedParams((
+    self.AssertEqualsUrlWithUnorderedParams((
         'http://app.com/root/.kmlify'
         '?url=http://example.com/data.csv'
         '&type=csv'
@@ -291,7 +291,7 @@ class CardTest(test_utils.BaseTest):
             }
         }
     }))
-    self.assertEqualsUrlWithUnorderedParams((
+    self.AssertEqualsUrlWithUnorderedParams((
         'http://app.com/root/.kmlify'
         '?url=https://docs.google.com/spreadsheet/pub?key=xyz%26output=csv'
         '&type=csv'
@@ -323,7 +323,7 @@ class CardTest(test_utils.BaseTest):
             }
         }
     }))
-    self.assertEqualsUrlWithUnorderedParams((
+    self.AssertEqualsUrlWithUnorderedParams((
         'http://app.com/root/.kmlify'
         '?url=http://example.com/geodata.json'
         '&type=geojson'
