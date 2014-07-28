@@ -73,11 +73,7 @@ function testShare(isTabbed) {
   // After shortening, the URI text field should contain a shortened URI.
   run(click, crisis.share.popup.shorten);
 
-  // On safari, puppet is flaky about displaying the reply from the URL
-  // shortener service (b/7877785)
-  if (!puppet.userAgent.isSafari()) {
-    run(text, crisis.share.popup.url, /^http:\/\/goo\.gl\//);
-  }
+  run(text, crisis.share.popup.url, /^http:\/\/goo\.gl\//);
 
 
   // The Facebook and Twitter buttons should use the shortened URI, but Google+

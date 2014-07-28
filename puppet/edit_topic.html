@@ -122,8 +122,8 @@ window.onload = function() {
   // Make sure adding this topic enables crowd reports with the new question
   if (puppet.userAgent.isFirefox()) {
     // On forge, clickCenterOfMap fails to trigger a click event that brings up
-    // the details tab on all but firefox, though it works on Chrome, Safari,
-    // and Android when run locally
+    // the details tab on all but firefox, though it works on Chrome and
+    // Android when run locally
     run(clickCenterOfMap);
     run(shown,
         crisis.crowd.panel + xtext('Know something about this location?'));

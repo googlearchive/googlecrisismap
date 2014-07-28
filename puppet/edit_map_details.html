@@ -65,21 +65,18 @@ function testEditMapDetails(isTabbed) {
   run(click, crisis.toolbar.redo);
   run(text, crisis.title, 'Godzilla Meets Slobsterfestefgh');
 
-  // Edit the description, undo, and redo. Flaky on safari-winxp and ie8-winxp
-  // b/7900775
-  if (!puppet.userAgent.isSafari() && !puppet.userAgent.isIE(7, 9)) {
-    run(click, crisis.title);
-    run(shown, crisis.inspector.ok);  // wait for inspector dialog to pop up
-    run(type, crisis.inspector.item(1) + '//textarea', 'xyz');
-    run(click, crisis.inspector.ok);
-    run(text, crisis.description, 'Tis the voice of the Lobster.xyz');
+  run(click, crisis.title);
+  run(shown, crisis.inspector.ok);  // wait for inspector dialog to pop up
+  run(type, crisis.inspector.item(1) + '//textarea', 'xyz');
+  run(click, crisis.inspector.ok);
+  run(text, crisis.description, 'Tis the voice of the Lobster.xyz');
 
-    run(click, crisis.toolbar.undo);
-    run(text, crisis.description, 'Tis the voice of the Lobster.');
+  run(click, crisis.toolbar.undo);
+  run(text, crisis.description, 'Tis the voice of the Lobster.');
 
-    run(click, crisis.toolbar.redo);
-    run(text, crisis.description, 'Tis the voice of the Lobster.xyz');
-  }
+  run(click, crisis.toolbar.redo);
+  run(text, crisis.description, 'Tis the voice of the Lobster.xyz');
+
   circumventSavePrompt()
 }
 </script>
