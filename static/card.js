@@ -65,6 +65,22 @@ function $(id) {
   return document.getElementById(id);
 }
 
+/**
+ * Browser-independent function to get elements that are descendants of
+ * the given element that have the given class.
+ * @param {string} names A string of whitespace-separated class names
+ *     to be matched.
+ * @param {Element} elem The root DOM element in which to search.
+ * @return {Array.<Element>} The array of elements that have the class name.
+ */
+function getElementsByClassName(names, elem) {
+  if (elem.getElementsByClassName) {
+    return elem.getElementsByClassName(names);
+  } else if (elem) {
+    return elem.querySelectorAll((' ' + names).replace(/ +/g, '.'));
+  }
+}
+
 /** Inform the parent window that the card's content size has changed. */
 function updateSize() {
   var card = $('card');
@@ -291,8 +307,8 @@ function updateLocationMenu(places, placeId, baseUrl, locationUnavailable) {
 
 /** Hide all checkmarks associated with the location menu options. */
 function clearSelectedLocation() {
-  var checkmarks = document.getElementsByClassName(
-      'location-menu option checkmark');
+  var checkmarks = getElementsByClassName('location-menu option checkmark',
+                                          document);
   for (var i = 0; i < checkmarks.length; i++) {
     checkmarks[i].style.visibility = 'hidden';
   }
@@ -310,8 +326,8 @@ function clearSelectedLocation() {
 function handleLocationClick(e, placeName, baseUrl, locationUnavailable) {
   logEvent(ACTION_LOCATION_MENU_OPTION_CLICK, placeName);
   clearSelectedLocation();
-  var checkmarks = e.currentTarget.getElementsByClassName(
-      'location-menu option checkmark');
+  var checkmarks = getElementsByClassName('location-menu option checkmark',
+                                          e.currentTarget);
   if (checkmarks.length) {
     checkmarks[0].style.visibility = 'visible';
   }
@@ -336,8 +352,8 @@ function handleMyLocationClick(e, baseUrl, locationUnavailable) {
   }
   logEvent(ACTION_NEAR_YOU_OPTION_CLICK, null);
   clearSelectedLocation();
-  var checkmarks = e.currentTarget.getElementsByClassName(
-      'location-menu option checkmark');
+  var checkmarks = getElementsByClassName('location-menu option checkmark',
+                                          e.currentTarget);
   if (checkmarks.length) {
     checkmarks[0].style.visibility = 'visible';
   }
