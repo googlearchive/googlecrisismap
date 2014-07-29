@@ -289,7 +289,7 @@
       "visibility": "DEFAULT_OFF",
       "type": "GOOGLE_WEATHER",
       "source": {
-        "weather": {
+        "google_weather": {
           "label_color": "WHITE",
           "temperature_unit": "FAHRENHEIT",
           "wind_speed_unit": "METERS_PER_SECOND"
@@ -310,7 +310,7 @@
       "description": "Hospitals",
       "type": "GOOGLE_PLACES",
       "source": {
-        "places": {
+        "google_places": {
           "keyword": "hospital"
         }
       }

@@ -271,7 +271,7 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
 
       break;
     case cm.LayerModel.Type.WEATHER:
-      var weather = source['weather'] || {};
+      var weather = source['google_weather'] || source['weather'] || {};
       model.set('label_color',
           cm.LayerModel.MAPROOT_TO_MODEL_LABEL_COLORS[
               weather['label_color']] ||
@@ -295,7 +295,7 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
       model.set('wms_layers', wms['layer_names']);
       break;
     case cm.LayerModel.Type.PLACES:
-      var places = source['places'] || {};
+      var places = source['google_places'] || source['places'] || {};
       model.set('places_icon_url', places['icon_url']);
       model.set('places_keyword', places['keyword']);
       model.set('places_name', places['name']);
@@ -394,7 +394,7 @@ cm.LayerModel.prototype.toMapRoot = function() {
       };
       break;
     case cm.LayerModel.Type.WEATHER:
-      source['weather'] = {
+      source['google_weather'] = {
         'label_color': cm.LayerModel.MODEL_TO_MAPROOT_LABEL_COLORS[
             this.get('label_color')] || 'BLACK',
         'temperature_unit': cm.LayerModel.MODEL_TO_MAPROOT_TEMPERATURE_UNITS[
@@ -417,7 +417,7 @@ cm.LayerModel.prototype.toMapRoot = function() {
       };
       break;
     case cm.LayerModel.Type.PLACES:
-      source['places'] = {
+      source['google_places'] = {
         'icon_url': this.get('places_icon_url'),
         'keyword': this.get('places_keyword'),
         'name': this.get('places_name'),
