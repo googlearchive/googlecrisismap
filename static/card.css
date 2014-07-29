@@ -94,7 +94,7 @@ body {
   vertical-align: text-bottom;
 }
 .card .location-disclosure {
-  background: url(/.static/dark-grey-disclosure-arrow-down.png) center no-repeat;
+  background: url(triangle_down.png) center no-repeat;
   height: 11px;
   width: 11px;
   cursor: pointer;
