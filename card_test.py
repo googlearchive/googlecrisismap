@@ -176,7 +176,7 @@ MAP_ROOT = {
     }, {
         'id': 'layer4',
         'type': 'GOOGLE_PLACES',
-        'source': {'places': {'types': 'pharmacy'}}
+        'source': {'google_places': {'types': 'pharmacy'}}
     }]
 }
 

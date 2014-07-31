@@ -176,7 +176,7 @@ def GetJsonFromGooglePlacesApi(layer, location):
   """
   # Construct Google Places API request URL based on the layer parameters
   # as defined in geo/enterprise/maproot/proto/maproot.proto
-  places_layer = layer.get('source').get('places')
+  places_layer = layer.get('source').get('google_places')
   google_api_server_key = config.Get('google_api_server_key')
   if not google_api_server_key:
     raise base_handler.Error(
