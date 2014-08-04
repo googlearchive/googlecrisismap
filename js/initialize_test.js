@@ -12,7 +12,7 @@
 // Author: kpy@google.com (Ka-Ping Yee)
 
 goog.require('cm.Html');
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 
 function InitializeTest() {
   cm.TestBase.call(this);
@@ -66,7 +66,7 @@ function MapTest() {
   // value of cm.Html.sanitize_ to be saved now and restored on test teardown.
   this.setForTest_('cm.Html.sanitize_', null);
   var html = {'sanitizeWithPolicy': function() {}};
-  goog.module.provide('sanitizer', 'html', html);
+  goog.module.Loader.provide('sanitizer', 'html', html);
 
   // Used by the AboutPopup.
   this.setForTest_('goog.dom.htmlToDocumentFragment', createMockFunction());

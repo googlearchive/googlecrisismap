@@ -16,7 +16,7 @@ goog.require('cm.TestBase');
 goog.require('cm.css');
 
 goog.require('goog.json');
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 goog.require('goog.object');
 
 

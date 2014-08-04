@@ -16,7 +16,7 @@ goog.require('cm.TabItem');
 goog.require('cm.events');
 goog.require('cm.ui');
 goog.require('goog.array');
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 
 /**
  * An UI element for a group of tabs and a content region for their associated
@@ -92,7 +92,7 @@ cm.TabView.prototype.render = function(parent) {
   if (this.config_['enable_editing']) {
     this.toolbarElem_ = cm.ui.create('div');
     cm.ui.append(parent, this.toolbarElem_);
-    goog.module.require('edit', 'cm.ToolbarView',
+    goog.module.Loader.require('edit', 'cm.ToolbarView',
                         goog.bind(this.toolbarViewHandler_, this));
   }
 

@@ -117,7 +117,7 @@ TabViewTest.prototype.testCreation_editingEnabled = function() {
   var fakeToolbarCtor = function(el) {
     cm.ui.append(el, 'fake toolbar');
   };
-  goog.module.provide('edit', 'cm.ToolbarView', fakeToolbarCtor);
+  goog.module.Loader.provide('edit', 'cm.ToolbarView', fakeToolbarCtor);
 
   this.expectEvent(cm.app, 'resize');
   this.config_ = {'enable_editing': true};

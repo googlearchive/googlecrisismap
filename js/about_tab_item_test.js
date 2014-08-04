@@ -13,7 +13,7 @@ goog.require('cm.TestBase');
 goog.require('cm.ToolbarView');
 goog.require('cm.css');
 
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 
 function AboutTabItemTest() {
   cm.TestBase.call(this);
@@ -52,7 +52,7 @@ AboutTabItemTest.prototype.testCreation = function() {
 
 AboutTabItemTest.prototype.testCreation_editingEnabled = function() {
   // Avoids the async load of the edit module.
-  goog.module.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
+  goog.module.Loader.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
   var about = this.createAboutTabItem_(
       'AboutTabItemTest.testCreation', null,
       {'draft_mode': true, 'enable_editing': true});
@@ -92,7 +92,7 @@ AboutTabItemTest.prototype.testSetDefaultViewHidden = function() {
 /** Tests the set default view. */
 AboutTabItemTest.prototype.testSetDefaultView = function() {
   // Avoids the async load of the toolbar.
-  goog.module.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
+  goog.module.Loader.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
   var about = this.createAboutTabItem_(
       'testSetDefaultView', null, {'enable_editing': true});
   var link = expectDescendantOf(

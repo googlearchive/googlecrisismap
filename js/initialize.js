@@ -43,7 +43,7 @@ goog.require('goog.dom.ViewportSizeMonitor');
 goog.require('goog.dom.classes');
 goog.require('goog.i18n.bidi');
 goog.require('goog.math.Size');
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 goog.require('goog.ui.Component');
 
 /** @const */var MIN_DOCUMENT_WIDTH_FOR_SIDEBAR = 690;
@@ -256,9 +256,9 @@ cm.Map = function(frame, opt_config) {
     return getModuleUrl(module, lang);
   };
 
-  goog.module.initLoader('', googModuleGetModuleUrl);
+  goog.module.Loader.init('', googModuleGetModuleUrl);
   var self = this;
-  goog.module.require('sanitizer', 'html', function(html) {
+  goog.module.Loader.require('sanitizer', 'html', function(html) {
     installHtmlSanitizer(html);
     // We need to defer buildUi until after sanitizer_module.js is loaded,
     // so we call buildUi inside this callback.
@@ -780,7 +780,8 @@ cm.Map.prototype.constructEditor_ = function(appState, mapModel) {
   }
   var self = this;
   var arranger;
-  goog.module.require('edit', 'cm.ArrangeView', function(ArrangeView) {
+  goog.module.Loader.require(
+      'edit', 'cm.ArrangeView', function(ArrangeView) {
     arranger = new ArrangeView(self.arrangerElem_, self.panelElem_,
                                appState, mapModel,
                                self.config_['use_tab_panel']);
@@ -788,7 +789,8 @@ cm.Map.prototype.constructEditor_ = function(appState, mapModel) {
   // Mark the body as editable so other styles can adjust accordingly.
   goog.dom.classes.add(this.frameElem_, cm.css.EDIT);
 
-  goog.module.require('edit', 'cm.EditPresenter', function(EditPresenter) {
+  goog.module.Loader.require(
+      'edit', 'cm.EditPresenter', function(EditPresenter) {
     new EditPresenter(appState, mapModel, arranger, self.config_);
   });
 };

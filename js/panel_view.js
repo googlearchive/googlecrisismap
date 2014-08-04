@@ -33,7 +33,7 @@ goog.require('goog.dom');
 goog.require('goog.dom.classes');
 goog.require('goog.events.EventType');
 goog.require('goog.i18n.MessageFormat');
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 goog.require('goog.style');
 
 /** @const string */
@@ -253,7 +253,7 @@ cm.PanelView = function(frameElem, parentElem, mapContainer, model,
     // This loads the 'edit' module, then calls the function in arg 3, passing
     // it the object that the module exported with the name 'cm.ToolbarView'.
     var me = this;
-    goog.module.require('edit', 'cm.ToolbarView', function(ToolbarView) {
+    goog.module.Loader.require('edit', 'cm.ToolbarView', function(ToolbarView) {
       var toolbarView = new ToolbarView(
           toolbarContainer, me.model_, !!me.config_['save_url'],
           me.config_['dev_mode'], me.config_['map_list_url'],

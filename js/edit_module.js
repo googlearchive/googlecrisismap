@@ -18,14 +18,14 @@ goog.require('cm.EditPresenter');
 goog.require('cm.InspectorView');
 goog.require('cm.LayerDragHandler');
 goog.require('cm.ToolbarView');
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 
 // One provide() line for each object to export.
-goog.module.provide('edit', 'cm.ArrangeView', cm.ArrangeView);
-goog.module.provide('edit', 'cm.EditPresenter', cm.EditPresenter);
-goog.module.provide('edit', 'cm.InspectorView', cm.InspectorView);
-goog.module.provide('edit', 'cm.LayerDragHandler', cm.LayerDragHandler);
-goog.module.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
+goog.module.Loader.provide('edit', 'cm.ArrangeView', cm.ArrangeView);
+goog.module.Loader.provide('edit', 'cm.EditPresenter', cm.EditPresenter);
+goog.module.Loader.provide('edit', 'cm.InspectorView', cm.InspectorView);
+goog.module.Loader.provide('edit', 'cm.LayerDragHandler', cm.LayerDragHandler);
+goog.module.Loader.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
 
 // Last, announce that the module has finished loading.
-goog.module.provide('edit');
+goog.module.Loader.provide('edit');

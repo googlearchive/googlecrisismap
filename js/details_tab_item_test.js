@@ -12,7 +12,7 @@
 goog.require('cm.AboutTabItem');
 goog.require('cm.TestBase');
 
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 
 function DetailsTabItemTest() {
   cm.TestBase.call(this);

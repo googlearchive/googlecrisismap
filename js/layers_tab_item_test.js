@@ -14,7 +14,7 @@ goog.require('cm.TestBase');
 goog.require('cm.ToolbarView');
 goog.require('cm.css');
 
-goog.require('goog.module');
+goog.require('goog.module.Loader');
 
 function LayersTabItemTest() {
   cm.TestBase.call(this);
@@ -84,7 +84,7 @@ LayersTabItemTest.prototype.testZoomToLayerEventForwarded = function() {
 
 /** Tests the DELETE_LAYER event is forwarded properly. */
 LayersTabItemTest.prototype.testDeleteLayerEventForwarded = function() {
-  goog.module.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
+  goog.module.Loader.provide('edit', 'cm.ToolbarView', cm.ToolbarView);
   var layer = this.addLayer_('my_layer', 'testDeleteLayerEventForwarded');
   var layersTab = this.createLayersTabItem_({'enable_editing': true});
   this.expectEvent(cm.app, cm.events.DELETE_LAYER, 1, function(props) {
