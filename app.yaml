@@ -21,8 +21,6 @@ libraries:
   version: "latest"
 - name: webapp2
   version: "latest"
-- name: jinja2
-  version: "latest"
 
 # Enabling warmup requests gives us the option to configure idle instances,
 # if we need to prepare for traffic spikes ahead of time.  For details, see:
