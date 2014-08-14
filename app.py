@@ -133,6 +133,7 @@ app = webapp2.WSGIApplication([
             Route('/.wms/cleanup', 'wmscache.tileworker.CleanupOldWorkers'),
             Route('/.wms/tileworker', 'wmscache.tileworker.StartWorker'),
             Route('/.crowd_report_cleanup', 'crowd_report_tasks.Cleanup'),
+
         ])
     ]),
 ])
