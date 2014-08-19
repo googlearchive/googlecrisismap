@@ -81,10 +81,11 @@ ATOM_DATA = '''
 </feed>
 '''
 
-GOOGLE_PLACES_JSON = {
+GOOGLE_PLACES_SEARCH_JSON = {
     'status': 'OK',
     'html_attributions': [],
     'results': [{
+        'place_id': 'placeId1',
         'vicinity': 'description1',
         'geometry': {
             'location': {
@@ -94,6 +95,7 @@ GOOGLE_PLACES_JSON = {
         },
         'name': 'Helsinki'
     }, {
+        'place_id': 'placeId2',
         'vicinity': 'description<2>two',
         'geometry': {
             'location': {
@@ -105,11 +107,18 @@ GOOGLE_PLACES_JSON = {
     }]
 }
 
-GOOGLE_PLACES_JSON_STR = json.dumps(GOOGLE_PLACES_JSON)
+GOOGLE_PLACES_SEARCH_JSON_STR = json.dumps(GOOGLE_PLACES_SEARCH_JSON)
+
+PLACES_FEATURES = [
+    card.Feature('Helsinki', None, ndb.GeoPt(60, 25), 'layer4',
+                 gplace_id='placeId1', layer_type='GOOGLE_PLACES'),
+    card.Feature('Columbus', None, ndb.GeoPt(40, -83), 'layer4',
+                 gplace_id='placeId2', layer_type='GOOGLE_PLACES')
+]
 
 FEATURE_FIELDS = [
     ('Helsinki', 'description1', ndb.GeoPt(60, 25)),
-    ('Columbus', 'description<2>two', ndb.GeoPt(40, -83))
+    ('Columbus', 'description two', ndb.GeoPt(40, -83))
 ]
 
 ROOT_URL = 'http://app.com/root'
@@ -230,19 +239,6 @@ class CardTest(test_utils.BaseTest):
                       for f in card.GetFeaturesFromXml(ATOM_DATA)]
     self.assertEquals(FEATURE_FIELDS, feature_fields)
 
-  def testGetFeaturesFromGooglePlacesJson(self):
-    places_results = GOOGLE_PLACES_JSON['results']
-    feature_fields = [(f.name, f.description_html, f.location)
-                      for f in
-                      card.GetFeaturesFromGooglePlacesJson(places_results)]
-    self.assertEquals(FEATURE_FIELDS, feature_fields)
-
-  def testGetFeaturesFromGooglePlacesJson_WithEmptyArray(self):
-    feature_fields = [(f.name, f.description_html, f.location)
-                      for f in
-                      card.GetFeaturesFromGooglePlacesJson([])]
-    self.assertEquals([], feature_fields)
-
   def testGetKmlUrl(self):
     self.assertEquals('http://example.com/foo.kml', card.GetKmlUrl(ROOT_URL, {
         'type': 'KML',
@@ -346,63 +342,97 @@ class CardTest(test_utils.BaseTest):
         }
     }))
 
-  def testGetJsonFromGooglePlacesApi(self):
-    self.AssertGetJsonFromGooglePlacesApi(
-        GOOGLE_PLACES_JSON_STR,
-        GOOGLE_PLACES_JSON['results'])
+  def testGetFeaturesFromPlacesLayer(self):
+    self.AssertGetFeaturesFromPlacesLayer(GOOGLE_PLACES_SEARCH_JSON_STR,
+                                          PLACES_FEATURES)
 
     # Try the same request again and make sure the result comes from cache
     # (i.e. there are no calls to the urlfetch)
     self.mox.StubOutWithMock(urlfetch, 'fetch')
     self.mox.ReplayAll()
-    self.assertEquals(GOOGLE_PLACES_JSON['results'],
-                      card.GetJsonFromGooglePlacesApi(MAP_ROOT.get('layers')[3],
-                                                      ndb.GeoPt(20, 50)))
+    self.assertEquals(
+        PLACES_FEATURES,
+        card.GetFeaturesFromPlacesLayer(MAP_ROOT.get('layers')[3],
+                                        ndb.GeoPt(20, 50)))
 
-  def testGetJsonFromGooglePlacesApi_WithBadResponseStatus(self):
-    self.AssertGetJsonFromGooglePlacesApi(
+  def testGetFeaturesFromPlacesLayer_WithBadResponseStatus(self):
+    self.AssertGetFeaturesFromPlacesLayer(
         '{"status": "REQUEST_DENIED", "results": []}',
         [])
 
-  def testGetJsonFromGooglePlacesApi_WithZeroResults(self):
-    self.AssertGetJsonFromGooglePlacesApi(
+  def testGetFeaturesFromPlacesLayer_WithZeroResults(self):
+    self.AssertGetFeaturesFromPlacesLayer(
         '{"status": "ZERO_RESULTS", "results": []}',
         [])
 
-  def AssertGetJsonFromGooglePlacesApi(self,
-                                       response_content,
+  def AssertGetFeaturesFromPlacesLayer(self,
+                                       api_response_content,
                                        expected_results):
-    """Verifies GetJsonFromGooglePlacesApi with given input and output.
+    """Verifies GetFeaturesFromPlacesLayer with given input and output.
 
-    Prepares a mock for urlfetch to return given response_content on a call to
-    Places API. Verifies that GetJsonFromGooglePlacesApi returns
+    Prepares a mock for urlfetch to return given api_response_content on a call
+    to the Places API. Verifies that GetJsonFromGooglePlacesApi returns
     expected_results given the urlfetch mock setup.
 
     Args:
-      response_content: Content that urlfetch should return
+      api_response_content: Content that urlfetch should return
       expected_results: an array of Places results that
           GetJsonFromGooglePlacesApi should return
     """
-
     config.Set('google_api_server_key', 'someFakeApiKey')
 
     # Simulate a successful fetch from Places API by setting up a fake
     # for urlfetch
-    url = (
-        'https://maps.googleapis.com/maps/api/place/nearbysearch/json?'
-        'key=someFakeApiKey'
-        '&location=20.0%2C50.0'
-        '&rankby=distance'
-        '&types=pharmacy')
-    url_responses = {url: utils.Struct(content=response_content)}
+    url = ('https://maps.googleapis.com/maps/api/place/nearbysearch/json?'
+           'location=20.0%2C50.0'
+           '&rankby=distance'
+           '&types=pharmacy'
+           '&key=someFakeApiKey')
+    url_responses = {url: utils.Struct(content=api_response_content)}
     self.mox.stubs.Set(
         urlfetch, 'fetch', lambda url, **kwargs: url_responses[url])
 
-    # Get JSON from Google Places API for a GOOGLE_PLACES layer
-    self.assertEquals(expected_results,
-                      card.GetJsonFromGooglePlacesApi(MAP_ROOT.get('layers')[3],
-                                                      ndb.GeoPt(20, 50)))
+    # Get Features based on Google Places API results for the layer
+    self.assertEquals(
+        expected_results,
+        card.GetFeaturesFromPlacesLayer(MAP_ROOT.get('layers')[3],
+                                        ndb.GeoPt(20, 50)))
     self.mox.UnsetStubs()
+
+  def testSetDetailsOnFilteredFeatures(self):
+    config.Set('google_api_server_key', 'someFakeApiKey')
+
+    # Simulate a successful fetch from Places API by setting up a fake urlfetch
+    url_responses = {}
+    api_response_content = json.dumps({
+        'status': 'OK',
+        'result': {
+            'formatted_address': 'Street1',
+            'formatted_phone_number': '111-111-1111'
+        }
+    })
+    url = card.PLACES_API_DETAILS_URL + 'placeid=placeId1&key=someFakeApiKey'
+    url_responses[url] = utils.Struct(content=api_response_content)
+    api_response_content = json.dumps({
+        'status': 'OK',
+        'result': {
+            'formatted_address': 'Street2',
+            'formatted_phone_number': '222-222-2222'
+        }
+    })
+    url = card.PLACES_API_DETAILS_URL + 'placeid=placeId2&key=someFakeApiKey'
+    url_responses[url] = utils.Struct(content=api_response_content)
+    self.mox.stubs.Set(
+        urlfetch, 'fetch', lambda url, **kwargs: url_responses[url])
+
+    exp_features = [
+        ('Helsinki', '<div>Street1</div><div>111-111-1111</div>'),
+        ('Columbus', '<div>Street2</div><div>222-222-2222</div>')
+    ]
+    features = PLACES_FEATURES[:]
+    card.SetDetailsOnFilteredFeatures(features)
+    self.assertEquals(exp_features,
+                      [(f.name, f.description_html) for f in features])
 
   def testGetFeatures(self):
     # Try getting features for a topic with two layers.

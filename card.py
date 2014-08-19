@@ -52,8 +52,10 @@ GOOGLE_SPREADSHEET_CSV_URL = (
 DEGREES = 3.14159265358979/180
 DEFAULT_STATUS_COLOR = '#eee'
 DEADLINE = 10
-MAPS_API_NEARBY_SEARCH_URL = (
+PLACES_API_SEARCH_URL = (
     'https://maps.googleapis.com/maps/api/place/nearbysearch/json?')
+PLACES_API_DETAILS_URL = (
+    'https://maps.googleapis.com/maps/api/place/details/json?')
 
 
 def RoundGeoPt(point):
@@ -63,19 +65,25 @@ def RoundGeoPt(point):
 class Feature(object):
   """A feature (map item) from a source data layer."""
 
-  def __init__(self, name, description_html, location, layer_id=None):
+  def __init__(self, name, description_html, location, layer_id=None,
+               layer_type=None, gplace_id=None):
     self.name = name
-    self.description_html = description_html
     self.layer_id = layer_id
     self.location = location  # should be an ndb.GeoPt
+    self.description_html = description_html
+    self.layer_type = layer_type
+    self.gplace_id = gplace_id  # Google Places place_id
     self.distance = None
     self.status_color = None
     self.answer_text = ''
     self.answer_time = ''
     self.answer_source = ''
 
-  def __cmp__(self, other):
-    return cmp((self.distance, self.name), (other.distance, other.name))
+  def __lt__(self, other):
+    return self.distance < other.distance
+
+  def __eq__(self, other):
+    return self.__dict__ == other.__dict__
 
   distance_km = property(lambda self: self.distance and self.distance/1000.0)
   distance_mi = property(lambda self: self.distance and self.distance/1609.344)
@@ -116,9 +124,16 @@ def GetFeaturesFromXml(xml_content, layer_id=None):
     except ValueError:
       continue
     texts = {child.tag: GetText(child) for child in item.getchildren()}
+    # For now strip description of all the html tags to prevent XSS
+    # vulnerabilities
+    # TODO(user): sanitization should move closed to render time
+    # (revisit this once iframed version goes away)
+    description_escaped = kmlify.HtmlEscape(re.sub(r'<[^>].*>', ' ',
+                                                   texts.get('description') or
+                                                   texts.get('content') or
+                                                   texts.get('summary') or ''))
     features.append(Feature(texts.get('title') or texts.get('name'),
-                            texts.get('description') or texts.get('content') or
-                            texts.get('summary'), location, layer_id))
+                            description_escaped, location, layer_id))
   return features
 
 
@@ -164,47 +179,6 @@ def GetKmlUrl(root_url, layer):
             urllib.urlencode([(k, v) for k, v in params if v]))
 
 
-def GetJsonFromGooglePlacesApi(layer, location):
-  """Gets a list of places for a Places layer around a given location.
-
-  Args:
-    layer: Places layer that defines the criteria for places query
-    location: db.GeoPt around which to retrieve places
-
-  Returns:
-    A list of dictionaries with the Places API results
-  """
-  # Construct Google Places API request URL based on the layer parameters
-  # as defined in geo/enterprise/maproot/proto/maproot.proto
-  places_layer = layer.get('source').get('google_places')
-  google_api_server_key = config.Get('google_api_server_key')
-  if not google_api_server_key:
-    raise base_handler.Error(
-        500, 'google_api_server_key is not set in the config')
-  places_request_params = [
-      ('key', google_api_server_key),
-      ('location', location),
-      ('rankby', 'distance'),
-      ('keyword', places_layer.get('keyword')),
-      ('name', places_layer.get('name')),
-      ('types', places_layer.get('types'))]
-  url = (MAPS_API_NEARBY_SEARCH_URL +
-         urllib.urlencode([(k, v) for k, v in places_request_params if v]))
-
-  # Call Places API if cache doesn't have a corresponding entry for the url
-  response = JSON_PLACES_API_CACHE.Get(
-      url, lambda: urlfetch.fetch(url=url, deadline=DEADLINE))
-
-  # Parse JSON results
-  response_content = json.loads(response.content)
-  status = response_content.get('status')
-  if status != 'OK' and status != 'ZERO_RESULTS':
-    # Something went wrong with the request, log the error
-    logging.error('Places API request failed with error %s', status)
-    return []
-  return response_content.get('results')
-
-
 def GetGeoPt(place):
   """Returns a geo location of a given place.
 
@@ -218,24 +192,76 @@ def GetGeoPt(place):
   return ndb.GeoPt(location['lat'], location['lng'])
 
 
-def GetFeaturesFromGooglePlacesJson(place_results):
-  """Builds a list of Feature objects from an array of given Place results.
+def GetFeaturesFromPlacesLayer(layer, location):
+  """Builds a list of Feature objects for the Places layer near given location.
 
   Args:
-    place_results: An array of results from Google Places API search
-
+    layer: Places layer that defines the criteria for places query
+    location: db.GeoPt around which to retrieve places
   Returns:
     A list of Feature objects representing Google Places.
   """
+  # Fetch JSON from the Places API nearby search
+  places_layer = layer.get('source').get('google_places')
+  request_params = [
+      ('location', location),
+      ('rankby', 'distance'),
+      ('keyword', places_layer.get('keyword')),
+      ('name', places_layer.get('name')),
+      ('types', places_layer.get('types'))]
+  place_results = GetPlacesApiResults(PLACES_API_SEARCH_URL, request_params,
+                                      'results')
+
+  # Convert Places API results to Feature objects
   features = []
   for place in place_results:
-    # TODO(user): Places API nearby search doesn't return address, so
-    # for now we display vicinity. We probably would want to query for place
-    # details to have actual address and phone number
-    features.append(Feature(place['name'],
-                            place.get('vicinity') or '',
-                            GetGeoPt(place)))
+    # Delay building description_html until after features list was trimmed.
+    # Otherwise, we'd be doing wasteful calls to Places API
+    # to get address/phone number that will never get displayed.
+    features.append(Feature(place['name'], None, GetGeoPt(place),
+                            layer.get('id'), layer_type=layer.get('type'),
+                            gplace_id=place['place_id']))
   return features
+
+
+def GetGooglePlaceDescriptionHtml(place_id):
+  place_details = GetPlacesApiResults(PLACES_API_DETAILS_URL,
+                                      [('placeid', place_id)], 'result')
+  # TODO(user): build a shorter address format (will require i18n)
+  return ('<div>%s</div><div>%s</div>' %
+          (place_details.get('formatted_address', ''),
+           place_details.get('formatted_phone_number', '')))
+
+
+def GetPlacesApiResults(base_url, request_params, result_key_name):
+  """Fetches results from Places API given base_url and request params.
+
+  Args:
+    base_url: URL prefix to use before the request params
+    request_params: An array of key and value pairs for the request
+    result_key_name: Name of the results field in the Places API response
+  Returns:
+    Value for the result_key_name in the Places API response
+  """
+  google_api_server_key = config.Get('google_api_server_key')
+  if not google_api_server_key:
+    raise base_handler.Error(
+        500, 'google_api_server_key is not set in the config')
+  request_params += [('key', google_api_server_key)]
+  url = base_url + urllib.urlencode([(k, v) for k, v in request_params if v])
+
+  # Call Places API if cache doesn't have a corresponding entry for the url
+  response = JSON_PLACES_API_CACHE.Get(
+      url, lambda: urlfetch.fetch(url=url, deadline=DEADLINE))
+
+  # Parse JSON results
+  response_content = json.loads(response.content)
+  status = response_content.get('status')
+  if status != 'OK' and status != 'ZERO_RESULTS':
+    # Something went wrong with the request, log the error
+    logging.error('Places API request [%s] failed with error %s', url, status)
+    return []
+  return response_content.get(result_key_name)
 
 
 def GetTopic(root, topic_id):
@@ -270,9 +296,7 @@ def GetFeatures(map_root, topic_id, request, location_center):
   for layer_id in topic.get('layer_ids', []):
     layer = GetLayer(map_root, layer_id)
     if layer.get('type') == maproot.LayerType.GOOGLE_PLACES:
-      # Get features from the Google Places API
-      place_results_json = GetJsonFromGooglePlacesApi(layer, location_center)
-      features += GetFeaturesFromGooglePlacesJson(place_results_json)
+      features += GetFeaturesFromPlacesLayer(layer, location_center)
     else:
       url = GetKmlUrl(request.root_url, layer or {})
       if url:
@@ -306,11 +330,21 @@ def GetFilteredFeatures(map_root, map_version_id, topic_id, request,
     if center:
       SetDistanceOnFeatures(features, center)
     FilterFeatures(features, radius, max_count)
+    # For the features that were selected for display, fetch additional details
+    # that we avoid retrieving for unfiltered results due to latency concerns
+    SetDetailsOnFilteredFeatures(features)
     return features
 
   return FEATURE_LIST_CACHE.Get(
       [map_root['id'], map_version_id, topic_id,
        center and RoundGeoPt(center), radius, max_count], GetFromDatastore)
+
+
+def SetDetailsOnFilteredFeatures(features):
+  # TODO(user): consider fetching details for each feature in parallel
+  for f in features:
+    if f.layer_type == maproot.LayerType.GOOGLE_PLACES:
+      f.description_html = GetGooglePlaceDescriptionHtml(f.gplace_id)
 
 
 def GetLatestAnswers(map_id, topic_id, location, radius):
@@ -401,11 +435,7 @@ def GetGeoJson(features):
       },
       'properties': {
           'name': f.name,
-          # For now strip description of all the html tags to prevent XSS
-          # vulnerabilities
-          'description_html':
-              kmlify.HtmlEscape(
-                  re.sub(r'<[^>].*>', ' ', f.description_html or '')),
+          'description_html': f.description_html,
           'distance': f.distance,
           'distance_mi': f.distance_mi,
           'distance_km': f.distance_km,
