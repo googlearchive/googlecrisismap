@@ -136,6 +136,116 @@ PlacesOverlayTest.prototype.testPlacesSearchOnSetMap = function() {
   expectEq(1, placesOverlay.markers_.length);
 };
 
+/**
+ * Tests places layer doesn't update on map changes when viewport bounds just
+ * change slightly.
+ */
+PlacesOverlayTest.prototype.testNoPlacesSearchOnSimilarViewport = function() {
+  var placeResult = this.createPlaceResult_();
+  this.expectRadarSearch_(
+      [placeResult],
+      google.maps.places.PlacesServiceStatus.OK);
+  var marker = this.expectNewMarker_(placeResult);
+
+  var placesOverlay = new cm.PlacesOverlay(this.layerModel_, this.map_);
+  placesOverlay.setMap(this.map_);
+
+  // Update map bounds a bit. There should be no new calls to the Places API,
+  // b/c bounds didn't change sufficiently
+  this.mapBounds_ = new google.maps.LatLngBounds(
+      this.changeLatByFactor_(this.mapBounds_.getSouthWest(), 1.0003),
+      this.changeLatByFactor_(this.mapBounds_.getNorthEast(), 1.0003));
+  expectCall(this.map_.getBounds)().willRepeatedly(returnWith(this.mapBounds_));
+  expectCall(this.placesService_.radarSearch)(_, _).times(0);
+  this.expectNoCalls_('google.maps.Marker');
+
+  cm.events.emit(this.map_, 'idle');
+
+  // Change bounds above threshold (compared to the original bounds). Places
+  // should be refetched
+  this.mapBounds_ = new google.maps.LatLngBounds(
+      this.changeLatByFactor_(this.mapBounds_.getSouthWest(), 1.06),
+      this.changeLatByFactor_(this.mapBounds_.getNorthEast(), 1.06));
+  expectCall(this.map_.getBounds)().willRepeatedly(returnWith(this.mapBounds_));
+  this.expectRadarSearch_(
+      [placeResult],
+      google.maps.places.PlacesServiceStatus.OK);
+
+  cm.events.emit(this.map_, 'idle');
+};
+
+/**
+ * Creates a new LatLng by changing the lat part of the given latLng by
+ * a factor.
+ * @param {google.maps.LatLng} latLng LatLng to use as a base
+ * @param {number} factor Factor by which to multiply latitute
+ * @return {google.maps.LatLng}
+ * @private
+ */
+PlacesOverlayTest.prototype.changeLatByFactor_ = function(latLng, factor) {
+  return new google.maps.LatLng(latLng.lat() * factor, latLng.lng());
+};
+
+/**
+ * Tests places layer updates on setMap when viewport bounds don't change, but
+ * keyword/types/name do change.
+ */
+PlacesOverlayTest.prototype.testPlacesSearchOnKeywordTypesNameChange =
+    function() {
+  var placeResult = this.createPlaceResult_();
+  this.expectRadarSearch_(
+      [placeResult],
+      google.maps.places.PlacesServiceStatus.OK);
+  var marker = this.expectNewMarker_(placeResult);
+  expectCall(marker.setMap)(this.map_).times(4);
+
+  var placesOverlay = new cm.PlacesOverlay(this.layerModel_, this.map_);
+  placesOverlay.setMap(this.map_);
+    stub(marker.setMap)(this.map_);
+
+  var expectedRequest = /** @type google.maps.places.RadarSearchRequest */({
+    bounds: this.mapBounds_
+  });
+
+  // Change name
+  this.layerModel_.set('places_name', 'duane');
+  expectedRequest.name = 'duane';
+  this.setMapForLayerUpdateAndExpectRadarSearch_(placesOverlay,
+      expectedRequest);
+
+  // Set keyword
+  this.layerModel_.set('places_keyword', 'drugstore');
+  expectedRequest.keyword = 'drugstore';
+  this.setMapForLayerUpdateAndExpectRadarSearch_(placesOverlay,
+      expectedRequest);
+
+  // Set types
+  this.layerModel_.set('places_types', 'pharmacy|store');
+  expectedRequest.types = ['pharmacy', 'store'];
+  this.setMapForLayerUpdateAndExpectRadarSearch_(placesOverlay,
+      expectedRequest);
+
+  // Change types
+  this.layerModel_.set('places_types', 'store');
+  expectedRequest.types = ['store'];
+  this.setMapForLayerUpdateAndExpectRadarSearch_(placesOverlay,
+      expectedRequest);
+};
+
+/**
+ * Updates the map to pick up a new layerModel. Sets an expectation for a
+ * Places API radar search with a given expectedRequest.
+ * @param {cm.PlacesOverlay} placesOverlay
+ * @param {google.maps.places.RadarSearchRequest} expectedRequest
+ * @private
+ */
+PlacesOverlayTest.prototype.setMapForLayerUpdateAndExpectRadarSearch_ =
+    function(placesOverlay, expectedRequest) {
+  expectCall(this.placesService_.radarSearch)(expectedRequest, _);
+  // On layer editor 'save', crisismap sets the map on overlay. Immitate that
+  placesOverlay.setMap(this.map_);
+};
+
 /** Tests places layer updates when 'types' layer parameter is set. */
 PlacesOverlayTest.prototype.testPlacesSearchWithKeywordAndTypes = function() {
   var expectedRequest = /** @type google.maps.places.RadarSearchRequest */({

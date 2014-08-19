@@ -69,13 +69,19 @@ cm.PlacesOverlay = function(layer, map) {
   this.onMap_ = false;
 
   /**
+   * @type {google.maps.places.RadarSearchRequest}
+   * @private
+   */
+  this.currentRequest_ = null;
+
+  /**
    * @type {Array.<google.maps.places.PlaceResult>}
    * @private
    */
   this.currentResults_ = null;
 
   // When the map becomes idle, update the set of places displayed
-  cm.events.listen(this.map_, 'idle', this.updatePlaces_, this);
+  cm.events.listen(this.map_, 'idle', this.updatePlacesIfNecessary_, this);
 };
 goog.inherits(cm.PlacesOverlay, google.maps.MVCObject);
 
@@ -91,11 +97,11 @@ cm.PlacesOverlay.prototype.setMap = function(map) {
     this.hideMarkers_();
   } else if (this.markers_) {
     this.showMarkers_();
-  } else {
-    // Query Places API for the POIs that match the criteria and show new
-    // markers on the map
-    this.updatePlaces_();
   }
+
+  // Query Places API for the POIs that match the criteria and show new
+  // markers on the map
+  this.updatePlacesIfNecessary_();
 };
 
 /**
@@ -111,14 +117,15 @@ cm.PlacesOverlay.prototype.getMap = function() {
  * map bounds. Displays the markers corresponding to the place results.
  * @private
  */
-cm.PlacesOverlay.prototype.updatePlaces_ = function() {
+cm.PlacesOverlay.prototype.updatePlacesIfNecessary_ = function() {
   if (!this.onMap_) {
+    // Layer is hidden, so don't issue any new requests to the Places API
     return;
   }
   // Build google.maps.places.RadarSearchRequest
   var request = {
     // Note the maximum allowed radius is 50km as per Places API external
-    // documentation.  If the map bounds are larger, the search is performed as
+    // documentation. If the map bounds are larger, the search is performed as
     // a 50km circle from the center point.
     bounds: this.map_.getBounds()
   };
@@ -133,28 +140,60 @@ cm.PlacesOverlay.prototype.updatePlaces_ = function() {
     request.types = types ? types.split('|') : [];
   }
 
+  // Check if the new request is for the same parameters as the currently
+  // displayed one. If all parameters are the same bounds differ by a small
+  // delta, don't issue a new call to Places API. This is done to avoid extra
+  // API calls to Places if user scrolls the map just a little bit.
+  if (this.currentRequest_ != null &&
+      this.currentRequest_.keyword === request.keyword &&
+      this.currentRequest_.name === request.name &&
+      this.arrayEquals_(this.currentRequest_.types, request.types) &&
+      this.checkIfBoundsSimilar_(this.currentRequest_.bounds, request.bounds)) {
+    // Don't refetch places
+    return;
+  }
+
   // Radar search requires bounds and at least one of keyword, name, types
   // params. Don't issue a request that violates these rules
   if (request.bounds && (request.keyword || request.name || request.types)) {
     cm.PlacesOverlay.placesService.radarSearch(request,
-        goog.bind(this.placesCallback_, this));
+        goog.bind(this.placesCallback_, this, request));
   }
 };
 
 /**
+ * Checks if two bounds are very close to each other (within a certain
+ * threshold).
+ * @param {google.maps.LatLngBounds} a
+ * @param {google.maps.LatLngBounds} b
+ * @return {boolean} true if two bounds sets represent pretty much the same area
+ * @private
+ */
+cm.PlacesOverlay.prototype.checkIfBoundsSimilar_ = function(a, b) {
+  var aSpan = a.toSpan();
+  var bSpan = b.toSpan();
+  var uSpan = a.union(b).toSpan();
+  return uSpan.lat() * uSpan.lng() / (aSpan.lat() * aSpan.lng()) < 1.05 &&
+      uSpan.lat() * uSpan.lng() / (bSpan.lat() * bSpan.lng()) < 1.05;
+};
+
+/**
  * Handles the result of the places API search request.
- * @param {Array.<google.maps.places.PlaceResult>} results Place search results
+ * @param {google.maps.places.RadarSearchRequest} request Places API request
+ *     used to get these results
+ * @param {Array.<google.maps.places.PlaceResult>} results Place search result
  * @param {google.maps.places.PlacesServiceStatus} status Status of the Places
  *     API request
  * @private
  */
-cm.PlacesOverlay.prototype.placesCallback_ = function(results, status) {
+cm.PlacesOverlay.prototype.placesCallback_ = function(request, results,
+    status) {
   if (status != google.maps.places.PlacesServiceStatus.OK) {
     // Places API call failed
     return;
   }
 
-  if (goog.array.equals(this.currentResults_, results,
+  if (this.arrayEquals_(this.currentResults_, results,
       function(placeResult1, placeResult2) {
         return placeResult1.reference === placeResult2.reference;
       })) {
@@ -183,6 +222,7 @@ cm.PlacesOverlay.prototype.placesCallback_ = function(results, status) {
     this.markers_.push(marker);
   }
   this.currentResults_ = results;
+  this.currentRequest_ = request;
 };
 
 /**
@@ -278,4 +318,20 @@ cm.PlacesOverlay.prototype.clearMarkers_ = function() {
     marker.setMap(null);
   }
   this.markers_ = null;
+};
+
+/**
+ * Checks if two array are the same. Arrays are the same if they are both
+ * undefined or they contain the exact same elements in the same order.
+ * @param {Array.<?>} arrayOne
+ * @param {Array.<?>} arrayTwo
+ * @param {Function=} opt_equalsFn Function for comparing elements
+ * @return {boolean} true if arrays are both undefined / empty or have the same
+ *     elements
+ * @private
+ */
+cm.PlacesOverlay.prototype.arrayEquals_ = function(arrayOne, arrayTwo,
+    opt_equalsFn) {
+  return (arrayOne == undefined && arrayTwo == undefined) ||
+      goog.array.equals(arrayOne, arrayTwo, opt_equalsFn);
 };
