@@ -26,6 +26,7 @@ To avoid key collisions, don't use memcache directly; use this module.
 __author__ = 'kpy@google.com (Ka-Ping Yee)'
 
 import json
+import logging
 import pickle
 import threading
 import time
@@ -37,6 +38,9 @@ SWEEP_LOCK = threading.Lock()  # lock held while sweeping LOCAL_CACHE
 SWEEP_INTERVAL_SECONDS = 60
 
 next_sweep_time = 0
+
+# Maximum number of tries for acquiring a lock for make_value
+MAKE_LOCK_MAX_TRIES = 5
 
 
 def Reset():
@@ -77,6 +81,17 @@ class Cache(object):
   same name will access the same shared cache):
 
       >>> c = cache.Cache('foo', 60)  # 60-second TTL
+      >>> c = cache.Cache('foo', 60, 30, get_timeout=5)
+
+  In the second case, key values will be stored in a local cache (timeX) and
+  will serve from there till timeX + 30s, after which memcache value will be
+  fetched and put into a local cache to expire after 30s (at timeX + 60s).
+  Say, after timeX + 45s (45s, b/c ttc is ttl - 3 * get_timeout) some other
+  local cache will try to update its value using memcache. We'll issue a
+  make_value call at that time. If that succeeds, we update memcache value,
+  otherwise we continue serving a stale value until timeX + 60s. From then on,
+  we'll retry make_value a few times until it succeeds or we exceed the
+  get_timeout. In case of exceeding the timeout, 'Get' returns None.
 
   Then set and get values in it:
 
@@ -148,7 +163,8 @@ class Cache(object):
   # benefit that None is cached as the string 'N.', which makes it easy to
   # distinguish a cached value of None from a cache miss.
 
-  def __init__(self, name, ttl, ull=None):
+  def __init__(self, name, ttl, ull=None, get_timeout=None,
+               make_rate_limit=None):
     """A two-level cache (local RAM and memcache).
 
     Args:
@@ -167,6 +183,11 @@ class Cache(object):
           value".  Optional; defaults to the same value as ttl.  (This
           default is fine if all cache updates occur via Get(); if you
           use Set() or Delete(), you probably want ull to be smaller.)
+      get_timeout: Maximum time (in seconds) that we'll wait trying to
+          acquire a lock for make_value in one 'get' request. If not set,
+          then 'get' will only try to acquire the lock once.
+      make_rate_limit: Maximum number of calls allowed to make_value per second.
+
     Raises:
       ValueError: ull > ttl is not allowed.
     """
@@ -175,6 +196,20 @@ class Cache(object):
     self.name = name
     self.ttl = ttl
     self.ull = ttl if ull is None else ull
+    self.make_rate_limit = make_rate_limit or 0
+    self.get_timeout = get_timeout or 0
+    if make_rate_limit and get_timeout:
+      # Enable rewarming
+      self.ttc = self.ttl - 3 * self.get_timeout
+      if self.ttc < self.ttl / 2:
+        raise ValueError('Not allowed to set ttc < ttl / 2. '
+                         'Consider tuning get_timeout or ttl')
+    elif make_rate_limit or get_timeout:
+      raise ValueError('Need to specify either both make_rate_limit '
+                       'and get_timeout or neither')
+    else:
+      # No rewarming
+      self.ttc = self.ttl
 
   def KeyToJson(self, key):
     """Converts a cache key to a canonical fully qualified string."""
@@ -190,27 +225,117 @@ class Cache(object):
     Returns:
       The cached value, or the newly made value if it wasn't already
       cached, or None if make_value was not provided.
+    Raises:
+      RuntimeError: If there is a timeout on retries to make_value
     """
     key_json = self.KeyToJson(key)
-    now = time.time()
 
-    # Look for the key in the local cache.
-    expiration, value_pickle = LOCAL_CACHE.get(key_json, (0, None))
-    if now < expiration:
-      return pickle.loads(value_pickle)
+    deadline = time.time() + self.get_timeout
 
-    # Not found, so look for the key in memcache.
-    expiration, value_pickle = memcache.get(key_json) or (0, None)
+    while True:
+      now = time.time()
 
-    # Not found, so generate the value and store it in memcache.
-    if make_value and not value_pickle:
-      expiration, value_pickle = now + self.ttl, pickle.dumps(make_value())
+      # Look for the key in the local cache.
+      expiration, value_pickle = LOCAL_CACHE.get(key_json, (0, None))
+      if now < expiration:
+        return pickle.loads(value_pickle)
+
+      # Key not found in the local cache, so look for the key in memcache
+      expiration, value_pickle = memcache.get(key_json) or (0, None)
+      if (make_value and
+          (not value_pickle or now >= self.GetCoolingTime(expiration))):
+        # Need to generate a new value using make_value. If we have a stale
+        # value, ignore make_value errors
+        suppress_make_value_errors = value_pickle is not None
+        expiration, value_pickle = (
+            self.TryUpdatingValueInMemcache(key, key_json, make_value,
+                                            suppress_make_value_errors)
+            or (expiration, value_pickle))
+        sleep_time = self.get_timeout / MAKE_LOCK_MAX_TRIES
+        if not value_pickle and time.time() + sleep_time < deadline:
+          # Wait and then retry
+          time.sleep(sleep_time)
+          continue
+        elif not value_pickle:
+          raise RuntimeError('Timed out on make_value in cache %s', self.name)
+
+      if value_pickle:
+        # Set expiration in the local cache such that entities expire by
+        # cooling_time to trigger an attempt to rewarm the cached value
+        # TODO(user): explore if we need to add jitter to the ull
+        local_cache_exp = (
+            min(now + self.ull, self.GetCoolingTime(expiration), expiration))
+        # Store the value in the local cache, then return it
+        _SetLocalCache(key_json, local_cache_exp, value_pickle)
+        return pickle.loads(value_pickle)
+      return None
+
+  def GetCoolingTime(self, expiration):
+    return expiration - self.ttl + self.ttc
+
+  def TryUpdatingValueInMemcache(self, key, key_json, make_value,
+                                 suppress_make_value_errors):
+    """Tries updating value in memcache using make_value function.
+
+    Updates/sets the value for a given key in memcache by first trying to
+    acquire a lock associated with a given key. If the lock can't be acquired,
+    this function returns None.
+
+    Args:
+      key: Key that we're updating a value for
+      key_json: JSON for the key that we're generating a value for
+      make_value: A function to produce the value.
+      suppress_make_value_errors: If true, then any errors on make_value call
+          will be suppressed and this function will just return none.
+          Otherwise, exceptions will be propagated to the caller.
+    Returns:
+      Newly cached value with its expiration timestamp, or None if the lock
+      couldn't be acquired (or in case of suppress_make_value_errors=false there
+      were failures on make_value call).
+    """
+    if not self.AcquireMakeValueLock(key):
+      return None
+
+    # Acquired the lock, so call make_value
+    try:
+      value_pickle = pickle.dumps(make_value())
+
+      # Update/set new value in memcache
+      now = time.time()
+      expiration = now + self.ttl
       memcache.set(key_json, (expiration, value_pickle), time=self.ttl)
+      return expiration, value_pickle
+    except Exception:  # pylint:disable=broad-except
+      if suppress_make_value_errors:
+        logging.warning(
+            'Error on make_value for key %s in %s. Ignoring the error.',
+            key_json, self.name, exc_info=True)
+      else:
+        raise
 
-    # Store the value in the local cache, then return it.
-    if value_pickle:
-      _SetLocalCache(key_json, min(now + self.ull, expiration), value_pickle)
-      return pickle.loads(value_pickle)
+  def AcquireMakeValueLock(self, key):
+    """Tries to acquire a lock for make_value for a given key.
+
+    Makes one attempt to acquire a lock for make_value of a given key. A lock
+    in this case is a memcache entry with a lock name being a composite of
+    lock identifier, cache name and key. memcache.add guarantees that it
+    succeeds only if the value is not currently set, so this works for the
+    lock purpose.
+
+    Args:
+      key: key that we're acquiring a make_value lock on
+    Returns:
+      True if the lock was successfully acquired, false otherwise.
+    """
+    if self.make_rate_limit == 0:
+      # Skip acquiring a lock
+      return True
+
+    now = time.time()
+    lock_key_json = json.dumps(['cache.make_lock', [self.name, key]],
+                               sort_keys=True)
+    lock_timeout = 1 / self.make_rate_limit
+    return memcache.add(lock_key_json, now + lock_timeout, time=lock_timeout)
 
   def Set(self, key, value):
     """Sets a key's value in the cache.
@@ -224,6 +349,7 @@ class Cache(object):
     now = time.time()
 
     memcache.set(key_json, (now + self.ttl, value_pickle), time=self.ttl)
+    # Make sure to randomize local cache expiration a bit
     _SetLocalCache(key_json, now + self.ull, value_pickle)
 
   def Add(self, key, value):

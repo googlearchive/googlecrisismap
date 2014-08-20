@@ -222,6 +222,7 @@ class MapTests(test_utils.BaseTest):
     """Tests caching of MapRoot data."""
     # Verify the default values from Map.Create.
     self.SetTime(0)
+    self.StubTimeSleep()
     with test_utils.RootLogin():
       m = model.Map.Create(MAP1, 'xyz.com', world_readable=True)
       m.PutNewVersion(MAP2)

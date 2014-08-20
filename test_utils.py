@@ -348,6 +348,13 @@ class BaseTest(unittest.TestCase):
                     staticmethod(FakeDetermineEtaPosix))
     return now
 
+  def StubTimeSleep(self):
+    """Stubs time.sleep(..) with an update of time returned by time.time()."""
+    self.mox.stubs.Set(
+        time,
+        'sleep',
+        lambda sleep_time: self.SetTime(time.time() + sleep_time))
+
   def AssertBetween(self, low, high, actual):
     """Checks that a value is within a desired range."""
     self.assertGreaterEqual(actual, low)
@@ -382,3 +389,4 @@ class BaseTest(unittest.TestCase):
 
 def main():
   unittest.main()
+
