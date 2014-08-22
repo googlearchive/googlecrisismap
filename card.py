@@ -66,11 +66,12 @@ class Feature(object):
   """A feature (map item) from a source data layer."""
 
   def __init__(self, name, description_html, location, layer_id=None,
-               layer_type=None, gplace_id=None):
+               layer_type=None, gplace_id=None, html_attrs=None):
     self.name = name
     self.layer_id = layer_id
     self.location = location  # should be an ndb.GeoPt
     self.description_html = description_html
+    self.html_attrs = html_attrs or []
     self.layer_type = layer_type
     self.gplace_id = gplace_id  # Google Places place_id
     self.distance = None
@@ -224,24 +225,33 @@ def GetFeaturesFromPlacesLayer(layer, location):
   return features
 
 
-def GetGooglePlaceDescriptionHtml(place_id):
-  place_details = GetPlacesApiResults(PLACES_API_DETAILS_URL,
-                                      [('placeid', place_id)], 'result')
+def GetGooglePlaceDetails(place_id):
+  return GetPlacesApiResults(PLACES_API_DETAILS_URL, [('placeid', place_id)])
+
+
+def GetGooglePlaceDescriptionHtml(place_details):
   # TODO(user): build a shorter address format (will require i18n)
+  result = place_details.get('result')
   return ('<div>%s</div><div>%s</div>' %
-          (place_details.get('formatted_address', ''),
-           place_details.get('formatted_phone_number', '')))
+          (result.get('formatted_address', ''),
+           result.get('formatted_phone_number', '')))
 
 
-def GetPlacesApiResults(base_url, request_params, result_key_name):
+def GetGooglePlaceHtmlAttributions(place_details):
+  return place_details.get('html_attributions', [])
+
+
+def GetPlacesApiResults(base_url, request_params, result_key_name=None):
   """Fetches results from Places API given base_url and request params.
 
   Args:
     base_url: URL prefix to use before the request params
     request_params: An array of key and value pairs for the request
     result_key_name: Name of the results field in the Places API response
+        or None if the whole response should be returned
   Returns:
-    Value for the result_key_name in the Places API response
+    Value for the result_key_name in the Places API response or all of the
+    response if result_key_name is None
   """
   google_api_server_key = config.Get('google_api_server_key')
   if not google_api_server_key:
@@ -261,7 +271,8 @@ def GetPlacesApiResults(base_url, request_params, result_key_name):
     # Something went wrong with the request, log the error
     logging.error('Places API request [%s] failed with error %s', url, status)
     return []
-  return response_content.get(result_key_name)
+  return (response_content.get(result_key_name) if result_key_name
+          else response_content)
 
 
 def GetTopic(root, topic_id):
@@ -344,7 +355,9 @@ def SetDetailsOnFilteredFeatures(features):
   # TODO(user): consider fetching details for each feature in parallel
   for f in features:
     if f.layer_type == maproot.LayerType.GOOGLE_PLACES:
-      f.description_html = GetGooglePlaceDescriptionHtml(f.gplace_id)
+      place_details = GetGooglePlaceDetails(f.gplace_id)
+      f.description_html = GetGooglePlaceDescriptionHtml(place_details)
+      f.html_attrs = GetGooglePlaceHtmlAttributions(place_details)
 
 
 def GetLatestAnswers(map_id, topic_id, location, radius):
@@ -378,8 +391,18 @@ def GetLegibleTextColor(background_color):
   return luminance > 128 and '#000' or '#fff'
 
 
+def GetFeatureAttributions(features):
+  """Builds a list of all unique html attributions for given features."""
+  # Skip all the duplicates when joining attributions into one list
+  html_attrs = set()
+  for f in features:
+    for attr in f.html_attrs:
+      html_attrs.add(attr)
+  return list(html_attrs)
+
+
 def SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids):
-  """Populates 'status_color' and 'jnswer_text' on the given Feature objects."""
+  """Populates 'status_color' and 'answer_text' on the given Feature objects."""
   map_id = map_root.get('id') or ''
   topic = GetTopic(map_root, topic_id) or {}
   radius = topic.get('cluster_radius', 100)
@@ -448,12 +471,13 @@ def GetGeoJson(features):
   } for f in features]}
 
 
-def RenderFooter(items):
-  """Renders the card footer as HTML.
+def RenderFooter(items, html_attrs=None):
+  """Renders the card footer as HTML and appends source attributions at the end.
 
   Args:
     items: A sequence of items, where each item is (a) a string or (b) a pair
         [url, text] to be rendered as a hyperlink that opens in a new window.
+    html_attrs: A list of html strings with links to attributions.
   Returns:
     A Unicode string of safe HTML containing only text and <a> tags.
   """
@@ -467,7 +491,11 @@ def RenderFooter(items):
       if scheme in ['http', 'https']:  # accept only safe schemes
         results.append('<a href="%s" target="_blank">%s</a>' % (
             kmlify.HtmlEscape(url), kmlify.HtmlEscape(text)))
-  return ''.join(results)
+  for html_attr in html_attrs or []:
+    # Attributions html comes from Google Places API or built on the fly
+    # inside card.py, so no sanitization here
+    results.append(html_attr)
+  return ' '.join(results)
 
 
 class CardBase(base_handler.BaseHandler):
@@ -569,6 +597,7 @@ class CardBase(base_handler.BaseHandler):
       features = GetFilteredFeatures(
           map_root, map_version_id, topic_id, self.request,
           center, radius, max_count)
+      html_attrs = GetFeatureAttributions(features)
       SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids)
       geojson = GetGeoJson(features)
       if output == 'json':
@@ -593,7 +622,7 @@ class CardBase(base_handler.BaseHandler):
                 'topic_title': topic.get('title', '')
             }),
             'places_json': json.dumps(places),
-            'footer_html': RenderFooter(footer or [])
+            'footer_html': RenderFooter(footer or [], html_attrs)
         }))
 
     except Exception, e:  # pylint:disable=broad-except

@@ -404,8 +404,10 @@ class CardTest(test_utils.BaseTest):
 
     # Simulate a successful fetch from Places API by setting up a fake urlfetch
     url_responses = {}
+    helsinki_attrs = ['Listing by <a href="fakeurl1.com">FakeSite1</a>']
     api_response_content = json.dumps({
         'status': 'OK',
+        'html_attributions': helsinki_attrs,
         'result': {
             'formatted_address': 'Street1',
             'formatted_phone_number': '111-111-1111'
@@ -413,8 +415,10 @@ class CardTest(test_utils.BaseTest):
     })
     url = card.PLACES_API_DETAILS_URL + 'placeid=placeId1&key=someFakeApiKey'
     url_responses[url] = utils.Struct(content=api_response_content)
+    columbus_attrs = ['Listing by <a href="fakeurl2.com">FakeSite2</a>']
     api_response_content = json.dumps({
         'status': 'OK',
+        'html_attributions': columbus_attrs,
         'result': {
             'formatted_address': 'Street2',
             'formatted_phone_number': '222-222-2222'
@@ -426,13 +430,16 @@ class CardTest(test_utils.BaseTest):
         urlfetch, 'fetch', lambda url, **kwargs: url_responses[url])
 
     exp_features = [
-        ('Helsinki', '<div>Street1</div><div>111-111-1111</div>'),
-        ('Columbus', '<div>Street2</div><div>222-222-2222</div>')
+        ('Helsinki', '<div>Street1</div><div>111-111-1111</div>',
+         helsinki_attrs),
+        ('Columbus', '<div>Street2</div><div>222-222-2222</div>',
+         columbus_attrs)
     ]
     features = PLACES_FEATURES[:]
     card.SetDetailsOnFilteredFeatures(features)
     self.assertEquals(exp_features,
-                      [(f.name, f.description_html) for f in features])
+                      [(f.name, f.description_html, f.html_attrs)
+                       for f in features])
 
   def testGetFeatures(self):
     # Try getting features for a topic with two layers.
@@ -659,13 +666,17 @@ class CardHandlerTest(test_utils.BaseTest):
     self.assertEquals(2, len(features))
 
   def testRenderFooter(self):
-    self.assertEquals('ab', card.RenderFooter(['a', 'b']))
+    self.assertEquals('a b', card.RenderFooter(['a', 'b']))
     self.assertEquals('a&lt;b&amp;', card.RenderFooter(['a<b&']))
     self.assertEquals(
-        'x<a href="http://example.com/" target="_blank">y</a>',
+        'x <a href="http://example.com/" target="_blank">y</a>',
         card.RenderFooter(['x', ['http://example.com/', 'y']]))
     self.assertFalse(
         'javascript' in card.RenderFooter(['x', ['javascript:alert(1)', 'y']]))
+    self.assertEquals(
+        'a b Listing by <a href="google.com">Google</a>',
+        card.RenderFooter(['a', 'b'],
+                          ['Listing by <a href="google.com">Google</a>']))
 
 if __name__ == '__main__':
   test_utils.main()
