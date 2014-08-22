@@ -149,14 +149,39 @@ class CacheTests(test_utils.BaseTest):
     self.assertTrue(cache.Cache('test', 60, 30, get_timeout=3,
                                 make_rate_limit=1) is not None)
 
-  def testCreate_ttcTooLow(self):
-    """Tests that ttc = ttl - 3 * get_timeout is required to be > 0.5ttl."""
-    self.assertRaises(ValueError, cache.Cache, 'test', 60, 30, get_timeout=11,
-                      make_rate_limit=1)
-    self.assertRaises(ValueError, cache.Cache, 'test', 60, 30, get_timeout=20,
-                      make_rate_limit=1)
-    self.assertRaises(ValueError, cache.Cache, 'test', 60, 30, get_timeout=30,
-                      make_rate_limit=1)
+  def testCreate_rateLimitAndGetTimeoutZero(self):
+    """Tests that 0 make_rate_limit and get_timeout don't cause errors."""
+    c = cache.Cache('test', 60, 30, get_timeout=0, make_rate_limit=0)
+
+    self.SetTime(0)
+    self.StubTimeSleep()
+    c.Set('x', 3)
+
+    self.SetTime(61)  # TTL exceeded
+    self.assertEquals(7, c.Get('x', lambda: 7))  # make_value result
+
+    # Verify that we can do make_value again. This is checking that
+    # 1/make_rate_limit doesn't get rounded to 0 and thus making it impossible
+    # to grab locks with this expiration time.
+    self.SetTime(130)  # TTL exceeded
+    self.assertEquals(9, c.Get('x', lambda: 9))  # make_value result
+
+  def testCreate_highRateLimit(self):
+    """Tests that high make_rate_limit doesn't result in 0 wait b/w locks."""
+    c = cache.Cache('test', 60, 30, get_timeout=3, make_rate_limit=50)
+
+    self.SetTime(0)
+    self.StubTimeSleep()
+    c.Set('x', 3)
+
+    self.SetTime(61)  # TTL exceeded
+    self.assertEquals(7, c.Get('x', lambda: 7))  # make_value result
+
+    # Verify that we can do make_value again. This is checking that
+    # 1/make_rate_limit doesn't get rounded to 0 and thus making it impossible
+    # to grab locks with this expiration time.
+    self.SetTime(130)  # TTL exceeded
+    self.assertEquals(9, c.Get('x', lambda: 9))  # make_value result
 
   def testGet_memcacheValueCold_successfulUpdate(self):
     """Test for TTC successful update.
@@ -165,7 +190,7 @@ class CacheTests(test_utils.BaseTest):
     past its cooling time.
     """
     c = cache.Cache('test', 60, 30, get_timeout=3, make_rate_limit=1)
-    # ttc is ttl - 3 * get_timeout = 51s
+    # ttc is ttl * 0.85 = 51s
 
     self.SetTime(0)
     self.StubTimeSleep()
@@ -185,7 +210,7 @@ class CacheTests(test_utils.BaseTest):
   def testGet_memcacheValueCold_makeValueFails(self):
     """Verifies a stale value is returned when make_value fails on rewarming."""
     c = cache.Cache('test', 60, 30, get_timeout=3, make_rate_limit=1)
-    # ttc is ttl - 3 * get_timeout = 51s
+    # ttc is ttl * 0.85 = 51s
     counters = {'make_value_counter': 0}
     def RaisingMakeValue():
       counters['make_value_counter'] += 1
@@ -204,8 +229,8 @@ class CacheTests(test_utils.BaseTest):
 
   def testGet_memcacheValueCold_makeValueLock(self):
     """Verifies that 'get' serves a stale value when rewarming fails."""
-    c = cache.Cache('test', 60, 30, get_timeout=4, make_rate_limit=0.02)
-    # ttc is ttl - 3 * get_timeout = 48s
+    c = cache.Cache('test', 60, 30, get_timeout=4, make_rate_limit=0.018)
+    # ttc is ttl * 0.85 = 51s
     counters = {'make_value_counter': 0}
     def MakeValueSevenWithCounter():
       counters['make_value_counter'] += 1
@@ -217,21 +242,21 @@ class CacheTests(test_utils.BaseTest):
     self.assertEquals(3, c.Get('x', MakeValueSevenWithCounter))  # local cache
     self.assertEquals(0, counters['make_value_counter'])
 
-    self.SetTime(49)
-    # TTC exceeded, TTL isn't, grab the lock till time = 99 (50s b/w requests)
+    self.SetTime(52)
+    # TTC exceeded, TTL isn't, grab the lock till time = 107 (~55s b/w requests)
     self.assertEquals(7, c.Get('x', MakeValueSevenWithCounter))
     self.assertEquals(1, counters['make_value_counter'])
-    self.assertEquals(49, time.time())   # verify sleep() wasn't called
+    self.assertEquals(52, time.time())   # verify sleep() wasn't called
 
-    self.SetTime(98)
-    # New TTC exceeded, TTL isn't, lock is not available (held till time = 99)
+    self.SetTime(104)
+    # New TTC exceeded, TTL isn't, lock is not available (held till time ~= 107)
     self.assertEquals(7, c.Get('x', lambda: 9))  # stale value
-    self.assertEquals(98, time.time())
+    self.assertEquals(104, time.time())
 
-    self.SetTime(100)
+    self.SetTime(108)
     # New TTC exceeded, TTL isn't, lock is available
     self.assertEquals(9, c.Get('x', lambda: 9))  # make_value
-    self.assertEquals(100, time.time())
+    self.assertEquals(108, time.time())
 
   def testGet_noMemcacheValue_makeValueFails(self):
     """Test for expired memcache entry where make_value fails.
@@ -292,7 +317,7 @@ class CacheTests(test_utils.BaseTest):
     make_value's lock can't be acquired on first try.
     """
     c = cache.Cache('test', 60, 30, get_timeout=5, make_rate_limit=0.014)
-    # ttc is ttl - 3 * get_timeout = 45s
+    # ttc is ttl * 0.85 = 51s
     counters = {'make_value_counter': 0}
     def MakeValueSevenWithCounter():
       counters['make_value_counter'] += 1

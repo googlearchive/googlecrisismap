@@ -86,7 +86,7 @@ class Cache(object):
   In the second case, key values will be stored in a local cache (timeX) and
   will serve from there till timeX + 30s, after which memcache value will be
   fetched and put into a local cache to expire after 30s (at timeX + 60s).
-  Say, after timeX + 45s (45s, b/c ttc is ttl - 3 * get_timeout) some other
+  Say, after timeX + 51s (51s, b/c ttc is ttl * 0.85) some other
   local cache will try to update its value using memcache. We'll issue a
   make_value call at that time. If that succeeds, we update memcache value,
   otherwise we continue serving a stale value until timeX + 60s. From then on,
@@ -193,23 +193,20 @@ class Cache(object):
     """
     if ull > ttl:
       raise ValueError("Setting ull > ttl doesn't make sense")
+    if make_rate_limit and (make_rate_limit < 0 or 1. / make_rate_limit <= 0):
+      raise ValueError('Value for make_rate_limit is out of range')
+    if ((make_rate_limit and not get_timeout) or
+        (get_timeout and not make_rate_limit)):
+      raise ValueError('Need to specify either both make_rate_limit '
+                       'and get_timeout or neither')
     self.name = name
     self.ttl = ttl
     self.ull = ttl if ull is None else ull
     self.make_rate_limit = make_rate_limit or 0
     self.get_timeout = get_timeout or 0
-    if make_rate_limit and get_timeout:
-      # Enable rewarming
-      self.ttc = self.ttl - 3 * self.get_timeout
-      if self.ttc < self.ttl / 2:
-        raise ValueError('Not allowed to set ttc < ttl / 2. '
-                         'Consider tuning get_timeout or ttl')
-    elif make_rate_limit or get_timeout:
-      raise ValueError('Need to specify either both make_rate_limit '
-                       'and get_timeout or neither')
-    else:
-      # No rewarming
-      self.ttc = self.ttl
+    # Pick a value for ttc less than tll, so that there is enough time
+    # to attempt and rewarm the entities with make_value.
+    self.ttc = 0.85 * self.ttl
 
   def KeyToJson(self, key):
     """Converts a cache key to a canonical fully qualified string."""
@@ -334,7 +331,7 @@ class Cache(object):
     now = time.time()
     lock_key_json = json.dumps(['cache.make_lock', [self.name, key]],
                                sort_keys=True)
-    lock_timeout = 1 / self.make_rate_limit
+    lock_timeout = 1. / self.make_rate_limit
     return memcache.add(lock_key_json, now + lock_timeout, time=lock_timeout)
 
   def Set(self, key, value):
@@ -349,7 +346,7 @@ class Cache(object):
     now = time.time()
 
     memcache.set(key_json, (now + self.ttl, value_pickle), time=self.ttl)
-    # Make sure to randomize local cache expiration a bit
+    # TODO(user): explore if we should add jitter to ULL here
     _SetLocalCache(key_json, now + self.ull, value_pickle)
 
   def Add(self, key, value):
