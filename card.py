@@ -600,6 +600,7 @@ class CardBase(base_handler.BaseHandler):
       html_attrs = GetFeatureAttributions(features)
       SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids)
       geojson = GetGeoJson(features)
+      geojson['html_attrs'] = html_attrs
       if output == 'json':
         self.WriteJson(geojson)
       else:
