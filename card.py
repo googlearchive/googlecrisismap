@@ -460,8 +460,8 @@ def GetGeoJson(features):
           'name': f.name,
           'description_html': f.description_html,
           'distance': f.distance,
-          'distance_mi': f.distance_mi,
-          'distance_km': f.distance_km,
+          'distance_mi': RoundDistance(f.distance_mi),
+          'distance_km': RoundDistance(f.distance_km),
           'layer_id': f.layer_id,
           'status_color': f.status_color,
           'answer_text': f.answer_text,
@@ -469,6 +469,11 @@ def GetGeoJson(features):
           'answer_source': f.answer_source
       }
   } for f in features]}
+
+
+def RoundDistance(distance):
+  """Round distances above 10 (mi/km) to the closest integer."""
+  return math.ceil(distance) if distance > 10 else distance
 
 
 def RenderFooter(items, html_attrs=None):
