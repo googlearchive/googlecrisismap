@@ -88,7 +88,7 @@
       "visibility": "DEFAULT_ON",
       "source": {
         "google_map_tiles": {
-          "url": "http://mw1.gstatic.com/mw-weather/radar/maptiles/index.js",
+          "url": "https://mw1.gstatic.com/mw-weather/radar/maptiles/index.js",
           "url_is_tile_index": true
         }
       },

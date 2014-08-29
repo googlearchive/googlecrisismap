@@ -52,7 +52,7 @@ var MAPTILE_MAP_ROOT_JSON = {
   opacity: 0,
   source: {
     tile: {
-      url: 'http://mw1.google.com/mw-weather/radar/maptiles/index.js',
+      url: 'https://mw1.google.com/mw-weather/radar/maptiles/index.js',
       url_is_tile_index: true
     }
   }
@@ -512,7 +512,7 @@ LayerModelTest.prototype.testGetSourceAddress = function() {
 
   layerModel = cm.LayerModel.newFromMapRoot(MAPTILE_MAP_ROOT_JSON);
   expectEq('TILE:' +
-           'http://mw1.google.com/mw-weather/radar/maptiles/index.js',
+           'https://mw1.google.com/mw-weather/radar/maptiles/index.js',
            layerModel.getSourceAddress());
 
   layerModel = cm.LayerModel.newFromMapRoot(
