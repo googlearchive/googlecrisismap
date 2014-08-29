@@ -448,27 +448,31 @@ def RemoveParamsFromUrl(url, *params):
   return base + '?' + query
 
 
-def GetGeoJson(features):
+def GetGeoJson(features, include_descriptions):
   """Converts a list of Feature instances to a GeoJSON object."""
-  return {'type': 'FeatureCollection', 'features': [{
-      'type': 'Feature',
-      'geometry': {
-          'type': 'Point',
-          'coordinates': [f.location.lon, f.location.lat]
-      },
-      'properties': {
-          'name': f.name,
-          'description_html': f.description_html,
-          'distance': f.distance,
-          'distance_mi': RoundDistance(f.distance_mi),
-          'distance_km': RoundDistance(f.distance_km),
-          'layer_id': f.layer_id,
-          'status_color': f.status_color,
-          'answer_text': f.answer_text,
-          'answer_time': f.answer_time,
-          'answer_source': f.answer_source
-      }
-  } for f in features]}
+  return {
+      'type': 'FeatureCollection',
+      'features': [{
+          'type': 'Feature',
+          'geometry': {
+              'type': 'Point',
+              'coordinates': [f.location.lon, f.location.lat]
+          },
+          'properties': {
+              'name': f.name,
+              'description_html':
+                  f.description_html if include_descriptions else None,
+              'distance': f.distance,
+              'distance_mi': RoundDistance(f.distance_mi),
+              'distance_km': RoundDistance(f.distance_km),
+              'layer_id': f.layer_id,
+              'status_color': f.status_color,
+              'answer_text': f.answer_text,
+              'answer_time': f.answer_time,
+              'answer_source': f.answer_source
+          }
+      } for f in features]
+  }
 
 
 def RoundDistance(distance):
@@ -562,7 +566,7 @@ class CardBase(base_handler.BaseHandler):
     footer_json = self.request.get('footer') or '[]'
     location_unavailable = self.request.get('location_unavailable')
     lang = base_handler.SelectLanguageForRequest(self.request, map_root)
-    show_descriptions = bool(self.request.get('show_desc'))
+    include_descriptions = int(self.request.get('show_desc') or 0)
 
     try:
       places = json.loads(places_json)
@@ -604,14 +608,13 @@ class CardBase(base_handler.BaseHandler):
           center, radius, max_count)
       html_attrs = GetFeatureAttributions(features)
       SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids)
-      geojson = GetGeoJson(features)
+      geojson = GetGeoJson(features, include_descriptions)
       geojson['html_attrs'] = html_attrs
       if output == 'json':
         self.WriteJson(geojson)
       else:
         self.response.out.write(self.RenderTemplate('card.html', {
             'features': geojson['features'],
-            'show_descriptions': show_descriptions,
             'title': topic.get('title', ''),
             'unit': unit,
             'lang': lang,

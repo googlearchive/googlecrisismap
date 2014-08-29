@@ -558,7 +558,7 @@ class CardTest(test_utils.BaseTest):
     features = [card.Feature('title1', 'description1', ndb.GeoPt(20, -40)),
                 card.Feature('title2', 'description2', ndb.GeoPt(30, -50))]
     card.SetDistanceOnFeatures(features, ndb.GeoPt(20, -40))
-    geojson = card.GetGeoJson(features)
+    geojson = card.GetGeoJson(features, include_descriptions=True)
     self.assertEquals('FeatureCollection', geojson['type'])
     self.assertEquals(2, len(geojson['features']))
     self.assertEquals({'geometry': {'coordinates': [-40.0, 20.0],
