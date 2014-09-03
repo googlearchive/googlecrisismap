@@ -89,6 +89,21 @@ class UtilsSetAndTestTests(test_utils.BaseTest):
     self.assertEqual('foo &#123; bar', utils.StripHtmlTags('foo &#123; bar'))
     self.assertEqual('foo &#xf8; bar', utils.StripHtmlTags('foo &#xf8; bar'))
 
+  def testStripHtmlTags_whitelist(self):
+    # Keep whitelisted tags, but remove the rest
+    self.assertEqual('a<b>c</b>d', utils.StripHtmlTags('a<b>c</b><br>d',
+                                                       tag_whitelist=['b']))
+    # Remove attributes even from the whitelisted tags
+    self.assertEqual(
+        'a<b>c</b>',
+        utils.StripHtmlTags('a<b attr="window.alert(\'ha\')">c</b>',
+                            tag_whitelist=['b']))
+
+  def testStripHtmlTags_subChar(self):
+    # Replace tags with a specific character
+    self.assertEqual('a c d', utils.StripHtmlTags('a<b>c</b><br>d',
+                                                  tag_sub=' '))
+
   def testUtcToTimestamp(self):
     dt = datetime.datetime(2013, 11, 19, 12, 58, 24)
     self.assertEqual(dt, utils.TimestampToUtc(utils.UtcToTimestamp(dt)))

@@ -118,7 +118,7 @@ PLACES_FEATURES = [
 
 FEATURE_FIELDS = [
     ('Helsinki', 'description1', ndb.GeoPt(60, 25)),
-    ('Columbus', 'description two', ndb.GeoPt(40, -83))
+    ('Columbus', 'description<2>two', ndb.GeoPt(40, -83))
 ]
 
 ROOT_URL = 'http://app.com/root'
@@ -614,8 +614,7 @@ class CardHandlerTest(test_utils.BaseTest):
     self.assertTrue('Columbus' in response.body)
     # Verify descriptions show up (with all the html tags removed)
     self.assertTrue('description1' in response.body)
-    self.assertFalse('description<2>two' in response.body)
-    self.assertTrue('description two' in response.body)
+    self.assertTrue('description<2>two' in response.body)
 
   def testGetCardByLabelAndTopicWithDescriptionsXss(self):
     kml_data_with_xss = '''<?xml version="1.0" encoding="UTF-8" ?>
@@ -624,7 +623,9 @@ class CardHandlerTest(test_utils.BaseTest):
             <name>Cities</name>
             <Placemark>
               <name>Paris</name>
-              <description>description1<script>EvilScript</script></description>
+              <description><![CDATA[
+                <b>description1</b>-<div>addr</div><script>EvilScript</script>
+              ]]></description>
               <Point><coordinates>25,60</coordinates></Point>
             </Placemark>
           </Document>
@@ -634,10 +635,9 @@ class CardHandlerTest(test_utils.BaseTest):
     # Enable descriptions with show_desc=1 param in the request
     response = self.DoGet('/xyz.com/.card/foo/t1?show_desc=1')
     self.assertTrue('Paris' in response.body)
-    # Verify <script> doesn't show up in the description
-    self.assertTrue('description1' in response.body)
+    # Verify <script> doesn't show up in the description, but <b> stays
+    self.assertTrue('<b>description1</b>-addr' in response.body)
     self.assertFalse('<script>EvilScript</script>' in response.body)
-    self.assertFalse('EvilScript' in response.body)
 
   def testPostByLabelAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)

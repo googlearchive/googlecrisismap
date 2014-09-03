@@ -129,10 +129,22 @@ def IsValidEmail(email):
 class HtmlStripper(HTMLParser):
   """Helper class for StripHtmlTags."""
 
-  def __init__(self):
+  def __init__(self, tag_sub=None, tag_whitelist=None):
     HTMLParser.__init__(self)
     self.reset()
     self.fed = []
+    self.tag_sub = tag_sub or ''
+    self.tag_whitelist = tag_whitelist or []
+
+  def handle_starttag(self, tag, attrs):
+    if tag in self.tag_whitelist:
+      # Preserve opening tags that are in the whitelist, drop attrs
+      self.fed.append('<%s>' % tag)
+
+  def handle_endtag(self, tag):
+    if tag in self.tag_whitelist:
+      # Preserve closing tags that are in the whitelist
+      self.fed.append('</%s>' % tag)
 
   def handle_data(self, d):
     self.fed.append(d)
@@ -144,12 +156,32 @@ class HtmlStripper(HTMLParser):
     self.fed.append('&#%s;' % name)
 
   def GetData(self):
-    return ''.join(self.fed)
+    return self.tag_sub.join(self.fed)
 
 
-def StripHtmlTags(value):
-  """Returns the given HTML with all tags stripped."""
-  s = HtmlStripper()
+def StripHtmlTags(value, tag_sub=None, tag_whitelist=None):
+  """Returns the given HTML with tags stripped (minus those in tag_whitelist).
+
+  Example usage:
+  StripHtmlTags('<b onclick="xss()">Shelter</b> 120 E Street<br>' +
+                    '<script>SomeHack</script>',
+                ['b', 'br'], ' ')
+  returns
+  '<b>Shelter</b> 120 E Street<br> SomeHack'
+
+  Note that all attributes on whitelisted tags are removed, even though tags
+  themselves are returned in the result string.
+
+  Args:
+    value: String to process
+    tag_sub: String to replace tags with (by default uses an empty string)
+    tag_whitelist: A list of strings that specify which html tags should not
+        be stripped (e.g. ['b', 'u', 'br'])
+
+  Returns:
+    Original string with all html tags stripped besides those in tag_whitelist
+  """
+  s = HtmlStripper(tag_sub, tag_whitelist)
   try:
     s.feed(value)
     s.close()

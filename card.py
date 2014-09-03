@@ -126,13 +126,14 @@ def GetFeaturesFromXml(xml_content, layer_id=None):
       continue
     texts = {child.tag: GetText(child) for child in item.getchildren()}
     # For now strip description of all the html tags to prevent XSS
-    # vulnerabilities
-    # TODO(user): sanitization should move closed to render time
-    # (revisit this once iframed version goes away)
-    description_escaped = kmlify.HtmlEscape(re.sub(r'<[^>].*>', ' ',
-                                                   texts.get('description') or
-                                                   texts.get('content') or
-                                                   texts.get('summary') or ''))
+    # vulnerabilities except some basic text formatting tags
+    # TODO(user): sanitization should move closer to render time
+    # (revisit this once iframed version goes away) - b/17374443
+    description_html = (texts.get('description') or
+                        texts.get('content') or
+                        texts.get('summary') or '')
+    description_escaped = utils.StripHtmlTags(
+        description_html, tag_whitelist=['b', 'u', 'i', 'br'])
     features.append(Feature(texts.get('title') or texts.get('name'),
                             description_escaped, location, layer_id))
   return features
