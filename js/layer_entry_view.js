@@ -240,10 +240,6 @@ cm.LayerEntryView = function(
 
   // Figure out whether to enable editing.
   var enableEditing = this.config_['enable_editing'];
-  if (layerType === cm.LayerModel.Type.PLACES) {
-    enableEditing =
-        enableEditing && this.config_['enable_places_layer_editing'];
-  }
 
   // These links will be replaced by icons (e.g. pencil, rubbish bin). Mocks:
   // http://folder/nsavio/dotorg/crisis_response/crisis_maps/20120424&s

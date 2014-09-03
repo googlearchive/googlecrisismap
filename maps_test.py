@@ -57,7 +57,6 @@ class MapTest(test_utils.BaseTest):
                        'panel_side': 'right',
                        'panel_float': False,
                        'enable_editing': True,
-                       'enable_places_layer_editing': False,
                        'enable_osm_map_type': False,
                        'enable_osm_map_type_editing': False,
                        'minimal_map_controls': False,

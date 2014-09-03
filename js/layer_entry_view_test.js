@@ -154,10 +154,6 @@ LayerEntryViewTest.prototype.testEnableEditingFlags = function() {
   expectDescendantOf(parent, 'a', withText('Edit'));
   expectDescendantOf(parent, 'a', withText('Delete'));
 
-
-  // Test the enable_places_layer_editing client config variable
-  this.assertConfigControlledLayer_(cm.LayerModel.Type.PLACES,
-      {enable_editing: true, enable_places_layer_editing: true});
 };
 
 /**
