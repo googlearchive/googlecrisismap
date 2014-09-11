@@ -28,6 +28,7 @@ __author__ = 'kpy@google.com (Ka-Ping Yee)'
 import json
 import logging
 import pickle
+import random
 import threading
 import time
 
@@ -39,8 +40,9 @@ SWEEP_INTERVAL_SECONDS = 60
 
 next_sweep_time = 0
 
-# Maximum number of tries for acquiring a lock for make_value
-MAKE_LOCK_MAX_TRIES = 5
+# Sleep time between failing to grab a make_value lock and checking key
+# existence in the cache / retrying to get a lock again.
+RETRY_INTERVAL_SEC = 0.05
 
 
 def Reset():
@@ -183,9 +185,9 @@ class Cache(object):
           value".  Optional; defaults to the same value as ttl.  (This
           default is fine if all cache updates occur via Get(); if you
           use Set() or Delete(), you probably want ull to be smaller.)
-      get_timeout: Maximum time (in seconds) that we'll wait trying to
-          acquire a lock for make_value in one 'get' request. If not set,
-          then 'get' will only try to acquire the lock once.
+      get_timeout: Maximum time (in seconds) that we'll wait for the request to
+          succeed. There will be multiple attempts to grab the make_value lock
+          during this time.
       make_rate_limit: Maximum number of calls allowed to make_value per second.
 
     Raises:
@@ -195,15 +197,17 @@ class Cache(object):
       raise ValueError("Setting ull > ttl doesn't make sense")
     if make_rate_limit and (make_rate_limit < 0 or 1. / make_rate_limit <= 0):
       raise ValueError('Value for make_rate_limit is out of range')
-    if ((make_rate_limit and not get_timeout) or
-        (get_timeout and not make_rate_limit)):
-      raise ValueError('Need to specify either both make_rate_limit '
-                       'and get_timeout or neither')
+    if get_timeout and get_timeout <= 0:
+      raise ValueError('Value for get_timeout should be positive')
+
     self.name = name
     self.ttl = ttl
     self.ull = ttl if ull is None else ull
-    self.make_rate_limit = make_rate_limit or 0
-    self.get_timeout = get_timeout or 0
+    # Add some jitter to the ULL, so that different instances don't try
+    # to rewarm memcache entries at the same time
+    self.ull = random.randint(self.ull // 2, self.ull // 1)
+    self.make_rate_limit = make_rate_limit or 1
+    self.get_timeout = get_timeout or 10
     # Pick a value for ttc less than tll, so that there is enough time
     # to attempt and rewarm the entities with make_value.
     self.ttc = 0.85 * self.ttl
@@ -243,23 +247,20 @@ class Cache(object):
           (not value_pickle or now >= self.GetCoolingTime(expiration))):
         # Need to generate a new value using make_value. If we have a stale
         # value, ignore make_value errors
-        suppress_make_value_errors = value_pickle is not None
         expiration, value_pickle = (
-            self.TryUpdatingValueInMemcache(key, key_json, make_value,
-                                            suppress_make_value_errors)
+            self.TryUpdatingValueInMemcache(
+                key, key_json, make_value, expiration, value_pickle)
             or (expiration, value_pickle))
-        sleep_time = self.get_timeout / MAKE_LOCK_MAX_TRIES
-        if not value_pickle and time.time() + sleep_time < deadline:
+        if not value_pickle and time.time() + RETRY_INTERVAL_SEC < deadline:
           # Wait and then retry
-          time.sleep(sleep_time)
+          time.sleep(RETRY_INTERVAL_SEC)
           continue
         elif not value_pickle:
-          raise RuntimeError('Timed out on make_value in cache %s', self.name)
+          raise RuntimeError('Timed out on make_value in cache %s' % self.name)
 
       if value_pickle:
         # Set expiration in the local cache such that entities expire by
         # cooling_time to trigger an attempt to rewarm the cached value
-        # TODO(user): explore if we need to add jitter to the ull
         local_cache_exp = (
             min(now + self.ull, self.GetCoolingTime(expiration), expiration))
         # Store the value in the local cache, then return it
@@ -271,7 +272,7 @@ class Cache(object):
     return expiration - self.ttl + self.ttc
 
   def TryUpdatingValueInMemcache(self, key, key_json, make_value,
-                                 suppress_make_value_errors):
+                                 old_expiration, old_value_pickle):
     """Tries updating value in memcache using make_value function.
 
     Updates/sets the value for a given key in memcache by first trying to
@@ -282,16 +283,26 @@ class Cache(object):
       key: Key that we're updating a value for
       key_json: JSON for the key that we're generating a value for
       make_value: A function to produce the value.
-      suppress_make_value_errors: If true, then any errors on make_value call
-          will be suppressed and this function will just return none.
-          Otherwise, exceptions will be propagated to the caller.
+      old_expiration: Current memcache expiration time for the key
+          or None if memcache has no value for the key
+      old_value_pickle: Current memcache value pickle for the key
+          or None if memcache has no value for the key
     Returns:
       Newly cached value with its expiration timestamp, or None if the lock
-      couldn't be acquired (or in case of suppress_make_value_errors=false there
+      couldn't be acquired (or in case of old_value_pickle != None there
       were failures on make_value call).
     """
     if not self.AcquireMakeValueLock(key):
       return None
+
+    if old_value_pickle:
+      # Cache rewarming. Push cooling time further into the future
+      # (by 10% of the original cooling time), so other requests don't try to
+      # rewarm cold entries for the time being. Load tests showed this has a
+      # nontrivial performance benefit.
+      memcache.set(key_json,
+                   (old_expiration + self.ttc * 0.1, old_value_pickle),
+                   time=old_expiration)
 
     # Acquired the lock, so call make_value
     try:
@@ -303,10 +314,12 @@ class Cache(object):
       memcache.set(key_json, (expiration, value_pickle), time=self.ttl)
       return expiration, value_pickle
     except Exception:  # pylint:disable=broad-except
-      if suppress_make_value_errors:
+      if old_value_pickle:
+        # There is a stale value we can return, so just log a warning for now
         logging.warning(
             'Error on make_value for key %s in %s. Ignoring the error.',
             key_json, self.name, exc_info=True)
+        return None
       else:
         raise
 
@@ -346,7 +359,6 @@ class Cache(object):
     now = time.time()
 
     memcache.set(key_json, (now + self.ttl, value_pickle), time=self.ttl)
-    # TODO(user): explore if we should add jitter to ULL here
     _SetLocalCache(key_json, now + self.ull, value_pickle)
 
   def Add(self, key, value):
