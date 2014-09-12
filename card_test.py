@@ -449,7 +449,7 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals(
         ['parsed data from http://example.com/one.kml for layer1',
          'parsed data from http://example.com/three.kml for layer3'],
-        card.GetFeatures(MAP_ROOT, 't1', self.request, ndb.GeoPt(20, 50)))
+        card.GetFeatures(MAP_ROOT, 'm1', 't1', self.request, ndb.GeoPt(20, 50)))
 
   def testGetFeaturesWithFailedFetches(self):
     # Even if some fetches fail, we should get features from the others.
@@ -461,7 +461,7 @@ class CardTest(test_utils.BaseTest):
     self.SetForTest(card, 'GetFeaturesFromXml',
                     lambda data, layer: ['parsed ' + data])
     self.assertEquals(['parsed data from http://example.com/three.kml'],
-                      card.GetFeatures(MAP_ROOT, 't1', self.request,
+                      card.GetFeatures(MAP_ROOT, 'm1', 't1', self.request,
                                        ndb.GeoPt(20, 50)))
 
   def testGetFeaturesWithFailedParsing(self):
@@ -475,12 +475,12 @@ class CardTest(test_utils.BaseTest):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: 'data from ' + url)
     self.SetForTest(card, 'GetFeaturesFromXml', ParseButSometimesFail)
     self.assertEquals(['parsed data from http://example.com/one.kml'],
-                      card.GetFeatures(MAP_ROOT, 't1', self.request,
+                      card.GetFeatures(MAP_ROOT, 'm1', 't1', self.request,
                                        ndb.GeoPt(20, 50)))
 
   def testGetFeaturesWithInvalidTopicId(self):
     # GetFeatures should accept a nonexistent topic without raising exceptions.
-    self.assertEquals([], card.GetFeatures(MAP_ROOT, 'xyz', self.request,
+    self.assertEquals([], card.GetFeatures(MAP_ROOT, 'm1', 'xyz', self.request,
                                            ndb.GeoPt(20, 50)))
 
   def testGetLatestAnswers(self):

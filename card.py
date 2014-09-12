@@ -32,15 +32,16 @@ import utils
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb  # just for GeoPt
 
-# Fetched strings of XML content, keyed by URL.
-XML_CACHE = cache.Cache('card.xml', 300)
+# A cache of Feature list representing points from XML, keyed by
+# [url, map_id, map_version_id, layer_id]
+XML_FEATURES_CACHE = cache.Cache('card_features.xml', 300)
 
 # Fetched strings of Google Places API JSON results, keyed by request URL.
 JSON_PLACES_API_CACHE = cache.Cache('card.places', 300)
 
 # Lists of Feature objects, keyed by [map_id, map_version_id, topic_id,
 # geolocation_rounded_to_10m, radius, max_count].
-FEATURE_LIST_CACHE = cache.Cache('card.feature_list', 60)
+FILTERED_FEATURES_CACHE = cache.Cache('card.filtered_features', 60)
 
 # Pairs ({qid: answer}, {qid: effective_time_of_last_answer}), keyed by
 # [map_id, map_version_id, topic_id, geolocation_rounded_to_10m, radius].
@@ -115,14 +116,8 @@ def GetFeaturesFromXml(xml_content, layer_id=None):
   features = []
   for item in (root.findall('.//Placemark') +
                root.findall('.//entry') + root.findall('.//item')):
-    lat = lon = ''
-    try:
-      if item.find('.//coordinates') is not None:
-        lon, lat = GetText(item.find('.//coordinates')).split(',')[:2]
-      if item.find('.//point') is not None:
-        lat, lon = GetText(item.find('.//point')).split()[:2]
-      location = ndb.GeoPt(float(lat), float(lon))
-    except ValueError:
+    location = GetLocationFromXmlItem(item)
+    if not location:
       continue
     texts = {child.tag: GetText(child) for child in item.getchildren()}
     # For now strip description of all the html tags to prevent XSS
@@ -137,6 +132,19 @@ def GetFeaturesFromXml(xml_content, layer_id=None):
     features.append(Feature(texts.get('title') or texts.get('name'),
                             description_escaped, location, layer_id))
   return features
+
+
+def GetLocationFromXmlItem(item):
+  lat = lon = ''
+  try:
+    if item.find('.//coordinates') is not None:
+      lon, lat = GetText(item.find('.//coordinates')).split(',')[:2]
+    if item.find('.//point') is not None:
+      lat, lon = GetText(item.find('.//point')).split()[:2]
+    location = ndb.GeoPt(float(lat), float(lon))
+    return location
+  except ValueError:
+    return None
 
 
 def GetKmlUrl(root_url, layer):
@@ -284,11 +292,12 @@ def GetLayer(root, layer_id):
   return {layer['id']: layer for layer in root['layers']}.get(layer_id)
 
 
-def GetFeatures(map_root, topic_id, request, location_center):
+def GetFeatures(map_root, map_version_id, topic_id, request, location_center):
   """Gets a list of Feature objects for a given topic.
 
   Args:
     map_root: A dictionary with all the topics and layers information
+    map_version_id: Id of the map version
     topic_id: Id of the crowd report topic; features are retrieved from the
         layers associated with this topic
     request: Original card request
@@ -313,9 +322,11 @@ def GetFeatures(map_root, topic_id, request, location_center):
       url = GetKmlUrl(request.root_url, layer or {})
       if url:
         try:
-          content = XML_CACHE.Get(
-              url, lambda: kmlify.FetchData(url, request.host))
-          features += GetFeaturesFromXml(content, layer_id)
+          def GetXmlFeatures():
+            content = kmlify.FetchData(url, request.host)
+            return GetFeaturesFromXml(content, layer_id)
+          features += XML_FEATURES_CACHE.Get(
+              [url, map_root['id'], map_version_id, layer_id], GetXmlFeatures)
         except (SyntaxError, urlfetch.DownloadError):
           pass
   return features
@@ -338,7 +349,7 @@ def GetFilteredFeatures(map_root, map_version_id, topic_id, request,
                         center, radius, max_count):
   """Gets a list of the Feature objects for a topic within the given circle."""
   def GetFromDatastore():
-    features = GetFeatures(map_root, topic_id, request, center)
+    features = GetFeatures(map_root, map_version_id, topic_id, request, center)
     if center:
       SetDistanceOnFeatures(features, center)
     FilterFeatures(features, radius, max_count)
@@ -347,7 +358,7 @@ def GetFilteredFeatures(map_root, map_version_id, topic_id, request,
     SetDetailsOnFilteredFeatures(features)
     return features
 
-  return FEATURE_LIST_CACHE.Get(
+  return FILTERED_FEATURES_CACHE.Get(
       [map_root['id'], map_version_id, topic_id,
        center and RoundGeoPt(center), radius, max_count], GetFromDatastore)
 
