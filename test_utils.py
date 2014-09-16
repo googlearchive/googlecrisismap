@@ -249,7 +249,7 @@ class BaseTest(unittest.TestCase):
         self.cookie_jar = original_cookie_jar
     return contextlib.contextmanager(SetCookieJar)()
 
-  def DoGet(self, path, status=None, https=False):
+  def DoGet(self, path, status=None, https=False, headers=None):
     """Dispatches a GET request according to the routes in app.py.
 
     Args:
@@ -257,12 +257,14 @@ class BaseTest(unittest.TestCase):
       status: If given, expect that the GET will give this HTTP status code.
           Otherwise, expect that the GET will give a non-error code (200-399).
       https: If True, simulate an HTTPS request.
+      headers: Additional headers to set in the request.
 
     Returns:
       The HTTP response from the handler as a webapp2.Response object.
     """
     request = SetupRequest(path, cookie_jar=self.cookie_jar)
     request.scheme = https and 'https' or 'http'
+    request.headers.update(headers or {})
     response = DispatchRequest(request, cookie_jar=self.cookie_jar)
     if status:
       self.assertEquals(status, response.status_int)

@@ -678,5 +678,31 @@ class CardHandlerTest(test_utils.BaseTest):
         card.RenderFooter(['a', 'b'],
                           ['Listing by <a href="google.com">Google</a>']))
 
+  def testFeatureDistanceUnits(self):
+    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
+
+    # Default: no units in the request, no auto-detected country
+    self.AssertUnitsInResponseTo('km', '/xyz.com/.card/foo/t1?output=json')
+    # Response uses units from the request
+    self.AssertUnitsInResponseTo('mi',
+                                 '/xyz.com/.card/foo/t1?output=json&unit=mi')
+    # Response uses units from the request country
+    self.AssertUnitsInResponseTo('km', '/xyz.com/.card/foo/t1?output=json',
+                                 country_header='CA')
+    self.AssertUnitsInResponseTo('mi', '/xyz.com/.card/foo/t1?output=json',
+                                 country_header='US')
+    # Response uses units from the request (ignoring any auto-determined
+    # units based on request country)
+    self.AssertUnitsInResponseTo('km',
+                                 '/xyz.com/.card/foo/t1?output=json&unit=km',
+                                 country_header='US')
+
+  def AssertUnitsInResponseTo(self, expected_unit, url, country_header=None):
+    headers = {'X-AppEngine-Country': country_header} if country_header else {}
+    response = self.DoGet(url, headers=headers)
+    geojson = json.loads(response.body)
+    self.assertEquals(expected_unit, geojson['properties']['unit'])
+
+
 if __name__ == '__main__':
   test_utils.main()

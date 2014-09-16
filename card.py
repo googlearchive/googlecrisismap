@@ -571,7 +571,7 @@ class CardBase(base_handler.BaseHandler):
     lat_lon = str(self.request.get('ll', ''))
     max_count = int(self.request.get('n', 5))  # number of results to show
     radius = float(self.request.get('r', 100000))  # radius, metres
-    unit = str(self.request.get('unit', 'km'))
+    unit = str(self.request.get('unit', self.GetDistanceUnitForCountry()))
     qids = self.request.get('qids').replace(',', ' ').split()
     places_json = self.request.get('places') or '[]'
     place_id = str(self.request.get('place', ''))
@@ -624,7 +624,8 @@ class CardBase(base_handler.BaseHandler):
       geojson['properties'] = {
           'map_id': map_root.get('id'),
           'topic_title': topic.get('title'),
-          'html_attrs': html_attrs
+          'html_attrs': html_attrs,
+          'unit': unit
       }
       if output == 'json':
         self.WriteJson(geojson)
@@ -652,6 +653,15 @@ class CardBase(base_handler.BaseHandler):
 
     except Exception, e:  # pylint:disable=broad-except
       logging.exception(e)
+
+  def GetDistanceUnitForCountry(self):
+    unit = self.request.get('unit', '')
+    if unit in ['mi', 'km']:
+      return unit
+    elif unit:
+      logging.error('Could not parse unit: should be mi or km')
+    country_code = self.request.headers.get('X-AppEngine-Country', '')
+    return utils.GetDistanceUnitsForCountry(country_code)
 
 
 class CardByIdAndTopic(CardBase):

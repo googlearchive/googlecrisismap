@@ -23,6 +23,44 @@ import re
 import time
 
 
+# Regions in the world that use miles (as opposed to kilometers) for measuring
+# distance. List is compiled based on http://en.wikipedia.org/wiki/Mile
+COUNTRIES_USING_MILES = [
+    'AS',  # American Samoa
+    'BS',  # Bahamas
+    'BZ',  # Belize
+    'DM',  # Dominica
+    'FK',  # Falkland Islands
+    'GD',  # Grenada
+    'GU',  # Guam
+    'KN',  # St. Kitts & Nevis
+    'KY',  # Cayman Islands
+    'LC',  # St. Lucia
+    'LR',  # Liberia
+    'MM',  # Myanmar
+    'MP',  # The N. Mariana Islands
+    'SH',  # St. Helena
+    'TC',  # the Turks & Caicos Islands
+    'UK',  # United Kingdom
+    'US',  # United States
+    'VC',  # St. Vincent & The Grenadines
+    'VG',  # British Virgin Islands,
+    'VI',  # the U.S. Virgin Islands
+    'WS',  # Samoa
+]
+
+
+def GetDistanceUnitsForCountry(country_code):
+  """Returns distance unit used by a given region.
+
+  Args:
+    country_code: two letter country code in all capitals (ISO standard)
+  Returns:
+     'mi' for regions using miles, 'km' for all others
+  """
+  return 'mi' if country_code in COUNTRIES_USING_MILES else 'km'
+
+
 def IsDevelopmentServer():
   """Returns True if the app is running in development."""
   server = os.environ.get('SERVER_SOFTWARE', '')
