@@ -465,7 +465,9 @@ cm.LayerModel.prototype.toMapRoot = function() {
  * @private
  */
 cm.LayerModel.getKmlUrlFromMapsEngineLiteOrProUrl_ = function(url) {
-  return url ? url.replace(new RegExp('/map/.*?\\?'), '/map/kml?') : '';
+  // Supports mapsengine.google.com/map/viewer or google.com/maps/d/viewer
+  var regex = new RegExp('(/map/|/maps/\\w+/)(.*?\\?)');
+  return url ? url.replace(regex, '$1kml?') : '';
 };
 
 /** @override */

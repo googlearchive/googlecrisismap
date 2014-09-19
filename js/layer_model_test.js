@@ -278,21 +278,28 @@ LayerModelTest.prototype.runNewMapsEngineLiteOrProLayerFromMapRoot_ =
 /** Tests URL substitution for MELMEP layers with viewer path. */
 LayerModelTest.prototype.addOverlayMELMEP = function(url) {
   this.runNewMapsEngineLiteOrProLayerFromMapRoot_(
-      'http://mapsengine.google.com/map/viewer?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
-      'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
+      'https://www.google.com/maps/d/viewer?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
+      'https://www.google.com/maps/d/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
 };
 
 /** Tests URL substitution for MELMEP layers with editor path. */
 LayerModelTest.prototype.addOverlayMELMEP2 = function(url) {
   this.runNewMapsEngineLiteOrProLayerFromMapRoot_(
-      'http://mapsengine.google.com/map/edit?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
-      'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
+      'http://maps.google.com/maps/d/edit?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
+      'http://maps.google.com/maps/d/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
 };
 
 /** Tests URL substitution for MELMEP layers with unknown path. */
 LayerModelTest.prototype.addOverlayMELMEP3 = function(url) {
   this.runNewMapsEngineLiteOrProLayerFromMapRoot_(
-      'http://mapsengine.google.com/map/a-b.c?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
+      'https://www.google.com/maps/2ab_cd/a-b.c?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
+      'https://www.google.com/maps/2ab_cd/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
+};
+
+/** Tests URL substitution for MELMEP layers with the legacy URL path. */
+LayerModelTest.prototype.addOverlayMELMEPLegacy = function(url) {
+    this.runNewMapsEngineLiteOrProLayerFromMapRoot_(
+      'http://mapsengine.google.com/map/viewer?mid=zYYdhADI7PvQ.kzJSidMtEIqY',
       'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY');
 };
 
