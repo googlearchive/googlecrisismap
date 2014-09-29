@@ -48,12 +48,6 @@ function getShareUri() {
 }
 
 window.onload = function() {
-  // Exclude for chrome-linux.
-  // TODO(user): Remove this when b/16856776 is resolved.
-  if (puppet.userAgent.isChrome() && puppet.userAgent.isLinux()) {
-    return;
-  }
-
   // Set the 'base' parameter to force the share URL to point to google.org.
   // (Without this parameter, the share URL will point to some other machine
   // during system testing, and the URL shortener service will reject it.)
