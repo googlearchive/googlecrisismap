@@ -487,19 +487,21 @@ class CardTest(test_utils.BaseTest):
     now = datetime.datetime.utcnow()
     seconds = lambda s: datetime.timedelta(seconds=s)
     reports = [
+        # Most recent report has answers for q1 and q2.
         model.CrowdReport(answers_json='{"m1.t1.q1": "a1", "m1.t1.q2": "a2"}',
-                          effective=now),
+                          text='', effective=now),
         # Older answer to m1.t1.q2 should be superceded by recent answer
         model.CrowdReport(answers_json='{"m1.t1.q2": "a3", "m1.t1.q3": "a3"}',
-                          effective=now - seconds(1)),
+                          text='hello', effective=now - seconds(1)),
         # Answers for irrelevant maps or topics should be ignored
         model.CrowdReport(answers_json='{"m1.t2.q4": "a4", "m2.t1.q5": "a5"}',
-                          effective=now - seconds(2))
+                          text='goodbye', effective=now - seconds(2))
     ]
     self.SetForTest(model.CrowdReport, 'GetByLocation',
                     staticmethod(lambda *args, **kwargs: reports))
-    self.assertEquals(({'q1': 'a1', 'q2': 'a2', 'q3': 'a3'}, now),
-                      card.GetLatestAnswers('m1', 't1', 'location', 100))
+    self.assertEquals(
+        ({'q1': 'a1', 'q2': 'a2', 'q3': 'a3', '_text': 'hello'}, now),
+        card.GetLatestAnswers('m1', 't1', 'location', 100))
 
   def testGetLegibleTextColor(self):
     # Black on a light background; white on a dark background
@@ -518,7 +520,7 @@ class CardTest(test_utils.BaseTest):
       return ({'q1': 'a1' if location.lat < 1.5 else 'a2',
                'q2': None if location.lat < 1.5 else 3}, now)
     self.SetForTest(card, 'GetLatestAnswers', FakeGetLatestAnswers)
-    card.SetAnswersOnFeatures(features, MAP_ROOT, 'm1@1', 't1', ['q1', 'q2'])
+    card.SetAnswersOnFeatures(features, MAP_ROOT, 't1', ['q1', 'q2'])
     self.assertEquals('Green', features[0].answer_text)
     self.assertEquals('#0f0', features[0].status_color)
     self.assertEquals('Red, Qux: 3', features[1].answer_text)
@@ -566,6 +568,7 @@ class CardTest(test_utils.BaseTest):
                        'properties': {'answer_text': '',
                                       'answer_time': '',
                                       'answer_source': '',
+                                      'answers': {},
                                       'status_color': None,
                                       'description_html': 'description1',
                                       'distance': 0.0,

@@ -18,6 +18,7 @@ import datetime
 import json
 
 import base_handler
+import card
 import config
 import model
 import perms
@@ -177,7 +178,13 @@ class CrowdReports(base_handler.BaseHandler):
       results = CrowdReportJsonPost(self.auth, report_dicts)
       self.WriteJson(map(self.ReportToDict, results))
     else:
-      CrowdReportFormPost(self.GetCurrentUserUrl(), self.request)
+      user_url = self.GetCurrentUserUrl()
+      if not self.GetUserForUrl(user_url):
+        # Enable crowd reports to be posted by cross-origin XHR to Crisis Map.
+        # When reports are posted anonymously, requests from other sites pose
+        # no more security risks than requests from Crisis Map's own pages.
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+      CrowdReportFormPost(user_url, self.request)
 
   def ReportToDict(self, report):
     """Converts a model.CrowdReport to a dictionary for JSON serialization."""
@@ -226,6 +233,7 @@ def CrowdReportFormPost(author, request):
   model.CrowdReport.Create(source=request.root_url, author=author,
                            effective=now, text=text, topic_ids=topic_ids,
                            answers=answers, location=ll)
+  card.InvalidateAnswerCache(topic_ids, ll)
 
 
 def CrowdReportJsonPost(auth, report_dicts):

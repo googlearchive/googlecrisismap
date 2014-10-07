@@ -51,7 +51,6 @@ MAX_ANSWER_AGE = datetime.timedelta(days=7)  # ignore answers older than 7 days
 GOOGLE_SPREADSHEET_CSV_URL = (
     'https://docs.google.com/spreadsheet/pub?key=$key&output=csv')
 DEGREES = 3.14159265358979/180
-DEFAULT_STATUS_COLOR = '#eee'
 DEADLINE = 10
 PLACES_API_SEARCH_URL = (
     'https://maps.googleapis.com/maps/api/place/nearbysearch/json?')
@@ -80,6 +79,7 @@ class Feature(object):
     self.answer_text = ''
     self.answer_time = ''
     self.answer_source = ''
+    self.answers = {}
 
   def __lt__(self, other):
     return self.distance < other.distance
@@ -383,7 +383,9 @@ def GetLatestAnswers(map_id, topic_id, location, radius):
   for report in model.CrowdReport.GetByLocation(
       location, {full_topic_id: radius}, 100, hidden=False):
     if now - report.effective < MAX_ANSWER_AGE:
-      for question_id, answer in report.answers.items():
+      # The report's overall comment is stored under the special qid '_text'.
+      for question_id, answer in report.answers.items() + [
+          (full_topic_id + '._text', report.text)]:
         tid, qid = question_id.rsplit('.', 1)
         if tid == full_topic_id:
           if answer or answer == 0:  # non-empty answer
@@ -413,8 +415,8 @@ def GetFeatureAttributions(features):
   return list(html_attrs)
 
 
-def SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids):
-  """Populates 'status_color' and 'answer_text' on the given Feature objects."""
+def SetAnswersOnFeatures(features, map_root, topic_id, qids):
+  """Sets 'status_color', 'answers', and 'answer_text' on the given Features."""
   map_id = map_root.get('id') or ''
   topic = GetTopic(map_root, topic_id) or {}
   radius = topic.get('cluster_radius', 100)
@@ -426,28 +428,46 @@ def SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids):
 
   if topic.get('crowd_enabled') and qids:
     for f in features:
+      # Even though we use the radius to get the latest answers, the cache key
+      # omits radius so that InvalidateAnswerCache can quickly delete cache
+      # entries without fetching from the datastore.  So, when a cluster radius
+      # is changed and its map is republished, affected entries in the answer
+      # cache will be stale until they expire.  This seems like a good tradeoff
+      # because (a) changing a cluster radius in a published map is rare (less
+      # than once per map); (b) the answer cache has a short TTL (15 s); and
+      # (c) posting crowd reports is frequent (many times per day).
       answers, answer_time = ANSWER_CACHE.Get(
-          [map_version_id, topic_id, RoundGeoPt(f.location), radius],
+          [map_id, topic_id, RoundGeoPt(f.location)],
           lambda: GetLatestAnswers(map_id, topic_id, f.location, radius))
       answer_texts = []
       for i, qid in enumerate(qids):
         question, answer = questions_by_id.get(qid, {}), answers.get(qid)
+        prefix = question.get('title', '')
+        prefix += ': ' if prefix else ''
         if question.get('type') == 'CHOICE':
           choice = choices_by_id.get((qid, answer)) or {}
           if choice:
             answer_texts.append(
-                choice.get('label', '') or
-                question.get('title', '') + ': ' + choice.get('title', ''))
-          if i == 0:
-            f.status_color = choice.get('color') or DEFAULT_STATUS_COLOR
+                choice.get('label', '') or prefix + choice.get('title', ''))
+          if i == 0:  # first question determines the overall color
+            f.status_color = choice.get('color')
         elif answer or answer == 0:
-          answer_texts.append(question.get('title', '') + ': ' + str(answer))
+          answer_texts.append(prefix + str(answer))
+      f.answers = answers
       if answer_texts:
         f.answer_text = ', '.join(answer_texts)
         f.answer_time = utils.ShortAge(answer_time)
         # Source information may go away once "Add an update" appears below
         # the answer text. For now, we only have one source of crowd reports.
         f.answer_source = 'Crisis Map user'
+
+
+def InvalidateAnswerCache(full_topic_ids, location):
+  """Deletes cached answers affected by a new report at a given location."""
+  for full_topic_id in full_topic_ids:
+    if '.' in full_topic_id:
+      map_id, topic_id = full_topic_id.split('.')
+      ANSWER_CACHE.Delete([map_id, topic_id, RoundGeoPt(location)])
 
 
 def RemoveParamsFromUrl(url, *params):
@@ -481,7 +501,8 @@ def GetGeoJson(features, include_descriptions):
               'status_color': f.status_color,
               'answer_text': f.answer_text,
               'answer_time': f.answer_time,
-              'answer_source': f.answer_source
+              'answer_source': f.answer_source,
+              'answers': f.answers
           }
       } for f in features]
   }
@@ -578,7 +599,7 @@ class CardBase(base_handler.BaseHandler):
     footer_json = self.request.get('footer') or '[]'
     location_unavailable = self.request.get('location_unavailable')
     lang = base_handler.SelectLanguageForRequest(self.request, map_root)
-    include_descriptions = int(self.request.get('show_desc') or 0)
+    include_descriptions = self.request.get('show_desc')
 
     try:
       places = json.loads(places_json)
@@ -619,11 +640,11 @@ class CardBase(base_handler.BaseHandler):
           map_root, map_version_id, topic_id, self.request,
           center, radius, max_count)
       html_attrs = GetFeatureAttributions(features)
-      SetAnswersOnFeatures(features, map_root, map_version_id, topic_id, qids)
+      SetAnswersOnFeatures(features, map_root, topic_id, qids)
       geojson = GetGeoJson(features, include_descriptions)
       geojson['properties'] = {
           'map_id': map_root.get('id'),
-          'topic_title': topic.get('title'),
+          'topic': topic,
           'html_attrs': html_attrs,
           'unit': unit
       }
