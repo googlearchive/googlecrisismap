@@ -331,7 +331,7 @@
     },
     {
       "id": "google-maps-engine-lite-or-pro",
-      "title": "Maps Engine Lite Layer",
+      "title": "My Maps Layer",
       "visibility": "DEFAULT_OFF",
       "description": "MEL Boulder Emergency Flooding Information",
       "type": "GOOGLE_MAPS_ENGINE_LITE_OR_PRO",

@@ -458,7 +458,8 @@ cm.LayerModel.prototype.toMapRoot = function() {
 };
 
 /**
- * Transforms a Maps Engine Lite/Pro URL into a URL where we can fetch KML.
+ * Transforms a Maps Engine Lite/Pro (My Maps) URL into a URL where we can
+ * fetch KML.
  * @param {string} url the MEL/MEP URL to transform.
  * @return {string} A URL to fetch KML for the MEL/MEP layer, or empty string
  *     if the given URL was empty or null.

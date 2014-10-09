@@ -383,7 +383,7 @@ MapViewTest.prototype.addOverlayGeoRss = function() {
   this.newMapView_(false);
 };
 
-/** Tests adding a Maps Engine Lite or Pro overlay. */
+/** Tests adding a Maps Engine Lite or Pro (My Maps) overlay. */
 MapViewTest.prototype.addOverlayMELMEP = function() {
   var url =
       'http://mapsengine.google.com/map/kml?mid=zYYdhADI7PvQ.kzJSidMtEIqY';

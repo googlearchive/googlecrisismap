@@ -788,9 +788,10 @@ cm.MSG_LAYER_TYPE_CLOUDS = goog.getMsg('Clouds (from Google Maps)');
 /** @desc Menu option for the places API layer from Google Maps. */
 cm.MSG_LAYER_TYPE_PLACES = goog.getMsg('Places (from Google Maps)');
 
-/** @desc Menu option for a layer from Google Maps Engine Lite or Pro. */
-cm.MSG_LAYER_TYPE_MAPS_ENGINE_LITE_OR_PRO = goog.getMsg(
-    'Google Maps Engine Lite/Pro');
+/**
+ * @desc Menu option for a layer from Google Maps Engine Lite or Pro (My Maps).
+ */
+cm.MSG_LAYER_TYPE_MAPS_ENGINE_LITE_OR_PRO = goog.getMsg('Google My Maps');
 
 /** @desc Label for a text field for the URL of a data source. */
 cm.MSG_SOURCE_URL = goog.getMsg('Source URL');
@@ -1141,10 +1142,11 @@ cm.MSG_SOURCE_URL_TOOLTIP = goog.getMsg(
     'the tile URL without the quadkey at the end.');
 
 /**
- * @desc Tooltip for the text field for a Maps EngineLite layer's source URL.
+ * @desc Tooltip for the text field for a Maps EngineLite (My Maps)
+ *     layer's source URL.
  */
 cm.MSG_MAPS_ENGINE_LITE_OR_PRO_URL_TOOLTIP = goog.getMsg(
-    'The public URL of the Maps Engine Lite/Pro layer data.');
+    'The public URL of the Google My Maps layer data.');
 
 /**
  * @desc Tooltip for a checkbox that sets whether to show a download link.
