@@ -43,9 +43,16 @@ JSON_PLACES_API_CACHE = cache.Cache('card.places', 300)
 # geolocation_rounded_to_10m, radius, max_count].
 FILTERED_FEATURES_CACHE = cache.Cache('card.filtered_features', 60)
 
-# Pairs ({qid: answer}, {qid: effective_time_of_last_answer}), keyed by
-# [map_id, map_version_id, topic_id, geolocation_rounded_to_10m, radius].
-ANSWER_CACHE = cache.Cache('card.answers', 15)
+# Key: [map_id, map_version_id, topic_id, geolocation_rounded_to_10m, radius].
+# Value: 3-tuple of (answer_summary, answer_times, report_dicts) where
+#   - answer_summary is a dictionary {qid: latest_answer_to_that_question}
+#   - answer_times is a dictionary {qid: effective_time_of_latest_answer}
+#   - report_dicts contains the last REPORTS_PER_FEATURE reports, as a list
+#     of dicts [{qid: answer, '_effective': time, '_id': report_id}]
+REPORT_CACHE = cache.Cache('card.reports', 15)
+
+# Number of crowd reports to cache and return per feature.
+REPORTS_PER_FEATURE = 5
 
 MAX_ANSWER_AGE = datetime.timedelta(days=7)  # ignore answers older than 7 days
 GOOGLE_SPREADSHEET_CSV_URL = (
@@ -80,6 +87,7 @@ class Feature(object):
     self.answer_time = ''
     self.answer_source = ''
     self.answers = {}
+    self.reports = []
 
   def __lt__(self, other):
     return self.distance < other.distance
@@ -297,8 +305,8 @@ def GetFeatures(map_root, map_version_id, topic_id, request, location_center):
 
   Args:
     map_root: A dictionary with all the topics and layers information
-    map_version_id: Id of the map version
-    topic_id: Id of the crowd report topic; features are retrieved from the
+    map_version_id: ID of the map version
+    topic_id: ID of the crowd report topic; features are retrieved from the
         layers associated with this topic
     request: Original card request
     location_center: db.GeoPt around which to retrieve features. So far only
@@ -372,27 +380,48 @@ def SetDetailsOnFilteredFeatures(features):
       f.html_attrs = GetGooglePlaceHtmlAttributions(place_details)
 
 
-def GetLatestAnswers(map_id, topic_id, location, radius):
-  """Gets the latest CrowdReport answers for the given topic and location."""
+def GetAnswersAndReports(map_id, topic_id, location, radius):
+  """Gets information on recent crowd reports for a given topic and location.
+
+  Args:
+    map_id: The map ID.
+    topic_id: The topic ID.
+    location: The location to search near, as an ndb.GeoPt.
+    radius: Radius in metres.
+  Returns:
+    A 3-tuple (answer_summary, answer_times, report_dicts) where answer_summary
+    is a dictionary {qid: latest_answer} containing the latest answer for each
+    question; answer_times is a dictionary {qid: effective_time} giving the
+    effective time of the latest answer for each question; and report_dicts is
+    an array of dictionaries representing the latest 10 crowd reports.  Each
+    dictionary in report_dicts has the answers for a report keyed by qid, as
+    well as two special keys: '_effective' for the effective time and '_id'
+    for the report ID.
+  """
   full_topic_id = map_id + '.' + topic_id
-  answers = {}
-  answer_times = {}
+  answers, answer_times, report_dicts = {}, {}, []
   now = datetime.datetime.utcnow()
   # Assume that all the most recently effective still-relevant answers are
   # contained among the 100 most recently updated CrowdReport entities.
   for report in model.CrowdReport.GetByLocation(
       location, {full_topic_id: radius}, 100, hidden=False):
     if now - report.effective < MAX_ANSWER_AGE:
+      report_dict = {}
       # The report's overall comment is stored under the special qid '_text'.
       for question_id, answer in report.answers.items() + [
           (full_topic_id + '._text', report.text)]:
         tid, qid = question_id.rsplit('.', 1)
         if tid == full_topic_id:
+          report_dict[qid] = answer
           if answer or answer == 0:  # non-empty answer
             if qid not in answer_times or report.effective > answer_times[qid]:
               answers[qid] = answer
               answer_times[qid] = report.effective
-  return answers, max(answer_times.values() or [None])
+      report_dicts.append(
+          dict(report_dict, _effective=report.effective, _id=report.id))
+  report_dicts.sort(key=lambda report_dict: report_dict['_effective'])
+  report_dicts.reverse()
+  return answers, answer_times, report_dicts[:REPORTS_PER_FEATURE]
 
 
 def GetLegibleTextColor(background_color):
@@ -415,7 +444,7 @@ def GetFeatureAttributions(features):
   return list(html_attrs)
 
 
-def SetAnswersOnFeatures(features, map_root, topic_id, qids):
+def SetAnswersAndReportsOnFeatures(features, map_root, topic_id, qids):
   """Sets 'status_color', 'answers', and 'answer_text' on the given Features."""
   map_id = map_root.get('id') or ''
   topic = GetTopic(map_root, topic_id) or {}
@@ -426,48 +455,70 @@ def SetAnswersOnFeatures(features, map_root, topic_id, qids):
                    for q in topic.get('questions', [])
                    for c in q.get('choices', [])}
 
+  def FormatAnswers(answers):
+    """Formats a set of answers into a text summary."""
+    answer_texts = []
+    for qid in qids:
+      question = questions_by_id.get(qid, {})
+      answer = answers.get(qid)
+      prefix = question.get('title', '')
+      prefix += ': ' if prefix else ''
+      if question.get('type') == 'CHOICE':
+        choice = choices_by_id.get((qid, answer))
+        if choice:
+          label = choice.get('label') or prefix + choice.get('title', '')
+          answer_texts.append(label + '.')
+      elif answer or answer == 0:
+        if qid == '_text':
+          answer_texts.append('"%s"' % answer)
+        else:
+          answer_texts.append(prefix + str(answer) + '.')
+    return ' '.join(answer_texts)
+
+  def GetStatusColor(answers):
+    """Determines the indicator color from the answer to the first question."""
+    qid = qids and qids[0] or ''
+    first_question = questions_by_id.get(qid, {})
+    if first_question.get('type') == 'CHOICE':
+      choice = choices_by_id.get((qid, answers.get(qid)))
+      return choice and choice.get('color')
+
   if topic.get('crowd_enabled') and qids:
     for f in features:
       # Even though we use the radius to get the latest answers, the cache key
-      # omits radius so that InvalidateAnswerCache can quickly delete cache
+      # omits radius so that InvalidateReportCache can quickly delete cache
       # entries without fetching from the datastore.  So, when a cluster radius
       # is changed and its map is republished, affected entries in the answer
       # cache will be stale until they expire.  This seems like a good tradeoff
       # because (a) changing a cluster radius in a published map is rare (less
       # than once per map); (b) the answer cache has a short TTL (15 s); and
       # (c) posting crowd reports is frequent (many times per day).
-      answers, answer_time = ANSWER_CACHE.Get(
+      answers, answer_times, report_dicts = REPORT_CACHE.Get(
           [map_id, topic_id, RoundGeoPt(f.location)],
-          lambda: GetLatestAnswers(map_id, topic_id, f.location, radius))
-      answer_texts = []
-      for i, qid in enumerate(qids):
-        question, answer = questions_by_id.get(qid, {}), answers.get(qid)
-        prefix = question.get('title', '')
-        prefix += ': ' if prefix else ''
-        if question.get('type') == 'CHOICE':
-          choice = choices_by_id.get((qid, answer)) or {}
-          if choice:
-            answer_texts.append(
-                choice.get('label', '') or prefix + choice.get('title', ''))
-          if i == 0:  # first question determines the overall color
-            f.status_color = choice.get('color')
-        elif answer or answer == 0:
-          answer_texts.append(prefix + str(answer))
+          lambda: GetAnswersAndReports(map_id, topic_id, f.location, radius))
       f.answers = answers
-      if answer_texts:
-        f.answer_text = ', '.join(answer_texts)
-        f.answer_time = utils.ShortAge(answer_time)
-        # Source information may go away once "Add an update" appears below
-        # the answer text. For now, we only have one source of crowd reports.
-        f.answer_source = 'Crisis Map user'
+      f.answer_text = FormatAnswers(answers)
+      if answer_times:
+        # Convert datetimes to string descriptions like "5 min ago".
+        f.answer_time = utils.ShortAge(max(answer_times.values()))
+      f.answer_source = 'Crisis Map user'
+      f.status_color = GetStatusColor(answers)
+
+      # Include a few recent reports.
+      f.reports = [{'answer_text': FormatAnswers(report),
+                    'effective': utils.ShortAge(report['_effective']),
+                    'id': report['_id'],
+                    'text': '_text' in qids and report['_text'] or '',
+                    'status_color': GetStatusColor(report)}
+                   for report in report_dicts]
 
 
-def InvalidateAnswerCache(full_topic_ids, location):
+def InvalidateReportCache(full_topic_ids, location):
   """Deletes cached answers affected by a new report at a given location."""
   for full_topic_id in full_topic_ids:
     if '.' in full_topic_id:
       map_id, topic_id = full_topic_id.split('.')
-      ANSWER_CACHE.Delete([map_id, topic_id, RoundGeoPt(location)])
+      REPORT_CACHE.Delete([map_id, topic_id, RoundGeoPt(location)])
 
 
 def RemoveParamsFromUrl(url, *params):
@@ -502,7 +553,8 @@ def GetGeoJson(features, include_descriptions):
               'answer_text': f.answer_text,
               'answer_time': f.answer_time,
               'answer_source': f.answer_source,
-              'answers': f.answers
+              'answers': f.answers,
+              'reports': f.reports
           }
       } for f in features]
   }
@@ -640,7 +692,7 @@ class CardBase(base_handler.BaseHandler):
           map_root, map_version_id, topic_id, self.request,
           center, radius, max_count)
       html_attrs = GetFeatureAttributions(features)
-      SetAnswersOnFeatures(features, map_root, topic_id, qids)
+      SetAnswersAndReportsOnFeatures(features, map_root, topic_id, qids)
       geojson = GetGeoJson(features, include_descriptions)
       geojson['properties'] = {
           'map_id': map_root.get('id'),

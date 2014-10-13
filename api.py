@@ -233,7 +233,7 @@ def CrowdReportFormPost(author, request):
   model.CrowdReport.Create(source=request.root_url, author=author,
                            effective=now, text=text, topic_ids=topic_ids,
                            answers=answers, location=ll)
-  card.InvalidateAnswerCache(topic_ids, ll)
+  card.InvalidateReportCache(topic_ids, ll)
 
 
 def CrowdReportJsonPost(auth, report_dicts):

@@ -483,25 +483,33 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals([], card.GetFeatures(MAP_ROOT, 'm1', 'xyz', self.request,
                                            ndb.GeoPt(20, 50)))
 
-  def testGetLatestAnswers(self):
+  def testGetAnswersAndReports(self):
     now = datetime.datetime.utcnow()
     seconds = lambda s: datetime.timedelta(seconds=s)
+    now_minus_1, now_minus_2 = now - seconds(1), now - seconds(2)
     reports = [
         # Most recent report has answers for q1 and q2.
         model.CrowdReport(answers_json='{"m1.t1.q1": "a1", "m1.t1.q2": "a2"}',
-                          text='', effective=now),
+                          id='r1', text='', effective=now),
         # Older answer to m1.t1.q2 should be superceded by recent answer
         model.CrowdReport(answers_json='{"m1.t1.q2": "a3", "m1.t1.q3": "a3"}',
-                          text='hello', effective=now - seconds(1)),
+                          id='r2', text='hello', effective=now_minus_1),
         # Answers for irrelevant maps or topics should be ignored
         model.CrowdReport(answers_json='{"m1.t2.q4": "a4", "m2.t1.q5": "a5"}',
-                          text='goodbye', effective=now - seconds(2))
+                          id='r3', text='goodbye', effective=now_minus_2)
     ]
     self.SetForTest(model.CrowdReport, 'GetByLocation',
                     staticmethod(lambda *args, **kwargs: reports))
     self.assertEquals(
-        ({'q1': 'a1', 'q2': 'a2', 'q3': 'a3', '_text': 'hello'}, now),
-        card.GetLatestAnswers('m1', 't1', 'location', 100))
+        ({'q1': 'a1', 'q2': 'a2', 'q3': 'a3', '_text': 'hello'},
+         {'q1': now, 'q2': now, 'q3': now_minus_1, '_text': now_minus_1},
+         [{'_id': 'r1', '_effective': now,
+           'q1': 'a1', 'q2': 'a2', '_text': ''},
+          {'_id': 'r2', '_effective': now_minus_1,
+           'q2': 'a3', 'q3': 'a3', '_text': 'hello'},
+          {'_id': 'r3', '_effective': now_minus_2,
+           '_text': 'goodbye'}]),
+        card.GetAnswersAndReports('m1', 't1', 'location', 100))
 
   def testGetLegibleTextColor(self):
     # Black on a light background; white on a dark background
@@ -512,19 +520,36 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals('#000', card.GetLegibleTextColor('#0f0'))
     self.assertEquals('#fff', card.GetLegibleTextColor('#ff0000'))
 
-  def testSetAnswersOnFeatures(self):
+  def testSetAnswersAndReportsOnFeatures(self):
     features = [card.Feature('title1', 'description1', ndb.GeoPt(1, 1)),
                 card.Feature('title2', 'description2', ndb.GeoPt(2, 2))]
     now = datetime.datetime.utcnow()
-    def FakeGetLatestAnswers(unused_1, unused_2, location, unused_3):
-      return ({'q1': 'a1' if location.lat < 1.5 else 'a2',
-               'q2': None if location.lat < 1.5 else 3}, now)
-    self.SetForTest(card, 'GetLatestAnswers', FakeGetLatestAnswers)
-    card.SetAnswersOnFeatures(features, MAP_ROOT, 't1', ['q1', 'q2'])
-    self.assertEquals('Green', features[0].answer_text)
+    def FakeGetAnswersAndReports(unused_1, unused_2, location, unused_3):
+      if location.lat < 1.5:
+        return ({'q1': 'a1', '_text': 'hello'},
+                {'q1': now, '_text': now},
+                [{'_id': 'r1', '_effective': now,
+                  'q1': 'a1', '_text': 'hello'}])
+      else:
+        return ({'q1': 'a2', 'q2': 3, '_text': 'goodbye'},
+                {'q1': now, 'q2': now, '_text': now},
+                [{'_id': 'r2', '_effective': now,
+                  'q1': 'a2', 'q2': 3, '_text': 'goodbye'}])
+    self.SetForTest(card, 'GetAnswersAndReports', FakeGetAnswersAndReports)
+    card.SetAnswersAndReportsOnFeatures(
+        features, MAP_ROOT, 't1', ['q1', 'q2', '_text'])
+    self.assertEquals('Green. "hello"', features[0].answer_text)
     self.assertEquals('#0f0', features[0].status_color)
-    self.assertEquals('Red, Qux: 3', features[1].answer_text)
+    self.assertEquals('Red. Qux: 3. "goodbye"', features[1].answer_text)
     self.assertEquals('#f00', features[1].status_color)
+    self.assertEquals(
+        [{'answer_text': 'Green. "hello"', 'effective': 'just now',
+          'id': 'r1', 'text': 'hello', 'status_color': '#0f0'}],
+        features[0].reports)
+    self.assertEquals(
+        [{'answer_text': 'Red. Qux: 3. "goodbye"', 'effective': 'just now',
+          'id': 'r2', 'text': 'goodbye', 'status_color': '#f00'}],
+        features[1].reports)
 
   def testSetDistanceOnFeatures(self):
     features = [card.Feature('title1', 'description1', ndb.GeoPt(1, 1)),
@@ -569,6 +594,7 @@ class CardTest(test_utils.BaseTest):
                                       'answer_time': '',
                                       'answer_source': '',
                                       'answers': {},
+                                      'reports': [],
                                       'status_color': None,
                                       'description_html': 'description1',
                                       'distance': 0.0,
