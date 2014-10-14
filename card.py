@@ -44,8 +44,8 @@ JSON_PLACES_API_CACHE = cache.Cache('card.places', 300)
 FILTERED_FEATURES_CACHE = cache.Cache('card.filtered_features', 60)
 
 # Key: [map_id, map_version_id, topic_id, geolocation_rounded_to_10m, radius].
-# Value: 3-tuple of (answer_summary, answer_times, report_dicts) where
-#   - answer_summary is a dictionary {qid: latest_answer_to_that_question}
+# Value: 3-tuple of (latest_answers, answer_times, report_dicts) where
+#   - latest_answers is a dictionary {qid: latest_answer_to_that_question}
 #   - answer_times is a dictionary {qid: effective_time_of_latest_answer}
 #   - report_dicts contains the last REPORTS_PER_FEATURE reports, as a list
 #     of dicts [{qid: answer, '_effective': time, '_id': report_id}]
@@ -389,7 +389,7 @@ def GetAnswersAndReports(map_id, topic_id, location, radius):
     location: The location to search near, as an ndb.GeoPt.
     radius: Radius in metres.
   Returns:
-    A 3-tuple (answer_summary, answer_times, report_dicts) where answer_summary
+    A 3-tuple (latest_answers, answer_times, report_dicts) where latest_answers
     is a dictionary {qid: latest_answer} containing the latest answer for each
     question; answer_times is a dictionary {qid: effective_time} giving the
     effective time of the latest answer for each question; and report_dicts is
@@ -459,19 +459,17 @@ def SetAnswersAndReportsOnFeatures(features, map_root, topic_id, qids):
     """Formats a set of answers into a text summary."""
     answer_texts = []
     for qid in qids:
-      question = questions_by_id.get(qid, {})
+      question = questions_by_id.get(qid)
       answer = answers.get(qid)
-      prefix = question.get('title', '')
+      prefix = question and question.get('title') or ''
       prefix += ': ' if prefix else ''
-      if question.get('type') == 'CHOICE':
-        choice = choices_by_id.get((qid, answer))
-        if choice:
-          label = choice.get('label') or prefix + choice.get('title', '')
-          answer_texts.append(label + '.')
-      elif answer or answer == 0:
-        if qid == '_text':
-          answer_texts.append('"%s"' % answer)
-        else:
+      if question:
+        if question.get('type') == 'CHOICE':
+          choice = choices_by_id.get((qid, answer))
+          if choice:
+            label = choice.get('label') or prefix + choice.get('title', '')
+            answer_texts.append(label + '.')
+        elif answer or answer == 0:
           answer_texts.append(prefix + str(answer) + '.')
     return ' '.join(answer_texts)
 
@@ -505,7 +503,7 @@ def SetAnswersAndReportsOnFeatures(features, map_root, topic_id, qids):
       f.status_color = GetStatusColor(answers)
 
       # Include a few recent reports.
-      f.reports = [{'answer_text': FormatAnswers(report),
+      f.reports = [{'answer_summary': FormatAnswers(report),
                     'effective': utils.ShortAge(report['_effective']),
                     'id': report['_id'],
                     'text': '_text' in qids and report['_text'] or '',

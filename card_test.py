@@ -538,16 +538,16 @@ class CardTest(test_utils.BaseTest):
     self.SetForTest(card, 'GetAnswersAndReports', FakeGetAnswersAndReports)
     card.SetAnswersAndReportsOnFeatures(
         features, MAP_ROOT, 't1', ['q1', 'q2', '_text'])
-    self.assertEquals('Green. "hello"', features[0].answer_text)
+    self.assertEquals('Green.', features[0].answer_text)
     self.assertEquals('#0f0', features[0].status_color)
-    self.assertEquals('Red. Qux: 3. "goodbye"', features[1].answer_text)
+    self.assertEquals('Red. Qux: 3.', features[1].answer_text)
     self.assertEquals('#f00', features[1].status_color)
     self.assertEquals(
-        [{'answer_text': 'Green. "hello"', 'effective': 'just now',
+        [{'answer_summary': 'Green.', 'effective': 'just now',
           'id': 'r1', 'text': 'hello', 'status_color': '#0f0'}],
         features[0].reports)
     self.assertEquals(
-        [{'answer_text': 'Red. Qux: 3. "goodbye"', 'effective': 'just now',
+        [{'answer_summary': 'Red. Qux: 3.', 'effective': 'just now',
           'id': 'r2', 'text': 'goodbye', 'status_color': '#f00'}],
         features[1].reports)
 

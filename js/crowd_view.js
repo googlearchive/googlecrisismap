@@ -282,7 +282,7 @@ cm.CrowdView.prototype.renderCollectionArea_ = function(parentElem) {
   cm.ui.append(form,
       cm.ui.create('div', cm.css.REPORT_TEXT,
           self.textInput_ = cm.ui.create(
-              'input', {'type': 'text', 'id': 'cm-text',
+              'input', {'type': 'text', 'id': 'cm-text', 'maxlength': '250',
                         'placeholder': cm.MSG_ENTER_COMMENT})),
       cm.ui.create('div', cm.css.BUTTON_AREA,
           self.submitBtn_ = cm.ui.create(
