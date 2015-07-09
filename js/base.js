@@ -370,7 +370,18 @@ cm.MSG_NUMBER_MATCHING_SUBLAYERS = goog.getMsg('{NUM_LAYERS, plural, ' +
   'other {# matching layers in this folder}}');
 
 /** @desc Attribution information under a Google Places map layer. */
-cm.MSG_SOURCE_GOOGLE_MAPS = goog.getMsg('Source: Google Maps');
+cm.MSG_GOOGLE_MAPS = goog.getMsg('Google Maps');
+
+/**
+ * @param {string} attribution Name of the data source
+ * @return {string} Localized message for attribution
+ */
+cm.getMsgSource = function(attribution) {
+  /** @desc Attribution information under a map layer. */
+  var MSG_SOURCE = goog.getMsg(
+      'Source: {$attribution}', {'attribution': attribution});
+  return MSG_SOURCE;  // Closure forces this silly circumlocution
+};
 
 // Legend editor
 
@@ -761,6 +772,9 @@ cm.MSG_MAXIMUM_ZOOM = goog.getMsg('Maximum zoom level');
 /** @desc Label for a menu for selecting the type of a map layer. */
 cm.MSG_LAYER_TYPE = goog.getMsg('Layer type');
 
+/** @desc Label for a text field for a layer attribution. */
+cm.MSG_ATTRIBUTION = goog.getMsg('Attribution');
+
 /** @desc Menu option for a service that delivers layer tiles. */
 cm.MSG_LAYER_TYPE_TILE_SERVICE = goog.getMsg('Tile service');
 
@@ -1092,6 +1106,10 @@ cm.MSG_LAYER_TITLE_TOOLTIP = goog.getMsg(
 /** @desc Tooltip for editing the layer's description. */
 cm.MSG_LAYER_DESCRIPTION_TOOLTIP = goog.getMsg(
     'HTML of the layer description to display in the map\'s layer list.');
+
+/** @desc Tooltip for editing the layer's attribution. */
+cm.MSG_LAYER_ATTRIBUTION_TOOLTIP = goog.getMsg(
+    'Layer data source to display in the map\'s layer list.');
 
 /** @desc Tooltip for editing the layer's legend. */
 cm.MSG_LEGEND_TOOLTIP = goog.getMsg('The legend to display for this layer.');

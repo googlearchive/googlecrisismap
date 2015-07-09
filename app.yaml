@@ -16,7 +16,7 @@ threadsafe: true
 api_version: 1
 libraries:
 - name: django
-  version: "1.3"
+  version: "1.4"
 - name: PIL
   version: "latest"
 - name: webapp2
@@ -48,6 +48,10 @@ handlers:
   static_files: js/compiled/\1.js
   upload: js/compiled/(.*).js
 
+# Handler for fake backends in functional tests.
+- url: /testbackend
+  script: testbackend.app
+
 # Data setup for functional tests.
 - url: /testdata
   script: testdata.app
@@ -63,7 +67,6 @@ handlers:
 skip_files:
 - (.*/)?\.
 - (.*/)?__pycache__
-- .*\.pyc$
 - .*_test\.(js|py)$
 - aux$
 - goldentests$

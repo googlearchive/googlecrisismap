@@ -12,14 +12,12 @@
 
 """Displays a card containing a list of nearby features for a given topic."""
 
-import cgi
 import datetime
 import json
 import logging
 import math
 import re
 import urllib
-import urlparse
 
 import base_handler
 import cache
@@ -27,6 +25,7 @@ import config
 import kmlify
 import maproot
 import model
+import spherical
 import utils
 
 from google.appengine.api import urlfetch
@@ -37,7 +36,7 @@ from google.appengine.ext import ndb  # just for GeoPt
 XML_FEATURES_CACHE = cache.Cache('card_features.xml', 300)
 
 # Fetched strings of Google Places API JSON results, keyed by request URL.
-JSON_PLACES_API_CACHE = cache.Cache('card.places', 300)
+JSON_PLACES_API_CACHE = cache.Cache('card.places_json', 300)
 
 # Lists of Feature objects, keyed by [map_id, map_version_id, topic_id,
 # geolocation_rounded_to_10m, radius, max_count].
@@ -116,7 +115,7 @@ def GetText(element):
   return (element is not None) and element.text or ''
 
 
-def GetFeaturesFromXml(xml_content, layer_id=None):
+def GetFeaturesFromXml(xml_content, layer=None):
   """Extracts a list of Feature objects from KML, GeoRSS, or Atom content."""
   root = kmlify.ParseXml(xml_content)
   for element in root.getiterator():
@@ -136,9 +135,15 @@ def GetFeaturesFromXml(xml_content, layer_id=None):
                         texts.get('content') or
                         texts.get('summary') or '')
     description_escaped = utils.StripHtmlTags(
-        description_html, tag_whitelist=['b', 'u', 'i', 'br'])
-    features.append(Feature(texts.get('title') or texts.get('name'),
-                            description_escaped, location, layer_id))
+        description_html, tag_whitelist=['b', 'u', 'i', 'br', 'div'])
+    layer_attr = layer and layer.get('attribution')
+    features.append(Feature(
+        texts.get('title') or texts.get('name'),
+        description_escaped,
+        location,
+        layer and layer.get('id'),
+        layer and layer.get('type'),
+        html_attrs=(layer_attr and [layer_attr] or [])))
   return features
 
 
@@ -162,13 +167,18 @@ def GetKmlUrl(root_url, layer):
                         maproot.LayerType.GEORSS,
                         maproot.LayerType.GOOGLE_SPREADSHEET,
                         maproot.LayerType.GEOJSON,
-                        maproot.LayerType.CSV]:
+                        maproot.LayerType.CSV,
+                        maproot.LayerType.GOOGLE_MAPS_ENGINE_LITE_OR_PRO]:
+    logging.error('Layer type %s is not supported by cardify', layer_type)
     return None
 
   source = (layer.get('source', {}).values() or [{}])[0]
   url = source.get('url')
   if layer_type in [maproot.LayerType.KML, maproot.LayerType.GEORSS]:
     return url or None
+
+  if layer_type == maproot.LayerType.GOOGLE_MAPS_ENGINE_LITE_OR_PRO:
+    return url.replace('/viewer?', '/kml?')
 
   if layer_type == maproot.LayerType.GOOGLE_SPREADSHEET:
     match = re.search(r'spreadsheet/.*[?&]key=(\w+)', url)
@@ -210,12 +220,13 @@ def GetGeoPt(place):
   return ndb.GeoPt(location['lat'], location['lng'])
 
 
-def GetFeaturesFromPlacesLayer(layer, location):
+def GetFeaturesFromPlacesLayer(layer, location, radius):
   """Builds a list of Feature objects for the Places layer near given location.
 
   Args:
     layer: Places layer that defines the criteria for places query
     location: db.GeoPt around which to retrieve places
+    radius: Radius (in m) around location for searching features
   Returns:
     A list of Feature objects representing Google Places.
   """
@@ -223,7 +234,8 @@ def GetFeaturesFromPlacesLayer(layer, location):
   places_layer = layer.get('source').get('google_places')
   request_params = [
       ('location', location),
-      ('rankby', 'distance'),
+      ('rankby', 'prominence'),
+      ('radius', radius),
       ('keyword', places_layer.get('keyword')),
       ('name', places_layer.get('name')),
       ('types', places_layer.get('types'))]
@@ -278,11 +290,12 @@ def GetPlacesApiResults(base_url, request_params, result_key_name=None):
   url = base_url + urllib.urlencode([(k, v) for k, v in request_params if v])
 
   # Call Places API if cache doesn't have a corresponding entry for the url
-  response = JSON_PLACES_API_CACHE.Get(
-      url, lambda: urlfetch.fetch(url=url, deadline=DEADLINE))
+  def GetPlacesJson():
+    response = urlfetch.fetch(url=url, deadline=DEADLINE)
+    return json.loads(response.content)
+  response_content = JSON_PLACES_API_CACHE.Get(url, GetPlacesJson)
 
-  # Parse JSON results
-  response_content = json.loads(response.content)
+  # Parse results
   status = response_content.get('status')
   if status != 'OK' and status != 'ZERO_RESULTS':
     # Something went wrong with the request, log the error
@@ -300,7 +313,8 @@ def GetLayer(root, layer_id):
   return {layer['id']: layer for layer in root['layers']}.get(layer_id)
 
 
-def GetFeatures(map_root, map_version_id, topic_id, request, location_center):
+def GetFeatures(map_root, map_version_id, topic_id, request, location_center,
+                radius):
   """Gets a list of Feature objects for a given topic.
 
   Args:
@@ -315,6 +329,10 @@ def GetFeatures(map_root, map_version_id, topic_id, request, location_center):
         and just return all features. Note that Places layer doesn't have a set
         radius around location_center, it just tries to find features
         as close as possible to location_center.
+    radius: Radius (in m) around location_center for searching features. This
+        can be  used for layers that can do prefiltering based on the radius.
+        Otherwise, features will be sorted and filtered by radius later on in
+        the flow.
 
   Returns:
     A list of Feature objects associated with layers of a given topic in a given
@@ -325,14 +343,14 @@ def GetFeatures(map_root, map_version_id, topic_id, request, location_center):
   for layer_id in topic.get('layer_ids', []):
     layer = GetLayer(map_root, layer_id)
     if layer.get('type') == maproot.LayerType.GOOGLE_PLACES:
-      features += GetFeaturesFromPlacesLayer(layer, location_center)
+      features += GetFeaturesFromPlacesLayer(layer, location_center, radius)
     else:
       url = GetKmlUrl(request.root_url, layer or {})
       if url:
         try:
           def GetXmlFeatures():
             content = kmlify.FetchData(url, request.host)
-            return GetFeaturesFromXml(content, layer_id)
+            return GetFeaturesFromXml(content, layer)
           features += XML_FEATURES_CACHE.Get(
               [url, map_root['id'], map_version_id, layer_id], GetXmlFeatures)
         except (SyntaxError, urlfetch.DownloadError):
@@ -357,7 +375,8 @@ def GetFilteredFeatures(map_root, map_version_id, topic_id, request,
                         center, radius, max_count):
   """Gets a list of the Feature objects for a topic within the given circle."""
   def GetFromDatastore():
-    features = GetFeatures(map_root, map_version_id, topic_id, request, center)
+    features = GetFeatures(map_root, map_version_id, topic_id, request, center,
+                           radius)
     if center:
       SetDistanceOnFeatures(features, center)
     FilterFeatures(features, radius, max_count)
@@ -434,13 +453,28 @@ def GetLegibleTextColor(background_color):
   return luminance > 128 and '#000' or '#fff'
 
 
-def GetFeatureAttributions(features):
-  """Builds a list of all unique html attributions for given features."""
-  # Skip all the duplicates when joining attributions into one list
+def GetCardLevelAttributions(features):
+  """Builds a list of html attributions to be shown at the bottom of the card.
+
+  Generates a list of unique html attributions from given features to be shown
+  at the bottom of the card; right now this is just Google Places attributions.
+  Note that there are also per-item attributions that are just shown directly
+  under each item title/description.
+
+  Args:
+    features: A list of feature objects for the card
+  Returns:
+    A list of html attribution strings to be shown at the card level.
+  """
+  # Skip all the duplicates when joining card-level attributions
   html_attrs = set()
   for f in features:
-    for attr in f.html_attrs:
-      html_attrs.add(attr)
+    if f.layer_type == maproot.LayerType.GOOGLE_PLACES:
+      for attr in f.html_attrs:
+        html_attrs.add(attr)
+      # Clear attributions field on the feature, since we show citation
+      # for Google Places at the bottom of the card
+      f.html_attrs = None
   return list(html_attrs)
 
 
@@ -505,10 +539,23 @@ def SetAnswersAndReportsOnFeatures(features, map_root, topic_id, qids):
       # Include a few recent reports.
       f.reports = [{'answer_summary': FormatAnswers(report),
                     'effective': utils.ShortAge(report['_effective']),
+                    'age_minutes': _GetAgeInMinutes(report['_effective']),
                     'id': report['_id'],
                     'text': '_text' in qids and report['_text'] or '',
                     'status_color': GetStatusColor(report)}
                    for report in report_dicts]
+
+
+def _GetAgeInMinutes(dt):
+  """Calculates the age of a crowd report in minutes.
+
+  Args:
+    dt: DateTime of the report submissions
+  Returns:
+    Report age.
+  """
+  seconds = (datetime.datetime.utcnow() - dt).seconds
+  return int(seconds / 60 + 0.5)
 
 
 def InvalidateReportCache(full_topic_ids, location):
@@ -517,16 +564,6 @@ def InvalidateReportCache(full_topic_ids, location):
     if '.' in full_topic_id:
       map_id, topic_id = full_topic_id.split('.')
       REPORT_CACHE.Delete([map_id, topic_id, RoundGeoPt(location)])
-
-
-def RemoveParamsFromUrl(url, *params):
-  """Removes specified query parameters from a given URL."""
-  base, query = (url.split('?') + [''])[:2]
-  pairs = cgi.parse_qsl(query)
-  query = urllib.urlencode([(k, v) for k, v in pairs if k not in params])
-  # Returned URL always ends in ? or a query parameter, so that it's always
-  # safe to add a parameter by appending '&name=value'.
-  return base + '?' + query
 
 
 def GetGeoJson(features, include_descriptions):
@@ -543,6 +580,7 @@ def GetGeoJson(features, include_descriptions):
               'name': f.name,
               'description_html':
                   f.description_html if include_descriptions else None,
+              'html_attrs': f.html_attrs,
               'distance': f.distance,
               'distance_mi': RoundDistance(f.distance_mi),
               'distance_km': RoundDistance(f.distance_km),
@@ -563,33 +601,6 @@ def RoundDistance(distance):
   return math.ceil(distance) if distance > 10 else distance
 
 
-def RenderFooter(items, html_attrs=None):
-  """Renders the card footer as HTML and appends source attributions at the end.
-
-  Args:
-    items: A sequence of items, where each item is (a) a string or (b) a pair
-        [url, text] to be rendered as a hyperlink that opens in a new window.
-    html_attrs: A list of html strings with links to attributions.
-  Returns:
-    A Unicode string of safe HTML containing only text and <a> tags.
-  """
-  results = []
-  for item in items:
-    if isinstance(item, (str, unicode)):
-      results.append(kmlify.HtmlEscape(item))
-    elif len(item) == 2:
-      url, text = item
-      scheme, _, _, _, _ = urlparse.urlsplit(url)
-      if scheme in ['http', 'https']:  # accept only safe schemes
-        results.append('<a href="%s" target="_blank">%s</a>' % (
-            kmlify.HtmlEscape(url), kmlify.HtmlEscape(text)))
-  for html_attr in html_attrs or []:
-    # Attributions html comes from Google Places API or built on the fly
-    # inside card.py, so no sanitization here
-    results.append(html_attr)
-  return ' '.join(results)
-
-
 class CardBase(base_handler.BaseHandler):
   """Card rendering code common to all the card handlers below.
 
@@ -600,7 +611,6 @@ class CardBase(base_handler.BaseHandler):
     - n: Maximum number of items to show.
     - ll: Geolocation of the center point to search near (in lat,lon format).
     - r: Search radius in metres.
-    - output: If 'json', response is returned as GeoJSON; otherwise,
       it is rendered as HTML.
     - unit: Distance unit to show (either 'km' or 'mi').
     - qids: Comma-separated IDs of questions within the topic.  Short text
@@ -626,7 +636,8 @@ class CardBase(base_handler.BaseHandler):
   embeddable = True
   error_template = 'card-error.html'
 
-  def GetForMap(self, map_root, map_version_id, topic_id, map_label=None):
+  def GetForMap(self, map_root, map_version_id, topic_id, map_label=None,
+                domain=None):
     """Renders the card for a particular map and topic.
 
     Args:
@@ -634,11 +645,11 @@ class CardBase(base_handler.BaseHandler):
       map_version_id: The version ID of the MapVersionModel (for a cache key).
       topic_id: The topic ID.
       map_label: The label of the published map (for analytics).
+      domain: Owner domain of the map
     """
     topic = GetTopic(map_root, topic_id)
     if not topic:
       raise base_handler.Error(404, 'No such topic.')
-    output = str(self.request.get('output', ''))
     lat_lon = str(self.request.get('ll', ''))
     max_count = int(self.request.get('n', 5))  # number of results to show
     radius = float(self.request.get('r', 100000))  # radius, metres
@@ -646,19 +657,13 @@ class CardBase(base_handler.BaseHandler):
     qids = self.request.get('qids').replace(',', ' ').split()
     places_json = self.request.get('places') or '[]'
     place_id = str(self.request.get('place', ''))
-    footer_json = self.request.get('footer') or '[]'
-    location_unavailable = self.request.get('location_unavailable')
-    lang = base_handler.SelectLanguageForRequest(self.request, map_root)
-    include_descriptions = self.request.get('show_desc')
+    include_descriptions = int(self.request.get('show_desc', 0))
+    include_crowd_reports = int(self.request.get('show_reports', 0))
 
     try:
       places = json.loads(places_json)
     except ValueError:
       logging.error('Could not parse ?places= parameter')
-    try:
-      footer = json.loads(footer_json)
-    except ValueError:
-      logging.error('Could not parse ?footer= parameter')
 
     # If '?ll' parameter is supplied, find nearby results.
     center = None
@@ -689,38 +694,20 @@ class CardBase(base_handler.BaseHandler):
       features = GetFilteredFeatures(
           map_root, map_version_id, topic_id, self.request,
           center, radius, max_count)
-      html_attrs = GetFeatureAttributions(features)
-      SetAnswersAndReportsOnFeatures(features, map_root, topic_id, qids)
+      html_attrs = GetCardLevelAttributions(features)
+
+      if include_crowd_reports:
+        SetAnswersAndReportsOnFeatures(features, map_root, topic_id, qids)
+
       geojson = GetGeoJson(features, include_descriptions)
       geojson['properties'] = {
           'map_id': map_root.get('id'),
           'topic': topic,
           'html_attrs': html_attrs,
+          'map_url': self.GetMapUrl(topic, map_label, domain, features),
           'unit': unit
       }
-      if output == 'json':
-        self.WriteJson(geojson)
-      else:
-        self.response.out.write(self.RenderTemplate('card.html', {
-            'features': geojson['features'],
-            'title': topic.get('title', ''),
-            'unit': unit,
-            'lang': lang,
-            'url_no_unit': RemoveParamsFromUrl(self.request.url, 'unit'),
-            'place': place,
-            'config_json': json.dumps({
-                'url_no_loc': RemoveParamsFromUrl(
-                    self.request.url, 'll', 'place'),
-                'place': place,
-                'location_unavailable': bool(location_unavailable),
-                'map_id': map_root.get('id', ''),
-                'topic_id': topic_id,
-                'map_label': map_label or '',
-                'topic_title': topic.get('title', '')
-            }),
-            'places_json': json.dumps(places),
-            'footer_html': RenderFooter(footer or [], html_attrs)
-        }))
+      self.WriteJson(geojson)
 
     except Exception, e:  # pylint:disable=broad-except
       logging.exception(e)
@@ -734,6 +721,47 @@ class CardBase(base_handler.BaseHandler):
     country_code = self.request.headers.get('X-AppEngine-Country', '')
     return utils.GetDistanceUnitsForCountry(country_code)
 
+  def GetMapUrl(self, topic, map_label, domain, features):
+    """Constructs a displayable url for the requested crisis map.
+
+    Map url is constructed such that it enables layers from a requested topic
+    and hides all others. It also sets a viewport to be a minimal rectangular
+    region that contains all the features.
+
+    Args:
+      topic: Crowd reporter topic of the card.
+      map_label: Label of the map.
+      domain: Owner domain of the map.
+      features: Features that are currently displayed in the card.
+    Returns:
+      Url that can be used in the UI to link to the crisis map. None is returned
+      if map_label or domain is missing (map_id is not allowed as an alternative
+      since id shouldn't be displayed to public).
+    """
+    if not map_label or not domain:
+      logging.warning(
+          'GetMapUrl requires a map_label and domain. Returning None')
+      return
+    query_params = []
+
+    # Only enable layers that are associated with the given topic
+    layer_ids = topic.get('layer_ids', [])
+    query_params += ['layers=%s' % ','.join(layer_ids)]
+
+    # Set the viewport for the map based on the bounding box that contains all
+    # of the given features
+    if features:
+      feature_coords = [(f.location.lat, f.location.lon) for f in features]
+      bounding_box = (
+          spherical.GetBoundingBoxOfCoordinates(feature_coords).Expand(0.4))
+      query_params += ['llbox=%s,%s,%s,%s' %
+                       (bounding_box.north, bounding_box.south,
+                        bounding_box.east, bounding_box.west)]
+
+    url = ('/'.join([self.request.root_url, domain, map_label]) +
+           '?' + '&'.join(query_params))
+    return url
+
 
 class CardByIdAndTopic(CardBase):
   """Produces a card given a map ID and topic ID."""
@@ -741,8 +769,9 @@ class CardByIdAndTopic(CardBase):
   def Get(self, map_id, topic_id, user=None, domain=None):
     m = model.Map.Get(map_id)
     if not m:
+      logging.severe('No map with id %s' % map_id)
       raise base_handler.Error(404, 'No such map.')
-    self.GetForMap(m.map_root, m.current_version_id, topic_id)
+    self.GetForMap(m.map_root, m.current_version_id, topic_id, None, domain)
 
 
 class CardByLabelAndTopic(CardBase):
@@ -752,8 +781,10 @@ class CardByLabelAndTopic(CardBase):
     domain = domain or config.Get('primary_domain') or ''
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
+      logging.severe('No map with label %s under domain %s' % (label, domain))
       raise base_handler.Error(404, 'No such map.')
-    self.GetForMap(entry.map_root, entry.map_version_id, topic_id, label)
+    self.GetForMap(entry.map_root, entry.map_version_id, topic_id, label,
+                   domain)
 
   def Post(self, label, topic_id, user=None, domain=None):
     self.Get(label, topic_id, user, domain)
@@ -766,8 +797,10 @@ class CardByLabel(CardBase):
     domain = domain or config.Get('primary_domain') or ''
     entry = model.CatalogEntry.Get(domain, label)
     if not entry:
+      logging.severe('No map with label %s under domain %s' % (label, domain))
       raise base_handler.Error(404, 'No such map.')
     topics = entry.map_root.get('topics', [])
     if not topics:
+      logging.severe('Map with label %s has no topics' % label)
       raise base_handler.Error(404, 'Map has no topics.')
     self.redirect('%s/%s' % (label, str(topics[0]['id'])))

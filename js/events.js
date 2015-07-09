@@ -94,7 +94,7 @@ goog.require('goog.events');
 goog.require('goog.events.EventTarget');
 
 /**
- * @type {Object}
+ * @const
  */
 cm.events = {};
 

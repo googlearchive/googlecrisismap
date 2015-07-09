@@ -27,6 +27,7 @@
 
 export TOOLS_DIR=$(pwd)
 export APP_DIR=$(dirname $TOOLS_DIR)
+export OPENSOURCE_DIR="$(dirname $APP_DIR)/opensource"
 export LOCAL_RUN_DIR=$APP_DIR
 
 export DEFAULT_PORT=8000
@@ -74,9 +75,10 @@ fi
 export PYTHONPATH=\
 "$TOOLS_DIR":\
 "$APP_DIR":\
+"$OPENSOURCE_DIR":\
 "$APPENGINE_DIR":\
-"$APPENGINE_DIR/lib/django-1.2":\
-"$APPENGINE_DIR/lib/django_1_2":\
+"$APPENGINE_DIR/lib/django-1.4":\
+"$APPENGINE_DIR/lib/django_1_4":\
 "$APPENGINE_DIR/lib/fancy_urllib":\
 "$APPENGINE_DIR/lib/webapp2-2.3":\
 "$APPENGINE_DIR/lib/webapp2":\

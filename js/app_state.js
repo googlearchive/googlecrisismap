@@ -370,17 +370,21 @@ cm.AppState.prototype.setFromUri = function(uri, opt_mapModel) {
     var enabledLayerIds = new goog.structs.Set();
     var uriTopicTags = uri.getParameterValue('topics');
     if (uriTopicTags) {
+      var foundTopic = false;
       goog.array.forEach(uriTopicTags.split(','), function(tag) {
         goog.array.forEach(opt_mapModel.get('topics').getArray(),
             function(topic) {
               var tags = /** @type Array.<string> */(topic.get('tags'));
               if (goog.array.contains(tags, tag)) {
+                foundTopic = true;
                 enabledLayerIds.addAll(topic.get('layer_ids'));
                 // TODO(shakusa) Set appstate viewport to the topic viewport?
               }
             });
       });
-      this.set('enabled_layer_ids', enabledLayerIds);
+      if (foundTopic) {
+        this.set('enabled_layer_ids', enabledLayerIds);
+      }
     }
   }
   this.set('filter_query', uri.getParameterValue('q') || '');

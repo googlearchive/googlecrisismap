@@ -307,17 +307,20 @@ class BaseHandler(webapp2.RequestHandler):
     except RedirectToUrl as exception:
       return self.redirect(exception.url)
     except perms.AuthorizationError as exception:
+      logging.error('AuthorizationError: %s', exception)
       self.response.set_status(403, message=exception.message)
       self.response.out.write(self.RenderTemplate('unauthorized.html', {
           'exception': exception,
           'login_url': users.GetLoginUrl(self.request.url)
       }))
     except perms.NotPublishableError as exception:
+      logging.error('NotPublishableError: %s', exception)
       self.response.set_status(403, message=exception.message)
       self.response.out.write(self.RenderTemplate(self.error_template, {
           'exception': exception
       }))
     except perms.NotCatalogEntryOwnerError as exception:
+      logging.error('NotCatalogEntryOwnerError: %s', exception)
       # TODO(kpy): Either add a template for this type of error, or use an
       # error representation that can be handled by one common error template.
       self.response.set_status(403, message=exception.message)
@@ -327,10 +330,12 @@ class BaseHandler(webapp2.RequestHandler):
               'by someone else; you can\'t replace or delete it.')
       }))
     except ApiError as exception:
+      logging.error('ApiError: %s', exception)
       self.response.set_status(exception.status, message=exception.message)
       self.response.headers['Content-Type'] = 'text/plain'
       self.response.out.write(exception.message + '\n')
     except Error as exception:
+      logging.error('Error:%s', exception)
       self.response.set_status(exception.status, message=exception.message)
       self.response.out.write(self.RenderTemplate(self.error_template, {
           'exception': exception

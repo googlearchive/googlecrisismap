@@ -212,6 +212,7 @@ class CrowdReports(base_handler.BaseHandler):
 
 def CrowdReportFormPost(author, request):
   """Handles a form submission of a crowd report from the browser UI."""
+
   # The form parameter names all start with "cm-" because our form protection
   # mechanism uses the DOM element IDs as parameter names, and we prefix our
   # element IDs with "cm-" to avoid collision.  See protect.py and xhr.js.

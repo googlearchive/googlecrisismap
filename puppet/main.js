@@ -193,6 +193,7 @@ function xclass(className, opt_context) {
   var inspectorFields = [
     'title',
     'description',
+    'attribution',
     'legend',
     'viewport',
     'minimumZoom',
@@ -381,8 +382,8 @@ function xclass(className, opt_context) {
   };
 
   // Image lookups for tiles on the map.
-  crisis.tile = function(src) {
-    return crisis.map + xsrc.c(src);
+  crisis.tile = function(src, opt_tag) {
+    return crisis.map + xsrc.c(src, opt_tag);
   };
   crisis.anyKmlTile = crisis.tile('kml%3A');
   crisis.anyFtTile = crisis.tile('ft%3A');
@@ -390,10 +391,12 @@ function xclass(className, opt_context) {
     return crisis.tile('ft%3A' + table_id);
   };
   crisis.anyVdbTile = crisis.tile('vdb%3A');
-  // TODO(romano): find out from GME team what this ID in the Maps API tile URL
-  // corresponds to.
-  crisis.vdbTile = function(id) {
-    return crisis.tile('vdb%3A' + id);
+
+  // Looking for tiles that have image overlay and contain x/y coordinates and
+  // zoom level of the tile in the img src. This can be a VectorDb tile from
+  // a Maps Engine layer, for example.
+  crisis.imgTile = function(x, y, z) {
+    return crisis.tile('x=' + x + '&y=' + y + '&z=' + z, '//img');
   };
 
   crisis.mapsEngineImageTile = function(asset_id) {

@@ -51,7 +51,7 @@ window.onload = function() {
   // Set the 'base' parameter to force the share URL to point to google.org.
   // (Without this parameter, the share URL will point to some other machine
   // during system testing, and the URL shortener service will reject it.)
-  runTest('/crisismap/empty?base=http://google.org/crisismap/empty',
+  runTest('/crisismap/empty?dev=1&client=google-test&base=http://google.org/crisismap/empty',
           null, testShare);
 };
 

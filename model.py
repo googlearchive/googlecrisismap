@@ -64,6 +64,9 @@ MAP_ROOT_CACHE = cache.Cache('model.map_root', 300, 0.5)
 # a developer to use an API key after editing an Authorization in the console.
 AUTHORIZATION_CACHE = cache.Cache('model.authorization', 300, 1)
 
+# Number of maps to fetch at a time
+_MAP_FETCH_SIZE = 100
+
 
 class MapVersionModel(db.Model):
   """A particular version of the JSON content of a Map.
@@ -511,18 +514,36 @@ class Map(object):
     return Map(MapModel.get(key))
 
   @staticmethod
-  def _GetAll(domain=None):
-    """NO ACCESS CHECK.  Yields all non-deleted maps; can filter by domain."""
+  def _GetAll(domain=None, filter_fn=None):
+    """NO ACCESS CHECK.  Yields all non-deleted maps; can filter by domain.
+
+    Args:
+      domain: Domain (e.g. google.com) to prefilter query results on.
+      filter_fn: Function that takes a Map and returns True/False for whether
+          to include it in the results. This is used to filter results
+          post-query.
+    Returns:
+      A list of Map objects.
+    """
     query = MapModel.all().order('-updated').filter('deleted =', NEVER)
     if domain:
       query = query.filter('domain =', domain)
-    return (Map(model) for model in query)
+    maps = []
+    models = True
+    while models:
+      models = query.fetch(_MAP_FETCH_SIZE)
+      for model in models:
+        map_obj = Map(model)
+        if not filter_fn or filter_fn(map_obj):
+          maps.append(map_obj)
+      query.with_cursor(query.cursor())
+    return maps
 
   @staticmethod
-  def GetAll(domain=None):
+  def GetAll(domain=None, filter_fn=None):
     """Yields all non-deleted maps, possibly filtered by domain."""
     perms.AssertAccess(perms.Role.ADMIN)
-    return Map._GetAll(domain)
+    return Map._GetAll(domain, filter_fn)
 
   @staticmethod
   def GetViewable(user, domain=None):
@@ -560,49 +581,6 @@ class Map(object):
     perms.AssertAccess(perms.Role.ADMIN)
     model = MapModel.get_by_key_name(key_name)
     return model and model.deleted != NEVER and Map(model)
-
-  @staticmethod
-  def DeleteAllMapsWithNoOwner():
-    """Deletes maps that have no owners. Returns a description of each map."""
-    perms.AssertAccess(perms.Role.ADMIN)
-    deleted_map_descs = []
-    for m in Map.GetAll():
-      if not m.owners:
-        map_desc = 'Map "%s" (%s) created on %s by %s' % (
-            m.title, m.description, m.created, m.creator_uid)
-        deleted_map_descs.append(map_desc)
-        m.Delete()
-    return deleted_map_descs
-
-  @staticmethod
-  def RemoveUsers(users_to_remove):
-    """Removes users from all permissions fields in maps.
-
-    Args:
-      users_to_remove: list of users to remove.
-    Returns:
-      A list of messages describing where users were removed from.
-    """
-    msg_list = []
-    if not users_to_remove:
-      return msg_list
-    perms.AssertAccess(perms.Role.ADMIN)
-    # TODO(andriy): change this to do transactional updates of MapModels, since
-    # it's possible that while we have a map someone else can be modifying it,
-    # leading to loss of data.  Determine what other methods need to become
-    # transactional as a result (e.g. RevokePermission and similar methods).
-    for m in Map.GetAll():
-      map_users = {'Owners': m.owners, 'Editors': m.editors,
-                   'Reviewers': m.reviewers, 'Viewers': m.viewers}
-      for user in users_to_remove:
-        for role in map_users:
-          if user.id in map_users[role]:
-            msg = 'Removed user [%s] from map [%s - %s] %s' % (user.email, m.id,
-                                                               m.title, role)
-            msg_list.append(msg)
-            map_users[role].remove(user.id)
-      m.model.put()
-    return msg_list
 
   @staticmethod
   def Create(map_root, domain_name, owners=None, editors=None, reviewers=None,

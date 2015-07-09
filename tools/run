@@ -48,11 +48,15 @@ else
 fi
 echo
 
+# If a .py file is compiled and then disappears (e.g. from source control)
+# an old .pyc file can linger in the working directory.  Clean these up.
+find . -name '*.pyc' -exec rm -f {} ';'
+
 # Start the development appserver.
 if [ $SERVER_VERSION == 2 ]; then
   $PYTHON $APPENGINE_DIR/$SERVER_SCRIPT \
       --storage_path $STORAGE_PATH \
-      --admin_host 0.0.0.0 --admin_port $(($DEFAULT_PORT + 10)) \
+      --admin_host 127.0.0.1 --admin_port $(($DEFAULT_PORT + 10)) \
       --port $DEFAULT_PORT --host 0.0.0.0 "$@" $LOCAL_RUN_DIR
 else
   $PYTHON $APPENGINE_DIR/$SERVER_SCRIPT \

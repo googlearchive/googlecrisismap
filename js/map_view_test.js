@@ -463,8 +463,8 @@ MapViewTest.prototype.addOverlayCsv = function() {
   this.newMapView_(false, this.config_);
 };
 
-/** Tests adding a Google Spreadsheet layer. */
-MapViewTest.prototype.addOverlayGoogleSpreadsheet = function() {
+/** Tests adding a Google Spreadsheet layer using older docs URL structure. */
+MapViewTest.prototype.addOverlayGoogleSpreadsheetURLInOlderFormat = function() {
   // URL to the spreadsheet editor page should work.
   var layer1 = {
     id: 'layer1', type: cm.LayerModel.Type.GOOGLE_SPREADSHEET,
@@ -511,6 +511,65 @@ MapViewTest.prototype.addOverlayGoogleSpreadsheet = function() {
   stub(overlay2.getMap)().is(null);
   expectCall(overlay2.setMap)(this.map_);
 
+  this.newMapView_(false, this.config_);
+};
+
+/** Tests adding a Google Spreadsheet layer using newer docs URL structure. */
+MapViewTest.prototype.addOverlayGoogleSpreadsheetURLInNewerFormat = function() {
+  var addLayerAndOverlay = function(layerId, inputUrl, csvUrl, caller_obj) {
+    var layer = {
+      id: layerId, type: cm.LayerModel.Type.GOOGLE_SPREADSHEET,
+      url: inputUrl,
+      latitude_field: 'lat', longitude_field: 'lon',
+      title_template: '$title',
+      description_template: new cm.Html('$description')
+    };
+    var overlay = caller_obj.expectNew_('google.maps.KmlLayer', {
+      url: 'http://app.com/root/.kmlify' +
+          '?url=' + encodeURIComponent(csvUrl) +
+          '&type=csv' +
+          '&loc=' + encodeURIComponent('lat,lon') +
+          '&name=' + encodeURIComponent('$title') +
+          '&desc=' + encodeURIComponent('$description'),
+      preserveViewport: true,
+      suppressInfoWindows: true
+    });
+
+    caller_obj.addLayer_(layer);
+    stub(overlay.getMap)().is(null);
+    expectCall(overlay.setMap)(caller_obj.map_);
+  };
+
+  // URL to spreadsheet editor page.
+  addLayerAndOverlay(
+      'layer1',
+      'https://docs.google.com/spreadsheets/d/ab-1/edit#gid=123',
+      'https://docs.google.com/spreadsheets/d/ab-1/export?format=csv&gid=123',
+      this);
+
+  // URL to sharing link provided when sharing the document (i.e. without
+  // gid that denotes a specific page).
+  addLayerAndOverlay(
+      'layer2',
+      'https://docs.google.com/spreadsheets/d/ab-12/edit?usp=sharing',
+      'https://docs.google.com/spreadsheets/d/ab-12/export?format=csv',
+      this);
+
+  // URL to a published version of the entire spreadsheet.
+  addLayerAndOverlay(
+      'layer3',
+      'https://docs.google.com/spreadsheets/d/ab-123/pubhtml',
+      'https://docs.google.com/spreadsheets/d/ab-123/export?format=csv',
+      this);
+
+  // URL to a published version of a specific sheet in the spreadsheet.
+  addLayerAndOverlay(
+      'layer4',
+      'https://docs.google.com/spreadsheets/d/ab-34/pubhtml?gid=12&single=true',
+      'https://docs.google.com/spreadsheets/d/ab-34/export?format=csv&gid=12',
+      this);
+
+  this.stubVisibleLayerIds_(['layer1', 'layer2', 'layer3', 'layer4']);
   this.newMapView_(false, this.config_);
 };
 

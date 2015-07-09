@@ -36,7 +36,8 @@ function testMapsEngineLayer(isTabbed) {
   run(isChecked, mapsEngineLayer.checkbox);
 
   // The layer should be shown by default.
-  run(count(shown, 1, null), crisis.vdbTile('o%3AANVwnM'));
+  run(count(shown, 1, null), crisis.imgTile(8, 11, 5));
+  run(attribute, crisis.imgTile(8, 11, 5), 'src', /lyrs=vdb/);
 
   // Clicking on the checkbox should hide the MapsEngineLayer.
   run(click, mapsEngineLayer.checkbox);

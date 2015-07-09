@@ -229,6 +229,26 @@ class CardTest(test_utils.BaseTest):
                       for f in card.GetFeaturesFromXml(KML_DATA)]
     self.assertEquals(FEATURE_FIELDS, feature_fields)
 
+  def testGetFeaturesFromKml_attrs(self):
+    attr = '<a href="google.com">attrX</a>'
+    layer = {'id': 'layerX'}
+    def GetResultFeatures(features):
+      return [(f.name, f.description_html, f.location, f.html_attrs)
+              for f in features]
+
+    # Check that layer attribution is added to each feature
+    layer['attribution'] = attr
+    self.assertEquals(
+        [f + ([attr],) for f in FEATURE_FIELDS],
+        GetResultFeatures(card.GetFeaturesFromXml(KML_DATA, layer)))
+
+    # Check that features' attributions list is empty when layer 'attribution'
+    # field is empty
+    layer['attribution'] = ''
+    self.assertEquals(
+        [f + ([],) for f in FEATURE_FIELDS],
+        GetResultFeatures(card.GetFeaturesFromXml(KML_DATA, layer)))
+
   def testGetFeaturesFromGeoRss(self):
     feature_fields = [(f.name, f.description_html, f.location)
                       for f in card.GetFeaturesFromXml(GEORSS_DATA)]
@@ -341,6 +361,16 @@ class CardTest(test_utils.BaseTest):
             }
         }
     }))
+    self.assertEquals(
+        'http://example.com/kml?mid=someRandomMid',
+        card.GetKmlUrl(ROOT_URL, {
+            'type': 'GOOGLE_MAPS_ENGINE_LITE_OR_PRO',
+            'source': {
+                'kml': {
+                    'url': 'http://example.com/viewer?mid=someRandomMid'
+                }
+            }
+        }))
 
   def testGetFeaturesFromPlacesLayer(self):
     self.AssertGetFeaturesFromPlacesLayer(GOOGLE_PLACES_SEARCH_JSON_STR,
@@ -353,7 +383,7 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals(
         PLACES_FEATURES,
         card.GetFeaturesFromPlacesLayer(MAP_ROOT.get('layers')[3],
-                                        ndb.GeoPt(20, 50)))
+                                        ndb.GeoPt(20, 50), 100000))
 
   def testGetFeaturesFromPlacesLayer_WithBadResponseStatus(self):
     self.AssertGetFeaturesFromPlacesLayer(
@@ -385,7 +415,8 @@ class CardTest(test_utils.BaseTest):
     # for urlfetch
     url = ('https://maps.googleapis.com/maps/api/place/nearbysearch/json?'
            'location=20.0%2C50.0'
-           '&rankby=distance'
+           '&rankby=prominence'
+           '&radius=100000'
            '&types=pharmacy'
            '&key=someFakeApiKey')
     url_responses = {url: utils.Struct(content=api_response_content)}
@@ -396,7 +427,7 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals(
         expected_results,
         card.GetFeaturesFromPlacesLayer(MAP_ROOT.get('layers')[3],
-                                        ndb.GeoPt(20, 50)))
+                                        ndb.GeoPt(20, 50), 100000))
     self.mox.UnsetStubs()
 
   def testSetDetailsOnFilteredFeatures(self):
@@ -441,15 +472,42 @@ class CardTest(test_utils.BaseTest):
                       [(f.name, f.description_html, f.html_attrs)
                        for f in features])
 
+  def testGetCardLevelAttributions(self):
+    places_attr = 'Listing by <a href="google.com">Google</a>'
+    f1 = card.Feature('1', '', None, layer_type='GOOGLE_PLACES')
+    f2 = card.Feature('2', '', None, layer_type='GOOGLE_PLACES',
+                      html_attrs=[places_attr])
+    f3 = card.Feature('3', '', None, layer_type='GOOGLE_PLACES',
+                      html_attrs=[places_attr, 'Attr3'])
+    f4 = card.Feature('4', '', None, layer_type='KML',
+                      html_attrs=['kmlAttr'])
+    f5 = card.Feature('5', '', None, layer_type='KML')
+    features = [f1, f2, f3, f4, f5]
+
+    html_attrs = card.GetCardLevelAttributions(features)
+
+    # Check that card level attributions only include those from Google Places
+    self.assertEquals(2, len(html_attrs))
+    self.assertTrue(places_attr in html_attrs)
+    self.assertTrue('Attr3' in html_attrs)
+    # Verify that individual html attributions for Google Places features were
+    # cleared
+    self.assertEquals(None, f2.html_attrs)
+    self.assertEquals(None, f3.html_attrs)
+    # Verify that KML feature individual attribution is untouched
+    self.assertEquals(1, len(f4.html_attrs))
+
   def testGetFeatures(self):
     # Try getting features for a topic with two layers.
     self.SetForTest(kmlify, 'FetchData', lambda url, host: 'data from ' + url)
-    self.SetForTest(card, 'GetFeaturesFromXml',
-                    lambda data, layer: ['parsed ' + data + ' for ' + layer])
+    self.SetForTest(
+        card, 'GetFeaturesFromXml',
+        lambda data, layer: ['parsed ' + data + ' for ' + layer.get('id')])
     self.assertEquals(
         ['parsed data from http://example.com/one.kml for layer1',
          'parsed data from http://example.com/three.kml for layer3'],
-        card.GetFeatures(MAP_ROOT, 'm1', 't1', self.request, ndb.GeoPt(20, 50)))
+        card.GetFeatures(MAP_ROOT, 'm1', 't1', self.request, ndb.GeoPt(20, 50),
+                         100000))
 
   def testGetFeaturesWithFailedFetches(self):
     # Even if some fetches fail, we should get features from the others.
@@ -462,7 +520,7 @@ class CardTest(test_utils.BaseTest):
                     lambda data, layer: ['parsed ' + data])
     self.assertEquals(['parsed data from http://example.com/three.kml'],
                       card.GetFeatures(MAP_ROOT, 'm1', 't1', self.request,
-                                       ndb.GeoPt(20, 50)))
+                                       ndb.GeoPt(20, 50), 100000))
 
   def testGetFeaturesWithFailedParsing(self):
     # Even if some files don't parse, we should get features from the others.
@@ -476,12 +534,12 @@ class CardTest(test_utils.BaseTest):
     self.SetForTest(card, 'GetFeaturesFromXml', ParseButSometimesFail)
     self.assertEquals(['parsed data from http://example.com/one.kml'],
                       card.GetFeatures(MAP_ROOT, 'm1', 't1', self.request,
-                                       ndb.GeoPt(20, 50)))
+                                       ndb.GeoPt(20, 50), 100000))
 
   def testGetFeaturesWithInvalidTopicId(self):
     # GetFeatures should accept a nonexistent topic without raising exceptions.
     self.assertEquals([], card.GetFeatures(MAP_ROOT, 'm1', 'xyz', self.request,
-                                           ndb.GeoPt(20, 50)))
+                                           ndb.GeoPt(20, 50), 100000))
 
   def testGetAnswersAndReports(self):
     now = datetime.datetime.utcnow()
@@ -533,7 +591,8 @@ class CardTest(test_utils.BaseTest):
       else:
         return ({'q1': 'a2', 'q2': 3, '_text': 'goodbye'},
                 {'q1': now, 'q2': now, '_text': now},
-                [{'_id': 'r2', '_effective': now,
+                [{'_id': 'r2',
+                  '_effective': now - datetime.timedelta(minutes=70),
                   'q1': 'a2', 'q2': 3, '_text': 'goodbye'}])
     self.SetForTest(card, 'GetAnswersAndReports', FakeGetAnswersAndReports)
     card.SetAnswersAndReportsOnFeatures(
@@ -544,11 +603,13 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals('#f00', features[1].status_color)
     self.assertEquals(
         [{'answer_summary': 'Green.', 'effective': 'just now',
-          'id': 'r1', 'text': 'hello', 'status_color': '#0f0'}],
+          'id': 'r1', 'text': 'hello', 'status_color': '#0f0',
+          'age_minutes': 0}],
         features[0].reports)
     self.assertEquals(
-        [{'answer_summary': 'Red. Qux: 3.', 'effective': 'just now',
-          'id': 'r2', 'text': 'goodbye', 'status_color': '#f00'}],
+        [{'answer_summary': 'Red. Qux: 3.', 'effective': '70m ago',
+          'id': 'r2', 'text': 'goodbye', 'status_color': '#f00',
+          'age_minutes': 70}],
         features[1].reports)
 
   def testSetDistanceOnFeatures(self):
@@ -582,7 +643,9 @@ class CardTest(test_utils.BaseTest):
     self.assertEquals(['name1'], [f.name for f in features])
 
   def testGetGeoJson(self):
-    features = [card.Feature('title1', 'description1', ndb.GeoPt(20, -40)),
+    html_attrs = ['<a href="google.com">attr1</a>', 'attr2']
+    features = [card.Feature('title1', 'description1', ndb.GeoPt(20, -40),
+                             html_attrs=html_attrs),
                 card.Feature('title2', 'description2', ndb.GeoPt(30, -50))]
     card.SetDistanceOnFeatures(features, ndb.GeoPt(20, -40))
     geojson = card.GetGeoJson(features, include_descriptions=True)
@@ -597,6 +660,7 @@ class CardTest(test_utils.BaseTest):
                                       'reports': [],
                                       'status_color': None,
                                       'description_html': 'description1',
+                                      'html_attrs': html_attrs,
                                       'distance': 0.0,
                                       'distance_km': 0.0,
                                       'distance_mi': 0.0,
@@ -619,31 +683,64 @@ class CardHandlerTest(test_utils.BaseTest):
   def testGetCardByIdAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
     with test_utils.RootLogin():
-      response = self.DoGet('/.card/%s.t1' % self.map_id)
-    self.assertTrue('Topic 1' in response.body)
-    self.assertTrue('Helsinki' in response.body)
-    self.assertTrue('Columbus' in response.body)
+      geojson = self._GetGeoJson('/.card/%s.t1' % self.map_id)
+    self.assertEquals('Topic 1', geojson['properties']['topic']['title'])
+    self.assertTrue(self._FeatureInResponse(geojson, 'Helsinki'))
+    self.assertTrue(self._FeatureInResponse(geojson, 'Columbus'))
 
   def testGetCardByLabelAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoGet('/xyz.com/.card/foo/t1')
-    self.assertTrue('Topic 1' in response.body)
-    self.assertTrue('Helsinki' in response.body)
-    self.assertTrue('Columbus' in response.body)
+    geojson = self._GetGeoJson('/xyz.com/.card/foo/t2')
+    self.assertEquals('FeatureCollection', geojson['type'])
+    self.assertEquals('Topic 2', geojson['properties']['topic']['title'])
+    self.assertEquals(2, len(geojson['features']))
+    self.assertTrue(self._FeatureInResponse(geojson, 'Helsinki'))
+    self.assertTrue(self._FeatureInResponse(geojson, 'Columbus'))
     # Verify there are no descriptions, since show_desc param isn't set
     # in the request
-    self.assertFalse('description' in response.body)
+    self.assertEquals(None,
+                      geojson['features'][0]['properties']['description_html'])
+
+    # Verify there are no descriptions with show_desc=0 param in the request
+    geojson = self._GetGeoJson('/xyz.com/.card/foo/t2?show_desc=0')
+    self.assertEquals(None,
+                      geojson['features'][0]['properties']['description_html'])
+
+  def testGetCardByLabelAndTopicReports(self):
+    now = datetime.datetime.utcnow()
+    reports = [
+        # Most recent report has answers for q1 and q2.
+        model.CrowdReport(answers_json='{"m1.t2.q1": "a1", "m1.t2.q2": "a2"}',
+                          id='r1', text='', effective=now)
+    ]
+    self.SetForTest(model.CrowdReport, 'GetByLocation',
+                    staticmethod(lambda *args, **kwargs: reports))
+    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
+
+    # Verify there are reports with show_reports=1 param in the request
+    geojson = self._GetGeoJson('/xyz.com/.card/foo/t2?qids=q1&show_reports=1')
+    self.assertEquals(1, len(geojson['features'][0]['properties']['reports']))
+
+    # Verify there are no reports with show_reports missing from the request
+    geojson = self._GetGeoJson('/xyz.com/.card/foo/t2?qids=q1')
+    self.assertEquals(0, len(geojson['features'][0]['properties']['reports']))
+
+    # Verify there are no reports with show_reports=0 in the request
+    geojson = self._GetGeoJson('/xyz.com/.card/foo/t2?qids=q1&show_reports=0')
+    self.assertEquals(0, len(geojson['features'][0]['properties']['reports']))
 
   def testGetCardByLabelAndTopicWithDescriptionsEnabled(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
     # Enable descriptions with show_desc=1 param in the request
-    response = self.DoGet('/xyz.com/.card/foo/t1?show_desc=1')
-    self.assertTrue('Topic 1' in response.body)
-    self.assertTrue('Helsinki' in response.body)
-    self.assertTrue('Columbus' in response.body)
+    geojson = self._GetGeoJson('/xyz.com/.card/foo/t2?show_desc=1')
+    self.assertEquals('Topic 2', geojson['properties']['topic']['title'])
+    self.assertTrue(self._FeatureInResponse(geojson, 'Helsinki'))
+    self.assertTrue(self._FeatureInResponse(geojson, 'Columbus'))
     # Verify descriptions show up (with all the html tags removed)
-    self.assertTrue('description1' in response.body)
-    self.assertTrue('description<2>two' in response.body)
+    self.assertEquals('description1',
+                      geojson['features'][0]['properties']['description_html'])
+    self.assertEquals('description<2>two',
+                      geojson['features'][1]['properties']['description_html'])
 
   def testGetCardByLabelAndTopicWithDescriptionsXss(self):
     kml_data_with_xss = '''<?xml version="1.0" encoding="UTF-8" ?>
@@ -652,9 +749,7 @@ class CardHandlerTest(test_utils.BaseTest):
             <name>Cities</name>
             <Placemark>
               <name>Paris</name>
-              <description><![CDATA[
-                <b>description1</b>-<div>addr</div><script>EvilScript</script>
-              ]]></description>
+              <description><![CDATA[<b>description1</b>-<div>addr</div><script>EvilScript</script>]]></description>
               <Point><coordinates>25,60</coordinates></Point>
             </Placemark>
           </Document>
@@ -662,75 +757,74 @@ class CardHandlerTest(test_utils.BaseTest):
         '''
     self.SetForTest(kmlify, 'FetchData', lambda url, host: kml_data_with_xss)
     # Enable descriptions with show_desc=1 param in the request
-    response = self.DoGet('/xyz.com/.card/foo/t1?show_desc=1')
-    self.assertTrue('Paris' in response.body)
+    geojson = self._GetGeoJson('/xyz.com/.card/foo/t2?show_desc=1')
+    self.assertTrue(self._FeatureInResponse(geojson, 'Paris'))
     # Verify <script> doesn't show up in the description, but <b> stays
-    self.assertTrue('<b>description1</b>-addr' in response.body)
-    self.assertFalse('<script>EvilScript</script>' in response.body)
+    self.assertEquals('<b>description1</b>-<div>addr</div>EvilScript',
+                      geojson['features'][0]['properties']['description_html'])
 
   def testPostByLabelAndTopic(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoPost('/xyz.com/.card/foo/t1', 'll=60,25&n=1&r=100')
-    self.assertTrue('Topic 1' in response.body)
-    self.assertTrue('Helsinki' in response.body)
-    self.assertFalse('Columbus' in response.body)
+    response = self.DoPost('/xyz.com/.card/foo/t2', 'll=60,25&n=1&r=100')
+    geojson = json.loads(response.body)
+    self.assertEquals('Topic 2', geojson['properties']['topic']['title'])
+    self.assertTrue(self._FeatureInResponse(geojson, 'Helsinki'))
+    self.assertFalse(self._FeatureInResponse(geojson, 'Columbus'))
 
   def testGetCardByTopic(self):
     response = self.DoGet('/xyz.com/.card/foo')
     self.assertEquals('foo/t1', response.headers['Location'])
 
-  def testPlacesMenu(self):
-    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoGet('/xyz.com/.card/foo/t2?places=' + json.dumps(
-        [{'id': 'x', 'name': 'Place Foo'}, {'id': 'y', 'name': 'Place Bar'}]))
-    self.assertTrue('Place Foo' in response.body)
-    self.assertTrue('Place Bar' in response.body)
-
-  def testGetJsonByLabelAndTopic(self):
-    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
-    response = self.DoGet('/xyz.com/.card/foo/t2?output=json')
-    geojson = json.loads(response.body)
-    self.assertEquals('FeatureCollection', geojson['type'])
-    features = geojson['features']
-    self.assertEquals(2, len(features))
-
-  def testRenderFooter(self):
-    self.assertEquals('a b', card.RenderFooter(['a', 'b']))
-    self.assertEquals('a&lt;b&amp;', card.RenderFooter(['a<b&']))
-    self.assertEquals(
-        'x <a href="http://example.com/" target="_blank">y</a>',
-        card.RenderFooter(['x', ['http://example.com/', 'y']]))
-    self.assertFalse(
-        'javascript' in card.RenderFooter(['x', ['javascript:alert(1)', 'y']]))
-    self.assertEquals(
-        'a b Listing by <a href="google.com">Google</a>',
-        card.RenderFooter(['a', 'b'],
-                          ['Listing by <a href="google.com">Google</a>']))
-
   def testFeatureDistanceUnits(self):
     self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
 
+    def AssertUnitsInResponseTo(expected_unit, url, country_header=None):
+      headers = ({'X-AppEngine-Country': country_header} if country_header
+                 else {})
+      response = self.DoGet(url, headers=headers)
+      geojson = json.loads(response.body)
+      self.assertEquals(expected_unit, geojson['properties']['unit'])
+
     # Default: no units in the request, no auto-detected country
-    self.AssertUnitsInResponseTo('km', '/xyz.com/.card/foo/t1?output=json')
+    AssertUnitsInResponseTo('km', '/xyz.com/.card/foo/t1')
     # Response uses units from the request
-    self.AssertUnitsInResponseTo('mi',
-                                 '/xyz.com/.card/foo/t1?output=json&unit=mi')
+    AssertUnitsInResponseTo('mi', '/xyz.com/.card/foo/t1?unit=mi')
     # Response uses units from the request country
-    self.AssertUnitsInResponseTo('km', '/xyz.com/.card/foo/t1?output=json',
-                                 country_header='CA')
-    self.AssertUnitsInResponseTo('mi', '/xyz.com/.card/foo/t1?output=json',
-                                 country_header='US')
+    AssertUnitsInResponseTo('km', '/xyz.com/.card/foo/t1', country_header='CA')
+    AssertUnitsInResponseTo('mi', '/xyz.com/.card/foo/t1', country_header='US')
     # Response uses units from the request (ignoring any auto-determined
     # units based on request country)
-    self.AssertUnitsInResponseTo('km',
-                                 '/xyz.com/.card/foo/t1?output=json&unit=km',
-                                 country_header='US')
+    AssertUnitsInResponseTo('km', '/xyz.com/.card/foo/t1?unit=km',
+                            country_header='US')
 
-  def AssertUnitsInResponseTo(self, expected_unit, url, country_header=None):
-    headers = {'X-AppEngine-Country': country_header} if country_header else {}
-    response = self.DoGet(url, headers=headers)
-    geojson = json.loads(response.body)
-    self.assertEquals(expected_unit, geojson['properties']['unit'])
+  def testMapLink(self):
+    self.SetForTest(kmlify, 'FetchData', lambda url, host: KML_DATA)
+
+    def AssertMapLinkInResponseTo(expected_link, url):
+      response = self.DoGet(url)
+      geojson = json.loads(response.body)
+      self.assertEquals(expected_link, geojson['properties']['map_url'])
+
+    # Request has map id and topic id: map_url should be empty
+    with test_utils.RootLogin():
+      AssertMapLinkInResponseTo(None, '/.card/%s.t1' % self.map_id)
+
+    # Request has map label, topic id: map_url should only include layers of a
+    # requested topic
+    AssertMapLinkInResponseTo(
+        test_utils.ROOT_URL + '/xyz.com/foo?layers=layer1,layer3'
+        '&llbox=68.0,32.0,68.2,-126.2',
+        '/xyz.com/.card/foo/t1')
+
+  def _GetGeoJson(self, url):
+    response = self.DoGet(url)
+    return json.loads(response.body)
+
+  def _FeatureInResponse(self, geojson, name):
+    for f in geojson['features']:
+      if f['properties']['name'] == name:
+        return True
+    return False
 
 
 if __name__ == '__main__':

@@ -28,6 +28,10 @@ from google.appengine.api import users as gae_users
 from google.appengine.ext import ndb
 
 
+# Number of accounts to fetch at a time
+_ACCOUNTS_FETCH_SIZE = 100
+
+
 class _GoogleAccount(ndb.Model):
   """A mapping from a Google Account to a UserModel entity.
 
@@ -229,6 +233,19 @@ def GetCurrent():
     return User.FromModel(model)
 
 
+def GetAllWithFilter(filter_fn=None):
+  """Gets all users that pass a given filter.
+
+  Args:
+    filter_fn: Function that takes a User and returns True/False to indicate
+        if it should be included in the returned list of users. This filter is
+        applied post-query.
+  Returns:
+    A list of User objects.
+  """
+  return _GetAllWithFilter(_UserModel.query(), User.FromModel, filter_fn)
+
+
 def GetAll():
   """Yields all the User objects."""
   current = GetCurrent()
@@ -245,6 +262,48 @@ def GetAllGoogleAccounts():
   """Yields all the Google Account User objects."""
   for model in _GoogleAccount.query():
     yield utils.Struct.FromModel(model)
+
+
+def GetAllGoogleAccountsWithFilter(filter_fn=None):
+  """Gets all google accounts that pass a given filter.
+
+  Args:
+    filter_fn: Function that takes a struct based on _GoogleAccount and
+        returns True/False to indicate if it should be included in the
+        returned list of users. This filter is applied post-query.
+  Returns:
+    A list of structures based on _GoogleAccounts.
+  """
+  return _GetAllWithFilter(
+      _GoogleAccount.query(), utils.Struct.FromModel, filter_fn)
+
+
+def _GetAllWithFilter(query, to_struct_fn, filter_fn=None):
+  """Retrieves ndb models from the datastore in batches.
+
+  There is a query size limit (1Mb or 1000 entries), so to avoid it, we
+  retrieve models in smaller batches.
+
+  Args:
+    query: ndb Query for retrieving models.
+    to_struct_fn: Function that takes a model and returns a structure wrapper of
+        it.
+    filter_fn: Function that takes a structure based on retrieved model
+        and returns True/False for whether to include this entity in the
+        results. This filter is applied post-query.
+  Returns:
+    A list of structures based on datastore models.
+  """
+  results = []
+  cursor, more = (None, True)
+  while more:
+    models, cursor, more = query.fetch_page(_ACCOUNTS_FETCH_SIZE,
+                                            start_cursor=cursor)
+    for model in models:
+      struct = to_struct_fn(model)
+      if not filter_fn or filter_fn(struct):
+        results.append(struct)
+  return results
 
 
 def GetForEmail(email):

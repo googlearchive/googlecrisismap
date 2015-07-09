@@ -22,7 +22,7 @@ goog.require('cm.ui');
 goog.require('goog.array');
 
 /**
- * @type {Object}
+ * @const
  */
 cm.geometry = {};
 

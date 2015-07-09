@@ -256,61 +256,6 @@ class MapTests(test_utils.BaseTest):
       self.assertRaises(perms.AuthorizationError, model.Map.GetAll)
       self.assertEquals(public_maps, ModelKeys(model.Map.GetViewable(outsider)))
 
-  def testRemoveUsers(self):
-    """Tests removal of users from maps permission fields."""
-    user1 = test_utils.SetupUser(test_utils.Login('u1'))
-    user2 = test_utils.SetupUser(test_utils.Login('u2'))
-    user3 = test_utils.SetupUser(test_utils.Login('u3'))
-    with test_utils.RootLogin():
-      # Create a bunch of maps with varying initial permissions.
-      map0 = self.CreateMap('Map0', None, [])
-      map1 = self.CreateMap('Map1', perms.Role.MAP_OWNER, ['u1', 'u3'])
-      map2 = self.CreateMap('Map2', perms.Role.MAP_VIEWER, ['u1', 'u2', 'u3'])
-      map3 = self.CreateMap('Map3', perms.Role.MAP_REVIEWER, ['u1', 'u2', 'u3'])
-      map4 = self.CreateMap('Map4', perms.Role.MAP_EDITOR, ['u1', 'u2', 'u3'])
-
-      # Remove inactive users (based on a specified list of such).
-      model.Map.RemoveUsers([user1, user2])
-
-      # Get the maps back from the model and check that the specified users
-      # have been removed.
-      self.AssertMapPermissions(model.Map.Get(map0.id), perms.Role.MAP_OWNER,
-                                [], [user1, user3, user2])
-      self.AssertMapPermissions(model.Map.Get(map1.id), perms.Role.MAP_OWNER,
-                                [user3], [user1, user2])
-      self.AssertMapPermissions(model.Map.Get(map2.id), perms.Role.MAP_VIEWER,
-                                [user3], [user1, user2])
-      self.AssertMapPermissions(model.Map.Get(map3.id), perms.Role.MAP_REVIEWER,
-                                [user3], [user1, user2])
-      self.AssertMapPermissions(model.Map.Get(map4.id), perms.Role.MAP_EDITOR,
-                                [user3], [user1, user2])
-
-  def testDeleteMapsWithNoOwners(self):
-    """Verifies that maps with no owners are deleted."""
-    with test_utils.RootLogin():
-      domains.Domain.Put('cows.net')
-      domains.Domain.Put('dogs.org')
-      model.Map.Create({'title': 'Arf'}, 'dogs.org', viewers=['viewer'])
-      model.Map.Create({'title': 'Moo'}, 'cows.net', viewers=['viewer'],
-                       owners=[])
-
-      # Check that all the expected maps exist.
-      all_maps = model.Map.GetAll()
-      all_map_titles = {map.title for map in all_maps}
-      self.assertIn('Arf', all_map_titles)
-      self.assertIn('Moo', all_map_titles)
-
-      # Delete all maps that have no owners. This should remove Moo.
-      result = model.Map.DeleteAllMapsWithNoOwner()
-      self.assertEqual(1, len(result))
-      self.assertNotEqual(-1, result[0].find('Moo'))
-
-      # Check that maps with no owners have been deleted.
-      all_maps = model.Map.GetAll()
-      all_map_titles = {map.title for map in all_maps}
-      self.assertIn('Arf', all_map_titles)
-      self.assertNotIn('Moo', all_map_titles)
-
 
 class CatalogEntryTests(test_utils.BaseTest):
   """Tests the CatalogEntry class."""

@@ -125,7 +125,7 @@ MAX_FETCH_SECONDS = 30  # time to wait for a response from remote servers
 # Metadata can live in the cache for up to 24 hours, even though it is usually
 # updated more frequently than that.  We allow only a bit of staleness after
 # update because we'd like updates to show up in the UI within a second or two.
-METADATA_CACHE = cache.Cache('metadata', 24 * 3600, 1)
+METADATA_CACHE = cache.Cache('metadata', 24 * 3600, ull=1, lock_timeout=0)
 
 # Layers stay active for 24 hours after activation.
 ACTIVE_CACHE = cache.Cache('metadata.active', 24 * 3600)

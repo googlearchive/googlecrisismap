@@ -110,6 +110,9 @@ def connect(url, email=None, password=None, exit_on_failure=False):
             sys.exit(1)
         return None
 
+    print >>sys.stderr, 'Connected to remote API: %s' % url
+    sys.stderr.flush()
+
     # ConfigureRemoteApi sets os.environ['APPLICATION_ID']
     app_id = os.environ['APPLICATION_ID']
     sys.ps1 = app_id + '> '  # for the interactive console

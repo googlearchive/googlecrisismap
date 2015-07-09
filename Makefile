@@ -160,14 +160,19 @@ aux/json_files.js: resource/*.json
 	done
 	@ls -al $@
 
-# Download a local copy of the Maps API JavaScript.
+# Download a local copy of the Maps API JavaScript by first getting a list of
+# all the individual Maps-related Javascript libraries, downloading them
+# individually and then concatenating them together with a semicolon in between
+# (as the individual libaries don't end in one).
 MAPS_API_MODULES=places,search,visualization,weather
 aux/maps_api.js:
 	@mkdir -p aux
-	curl $$(curl 'http://maps.google.com/maps/api/js?libraries=$(MAPS_API_MODULES)&sensor=false' | \
-	    grep 'getScript("' | \
-	    sed -e 's/.*"\([^"]*\)".*/\1/') > $@
-
+	@for file in $$(curl 'http://maps.google.com/maps/api/js?libraries=$(MAPS_API_MODULES)&sensor=false' | \
+            grep 'getScript("' | \
+            sed -e 's/.*"\([^"]*\)".*/\1/'); do \
+                curl $$file >> $@; \
+                echo ";" >> $@; \
+        done
 
 # JS COMPILATION --------------------------------------------------------------
 

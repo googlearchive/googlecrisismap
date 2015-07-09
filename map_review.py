@@ -195,7 +195,11 @@ class _MapReview(base_handler.BaseHandler):
 
     def _DescribeAnswer((question_id, answer)):
       if question_types.get(question_id) == 'CHOICE':
+        if (question_id, answer) not in choice_labels:
+          return 'OBSOLETE CHOICE %s: %s' % (question_id, answer)
         return choice_labels.get((question_id, answer))
+      if question_id not in question_titles:
+        return 'OBSOLETE QUESTION %s: %s' % (question_id, answer)
       return '%s: %s' % (question_titles[question_id], answer)
 
     return topic_ids, [{

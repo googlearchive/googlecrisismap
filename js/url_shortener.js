@@ -22,11 +22,15 @@ goog.require('goog.net.Jsonp');
  * Encapsulates a service for shortening URLs.
  * @param {string} jsonProxyUrl URL to the JSON proxy service.
  * @param {string=} googleApiKey Google API key, used for the URL Shortener API.
+ * @param {string=} urlshortener_api_url URL endpoint for URL shortener or empty
+ *     if we should just use the default prod instance
  * @constructor
  */
-cm.UrlShortener = function(jsonProxyUrl, googleApiKey) {
+cm.UrlShortener = function(jsonProxyUrl, googleApiKey, urlshortener_api_url) {
   this.jsonProxyUrl_ = jsonProxyUrl;
-  this.serviceUrl_ = cm.UrlShortener.SERVICE_URL_ +
+  this.serviceUrl_ =
+      (urlshortener_api_url ? urlshortener_api_url :
+          cm.UrlShortener.SERVICE_URL_) +
       (googleApiKey ? '?key=' + googleApiKey : '');
 };
 

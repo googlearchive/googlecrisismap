@@ -91,7 +91,7 @@ cm.LayerModel.MAPROOT_TO_MODEL_LAYER_TYPES = {
  * @type Object.<string>
  */
 cm.LayerModel.LAYER_TYPE_TO_ATTRIBUTION = goog.object.create(
-  cm.LayerModel.Type.PLACES, cm.MSG_SOURCE_GOOGLE_MAPS
+  cm.LayerModel.Type.PLACES, cm.getMsgSource(cm.MSG_GOOGLE_MAPS)
 );
 
 /** @enum {string} */
@@ -196,6 +196,7 @@ cm.LayerModel.newFromMapRoot = function(maproot) {
   model.set('type', type);
   model.set('title', maproot['title'] || '');
   model.set('description', new cm.Html(maproot['description'] || ''));
+  model.set('attribution', new cm.Html(maproot['attribution'] || ''));
   model.set('legend', new cm.Html(maproot['legend'] || ''));
   model.set('viewport', cm.LatLonBox.fromMapRoot(
       (maproot['viewport'] || {})['lat_lon_alt_box']));
@@ -434,6 +435,7 @@ cm.LayerModel.prototype.toMapRoot = function() {
     'id': this.get('id'),
     'title': this.get('title'),
     'description': this.get('description').getUnsanitizedHtml(),
+    'attribution': this.get('attribution').getUnsanitizedHtml(),
     'legend': this.get('legend').getUnsanitizedHtml(),
     'visibility': this.get('default_visibility') ? 'DEFAULT_ON' : 'DEFAULT_OFF',
     'viewport': viewport && {'lat_lon_alt_box': viewport.round(4).toMapRoot()},

@@ -40,7 +40,7 @@ cm.ProxyTileMapType = function(opts) {
 
   /**
    * A map of tile id: tile div, where 'id' is 'z,x,y'
-   * @type Object.<Element>
+   * @type {Object.<Element>}
    * @private
    */
   this.tiles_ = {};
@@ -126,6 +126,19 @@ cm.ProxyTileMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
       cm.Analytics.logTime('wms_tile_fetch', 'retry_' + tileData.retries,
                            new Date().getTime() - tileData.startTime,
                            tileData.tilesetId);
+    }
+    // Per b/19802802, for some reason the error handling isn't getting
+    // fired off in Chrome 41. A failed tile load results in tileImg.height
+    // being either 1 or 23 (I assume that's the height of the broken image
+    // icon) - rather than 256 or whatever. It appears a race condition as
+    // to which size we see. We also ensure the height property is present (>0),
+    // b/c on IE8 img elements don't have height specified.
+    // TODO(giencke): Watch go/chrome-imagery-bug for fix, to undo this hack
+    if (tileImg && tileImg.height > 0 & tileImg.height < 24) {
+      // Set back to an empty tile to avoid the nasty broken image icon.
+      tileDiv.firstChild.setAttribute(
+          'src', '//maps.gstatic.com/mapfiles/transparent.png');
+      return;
     }
     // TODO(arb): decrement the outstanding tile counter.
     tileData.retryTimeout = null;

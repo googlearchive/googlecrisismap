@@ -36,6 +36,9 @@ var HIGHLIGHT_ICON = 'highlight.png';
 /** @const string */
 var GOOGLE_SPREADSHEET_CSV_URL =
     'https://docs.google.com/spreadsheet/pub?key=$key&output=csv';
+/** @const string */
+var GOOGLE_SPREADSHEET_V2_CSV_URL =
+    'https://docs.google.com/spreadsheets/d/$identifier/export?format=csv$gid';
 
 /**
  * @param {Element} parentElem The DOM element in which to render the map.
@@ -503,8 +506,18 @@ cm.MapView.prototype.addOverlay_ = function(layer) {
 cm.MapView.prototype.buildKmlifyUrl_ = function(layer) {
   var url = /** @type string */(layer.get('url'));
   if (layer.get('type') === cm.LayerModel.Type.GOOGLE_SPREADSHEET) {
-    var match = url.match(/spreadsheet\/.*[?&]key=(\w+)/);
-    url = match ? GOOGLE_SPREADSHEET_CSV_URL.replace('$key', match[1]) : null;
+    // Match new spreadsheet link pattern before the old pattern since such
+    // links are expected to be more frequent.
+    var match = url.match(/spreadsheets\/d\/(.*)\/(.*gid=(\d+).*)?/);
+    if (match) {
+      url = GOOGLE_SPREADSHEET_V2_CSV_URL
+          .replace('$identifier', match[1])
+          .replace('$gid', match[3] ? '&gid=' + match[3] : '');
+    } else {
+      // Match old spreadsheet link pattern.
+      match = url.match(/spreadsheet\/.*[?&]key=(\w+)/);
+      url = match ? GOOGLE_SPREADSHEET_CSV_URL.replace('$key', match[1]) : null;
+    }
   }
   if (!url.match(/\S/)) return null;
 

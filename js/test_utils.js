@@ -593,7 +593,8 @@ cm.TestBase.match = function(expected, actual, opt_path) {
   if (expected instanceof gjstest.Matcher) {
     var result = expected.predicate(actual);
     return result === true ||
-        keyDescription + (result || 'which ' + expected.negativeDescription);
+        keyDescription +
+        (result || 'which ' + expected.getNegativeDescription());
   }
   /* Try the equals() method. */
   if (typeof expected === 'object' && expected !== null && expected.equals) {
@@ -1108,8 +1109,8 @@ function inputType(type) {
 function withText(expected) {
   if (expected instanceof gjstest.Matcher) {
     return new gjstest.Matcher(
-        'has text that ' + expected.description,
-        'doesn\'t have text that ' + expected.description,
+        'has text that ' + expected.getDescription(),
+        'doesn\'t have text that ' + expected.getDescription(),
         function(x) { return expected.predicate(FakeUi.getText(x)); });
   }
   return new gjstest.Matcher(
@@ -1129,8 +1130,8 @@ function withText(expected) {
 function withInnerHtml(expected) {
   if (expected instanceof gjstest.Matcher) {
     return new gjstest.Matcher(
-        'has innerHTML that ' + expected.description,
-        'doesn\'t have innerHTML that ' + expected.description,
+        'has innerHTML that ' + expected.getDescription(),
+        'doesn\'t have innerHTML that ' + expected.getDescription(),
         function(x) { return expected.predicate(x.innerHTML); });
   }
   return new gjstest.Matcher(
@@ -1240,8 +1241,8 @@ var foundElement = null;
 function hasDescendant(var_args) {
   var matcher = isElement.apply(null, arguments);
   return new gjstest.Matcher(
-      'has a descendant that ' + matcher.description,
-      'doesn\'t have a descendant that ' + matcher.description,
+      'has a descendant that ' + matcher.getDescription(),
+      'doesn\'t have a descendant that ' + matcher.getDescription(),
       function(x) { return !!(foundElement = findDescendantOf(x, matcher)); });
 }
 
@@ -1288,8 +1289,8 @@ function expectNoDescendantOf(element, var_args) {
 function hasAncestor(var_args) {
   var matcher = isElement.apply(null, arguments);
   return new gjstest.Matcher(
-      'has an ancestor that ' + matcher.description,
-      'doesn\'t have an ancestor that ' + matcher.description,
+      'has an ancestor that ' + matcher.getDescription(),
+      'doesn\'t have an ancestor that ' + matcher.getDescription(),
       function(x) { return !!(foundElement = findAncestorOf(x, matcher)); });
 }
 
@@ -1374,7 +1375,7 @@ function containsExactly(x, opt_times) {
   var nounPhrase;
   if (x && x instanceof gjstest.Matcher) {
     matcher = x;
-    nounPhrase = 'an element that ' + matcher.description;
+    nounPhrase = 'an element that ' + matcher.getDescription();
   } else {
     matcher = gjstest.equals(x);
     nounPhrase = gjstest.stringify(x);

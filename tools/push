@@ -37,6 +37,10 @@ if [ -n "$USER_EMAIL" ]; then
   email_option="-e $USER_EMAIL"
 fi
 
+# If a .py file is compiled and then disappears (e.g. from source control)
+# an old .pyc file can linger in the working directory.  Clean these up.
+find . -name '*.pyc' -exec rm -f {} ';'
+
 # Build.
 make dbg || exit 1
 

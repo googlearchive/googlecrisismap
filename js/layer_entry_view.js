@@ -322,7 +322,8 @@ cm.LayerEntryView = function(
   // layer model, the metadata model, and the AppState.
   cm.events.onChange(model, ['title', 'folder_type'], this.updateTitle_, this);
   cm.events.onChange(model, 'description', this.updateDescription_, this);
-  cm.events.onChange(model, 'type', this.updateAttribution_, this);
+  cm.events.onChange(model, ['type', 'attribution'],
+      this.updateAttribution_, this);
   cm.events.onChange(model,
                      ['suppress_download_link', 'type', 'url', 'ft_from'],
                      this.updateDownloadLink_, this);
@@ -476,10 +477,17 @@ cm.LayerEntryView.prototype.updateDescription_ = function() {
  * @private Updates the layer attribution information.
  */
 cm.LayerEntryView.prototype.updateAttribution_ = function() {
-  var attribution =
-      cm.LayerModel.LAYER_TYPE_TO_ATTRIBUTION[this.model_.get('type')] || '';
-  var attributionHtml = new cm.Html(attribution);
-  attributionHtml.pasteInto(this.attributionElem_);
+  var wrapInDiv = function(text) {
+   return text ? '<div>' + text + '</div>' : '';
+  };
+
+  var presetAttr = wrapInDiv(
+      cm.LayerModel.LAYER_TYPE_TO_ATTRIBUTION[this.model_.get('type')]);
+  var customAttr = this.model_.get('attribution') &&
+      this.model_.get('attribution').getHtml() || '';
+  customAttr = customAttr ? wrapInDiv(cm.getMsgSource(customAttr)) : '';
+  var attrHtml = new cm.Html(presetAttr + customAttr);
+  attrHtml.pasteInto(this.attributionElem_);
 };
 
 /** @private Updates the panel entry's legend to match the model. */

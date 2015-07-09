@@ -688,7 +688,8 @@ cm.Map.prototype.constructButtons_ = function(preview, appState) {
   if (!preview && !this.config_['hide_share_button'] &&
       !this.config_['enable_editing']) {
     var urlShortener = new cm.UrlShortener(
-        this.config_['json_proxy_url'], this.config_['google_api_key']);
+        this.config_['json_proxy_url'], this.config_['google_api_key'],
+        this.config_['urlshortener_api_url']);
     new cm.ShareButton(this.map_, appState,
                        !this.config_['hide_facebook_button'],
                        !this.config_['hide_google_plus_button'],

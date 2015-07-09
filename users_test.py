@@ -114,11 +114,31 @@ class UsersTest(test_utils.BaseTest):
   def testGetAll(self):
     users._UserModel(id='one', ga_domain='xyz.com', email='one@xyz.com').put()
     users._UserModel(id='two', ga_domain='abc.com', email='two@abc.com').put()
+
     [user1, user2] = sorted(users.GetAll(), key=lambda u: u.id)
     self.assertEquals(('one', 'xyz.com', 'one@xyz.com'),
                       (user1.id, user1.ga_domain, user1.email))
     self.assertEquals(('two', 'abc.com', 'two@abc.com'),
                       (user2.id, user2.ga_domain, user2.email))
+
+    [user2] = sorted(users.GetAllWithFilter(lambda u: u.id == 'two'),
+                     key=lambda u: u.id)
+    self.assertEquals(('two', 'abc.com', 'two@abc.com'),
+                      (user2.id, user2.ga_domain, user2.email))
+
+  def testGetAllGoogleAccounts(self):
+    users._GoogleAccount(id='111111', uid='100').put()
+    users._GoogleAccount(id='222222', uid='200').put()
+
+    [gau1, gau2] = sorted(users.GetAllGoogleAccounts(),
+                          key=lambda gau: gau.uid)
+    self.assertEquals(('111111', '100'), (gau1.id, gau1.uid))
+    self.assertEquals(('222222', '200'), (gau2.id, gau2.uid))
+
+    [gau2] = sorted(
+        users.GetAllGoogleAccountsWithFilter(lambda gau: gau.uid == '200'),
+        key=lambda gau: gau.uid)
+    self.assertEquals(('222222', '200'), (gau2.id, gau2.uid))
 
   def testGetForEmail_NonexistentGoogleAccounts(self):
     self.mox.stubs.Set(users, '_EmailToGaeUserId', {}.get)

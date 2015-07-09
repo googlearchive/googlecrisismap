@@ -240,6 +240,26 @@ class MapReviewTest(test_utils.BaseTest):
       self.assertFalse(self.cr1.id in response.body)
       self.assertFalse(self.cr2.id in response.body)
 
+  def testGetWithInvalidQuestionAnswer(self):
+    q_invalid_id = '%s.water.qINVALID' % self.map_id
+    cr_bad_question = test_utils.NewCrowdReport(author='http://foo.com/abc',
+                                                text='',
+                                                topic_ids=[self.topic2_id],
+                                                answers={q_invalid_id: 'n'})
+    cr_bad_answer = test_utils.NewCrowdReport(author='http://foo.com/abc',
+                                              text='',
+                                              topic_ids=[self.topic2_id],
+                                              answers={self.q5_id: 'INVALID'})
+
+    with test_utils.Login('reviewer'):
+      response = self.DoGet('/.maps/%s/review' % self.map_id)
+    self.assertTrue(self.cr1.id in response.body)
+    self.assertTrue(self.cr2.id in response.body)
+    self.assertTrue(cr_bad_question.id in response.body)
+    self.assertTrue('OBSOLETE QUESTION' in response.body)
+    self.assertTrue(cr_bad_answer.id in response.body)
+    self.assertTrue('OBSOLETE CHOICE' in response.body)
+
 
 if __name__ == '__main__':
   test_utils.main()

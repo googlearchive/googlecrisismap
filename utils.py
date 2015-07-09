@@ -268,3 +268,15 @@ def ShortAge(dt):
   if hours < 48:
     return '%dh ago' % hours
   return '%dd ago' % days
+
+
+def ReadStaticFile(filename):
+  """Gets the contents of a file from either the app or static directory."""
+  directory = os.path.dirname(__file__)
+  try:
+    return open(os.path.join(directory, filename)).read()
+  except IOError:
+    try:
+      return open(os.path.join(directory, 'static', filename)).read()
+    except IOError:
+      return open(os.path.join(directory, 'resource', filename)).read()

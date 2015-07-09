@@ -336,8 +336,27 @@ AppStateTest.prototype.testSetFromUriTopics = function() {
   });
 
   var uri = new goog.Uri('');
-  uri.setParameterValue('topics', 't11,t2');
 
+  // By default, layers are default-on
+  this.appState_.setFromMapModel(mapModel);
+  this.appState_.setFromUri(uri, mapModel);
+  expectTrue(this.appState_.getLayerEnabled('w'));
+  expectTrue(this.appState_.getLayerEnabled('x'));
+  expectTrue(this.appState_.getLayerEnabled('y'));
+  expectTrue(this.appState_.getLayerEnabled('z'));
+
+  // If passed a non-existant topic, nothing changes
+  uri.setParameterValue('topics', 'badtopic');
+  this.appState_.setFromMapModel(mapModel);
+  this.appState_.setFromUri(uri, mapModel);
+  expectTrue(this.appState_.getLayerEnabled('w'));
+  expectTrue(this.appState_.getLayerEnabled('x'));
+  expectTrue(this.appState_.getLayerEnabled('y'));
+  expectTrue(this.appState_.getLayerEnabled('z'));
+
+  // If topics are set, use them to determine default-on layers
+  uri.setParameterValue('topics', 't11,t2');
+  this.appState_.setFromMapModel(mapModel);
   this.appState_.setFromUri(uri, mapModel);
   expectFalse(this.appState_.getLayerEnabled('w'));
   expectTrue(this.appState_.getLayerEnabled('x'));
@@ -346,6 +365,7 @@ AppStateTest.prototype.testSetFromUriTopics = function() {
 
   // But if layers are set, use those, instead
   uri.setParameterValue('layers', 'w');
+  this.appState_.setFromMapModel(mapModel);
   this.appState_.setFromUri(uri, mapModel);
   expectTrue(this.appState_.getLayerEnabled('w'));
   expectFalse(this.appState_.getLayerEnabled('x'));

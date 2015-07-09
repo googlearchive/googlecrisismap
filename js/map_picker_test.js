@@ -50,6 +50,14 @@ MapPickerTest.prototype.positionMenu = function() {
   button.offsetTop = 20;
   button.offsetWidth = 15;
   button.offsetHeight = 15;
+  button.getBoundingClientRect = function() {
+    return {
+      'left': 150,
+      'top': 20,
+      'right': 0,
+      'bottom': 0
+    };
+  };
 
   // Menu fits with its right edge aligned to the button.
   menu.offsetWidth = 150;

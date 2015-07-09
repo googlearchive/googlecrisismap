@@ -580,7 +580,7 @@ cm.LegendEditor.prototype.handleTextChange_ = function(legendItem, inputElem,
     editorHtml = editorHtml.replace(/<br>[ ]?$/, '<br>&nbsp;');
   }
 
-  var empty = goog.string.isEmpty(editorHtml) &&
+  var empty = goog.string.isEmptyOrWhitespace(editorHtml) &&
       (!!opt_trimInEditor || editorHtml.indexOf('\n') == -1);
   goog.dom.classes.enable(legendItem.editor.textElem, cm.css.EMPTY, empty);
   if (empty) {
@@ -639,7 +639,7 @@ cm.LegendEditor.prototype.showPaletteDialog_ = function(underElem, callback) {
  */
 cm.LegendEditor.prototype.handleUrlChanged_ = function(draft) {
   var url = /** @type {string} */(draft.get('url'));
-  if (url && !goog.string.isEmpty(url) && goog.array.contains(
+  if (url && !goog.string.isEmptyOrWhitespace(url) && goog.array.contains(
       cm.LegendEditor.SUPPORTED_LAYER_TYPES_, draft.get('type'))) {
     if (!this.extractRequestSent_) {
       goog.style.setElementShown(this.loadingElem_, true);

@@ -104,9 +104,34 @@ LayerEntryViewTest.prototype.testConstructor = function() {
  * Tests that attribution shows up for layers that have some default data
  * source information set.
  */
-LayerEntryViewTest.prototype.testAttributionInConstructor = function() {
+LayerEntryViewTest.prototype.testGooglePlacesAttribution = function() {
   this.layerModel_.set('type', cm.LayerModel.Type.PLACES);
+  this.assertAttribution_('<div>Source: Google Maps</div>');
 
+  // Change layer type and make sure Google Maps attribution is cleared
+  this.layerModel_.set('type', cm.LayerModel.Type.KML);
+  this.assertAttribution_('');
+};
+
+/**
+ * Tests that attribution shows up for layers that have attribution field set.
+ */
+LayerEntryViewTest.prototype.testCustomAttribution = function() {
+  this.layerModel_.set('type', cm.LayerModel.Type.KML);
+  this.layerModel_.set('attribution',
+      new cm.Html('<a href="redcross.org">Red Cross</a>'));
+  this.assertAttribution_(
+      '<div>Source: <a href="redcross.org">Red Cross</a></div>');
+
+  // Change layer type to Google Places and make sure its attribution is
+  // appended
+  this.layerModel_.set('type', cm.LayerModel.Type.PLACES);
+  this.assertAttribution_(
+      '<div>Source: Google Maps</div><div>' +
+      'Source: <a href="redcross.org">Red Cross</a></div>');
+};
+
+LayerEntryViewTest.prototype.assertAttribution_ = function(expectedAttr) {
   // Not interested in testing the sanitizer here, so just install
   // a transparent one.
   this.setForTest_('cm.Html.sanitize_', function(string) { return string; });
@@ -115,33 +140,8 @@ LayerEntryViewTest.prototype.testAttributionInConstructor = function() {
   var contentElem = findDescendantOf(parent, withClass(cm.css.CONTENT));
   expectThat(contentElem, not(isNull));
   var attributionElem =
-      findDescendantOf(contentElem, withClass(cm.css.LAYER_ATTRIBUTION),
-          withText('Source: Google Maps'));
-  expectThat(attributionElem, not(isNull));
-};
-
-/**
- * Tests that attribution shows up for layers that have some default data
- * source information set.
- */
-LayerEntryViewTest.prototype.testAttributionOnLayerTypeChange = function() {
-  this.layerModel_.set('type', cm.LayerModel.Type.PLACES);
-
-  // Not interested in testing the sanitizer here, so just install
-  // a transparent one.
-  this.setForTest_('cm.Html.sanitize_', function(string) { return string; });
-
-  var parent = this.createView_();
-  var attributionElem = findDescendantOf(parent,
-      withClass(cm.css.LAYER_ATTRIBUTION),
-      withText('Source: Google Maps'));
-  expectThat(attributionElem, not(isNull));
-
-  // Change layer type and make sure Google Maps attribution is cleared
-  this.layerModel_.set('type', cm.LayerModel.Type.KLM);
-  var attributionElem = findDescendantOf(parent,
-      withClass(cm.css.LAYER_ATTRIBUTION));
-  expectThat(attributionElem, withText(''));
+      findDescendantOf(contentElem, withClass(cm.css.LAYER_ATTRIBUTION));
+  expectThat(attributionElem, withInnerHtml(expectedAttr));
 };
 
 /** Verifies that the Edit and Delete links appear only when they should. */

@@ -20,12 +20,23 @@ UrlShortenerTest.prototype = new cm.TestBase();
 registerTestSuite(UrlShortenerTest);
 
 UrlShortenerTest.prototype.shorten = function() {
-  var urlShortener = new cm.UrlShortener('/.jsonp', 'key123');
+  this.shortenHelper_('', cm.UrlShortener.SERVICE_URL_);
+};
+
+UrlShortenerTest.prototype.shortenWithCustomApi = function() {
+  var fakeShortener = 'http://fakeshortener';
+  this.shortenHelper_(fakeShortener, fakeShortener);
+};
+
+UrlShortenerTest.prototype.shortenHelper_ = function(
+    shortener_url_config, expected_shortener_url) {
+  var urlShortener =
+      new cm.UrlShortener('/.jsonp', 'key123', shortener_url_config);
 
   // Simulate the behavior of the URL Shortener API.
   var jsonp = this.expectNew_('goog.net.Jsonp', '/.jsonp');
   expectCall(jsonp.send)({
-    'url': cm.UrlShortener.SERVICE_URL_ + '?key=key123',
+    'url': expected_shortener_url + '?key=key123',
     'post_json': goog.json.serialize({'longUrl': 'http://long'})
   }, _).willOnce(function(_, callback) { callback({'id': 'http://short'}); });
 

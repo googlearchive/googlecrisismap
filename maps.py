@@ -114,6 +114,9 @@ class ClientConfig(db.Model):
   # Whether or not to show feature details in the tabbed panel.
   use_details_tab = db.BooleanProperty(default=False)
 
+  # URL endpoint for UrlShortener API.
+  urlshortener_api_url = db.StringProperty(default='')
+
   # Note: When adding future settings, the default value should reflect the
   # behavior prior to the introduction of the new setting.  To avoid confusion
   # with None, the default value for Boolean settings should always be False.

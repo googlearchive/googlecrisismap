@@ -15,35 +15,21 @@
 __author__ = 'shakusa@google.com (Steve Hakusa)'
 
 import json
-import os
 
+import base_handler
 import config
 import maps
 import model
-import users
+import utils
 import webapp2
 
 
-def ReadFile(filename):
-  """Gets the contents of a file from either the app or static directory."""
-  directory = os.path.dirname(__file__)
-  try:
-    return open(os.path.join(directory, filename)).read()
-  except IOError:
-    try:
-      return open(os.path.join(directory, 'static', filename)).read()
-    except IOError:
-      return open(os.path.join(directory, 'resource', filename)).read()
-
-
-class TestData(webapp2.RequestHandler):
+class TestData(base_handler.BaseHandler):
   """Sets up test data (helpful for functional tests)."""
 
   def get(self):  # pylint: disable=g-bad-name
     """This endpoint is only for setting up data for system tests."""
-    if not users.IsDeveloper():
-      self.response.out.write('Not authorized.')
-      return
+    _CheckIsDevServer()
 
     # For system tests, we pretend the app runs under "/crisismap".
     config.Set('root_path', '/crisismap')
@@ -53,12 +39,15 @@ class TestData(webapp2.RequestHandler):
     # admin-level APIs (Config, MapModel, CatalogEntryModel, etc.) below.
 
     # Allow testing of behaviour controlled by flags in the ClientConfig.
-    maps.ClientConfig.Create('google-test',
-                             allowed_referer_domains=['google.com'],
-                             hide_footer=True,
-                             hide_share_button=True,
-                             hide_my_location_button=True,
-                             allow_embed_map_callback=True).put()
+    maps.ClientConfig.Create(
+        'google-test',
+        allowed_referer_domains=['google.com'],
+        urlshortener_api_url=('http://' + self.request.host +
+                              '/testbackend?service=urlshortener'),
+        hide_footer=True,
+        hide_share_button=False,
+        hide_my_location_button=True,
+        allow_embed_map_callback=True).put()
 
     # Allow tests of the tabbed UI.
     maps.ClientConfig.Create('google-test-tab',
@@ -74,27 +63,86 @@ class TestData(webapp2.RequestHandler):
     # Add the gas_stations (with crowd reports) test map with map ID '3'.
     self.PutTestMap('3', 'gas_stations.json')
 
-    # Add a catalog entry with label 'godzilla' pointing at our test map.
+
+    # Add sharks test map with map ID '10'.
+    sharks_maproot = _GetSharksMaproot(self.request.host)
+    self.PutTestMapJson('10', sharks_maproot, json.dumps(sharks_maproot))
+
+    # Add catalog entries for some of the test maps
     config.Set('primary_domain', 'gmail.com')
     model.CatalogEntryModel.Put(
         'test1', 'gmail.com', 'godzilla', model.Map.Get('1'), is_listed=True)
+    model.CatalogEntryModel.Put(
+        'test1', 'gmail.com', 'gas-stations', model.Map.Get('3'),
+        is_listed=True)
+    model.CatalogEntryModel.Put(
+        'test1', 'gmail.com', 'sharks', model.Map.Get('10'), is_listed=True)
     model.CatalogEntry.FlushCaches('gmail.com')
 
     self.response.out.write('Test data written.')
 
-  def PutTestMap(self, map_id, file_name, owner='test1', domain='gmail.test'):
-    """Stores a test map in the datastore."""
-    json_data = ReadFile(file_name)
+  def PutTestMap(self, map_id, file_name):
+    """Stores a test map from a given file into the datastore."""
+    maproot_json = utils.ReadStaticFile(file_name)
+    self.PutTestMapJson(map_id, json.loads(maproot_json), maproot_json)
+
+  def PutTestMapJson(self, map_id, map_root, maproot_json, owner='test1',
+                     domain='gmail.test'):
+    """Stores a test map from a given maproot in the datastore."""
     map_object = model.Map(model.MapModel(
         key_name=map_id, owners=[owner], editors=[], viewers=[], domain=domain,
         domains=[domain], domain_role=None, world_readable=True))
-    map_root = json.loads(json_data)  # validate the JSON first
     new_version = model.MapVersionModel(
-        parent=map_object.model, maproot_json=json_data)
+        parent=map_object.model, maproot_json=maproot_json)
     # Update the MapModel from fields in the MapRoot JSON.
     map_object.model.title = map_root.get('title', '')
     map_object.model.description = map_root.get('description', '')
     map_object.model.current_version = new_version.put()
+
     map_object.model.put()
+
+
+# Function for creating a maproot dictionary for a Sharks map that points at
+# a KML file served locally by testbackend handler. This is to avoid any
+# external requests in tests.
+def _GetSharksMaproot(host):
+  """Creates a maproot dictionary for a Sharks map with KML layer.
+
+  Layer KML file is served locally by testbackend handler. This is to avoid any
+  external web requests in tests.
+
+  Args:
+    host: CrisisMap host name with port
+  Returns:
+    Maproot dictionary
+  """
+  return {
+      'id': 'id2015030311642',
+      'title': 'Sharks tests',
+      'layers': [{
+          'title': 'Sharks',
+          'source': {
+              'kml': {
+                  'url': ('http://%s/testbackend?service=file'
+                          '&filename=sharks.kml' % host)
+              }
+          },
+          'type': 'KML',
+          'id': 'layer0'
+
+      }],
+      'topics': [{
+          'title': 'Sharks',
+          'id': 'sharks-topic',
+          'layer_ids': ['layer0'],
+
+      }]
+  }
+
+
+def _CheckIsDevServer():
+  if not utils.IsDevelopmentServer():
+    raise base_handler.Error(500, 'testbackend is only accessible in DEV')
+
 
 app = webapp2.WSGIApplication([('.*', TestData)])

@@ -49,7 +49,7 @@ LegendEditorTest.prototype.createEditor_ = function() {
   expectCall(this.colorPalette_.render)(isElement('div'));
 
   var url = this.draft_.get('url');
-  if (url && !goog.string.isEmpty(url) && goog.array.contains(
+  if (url && !goog.string.isEmptyOrWhitespace(url) && goog.array.contains(
       cm.LegendEditor.SUPPORTED_LAYER_TYPES_, this.draft_.get('type'))) {
     // Expect the request and palette update. The callback is called after the
     // LegendEditor is created.
@@ -161,7 +161,7 @@ LegendEditorTest.prototype.expectLegendItem_ = function(opt_text,
     editorHtml = editorHtml.replace(/<br>[ ]?$/, '<br>&nbsp;');
 
     previewTextMatchers.push(withInnerHtml(sanitize(previewHtml)));
-    editorTextMatchers.push(goog.string.isEmpty(opt_text) ?
+    editorTextMatchers.push(goog.string.isEmptyOrWhitespace(opt_text) ?
         withClass(cm.css.EMPTY) : withInnerHtml(sanitize(editorHtml)));
   }
   var withGraphic = hasDescendant(

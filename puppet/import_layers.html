@@ -29,8 +29,8 @@ function testImportLayers(isTabbed) {
   run(click, crisis.inspector.importLayer);
 
   // Open the importer and verify the map title and first layer title exist.
-  var layerItem = crisis.importer.item(0).item;
-  run(text, crisis.importer.list + xclass('cm-map-title'),
+  var layerItem = crisis.importer.item(2).item;
+  run(text, '(' + crisis.importer.list + xclass('cm-map-title') + ')[3]',
       'Godzilla Meets Slobsterfest');
   run(text, layerItem, 'Roz Savage tracks');
 
@@ -41,7 +41,7 @@ function testImportLayers(isTabbed) {
   run(not(hasClass), layerItem, 'cm-layer-selected');
 
   // Test expanding and collapsing a folder.
-  var folder = crisis.importer.item(7);
+  var folder = crisis.importer.item(9);
   var sublayerItem = folder.sublayer(0).item;
   run(not(shown), sublayerItem);
   var triangle = folder.triangle;
@@ -98,7 +98,7 @@ function testImportLayers(isTabbed) {
   // Test map preview exists.
   run(click, crisis.toolbar.addLayers);
   run(click, crisis.inspector.importLayer);
-  run(shown, crisis.importer.mapPreviewLink);
+  run(shown, '(' + crisis.importer.mapPreviewLink + ')[3]');
 
   circumventSavePrompt();
 }

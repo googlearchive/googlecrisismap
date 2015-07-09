@@ -229,9 +229,9 @@ class BaseTest(unittest.TestCase):
     self.cookie_jar = None
 
   def tearDown(self):
+    cache.Reset()
     self.mox.UnsetStubs()
     self.testbed.deactivate()
-    cache.Reset()
 
   def MakePredictableId(self):
     """A replacement for MakeRandomId() that gives predictable IDs in tests."""

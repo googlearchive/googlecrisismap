@@ -16,6 +16,7 @@ var KML_MAP_ROOT_JSON = {
   id: 'prawn',
   title: 'Sharks',
   description: '<b>Whales</b>',
+  attribution: '<a href="bluewhales.org">Whales Site</a>',
   legend: 'Blue - Blue whales<br/>Grey - Grey whales',
   visibility: 'DEFAULT_ON',
   viewport: {
@@ -71,6 +72,8 @@ LayerModelTest.prototype.newFromMapRootKmlLayer = function() {
   expectEq('prawn', layerModel.get('id'));
   expectEq('Sharks', layerModel.get('title'));
   expectEq('<b>Whales</b>', layerModel.get('description').getUnsanitizedHtml());
+  expectEq('<a href="bluewhales.org">Whales Site</a>',
+      layerModel.get('attribution').getUnsanitizedHtml());
   expectEq('Blue - Blue whales<br/>Grey - Grey whales',
       layerModel.get('legend').getUnsanitizedHtml());
   expectEq(cm.LayerModel.Type.KML, layerModel.get('type'));
